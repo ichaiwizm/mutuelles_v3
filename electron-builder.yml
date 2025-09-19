@@ -1,0 +1,19 @@
+appId: com.mutuelles.app
+productName: Mutuelles
+directories:
+  output: release
+  buildResources: build
+files:
+  - dist/**
+  - out/**
+  - node_modules/**
+  - package.json
+asarUnpack:
+  - "**/*.node"
+win:
+  target:
+    - nsis
+nsis:
+  oneClick: true
+  perMachine: false
+  allowToChangeInstallationDirectory: false
