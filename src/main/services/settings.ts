@@ -20,3 +20,15 @@ export function setTheme(theme: Theme) {
     .prepare('INSERT INTO settings(key, value) VALUES(?, ?) ON CONFLICT(key) DO UPDATE SET value=excluded.value')
     .run('theme', value)
 }
+
+export function getChromePath(): string | undefined {
+  const row = getDb().prepare('SELECT value FROM settings WHERE key = ?').get('chrome_path') as { value?: string } | undefined
+  if (!row?.value) return undefined
+  try { return JSON.parse(row.value) as string }
+  catch { return undefined }
+}
+
+export function setChromePath(path: string) {
+  const value = JSON.stringify(path)
+  getDb().prepare('INSERT INTO settings(key, value) VALUES(?, ?) ON CONFLICT(key) DO UPDATE SET value=excluded.value').run('chrome_path', value)
+}

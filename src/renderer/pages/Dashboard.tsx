@@ -4,24 +4,15 @@ export default function Dashboard() {
   const [stats, setStats] = React.useState<{ platforms:number; profiles:number; credentials:number } | null>(null)
   React.useEffect(() => {
     const load = async () => {
-      try {
-        if (typeof window.api.getStats === 'function') {
-          setStats(await window.api.getStats())
-        } else {
-          const platforms = await window.api.platforms.list()
-          setStats({ platforms: platforms.length, profiles: 0, credentials: 0 })
-        }
-      } catch (e) {
-        console.error(e)
-      }
+      try { setStats(await window.api.getStats()) } catch (e) { console.error(e) }
     }
     load()
   }, [])
   return (
     <section className="space-y-4">
-      <h1 className="text-xl font-semibold">Dashboard</h1>
+      <h1 className="text-xl font-semibold">Tableau de bord</h1>
       <div className="grid grid-cols-3 gap-3">
-        <Card title="Plateformes configurées" value={String(stats?.platforms ?? '—')} />
+        <Card title="Plateformes sélectionnées" value={String(stats?.platforms ?? '—')} />
         <Card title="Profils Chrome" value={String(stats?.profiles ?? '—')} />
         <Card title="Identifiants enregistrés" value={String(stats?.credentials ?? '—')} />
       </div>

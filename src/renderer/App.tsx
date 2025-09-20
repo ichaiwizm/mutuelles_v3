@@ -6,7 +6,7 @@ import ErrorBoundary from './components/ErrorBoundary'
 import { ToastProvider } from './contexts/ToastContext'
 
 const nav = [
-  { to: '/dashboard', label: 'Dashboard', icon: Home },
+  { to: '/dashboard', label: 'Tableau de bord', icon: Home },
   { to: '/platforms', label: 'Plateformes', icon: Building2 },
   { to: '/profiles', label: 'Profils Chrome', icon: UserCog },
   { to: '/credentials', label: 'Identifiants', icon: KeyRound },

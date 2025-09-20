@@ -7,11 +7,6 @@ contextBridge.exposeInMainWorld('api', {
     getTheme: () => ipcRenderer.invoke('settings:getTheme') as Promise<'light' | 'dark' | null>,
     setTheme: (t: 'light' | 'dark') => ipcRenderer.invoke('settings:setTheme', t) as Promise<boolean>
   },
-  platforms: {
-    list: () => ipcRenderer.invoke('platforms:list') as Promise<Array<{id:number; name:string; login_url:string|null}>>,
-    create: (p: { name: string; login_url?: string }) => ipcRenderer.invoke('platforms:create', p) as Promise<{id:number; name:string; login_url:string|null}>,
-    delete: (id: number) => ipcRenderer.invoke('platforms:delete', id) as Promise<boolean>
-  },
   catalog: {
     list: () => ipcRenderer.invoke('catalog:list') as Promise<Array<{id:number; slug:string; name:string; status:string; selected:boolean; has_creds:boolean}>>,
     setSelected: (payload: { platform_id:number; selected:boolean }) => ipcRenderer.invoke('catalog:setSelected', payload) as Promise<{selected:boolean}>,
@@ -19,10 +14,17 @@ contextBridge.exposeInMainWorld('api', {
     listFields: (pageId: number) => ipcRenderer.invoke('catalog:listFields', pageId) as Promise<Array<{id:number; page_id:number; key:string; label:string; type:string; required:boolean; secure:boolean; help?:string|null; order_index:number}>>
   },
   profiles: {
-    list: () => ipcRenderer.invoke('profiles:list') as Promise<Array<{id:number; name:string; user_data_dir:string; browser_channel:string|null}>>,
+    list: () => ipcRenderer.invoke('profiles:list') as Promise<Array<{id:number; name:string; user_data_dir:string; browser_channel:string|null; initialized_at:string|null}>>,
     create: (p: { name: string }) => ipcRenderer.invoke('profiles:create', p) as Promise<{id:number; name:string; user_data_dir:string}>,
     delete: (id: number) => ipcRenderer.invoke('profiles:delete', id) as Promise<boolean>,
-    openDir: (id: number) => ipcRenderer.invoke('profiles:openDir', id) as Promise<string>
+    openDir: (id: number) => ipcRenderer.invoke('profiles:openDir', id) as Promise<string>,
+    init: (id: number) => ipcRenderer.invoke('profiles:init', id) as Promise<boolean>,
+    test: (id: number) => ipcRenderer.invoke('profiles:test', id) as Promise<boolean>
+  },
+  browsers: {
+    getChromePath: () => ipcRenderer.invoke('browsers:getChromePath') as Promise<string|null>,
+    setChromePath: (p: string) => ipcRenderer.invoke('browsers:setChromePath', p) as Promise<boolean>,
+    pickChrome: () => ipcRenderer.invoke('browsers:pickChrome') as Promise<string|null>
   },
   credentials: {
     listSelected: () => ipcRenderer.invoke('pcreds:listSelected') as Promise<Array<{ platform_id:number; name:string; status:string; selected:boolean; has_creds:boolean; username:string|null }>>,
@@ -42,11 +44,6 @@ declare global {
         getTheme: () => Promise<'light' | 'dark' | null>
         setTheme: (t: 'light' | 'dark') => Promise<boolean>
       }
-      platforms: {
-        list: () => Promise<Array<{id:number; name:string; login_url:string|null}>>
-        create: (p: { name: string; login_url?: string }) => Promise<{id:number; name:string; login_url:string|null}>
-        delete: (id: number) => Promise<boolean>
-      }
       catalog: {
         list: () => Promise<Array<{id:number; slug:string; name:string; status:string; selected:boolean; has_creds:boolean}>>
         setSelected: (payload: { platform_id:number; selected:boolean }) => Promise<{selected:boolean}>
@@ -54,10 +51,17 @@ declare global {
         listFields: (pageId: number) => Promise<Array<{id:number; page_id:number; key:string; label:string; type:string; required:boolean; secure:boolean; help?:string|null; order_index:number}>>
       }
       profiles: {
-        list: () => Promise<Array<{id:number; name:string; user_data_dir:string; browser_channel:string|null}>>
+        list: () => Promise<Array<{id:number; name:string; user_data_dir:string; browser_channel:string|null; initialized_at:string|null}>>
         create: (p: { name: string }) => Promise<{id:number; name:string; user_data_dir:string}>
         delete: (id: number) => Promise<boolean>
         openDir: (id: number) => Promise<string>
+        init: (id: number) => Promise<boolean>
+        test: (id: number) => Promise<boolean>
+      }
+      browsers: {
+        getChromePath: () => Promise<string|null>
+        setChromePath: (p: string) => Promise<boolean>
+        pickChrome: () => Promise<string|null>
       }
       credentials: {
         listSelected: () => Promise<Array<{ platform_id:number; name:string; status:string; selected:boolean; has_creds:boolean; username:string|null }>>

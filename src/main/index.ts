@@ -3,10 +3,10 @@ import path from 'node:path'
 import { installMainErrorHandlers } from './errors'
 import { initDatabase, getDb } from './db/connection'
 import { registerSettingsIpc } from './ipc/settings'
-import { registerPlatformsIpc } from './ipc/platforms'
 import { registerProfilesIpc } from './ipc/profiles'
 import { registerCatalogIpc } from './ipc/catalog'
 import { registerPlatformCredsIpc } from './ipc/platform_credentials'
+import { registerBrowsersIpc } from './ipc/browsers'
 
 let mainWindow: BrowserWindow | null = null
 
@@ -43,10 +43,10 @@ app.whenReady().then(() => {
   installMainErrorHandlers()
   initDatabase()
   registerSettingsIpc()
-  registerPlatformsIpc()
   registerProfilesIpc()
   registerCatalogIpc()
   registerPlatformCredsIpc()
+  registerBrowsersIpc()
   createMainWindow()
 
   app.on('activate', () => {

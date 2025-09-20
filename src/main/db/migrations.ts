@@ -6,25 +6,13 @@ export function migrate(db: Database.Database) {
       key TEXT PRIMARY KEY,
       value TEXT NOT NULL
     );
-    CREATE TABLE IF NOT EXISTS platforms (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL,
-      login_url TEXT,
-      created_at TEXT DEFAULT (datetime('now'))
-    );
     CREATE TABLE IF NOT EXISTS profiles (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
       user_data_dir TEXT NOT NULL,
       browser_channel TEXT,
-      created_at TEXT DEFAULT (datetime('now'))
-    );
-    CREATE TABLE IF NOT EXISTS credentials (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      platform_id INTEGER NOT NULL REFERENCES platforms(id) ON DELETE CASCADE,
-      username TEXT NOT NULL,
-      password_encrypted BLOB NOT NULL,
-      created_at TEXT DEFAULT (datetime('now'))
+      created_at TEXT DEFAULT (datetime('now')),
+      initialized_at TEXT
     );
 
     -- Catalog of platforms managed by the app
@@ -77,25 +65,6 @@ export function migrate(db: Database.Database) {
       UNIQUE(page_id, key)
     );
 
-    -- Credential sets (e.g., multiple accounts) per platform+page
-    CREATE TABLE IF NOT EXISTS credential_sets (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      platform_id INTEGER NOT NULL REFERENCES platforms_catalog(id) ON DELETE CASCADE,
-      page_id INTEGER NOT NULL REFERENCES platform_pages(id) ON DELETE CASCADE,
-      name TEXT NOT NULL,
-      profile_id INTEGER REFERENCES profiles(id) ON DELETE SET NULL,
-      created_at TEXT DEFAULT (datetime('now'))
-    );
-
-    -- Values per credential set per field
-    CREATE TABLE IF NOT EXISTS credential_values (
-      cred_set_id INTEGER NOT NULL REFERENCES credential_sets(id) ON DELETE CASCADE,
-      field_key TEXT NOT NULL,
-      value_encrypted BLOB,
-      value_plain TEXT,
-      updated_at TEXT DEFAULT (datetime('now')),
-      PRIMARY KEY (cred_set_id, field_key)
-    );
 
     -- One credential per selected platform (username + password)
     CREATE TABLE IF NOT EXISTS platform_credentials (
@@ -104,7 +73,23 @@ export function migrate(db: Database.Database) {
       password_encrypted BLOB NOT NULL,
       updated_at TEXT DEFAULT (datetime('now'))
     );
+
+    -- Nettoyage des anciennes tables obsolètes
+    DROP TABLE IF EXISTS credentials;
+    DROP TABLE IF EXISTS platforms;
+    DROP TABLE IF EXISTS credential_values;
+    DROP TABLE IF EXISTS credential_sets;
   `)
+
+  // Ajustements de schéma pour bases existantes
+  try {
+    const cols = db.prepare("PRAGMA table_info(profiles)").all() as Array<{ name: string }>
+    if (!cols.some(c => c.name === 'initialized_at')) {
+      db.exec("ALTER TABLE profiles ADD COLUMN initialized_at TEXT")
+    }
+  } catch (e) {
+    // log silencieux
+  }
 }
 
 export function seedCatalog(db: Database.Database) {
