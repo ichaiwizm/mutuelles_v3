@@ -1,32 +1,157 @@
 # Mutuelles v3 — Desktop (Electron)
 
-Base d’application Electron (React + Vite + TypeScript + Tailwind v4) avec layout et navigation initiale.
+Application desktop Electron destinée à un courtier professionnel. L’objectif est d’orchestrer des plateformes (Swisslife, Alptis, …), gérer un profil Chrome persistant, stocker localement les identifiants (chiffrés) et — étapes suivantes — automatiser les flux de devis avec Playwright.
 
-## Scripts
+Ce document décrit l’architecture actuelle, la base de données, les APIs IPC, l’UI, les conventions de code et la feuille de route. Il sert aussi de “journal de bord” de l’Agent 1 (moi) et d’instructions pour l’Agent suivant.
 
+## Prérequis & scripts
+- Node.js LTS (>= 18), npm
+- Windows (build NSIS configuré)
+- Chrome installé (recommandé) — utilisé pour le profil persistant
+
+Scripts:
 - `npm install`
-- `npm run dev` — lance l’app en mode dev
-- `npm run build` — build + packaging Windows (NSIS)
+- `npm run dev` — lance l’app en dev (electron‑vite)
+- `npm run build` — packaging Windows (NSIS)
+- `npm run typecheck` — TypeScript strict
 
-## Structure
+Note binaires natifs: `better-sqlite3` est natif. En cas d’erreur après `npm install`: `npx electron-builder install-app-deps`.
 
-- `src/main` — processus principal (fenêtre, IPC minimal)
-- `src/preload` — pont sécurisé (API exposée au renderer)
-- `src/renderer` — UI React (layout, pages, styles)
+## Architecture & conventions
+- Séparation stricte:
+  - `src/main` — processus principal (DB, services, IPC, fenêtre)
+  - `src/preload` — pont sécurisé (`contextBridge`), expose `window.api`
+  - `src/renderer` — UI React (pages, composants, contextes)
+  - `src/shared` — types partagés
+- Conventions (impératives):
+  - Fichiers courts (≤ 200 lignes). Scinder si besoin.
+  - Noms explicites, dossiers logiques.
+  - Valider TOUTES les entrées IPC côté main (Zod).
+  - Pas de SQL dans l’IPC — passer par `services/*`.
+  - UI en français (labels, messages, erreurs).
+  - Code “sale”: proposer le refactor (après accord), puis l’appliquer.
 
-## Notes
+## Base de données (SQLite)
+Fichier: `userData/mutuelles.sqlite3`, WAL + `foreign_keys=ON`.
 
-- Sécurité: renderer sandboxé, contextIsolation actif, CSP de base en dev/packagé.
-- Données locales: SQLite dans `userData`, WAL + `foreign_keys=ON`.
-- Identifiants: chiffrés avec `safeStorage` (Electron) avant stockage, révélation temporaire (10s).
-- Profils: création de dossiers dédiés sous `userData/profiles`, ouverture du dossier via l’UI.
-- Playwright: non inclus pour l’instant (prévu dans une prochaine étape).
+Tables:
+- `settings(key, value)` — clés: `theme`, `chrome_path`
+- `platforms_catalog(id, slug UNIQUE, name, status, base_url?, website_url?, notes?, created_at, updated_at)` — seed: `swisslife`, `alptis` (ready)
+- `user_platforms(id, platform_id UNIQUE → platforms_catalog, selected, created_at)`
+- `platform_pages(id, platform_id → platforms_catalog, slug, name, type, url_template?, status, order_index, meta_json?, active)`
+- `platform_fields(id, page_id → platform_pages, key, label, type, required, secure, help?, order_index)`
+- `platform_credentials(platform_id PRIMARY KEY → platforms_catalog, username, password_encrypted BLOB, updated_at)`
+- `profiles(id, name, user_data_dir, browser_channel, created_at, initialized_at)`
 
-### Dépendances natives (Windows)
-- `better-sqlite3` est natif. Après `npm install`, le script `postinstall` reconstruit les binaires pour Electron. Si un souci survient, lancez: `npx electron-builder install-app-deps`.
+Migrations & robustesse:
+- Ajout conditionnel de `profiles.initialized_at` si manquante.
+- En cas d’échec de migration: suppression du fichier et recréation + seeding.
+- Tables obsolètes supprimées: `platforms`, `credentials`, `credential_sets`, `credential_values`.
 
-## Fonctionnalités actuelles
-- Dashboard avec compteurs (plateformes, profils, identifiants).
-- CRUD Plateformes (nom, URL login optionnelle).
-- Profils: création/liste/suppression + ouvrir le dossier.
-- Identifiants: ajout/liste/suppression + révélation chiffrée.
+Index (TODO): `user_platforms(platform_id)`, `platform_credentials(platform_id)`.
+
+## APIs IPC & Preload (window.api)
+- `getVersion()`, `getStats()`
+- `settings.getTheme()/setTheme()`
+- `catalog.list()/setSelected()/listPages()/listFields()`
+- `credentials.listSelected()/get()/set()/delete()/reveal()` (un identifiant unique par plateforme)
+- `profiles.list()/create()/init()/test()/openDir()/delete()`
+- `browsers.getChromePath()/setChromePath()/pickChrome()`
+
+Validation d’entrée: côté main via Zod (ex: `catalog.setSelected`, `credentials.set`).
+
+## UI
+- Tableau de bord: compteurs (plateformes sélectionnées, profils, identifiants)
+- Plateformes: sélection du catalogue, badge statut FR, badge “Identifiants manquants”, aperçu des pages
+- Identifiants: login/mot de passe par plateforme; révélation ponctuelle; effacement
+- Profil Chrome (unique, côté UX): création + initialisation auto; menu “…” (ouvrir dossier, choisir Chrome, supprimer); état “Initialisé/Non initialisé”
+- Thème clair/sombre; toasts pro (loading → success/erreur), pile limitée (bas‑droite)
+
+## Sécurité & build
+- Electron: `contextIsolation: true`, `nodeIntegration: false`. Sandbox désactivé pour l’instant (preload ESM).
+- CSP de base pour le dev; à durcir en prod (retirer `unsafe-eval`, restreindre `connect-src`).
+- Secrets: `safeStorage` (DPAPI, etc.).
+- Build: `electron-builder` (NSIS), `asarUnpack: "**/*.node"`.
+
+## État actuel (précis)
+Fonctionnel: catalogue + sélection, identifiants uniques chiffrés, profil Chrome (création + init auto), toasts pro, UI FR, migrations robustes, typecheck OK.
+
+À venir: Playwright (runner + flux devis), DSL des flux, CSP prod stricte + sandbox, index DB.
+
+## Historique Agent 1 & directives
+Réalisé:
+- Architecture Electron/React/TS/Tailwind + electron‑vite
+- Nouveau modèle DB (catalogue/pages/champs + identifiants uniques/plateforme)
+- Suppression ancien CRUD + migrations/seed + reset fallback
+- Services/IPC: `catalog`, `credentials`, `profiles` (init Chrome), `browsers`, `settings`
+- UI complète FR (plateformes, identifiants, profil unique, toasts pro)
+
+Directives Agent 2 (à respecter):
+- Fichiers courts (≤ 200 lignes), validation Zod, structure logique, UI FR
+- Refactoriser proprement après accord si du code “sale” est rencontré
+- Migrations idempotentes, non destructives sans accord
+- Utiliser les toasts progressifs pour toute action longue
+
+## Roadmap — Flux devis & Playwright
+Objectif: ajouter des “commandes” (DSL) pour décrire/exécuter des flux devis (Swisslife, Alptis), avec captures d’écran à chaque étape.
+
+1) Playwright (Chrome stable)
+- Runner côté main (process utilitaire) avec `launchPersistentContext(userDataDir, { channel: 'chrome', headless: false })`
+- Chargement des identifiants depuis `platform_credentials` + profil `profiles`
+- IPC `automation:run({ flowSlug })` → journal d’étapes + chemins des screenshots
+
+2) Schéma flux (DB)
+- `flows_catalog(platform_id, slug UNIQUE, name, active)`
+- `flow_steps(flow_id, order_index, type, selector?, value?, url?, screenshot_label?, timeout_ms?)`
+- Étapes minimales: `goto`, `fill`, `click`, `waitFor`, `assert`, `screenshot`, `sleep`
+- Seed: `swisslife_login`, `alptis_login`
+
+3) Captures d’écran
+- `userData/screenshots/<flow>/<timestamp>/step-XX-<label>.png`
+
+4) UI “Flux devis”
+- Liste/édition simple des étapes; exécution avec toasts progressifs; lien vers captures
+
+5) Durcissements
+- Index DB (voir plus haut), CSP prod stricte, sandbox réactivé (preload CJS)
+
+---
+
+## Annexe — Prompt “Agent 2” (handover)
+
+Contexte
+- Je suis l’Agent 1. J’ai démarré et livré l’architecture, la DB (catalogue/pages/champs + identifiants uniques), le profil Chrome (création + init auto) et l’UI en français avec toasts pro. L’ancien CRUD a été retiré proprement.
+
+Etat actuel
+- Catalogue: Swisslife/Alptis (ready), pages `login`/`quote_form` seedées; sélection OK
+- Identifiants: un login/mot de passe par plateforme (chiffrés), révélation/effacement OK
+- Profil Chrome: un profil côté UX; création + init auto via Chrome `--user-data-dir`; menu “…” avancé
+- IPC exposées: `catalog:*`, `credentials:*`, `profiles:*` (init/test/open/delete), `browsers:*` (chemin Chrome), `getStats`
+- Sécurité: `contextIsolation: true`, `nodeIntegration: false`; CSP basique; sandbox OFF (à réactiver plus tard)
+- TypeScript OK; DB robuste (migrations conditionnelles + reset fallback)
+
+Lignes directrices
+- Fichiers ≤ 200 lignes, noms explicites, structure logique
+- Zod pour toutes entrées IPC; pas de SQL dans l’IPC
+- UI en français; toasts progressifs pour opérations longues
+- Refactoriser le code “sale” après accord
+- Migrations idempotentes; pas de destruction de données sans accord
+
+Objectifs immédiats
+1) Ajouter Playwright (Chrome stable) et un runner:
+   - `launchPersistentContext(userDataDir, { channel: 'chrome', headless: false })`
+   - Charger identifiants + profil depuis la DB
+   - IPC `automation:run({ flowSlug })` → journal (étapes, screenshots)
+2) Étendre la DB pour flux devis:
+   - `flows_catalog` & `flow_steps` (voir schéma)
+   - Seeder pour `swisslife_login` et `alptis_login`
+3) Implémenter les flux “connexion” (Swisslife, Alptis) avec captures d’écran à chaque étape
+4) UI “Flux devis” (liste, exécution, lien vers captures)
+5) Durcissements: index DB, CSP stricte, sandbox ON (preload CJS)
+
+Livrables
+- Code propre, fichiers courts, validations Zod, toasts pilotés
+- Nouvelle doc (IPC + schéma) succincte
+- Zéro perte de données sans accord
+
+Fin du handover — l’utilisateur validera chaque étape avant la suite.

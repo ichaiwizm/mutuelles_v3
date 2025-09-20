@@ -33,13 +33,13 @@ export default function Profiles() {
     try {
       const r = await window.api.profiles.create({ name: 'Profil Chrome' })
       await load()
-      toast.success('Profil créé', 'Initialisation en cours…')
+      const tid = toast.loading('Initialisation en cours…')
       setLoading(prev => ({ ...prev, init: true }))
       await window.api.profiles.init(r.id)
       await load()
-      toast.success('Profil initialisé', 'Chrome a préparé le profil')
+      toast.update(tid, { type: 'success', title: 'Profil initialisé', message: 'Chrome a préparé le profil', duration: 3000 })
     } catch (e) {
-      toast.error('Erreur', e instanceof Error ? e.message : String(e))
+      toast.error('Erreur', e instanceof Error ? e.message : String(e), { duration: 5000 })
     } finally {
       setLoading(prev => ({ ...prev, create: false, init: false }))
     }
@@ -48,7 +48,12 @@ export default function Profiles() {
   async function onInit() {
     if (!single) return
     setLoading(prev => ({ ...prev, init: true }))
-    try { await window.api.profiles.init(single.id); await load(); toast.success('Profil initialisé') }
+    try {
+      const tid = toast.loading('Initialisation en cours…')
+      await window.api.profiles.init(single.id)
+      await load()
+      toast.update(tid, { type: 'success', title: 'Profil initialisé', duration: 3000 })
+    }
     catch (e) { toast.error('Erreur', String(e)) }
     finally { setLoading(prev => ({ ...prev, init: false })) }
   }

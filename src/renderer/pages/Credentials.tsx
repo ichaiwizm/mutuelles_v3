@@ -27,6 +27,8 @@ export default function Credentials() {
 
   async function onSave(pid:number) {
     setLoading(prev => ({ ...prev, save: new Set([...prev.save, pid]) }))
+    const name = rows.find(r => r.platform_id === pid)?.name || 'Plateforme'
+    const tid = toast.loading(`Sauvegarde des identifiants pour ${name}…`)
     try {
       const u = edit[pid]?.username ?? rows.find(r=>r.platform_id===pid)?.username ?? ''
       const p = edit[pid]?.password ?? ''
@@ -35,10 +37,9 @@ export default function Credentials() {
       await window.api.credentials.set({ platform_id: pid, username: u, password: p })
       setEdit(prev => ({ ...prev, [pid]: { username: '', password: '' } }))
       await load()
-      const platformName = rows.find(r => r.platform_id === pid)?.name || 'Plateforme'
-      toast.success('Identifiants enregistrés', `Les identifiants pour ${platformName} ont été sauvegardés`)
+      toast.update(tid, { type: 'success', title: 'Identifiants enregistrés', message: `Pour ${name}`, duration: 3000 })
     } catch (e) {
-      toast.error('Erreur de sauvegarde', String(e))
+      toast.update(tid, { type: 'error', title: 'Erreur de sauvegarde', message: String(e), duration: 5000 })
     } finally {
       setLoading(prev => ({ ...prev, save: new Set([...prev.save].filter(x => x !== pid)) }))
     }
@@ -61,15 +62,15 @@ export default function Credentials() {
 
   async function confirmClear() {
     if (!clearModal) return
-
     setLoading(prev => ({ ...prev, clear: new Set([...prev.clear, clearModal.id]) }))
+    const tid = toast.loading(`Suppression des identifiants pour ${clearModal.name}…`)
     try {
       await window.api.credentials.delete(clearModal.id)
       await load()
-      toast.success('Identifiants effacés', `Les identifiants pour ${clearModal.name} ont été supprimés`)
+      toast.update(tid, { type: 'success', title: 'Identifiants effacés', message: `Pour ${clearModal.name}`, duration: 3000 })
       setClearModal(null)
     } catch (e) {
-      toast.error('Erreur', String(e))
+      toast.update(tid, { type: 'error', title: 'Erreur', message: String(e), duration: 5000 })
     } finally {
       setLoading(prev => ({ ...prev, clear: new Set([...prev.clear].filter(x => x !== clearModal.id)) }))
     }

@@ -20,15 +20,18 @@ export default function Platforms() {
 
   async function toggleSelected(r: CatalogRow) {
     setLoadingToggle(prev => new Set([...prev, r.id]))
+    const tid = toast.loading(`${r.selected ? 'Désactivation' : 'Activation'} de ${r.name}…`)
     try {
       await window.api.catalog.setSelected({ platform_id: r.id, selected: !r.selected })
       await load()
-      toast.success(
-        r.selected ? 'Plateforme désactivée' : 'Plateforme activée',
-        `${r.name} ${r.selected ? 'ne sera plus utilisée' : 'est maintenant utilisée'}`
-      )
+      toast.update(tid, {
+        type: 'success',
+        title: r.selected ? 'Plateforme désactivée' : 'Plateforme activée',
+        message: `${r.name} ${r.selected ? 'ne sera plus utilisée' : 'est maintenant utilisée'}`,
+        duration: 3000
+      })
     } catch (e) {
-      toast.error('Erreur', String(e))
+      toast.update(tid, { type: 'error', title: 'Erreur', message: String(e), duration: 5000 })
     } finally {
       setLoadingToggle(prev => new Set([...prev].filter(id => id !== r.id)))
     }
