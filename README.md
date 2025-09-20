@@ -57,6 +57,9 @@ Index (TODO): `user_platforms(platform_id)`, `platform_credentials(platform_id)`
 - `credentials.listSelected()/get()/set()/delete()/reveal()` (un identifiant unique par plateforme)
 - `profiles.list()/create()/init()/test()/openDir()/delete()`
 - `browsers.getChromePath()/setChromePath()/pickChrome()`
+- `automation.listFlows()` — liste les flux actifs
+- `automation.run({ flowSlug })` — lance un run; événements de progression sur `automation:progress:<runId>` (exposés via `automation.onProgress(runId, cb)`)
+- `automation.openRunDir(dir)` — ouvre le dossier captures du run
 
 Validation d’entrée: côté main via Zod (ex: `catalog.setSelected`, `credentials.set`).
 
@@ -65,6 +68,7 @@ Validation d’entrée: côté main via Zod (ex: `catalog.setSelected`, `credent
 - Plateformes: sélection du catalogue, badge statut FR, badge “Identifiants manquants”, aperçu des pages
 - Identifiants: login/mot de passe par plateforme; révélation ponctuelle; effacement
 - Profil Chrome (unique, côté UX): création + initialisation auto; menu “…” (ouvrir dossier, choisir Chrome, supprimer); état “Initialisé/Non initialisé”
+- Flux (Dev): liste des flows (actifs), exécution en direct avec timeline (logs verbeux) et accès rapide aux captures
 - Thème clair/sombre; toasts pro (loading → success/erreur), pile limitée (bas‑droite)
 
 ## Sécurité & build

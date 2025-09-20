@@ -90,6 +90,40 @@ export function migrate(db: Database.Database) {
   } catch (e) {
     // log silencieux
   }
+
+  // Extensions flows (idempotent)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS flows_catalog (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      platform_id INTEGER NOT NULL REFERENCES platforms_catalog(id) ON DELETE CASCADE,
+      slug TEXT NOT NULL UNIQUE,
+      name TEXT NOT NULL,
+      active INTEGER NOT NULL DEFAULT 1,
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+    CREATE TABLE IF NOT EXISTS flow_steps (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      flow_id INTEGER NOT NULL REFERENCES flows_catalog(id) ON DELETE CASCADE,
+      order_index INTEGER NOT NULL,
+      type TEXT NOT NULL,
+      selector TEXT,
+      value TEXT,
+      url TEXT,
+      screenshot_label TEXT,
+      timeout_ms INTEGER,
+      assert_text TEXT,
+      wait_for TEXT,
+      meta_json TEXT
+    );
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_flow_steps_order ON flow_steps(flow_id, order_index);
+
+    -- Index divers
+    CREATE INDEX IF NOT EXISTS idx_user_platforms_platform_id ON user_platforms(platform_id);
+    CREATE INDEX IF NOT EXISTS idx_platform_credentials_platform_id ON platform_credentials(platform_id);
+    CREATE INDEX IF NOT EXISTS idx_platform_pages_platform_id ON platform_pages(platform_id);
+    CREATE INDEX IF NOT EXISTS idx_platform_fields_page_id ON platform_fields(page_id);
+    CREATE INDEX IF NOT EXISTS idx_flows_platform ON flows_catalog(platform_id);
+  `)
 }
 
 export function seedCatalog(db: Database.Database) {
@@ -116,6 +150,33 @@ export function seedCatalog(db: Database.Database) {
       insertField.run(loginId, 'password', 'Mot de passe', 'password', 1, 1, 2)
       // quote form page
       insertPage.run(pid, 'quote_form', 'Formulaire de devis', 'quote_form', 2)
+    }
+  })()
+}
+
+// Seed des flows (à appeler après seedCatalog)
+export function seedFlows(db: Database.Database) {
+  const has = db.prepare("SELECT COUNT(*) as c FROM flows_catalog").get() as { c: number }
+  if (has.c > 0) return
+
+  const getPlatform = db.prepare('SELECT id FROM platforms_catalog WHERE slug = ?')
+  const insertFlow = db.prepare('INSERT INTO flows_catalog(platform_id, slug, name, active) VALUES(?, ?, ?, ?)')
+  const insertStep = db.prepare(`INSERT INTO flow_steps(flow_id, order_index, type, selector, value, url, screenshot_label, timeout_ms, assert_text, wait_for, meta_json)
+                                VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+
+  db.transaction(() => {
+    // Flow connexion Alptis (dev-only)
+    const alptis = getPlatform.get('alptis') as { id?: number }
+    if (alptis?.id) {
+      const finfo = insertFlow.run(alptis.id, 'alptis_login', 'Connexion Alptis', 1)
+      const fid = Number(finfo.lastInsertRowid)
+      let i = 1
+      insertStep.run(fid, i++, 'goto', null, null, 'https://pro.alptis.org/', 'accueil', 15000, null, null, null)
+      insertStep.run(fid, i++, 'waitFor', '#username', null, null, 'login-form', 10000, null, null, null)
+      insertStep.run(fid, i++, 'fill', '#username', '{username}', null, 'fill-user', 0, null, null, null)
+      insertStep.run(fid, i++, 'fill', '#password', '{password}', null, 'fill-pass', 0, null, null, null)
+      insertStep.run(fid, i++, 'click', 'button[type="submit"]', null, null, 'submit', 0, null, null, null)
+      insertStep.run(fid, i++, 'screenshot', null, null, null, 'after-submit', 0, null, null, null)
     }
   })()
 }

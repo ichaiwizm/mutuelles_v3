@@ -2,7 +2,7 @@ import Database from 'better-sqlite3'
 import path from 'node:path'
 import fs from 'node:fs'
 import { app } from 'electron'
-import { migrate, seedCatalog } from './migrations'
+import { migrate, seedCatalog, seedFlows } from './migrations'
 
 let db: Database.Database | null = null
 
@@ -15,6 +15,7 @@ export function initDatabase() {
     db.pragma('foreign_keys = ON')
     migrate(db)
     seedCatalog(db)
+    seedFlows(db)
     return db
   } catch (e) {
     try { db?.close() } catch {}
@@ -26,6 +27,7 @@ export function initDatabase() {
     db.pragma('foreign_keys = ON')
     migrate(db)
     seedCatalog(db)
+    seedFlows(db)
     return db
   }
 }

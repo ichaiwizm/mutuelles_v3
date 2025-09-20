@@ -7,6 +7,7 @@ import { registerProfilesIpc } from './ipc/profiles'
 import { registerCatalogIpc } from './ipc/catalog'
 import { registerPlatformCredsIpc } from './ipc/platform_credentials'
 import { registerBrowsersIpc } from './ipc/browsers'
+import { registerAutomationIpc } from './ipc/automation'
 
 let mainWindow: BrowserWindow | null = null
 
@@ -47,6 +48,7 @@ app.whenReady().then(() => {
   registerCatalogIpc()
   registerPlatformCredsIpc()
   registerBrowsersIpc()
+  registerAutomationIpc()
   createMainWindow()
 
   app.on('activate', () => {

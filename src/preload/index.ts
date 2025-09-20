@@ -26,6 +26,17 @@ contextBridge.exposeInMainWorld('api', {
     setChromePath: (p: string) => ipcRenderer.invoke('browsers:setChromePath', p) as Promise<boolean>,
     pickChrome: () => ipcRenderer.invoke('browsers:pickChrome') as Promise<string|null>
   },
+  automation: {
+    listFlows: () => ipcRenderer.invoke('automation:listFlows') as Promise<Array<{ id:number; slug:string; name:string; platform_id:number; platform:string; active:boolean }>>,
+    run: (payload: { flowSlug: string }) => ipcRenderer.invoke('automation:run', payload) as Promise<{ runId:string; screenshotsDir:string }>,
+    onProgress: (runId: string, cb: (e: any) => void) => {
+      const channel = `automation:progress:${runId}`
+      const handler = (_: any, data: any) => cb(data)
+      ipcRenderer.on(channel, handler)
+      return () => ipcRenderer.removeListener(channel, handler)
+    },
+    openRunDir: (dir: string) => ipcRenderer.invoke('automation:openRunDir', dir) as Promise<string>
+  },
   credentials: {
     listSelected: () => ipcRenderer.invoke('pcreds:listSelected') as Promise<Array<{ platform_id:number; name:string; status:string; selected:boolean; has_creds:boolean; username:string|null }>>,
     get: (platform_id: number) => ipcRenderer.invoke('pcreds:get', platform_id) as Promise<{ username:string|null; has_creds:boolean }>,
@@ -69,6 +80,12 @@ declare global {
         set: (payload: { platform_id:number; username:string; password:string }) => Promise<boolean>
         delete: (platform_id: number) => Promise<boolean>
         reveal: (platform_id: number) => Promise<string>
+      }
+      automation: {
+        listFlows: () => Promise<Array<{ id:number; slug:string; name:string; platform_id:number; platform:string; active:boolean }>>
+        run: (payload: { flowSlug: string }) => Promise<{ runId:string; screenshotsDir:string }>
+        onProgress: (runId: string, cb: (e:any)=>void) => (()=>void)
+        openRunDir: (dir: string) => Promise<string>
       }
     }
   }

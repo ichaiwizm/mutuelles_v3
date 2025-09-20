@@ -10,6 +10,7 @@ const nav = [
   { to: '/platforms', label: 'Plateformes', icon: Building2 },
   { to: '/profiles', label: 'Profils Chrome', icon: UserCog },
   { to: '/credentials', label: 'Identifiants', icon: KeyRound },
+  { to: '/flows', label: 'Flux (Dev)', icon: KeyRound },
   
 ]
 
