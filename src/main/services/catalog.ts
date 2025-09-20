@@ -28,22 +28,22 @@ export function listPages(platformId: unknown) {
   const pid = Number(platformId)
   if (!Number.isInteger(pid) || pid <= 0) throw new Error('Identifiant de plateforme invalide')
   const rows = getDb().prepare(`
-    SELECT id, platform_id, slug, name, type, status, order_index
+    SELECT id, platform_id, slug, name, type, url, status, order_index
     FROM platform_pages WHERE platform_id = ? AND active = 1
     ORDER BY order_index, id
   `).all(pid) as any[]
-  return rows as Array<{ id:number; platform_id:number; slug:string; name:string; type:string; status:string; order_index:number }>
+  return rows as Array<{ id:number; platform_id:number; slug:string; name:string; type:string; url:string|null; status:string; order_index:number }>
 }
 
 export function listFields(pageId: unknown) {
   const pg = Number(pageId)
   if (!Number.isInteger(pg) || pg <= 0) throw new Error('Identifiant de page invalide')
   const rows = getDb().prepare(`
-    SELECT id, page_id, key, label, type, required, secure, help, order_index
+    SELECT id, page_id, key, label, type, required, secure, order_index
     FROM platform_fields WHERE page_id = ?
     ORDER BY order_index, id
   `).all(pg) as any[]
   return rows.map((r: any) => ({ ...r, required: !!r.required, secure: !!r.secure })) as Array<{
-    id:number; page_id:number; key:string; label:string; type:string; required:boolean; secure:boolean; help?:string|null; order_index:number
+    id:number; page_id:number; key:string; label:string; type:string; required:boolean; secure:boolean; order_index:number
   }>
 }

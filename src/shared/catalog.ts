@@ -27,6 +27,7 @@ export const PlatformPage = z.object({
   slug: z.string(),
   name: z.string(),
   type: PlatformPageType,
+  url: z.string().optional().nullable(),
   status: PlatformStatus,
   order_index: z.number().int()
 })
@@ -40,8 +41,6 @@ export const PlatformField = z.object({
   type: FieldType,
   required: z.boolean(),
   secure: z.boolean(),
-  help: z.string().optional().nullable(),
   order_index: z.number().int()
 })
 export type PlatformField = z.infer<typeof PlatformField>
-

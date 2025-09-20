@@ -16,7 +16,7 @@ interface ToastComponentProps extends Toast {
   onClose: (id: string) => void
 }
 
-function ToastComponent({ id, type, title, message, onClose }: ToastComponentProps) {
+function ToastComponent({ id, type, title, message, duration, onClose }: ToastComponentProps) {
   const icons = {
     success: CheckCircle,
     error: XCircle,
@@ -34,17 +34,16 @@ function ToastComponent({ id, type, title, message, onClose }: ToastComponentPro
   const Icon = icons[type]
 
   // Auto-fermeture configurable; 0 = persistant
-  const durationRef = React.useRef<number | undefined>()
-  const [duration, setDuration] = React.useState<number | undefined>(undefined)
-  React.useEffect(() => { setDuration((window as any).__toastDurationMap?.[id]) }, [id])
+  const timerRef = React.useRef<number | null>(null)
   React.useEffect(() => {
-    const d = duration ?? 5000
-    durationRef.current = d
+    if (timerRef.current) { clearTimeout(timerRef.current as any); timerRef.current = null }
+    const d = duration !== undefined ? duration : (type === 'info' ? 0 : 5000)
     if (d && d > 0) {
-      const timer = setTimeout(() => onClose(id), d)
-      return () => clearTimeout(timer)
+      // @ts-ignore
+      timerRef.current = setTimeout(() => onClose(id), d) as any
+      return () => { if (timerRef.current) clearTimeout(timerRef.current as any) }
     }
-  }, [id, onClose, duration])
+  }, [id, type, duration, onClose])
 
   return (
     <div className={`rounded-md border p-3 shadow-lg ${styles[type]} max-w-md animate-in slide-in-from-right`}>

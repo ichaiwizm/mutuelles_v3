@@ -3,8 +3,8 @@ import path from 'node:path'
 import { app, safeStorage } from 'electron'
 import { z } from 'zod'
 import { chromium, type BrowserContext, type Page } from 'playwright-core'
-import { getDb } from '../db/connection'
 import { getFlowBySlug, listSteps } from './flows'
+import { getDb } from '../db/connection'
 import { getChromePath } from './chrome'
 
 type ProgressEvent = {
@@ -18,7 +18,7 @@ type ProgressEvent = {
 
 const activeByProfile = new Map<string, boolean>()
 
-export async function runFlow(flowSlug: string, onProgress: (e: ProgressEvent) => void) {
+export async function runFlow(flowSlug: string, onProgress: (e: ProgressEvent) => void, opts?: { mode?: 'headless'|'dev' }) {
   const flow = getFlowBySlug(flowSlug)
   if (!flow) throw new Error('Flux introuvable ou inactif')
 
@@ -37,7 +37,7 @@ export async function runFlow(flowSlug: string, onProgress: (e: ProgressEvent) =
   fs.mkdirSync(baseDir, { recursive: true })
   const steps = listSteps(flow.id)
 
-  const send = (p: ProgressEvent) => onProgress({ runId, ...p })
+  const send = (p: Omit<ProgressEvent, 'runId'>) => onProgress({ runId, ...p })
   const writeJson = (json: any) => {
     const runsDir = path.join(app.getPath('userData'), 'runs', flow.slug)
     fs.mkdirSync(runsDir, { recursive: true })
@@ -49,14 +49,21 @@ export async function runFlow(flowSlug: string, onProgress: (e: ProgressEvent) =
   activeByProfile.set(prof.user_data_dir, true)
 
   const startedAt = new Date().toISOString()
+  const runsDir = path.join(app.getPath('userData'), 'runs', flow.slug)
+  const jsonPath = path.join(runsDir, `${runId}.json`)
+  getDb().prepare(`INSERT INTO flows_runs(flow_id, run_uid, flow_slug, started_at, status, screenshots_dir, json_path)
+                   VALUES(?, ?, ?, ?, 'running', ?, ?)`)
+        .run(flow.id, runId, flow.slug, startedAt, baseDir, jsonPath)
   send({ type:'run', status:'start', message:`Démarrage run ${flow.slug}` })
   let context: BrowserContext | null = null
   let page: Page | null = null
   const summary: any = { runId, flow: flow.slug, startedAt, steps: [], screenshotsDir: baseDir }
 
   try {
-    // Lancement Chrome persistant
-    const args: any = { headless: false, executablePath: chrome }
+    // Lancement Chrome persistant (mode)
+    const headless = opts?.mode !== 'dev'
+    const keepOpen = opts?.mode === 'dev'
+    const args: any = { headless, executablePath: chrome }
     context = await chromium.launchPersistentContext(prof.user_data_dir, args)
     page = context.pages()[0] || await context.newPage()
     page.setDefaultTimeout(15000)
@@ -69,7 +76,7 @@ export async function runFlow(flowSlug: string, onProgress: (e: ProgressEvent) =
       const t0 = Date.now()
 
       try {
-        await execStep(page, s, { username: creds.username!, password })
+        await execStep(page, s, { username: creds.username!, password, platform_id: flow.platform_id })
         const shotPath = path.join(baseDir, `step-${String(idx+1).padStart(2,'0')}-${slugify(label)}.png`)
         if (s.type !== 'screenshot') await page.screenshot({ path: shotPath })
         else await page.screenshot({ path: shotPath })
@@ -87,6 +94,9 @@ export async function runFlow(flowSlug: string, onProgress: (e: ProgressEvent) =
 
     summary.finishedAt = new Date().toISOString()
     writeJson(summary)
+    const okCount = summary.steps.filter((s:any)=>s.ok).length
+    getDb().prepare(`UPDATE flows_runs SET finished_at=?, status='success', steps_total=?, ok_steps=? WHERE run_uid=?`)
+          .run(summary.finishedAt, summary.steps.length, okCount, runId)
     send({ type:'run', status:'success', message:'Run terminé', screenshotPath: baseDir })
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e)
@@ -94,9 +104,14 @@ export async function runFlow(flowSlug: string, onProgress: (e: ProgressEvent) =
     summary.finishedAt = new Date().toISOString()
     summary.error = msg
     writeJson(summary)
+    getDb().prepare(`UPDATE flows_runs SET finished_at=?, status='error', error_message=? WHERE run_uid=?`)
+          .run(summary.finishedAt, msg, runId)
     throw e
   } finally {
-    try { await context?.close() } catch {}
+    const keepOpen = opts?.mode === 'dev'
+    if (!keepOpen) {
+      try { await context?.close() } catch {}
+    }
     activeByProfile.delete(prof.user_data_dir)
   }
 
@@ -118,12 +133,20 @@ function describeStep(s: any) {
   }
 }
 
-async function execStep(page: Page, s: any, ctx: { username: string; password: string }) {
+async function execStep(page: Page, s: any, ctx: { username: string; password: string; platform_id?: number }) {
   if (s.timeout_ms) page.setDefaultTimeout(s.timeout_ms)
   switch (s.type) {
     case 'goto':
-      if (!s.url) throw new Error('URL manquante')
-      await page.goto(s.url, { waitUntil: 'domcontentloaded' })
+      {
+        let target = s.url as string | null
+        if (!target && (ctx as any).platform_id) {
+          // Fallback: URL de la page login depuis platform_pages
+          const row = getDb().prepare('SELECT url FROM platform_pages WHERE platform_id = ? AND slug = ?').get((ctx as any).platform_id, 'login') as { url?: string } | undefined
+          target = row?.url ?? null
+        }
+        if (!target) throw new Error('URL manquante (goto)')
+        await page.goto(target, { waitUntil: 'domcontentloaded' })
+      }
       break
     case 'waitFor':
       if (!s.selector) throw new Error('Sélecteur manquant')

@@ -34,6 +34,41 @@ Note binaires natifs: `better-sqlite3` est natif. En cas d’erreur après `npm 
 ## Base de données (SQLite)
 Fichier: `userData/mutuelles.sqlite3`, WAL + `foreign_keys=ON`.
 
+En dev, seule la base de données est stockée à la racine du projet dans `./dev-data/mutuelles.sqlite3`. Les profils Chrome restent dans le dossier `%APPDATA%/mutuelles_v3` (inchangé).
+
+Premier démarrage après ce changement: si une DB existe déjà dans `%APPDATA%/mutuelles_v3/mutuelles.sqlite3`, elle est automatiquement copiée vers `./dev-data/mutuelles.sqlite3` (les fichiers `-wal`/`-shm` sont copiés si présents). Aucune suppression de l’ancienne DB.
+
+Variable d’env (dev):
+- `MUTUELLES_DB_DIR` pour choisir un autre dossier dev (par défaut `./dev-data`).
+
+### Nettoyage du schéma (minimal fonctionnel)
+- `platform_pages`: colonne `url_template` renommée en `url`; suppression de `meta_json`.
+- `platform_fields`: suppression de la colonne `help`.
+- `flow_steps`: suppressions de `wait_for` et `meta_json`.
+- Migrations idempotentes et non destructives pour les données utiles (copie/transfert assuré).
+
+Conséquence: les URLs des pages (ex: login) sont maintenant stockées en colonne `url` (seed: Alptis → `https://pro.alptis.org/`). Le runner utilise `flow_steps.url` si présent, sinon il retombe sur la `platform_pages.url` de la page `login` de la plateforme.
+
+### Commandes Dev (administration)
+Permettent d’ajouter/mettre à jour une plateforme et un flux sans toucher au code.
+
+- Ajouter une plateforme (avec page login + champs):
+  - `npm run cmd:add-platform -- --slug alptis --name "Alptis" --login https://pro.alptis.org/ --select --field username:text:required --field password:password:required:secure`
+  - Options: `--base`, `--website`, `--field key:type[:required][:secure]` (répétable). Par défaut, username/password sont ajoutés si aucun `--field` n’est fourni.
+
+- Ajouter/mettre à jour un flux (steps via JSON):
+  - `npm run cmd:add-flow -- --platform alptis --slug alptis_login --name "Connexion Alptis" --steps steps.json`
+  - Exemple steps.json:
+    `[
+      { "type":"goto" },
+      { "type":"waitFor", "selector":"#username" },
+      { "type":"fill", "selector":"#username", "value":"{username}" },
+      { "type":"fill", "selector":"#password", "value":"{password}" },
+      { "type":"click", "selector":"button[type=submit]" },
+      { "type":"screenshot", "screenshot_label":"after-submit" }
+    ]`
+
+
 Tables:
 - `settings(key, value)` — clés: `theme`, `chrome_path`
 - `platforms_catalog(id, slug UNIQUE, name, status, base_url?, website_url?, notes?, created_at, updated_at)` — seed: `swisslife`, `alptis` (ready)

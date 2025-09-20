@@ -1,6 +1,7 @@
 import React from 'react'
 import Button from '../components/Button'
 import { useToastContext } from '../contexts/ToastContext'
+import RunHistory from '../components/RunHistory'
 
 type Flow = { id:number; slug:string; name:string; platform_id:number; platform:string; active:boolean }
 type Progress = { runId:string; stepIndex?:number; type:string; status:'start'|'success'|'error'|'info'; message?:string; screenshotPath?:string }
@@ -8,6 +9,7 @@ type Progress = { runId:string; stepIndex?:number; type:string; status:'start'|'
 export default function Flows() {
   const [flows, setFlows] = React.useState<Flow[]>([])
   const [running, setRunning] = React.useState<Record<string, { runId:string; logs:Progress[]; dir?:string }>>({})
+  const [historyTick, setHistoryTick] = React.useState(0)
   const toast = useToastContext()
 
   const load = React.useCallback(async () => {
@@ -15,16 +17,20 @@ export default function Flows() {
   }, [])
   React.useEffect(() => { load() }, [load])
 
-  async function start(flow: Flow) {
+  async function start(flow: Flow) { return startWithMode(flow, 'headless') }
+
+  async function startWithMode(flow: Flow, mode: 'headless'|'dev') {
     const tid = toast.loading(`Démarrage du flux ${flow.name}…`)
     try {
-      const { runId, screenshotsDir } = await window.api.automation.run({ flowSlug: flow.slug })
-      toast.update(tid, { type:'success', title:'Flux en cours', message: flow.name, duration: 2000 })
+      const { runId, screenshotsDir } = await window.api.automation.run({ flowSlug: flow.slug, mode })
+      toast.update(tid, { type:'success', title: mode==='dev'?'Flux (Dev) en cours':'Flux en cours', message: flow.name, duration: 2000 })
       setRunning(prev => ({ ...prev, [flow.slug]: { runId, logs: [], dir: screenshotsDir } }))
       const off = window.api.automation.onProgress(runId, (evt: Progress) => {
         setRunning(prev => ({ ...prev, [flow.slug]: { runId, logs: [...(prev[flow.slug]?.logs||[]), evt], dir: screenshotsDir } }))
+        if (evt.type === 'run' && (evt.status === 'success' || evt.status === 'error')) {
+          setHistoryTick(Date.now())
+        }
       })
-      // auto detach when run ends
       const stopWhenDone = setInterval(() => {
         const logs = running[flow.slug]?.logs || []
         const done = logs.some(l => l.type==='run' && (l.status==='success' || l.status==='error'))
@@ -65,34 +71,18 @@ export default function Flows() {
                   </td>
                   <td className="px-3 py-2">{f.platform}</td>
                   <td className="px-3 py-2 text-right space-x-2">
-                    <Button onClick={()=>start(f)} variant="primary" size="sm">Lancer</Button>
-                    {running[f.slug]?.dir && (
-                      <Button onClick={()=>openDir(f)} size="sm">Ouvrir les captures</Button>
-                    )}
+                    <Button onClick={()=>startWithMode(f,'headless')} variant="primary" size="sm">Lancer</Button>
+                    <Button onClick={()=>startWithMode(f,'dev')} size="sm">Lancer (Dev)</Button>
                   </td>
                 </tr>
-                {running[f.slug] && (
-                  <tr className="border-t border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/30">
-                    <td colSpan={3} className="px-3 py-2">
-                      <div className="text-xs text-neutral-500 mb-2">Journal d’exécution</div>
-                      <div className="space-y-1 max-h-64 overflow-auto pr-2">
-                        {running[f.slug].logs.map((l, i) => (
-                          <div key={i} className="text-xs flex items-center gap-2">
-                            <span className={`px-1.5 py-0.5 rounded ${badge(l.status)}`}>{l.status}</span>
-                            <span className="text-neutral-700 dark:text-neutral-300">[{l.type}{l.stepIndex!==undefined?`#${l.stepIndex+1}`:''}]</span>
-                            {l.message && <span className="opacity-80">— {l.message}</span>}
-                            {l.screenshotPath && <a className="underline ml-auto" onClick={()=>window.api.automation.openRunDir(running[f.slug].dir!)}>captures</a>}
-                          </div>
-                        ))}
-                      </div>
-                    </td>
-                  </tr>
-                )}
+                
               </React.Fragment>
             ))}
           </tbody>
         </table>
       </div>
+
+      <RunHistory reloadToken={historyTick} />
     </section>
   )
 }
@@ -106,4 +96,3 @@ function badge(status: string) {
   }
   return map[status] || map.info
 }
-

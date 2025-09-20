@@ -53,6 +53,7 @@ app/
 *.db
 *.sqlite
 *.sqlite3
+dev-data/
 
 # Cache
 .cache/

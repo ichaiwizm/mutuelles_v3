@@ -10,7 +10,9 @@
     "build": "electron-vite build && electron-builder -c electron-builder.yml",
     "preview": "electron-vite preview",
     "typecheck": "tsc --noEmit",
-    "postinstall": "electron-builder install-app-deps"
+    "postinstall": "electron-builder install-app-deps",
+    "cmd:add-platform": "node scripts/commands/add_platform.mjs",
+    "cmd:add-flow": "node scripts/commands/add_flow.mjs"
   },
   "dependencies": {
     "better-sqlite3": "12.2.0",

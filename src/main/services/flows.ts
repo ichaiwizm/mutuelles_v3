@@ -4,7 +4,7 @@ export type Flow = { id:number; slug:string; name:string; platform_id:number; pl
 export type FlowStep = {
   id:number; flow_id:number; order_index:number; type:string;
   selector?:string|null; value?:string|null; url?:string|null; screenshot_label?:string|null;
-  timeout_ms?:number|null; assert_text?:string|null; wait_for?:string|null; meta_json?:string|null
+  timeout_ms?:number|null; assert_text?:string|null
 }
 
 export function listFlows(): Flow[] {
@@ -29,9 +29,8 @@ export function getFlowBySlug(slug: string) {
 
 export function listSteps(flowId: number): FlowStep[] {
   const rows = getDb().prepare(`
-    SELECT id, flow_id, order_index, type, selector, value, url, screenshot_label, timeout_ms, assert_text, wait_for, meta_json
+    SELECT id, flow_id, order_index, type, selector, value, url, screenshot_label, timeout_ms, assert_text
     FROM flow_steps WHERE flow_id = ? ORDER BY order_index, id
   `).all(flowId) as any[]
   return rows as FlowStep[]
 }
-
