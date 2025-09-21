@@ -26,6 +26,11 @@ export default function Flows() {
       toast.update(tid, { type:'success', title: mode==='dev'?'Flux (Dev) en cours':'Flux en cours', message: flow.name, duration: 2000 })
       setRunning(prev => ({ ...prev, [flow.slug]: { runId, logs: [], dir: screenshotsDir } }))
       const off = window.api.automation.onProgress(runId, (evt: Progress) => {
+        // Log de debug en mode Dev
+        if (evt.type === 'info') {
+          // eslint-disable-next-line no-console
+          console.debug('[automation]', evt.status, evt.message)
+        }
         setRunning(prev => ({ ...prev, [flow.slug]: { runId, logs: [...(prev[flow.slug]?.logs||[]), evt], dir: screenshotsDir } }))
         if (evt.type === 'run' && (evt.status === 'success' || evt.status === 'error')) {
           setHistoryTick(Date.now())

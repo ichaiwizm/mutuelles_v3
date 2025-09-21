@@ -1,7 +1,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { app, safeStorage } from 'electron'
-import { z } from 'zod'
 import { chromium, type BrowserContext, type Page } from 'playwright-core'
 import { getFlowBySlug, listSteps } from './flows'
 import { getDb } from '../db/connection'
@@ -11,7 +10,7 @@ type ProgressEvent = {
   runId: string
   stepIndex?: number
   type: string
-  status: 'start' | 'success' | 'error' | 'info'
+  status: 'start' | 'success' | 'error'
   message?: string
   screenshotPath?: string
 }
@@ -60,7 +59,6 @@ export async function runFlow(flowSlug: string, onProgress: (e: ProgressEvent) =
   const summary: any = { runId, flow: flow.slug, startedAt, steps: [], screenshotsDir: baseDir }
 
   try {
-    // Lancement Chrome persistant (mode)
     const headless = opts?.mode !== 'dev'
     const keepOpen = opts?.mode === 'dev'
     const args: any = { headless, executablePath: chrome }
@@ -76,8 +74,7 @@ export async function runFlow(flowSlug: string, onProgress: (e: ProgressEvent) =
       const t0 = Date.now()
 
       try {
-        const maybeNewPage = await execStep(page, s, { username: creds.username!, password, platform_id: flow.platform_id, context })
-        if (maybeNewPage) page = maybeNewPage
+        await execStep(page, s, { username: creds.username!, password, platform_id: flow.platform_id })
         const shotPath = path.join(baseDir, `step-${String(idx+1).padStart(2,'0')}-${slugify(label)}.png`)
         if (s.type !== 'screenshot') await page.screenshot({ path: shotPath })
         else await page.screenshot({ path: shotPath })
@@ -147,49 +144,20 @@ async function execStep(page: Page, s: any, ctx: { username: string; password: s
         }
         if (!target) throw new Error('URL manquante (goto)')
         await page.goto(target, { waitUntil: 'domcontentloaded' })
-        return null
       }
-    case 'newPage':
-      {
-        const target = s.url as string | null
-        if (!target) throw new Error('URL manquante (newPage)')
-        const newPage = await (ctx.context as BrowserContext).newPage()
-        await newPage.goto(target, { waitUntil: 'domcontentloaded' })
-        return newPage
-      }
+      return null
     case 'waitFor':
       if (!s.selector) throw new Error('Sélecteur manquant')
       await page.waitForSelector(s.selector)
-      return null
-    case 'waitForOptional':
-      if (!s.selector) throw new Error('Sélecteur manquant')
-      try { await page.waitForSelector(s.selector) } catch {}
       return null
     case 'fill': {
       if (!s.selector) throw new Error('Sélecteur manquant')
       const raw = (s.value || '').replace('{username}', ctx.username).replace('{password}', ctx.password)
       await page.fill(s.selector, raw)
       return null }
-    case 'fillIfVisible': {
-      if (!s.selector) throw new Error('Sélecteur manquant')
-      try {
-        const visible = await page.locator(s.selector).isVisible()
-        if (visible) {
-          const raw = (s.value || '').replace('{username}', ctx.username).replace('{password}', ctx.password)
-          await page.fill(s.selector, raw)
-        }
-      } catch {}
-      return null }
     case 'click':
       if (!s.selector) throw new Error('Sélecteur manquant')
       await page.click(s.selector)
-      return null
-    case 'clickIfVisible':
-      if (!s.selector) throw new Error('Sélecteur manquant')
-      try {
-        const visible = await page.locator(s.selector).isVisible()
-        if (visible) await page.click(s.selector)
-      } catch {}
       return null
     case 'assertText':
       if (!s.selector || !s.assert_text) throw new Error('Paramètres manquants')

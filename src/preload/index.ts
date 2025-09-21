@@ -41,7 +41,8 @@ contextBridge.exposeInMainWorld('api', {
     listScreenshots: (runId: string) => ipcRenderer.invoke('automation:listScreenshots', runId) as Promise<string[]>,
     getScreenshot: (runId: string, filename: string) => ipcRenderer.invoke('automation:getScreenshot', { runId, filename }) as Promise<string>,
     exportRunJson: (runId: string) => ipcRenderer.invoke('automation:exportRunJson', runId) as Promise<string|null>,
-    deleteRun: (runId: string) => ipcRenderer.invoke('automation:deleteRun', runId) as Promise<boolean>
+    deleteRun: (runId: string) => ipcRenderer.invoke('automation:deleteRun', runId) as Promise<boolean>,
+    listFlowSteps: (flowSlug: string) => ipcRenderer.invoke('automation:listFlowSteps', flowSlug) as Promise<any[]>
   },
   credentials: {
     listSelected: () => ipcRenderer.invoke('pcreds:listSelected') as Promise<Array<{ platform_id:number; name:string; status:string; selected:boolean; has_creds:boolean; username:string|null }>>,
@@ -98,6 +99,7 @@ declare global {
         getScreenshot: (runId: string, filename: string) => Promise<string>
         exportRunJson: (runId: string) => Promise<string|null>
         deleteRun: (runId: string) => Promise<boolean>
+        listFlowSteps: (flowSlug: string) => Promise<any[]>
       }
     }
   }

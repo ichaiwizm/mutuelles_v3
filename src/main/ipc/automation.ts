@@ -2,7 +2,7 @@ import { ipcMain, shell, BrowserWindow } from 'electron'
 import { z } from 'zod'
 import path from 'node:path'
 import fs from 'node:fs'
-import { listFlows } from '../services/flows'
+import { listFlows, getFlowBySlug, listSteps } from '../services/flows'
 import { runFlow } from '../services/automation'
 import { listRuns, getRun, listScreenshots, getScreenshotData, exportRunJson } from '../services/runs'
 
@@ -53,4 +53,10 @@ export function registerAutomationIpc() {
     return deleteRun(runId)
   })
 
+  ipcMain.handle('automation:listFlowSteps', async (_e, flowSlug: unknown) => {
+    if (typeof flowSlug !== 'string' || !flowSlug) throw new Error('flowSlug invalide')
+    const flow = getFlowBySlug(flowSlug)
+    if (!flow) throw new Error('Flux introuvable')
+    return listSteps(flow.id)
+  })
 }
