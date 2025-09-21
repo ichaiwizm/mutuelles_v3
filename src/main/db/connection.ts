@@ -7,54 +7,42 @@ import { migrate, seedCatalog, seedFlows } from './migrations'
 let db: Database.Database | null = null
 
 export function initDatabase() {
-  const defaultUserData = app.getPath('userData')
-  const defaultFile = path.join(defaultUserData, 'mutuelles.sqlite3')
-  let file = defaultFile
-
-  if (!app.isPackaged) {
-    // DB visible à la racine du repo en dev, sans déplacer le profil Chrome
-    const projectRoot = path.resolve(__dirname, '../../../')
-    const devDir = process.env.MUTUELLES_DB_DIR || path.join(projectRoot, 'dev-data')
-    fs.mkdirSync(devDir, { recursive: true })
-    const devFile = path.join(devDir, 'mutuelles.sqlite3')
-    // Migration automatique depuis anciens emplacements si besoin
-    if (!fs.existsSync(devFile)) {
-      const legacyDirs = [
-        path.join(path.resolve(__dirname, '../../'), 'dev-data'), // out/dev-data
-        path.join(path.resolve(__dirname, '../'), 'dev-data'),    // out/main/dev-data
-      ]
-      let migrated = false
-      for (const d of legacyDirs) {
-        const lf = path.join(d, 'mutuelles.sqlite3')
-        if (fs.existsSync(lf)) {
-          try {
-            fs.copyFileSync(lf, devFile)
-            const wal = lf + '-wal'
-            const shm = lf + '-shm'
-            if (fs.existsSync(wal)) fs.copyFileSync(wal, devFile + '-wal')
-            if (fs.existsSync(shm)) fs.copyFileSync(shm, devFile + '-shm')
-            migrated = true
-            break
-          } catch (e) {
-            console.warn('Copie depuis legacy dev-data échouée:', e)
-          }
-        }
-      }
-      // Sinon migration depuis le userData par défaut
-      if (!migrated && fs.existsSync(defaultFile)) {
+  // DB unique dans le dossier du projet: dev-data/mutuelles.sqlite3 (quel que soit le mode)
+  // Détection robuste du projet (bundlé: __dirname est souvent out/main)
+  const candidateRoots = [
+    process.cwd(),
+    path.resolve(app.getAppPath(), '..'),
+    path.resolve(__dirname, '../../'),
+    path.resolve(__dirname, '../'),
+    path.resolve(__dirname, '../../../')
+  ]
+  const projectRoot = candidateRoots.find(p => fs.existsSync(path.join(p, 'package.json'))) || process.cwd()
+  const devDir = process.env.MUTUELLES_DB_DIR || path.join(projectRoot, 'dev-data')
+  fs.mkdirSync(devDir, { recursive: true })
+  const devFile = path.join(devDir, 'mutuelles.sqlite3')
+  // Migration automatique depuis anciens emplacements dev-only si besoin (sans toucher userData)
+  if (!fs.existsSync(devFile)) {
+    const legacyDirs = [
+      path.join(path.resolve(__dirname, '../../'), 'dev-data'), // out/dev-data
+      path.join(path.resolve(__dirname, '../'), 'dev-data'),    // out/main/dev-data
+    ]
+    for (const d of legacyDirs) {
+      const lf = path.join(d, 'mutuelles.sqlite3')
+      if (fs.existsSync(lf)) {
         try {
-          fs.copyFileSync(defaultFile, devFile)
-          const wal = defaultFile + '-wal'
-          const shm = defaultFile + '-shm'
+          fs.copyFileSync(lf, devFile)
+          const wal = lf + '-wal'
+          const shm = lf + '-shm'
           if (fs.existsSync(wal)) fs.copyFileSync(wal, devFile + '-wal')
           if (fs.existsSync(shm)) fs.copyFileSync(shm, devFile + '-shm')
+          break
         } catch (e) {
-          console.warn('Migration DB dev depuis userData échouée:', e)
+          console.warn('Copie depuis legacy dev-data échouée:', e)
         }
       }
     }
-    file = devFile
   }
+  const file = devFile
   try {
     db = new Database(file)
     db.pragma('journal_mode = WAL')
