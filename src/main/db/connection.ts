@@ -2,7 +2,7 @@ import Database from 'better-sqlite3'
 import path from 'node:path'
 import fs from 'node:fs'
 import { app } from 'electron'
-import { migrate, seedCatalog, seedFlows } from './migrations'
+import { migrate, seedCatalog, seedFlows, ensureFlowUpgrades } from './migrations'
 
 let db: Database.Database | null = null
 
@@ -62,6 +62,7 @@ export function initDatabase() {
     migrate(db)
     seedCatalog(db)
     seedFlows(db)
+    ensureFlowUpgrades(db)
     return db
   } catch (e) {
     try { db?.close() } catch {}
@@ -74,6 +75,7 @@ export function initDatabase() {
     migrate(db)
     seedCatalog(db)
     seedFlows(db)
+    ensureFlowUpgrades(db)
     return db
   }
 }

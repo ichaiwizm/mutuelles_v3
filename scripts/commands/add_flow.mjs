@@ -15,6 +15,13 @@ function parseArgs() {
     else if (a === '--inactive') out.active = false
     else if (a === '--help') out.help = true
   }
+  // Fallback positionnel: platform slug name steps
+  if (!out.platform && args.length >= 4 && !args[0].startsWith('--')) {
+    out.platform = args[0]
+    out.slug = args[1]
+    out.name = args[2]
+    out.steps = args[3]
+  }
   return out
 }
 
@@ -61,4 +68,3 @@ async function main() {
 }
 
 main().catch(err => { console.error(err); process.exit(1) })
-

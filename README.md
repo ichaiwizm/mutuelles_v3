@@ -52,6 +52,8 @@ Conséquence: les URLs des pages (ex: login) sont maintenant stockées en colonn
 ### Commandes Dev (administration)
 Permettent d’ajouter/mettre à jour une plateforme et un flux sans toucher au code.
 
+- Important (Windows/Node natif vs Electron): les modules natifs sont reconstruits pour Electron. Les commandes CLI utilisent Electron en mode Node via `ELECTRON_RUN_AS_NODE=1` pour éviter les erreurs `NODE_MODULE_VERSION`.
+
 - Ajouter une plateforme (avec page login + champs):
   - `npm run cmd:add-platform -- --slug alptis --name "Alptis" --login https://pro.alptis.org/ --select --field username:text:required --field password:password:required:secure`
   - Options: `--base`, `--website`, `--field key:type[:required][:secure]` (répétable). Par défaut, username/password sont ajoutés si aucun `--field` n’est fourni.
@@ -194,3 +196,6 @@ Livrables
 - Zéro perte de données sans accord
 
 Fin du handover — l’utilisateur validera chaque étape avant la suite.
+
+Astuce PowerShell si besoin (positionnel):
+- `npm run cmd:add-flow -- alptis alptis_login "Connexion Alptis" scripts/flows/alptis_login.json`

@@ -89,26 +89,26 @@ export default function ScreenshotGallery({ runId }: Props) {
       </div>
 
       {active && dataUrls[active] && (
-        <div className="fixed inset-0 bg-black/70 z-[10000] flex items-center justify-center p-4" onClick={close}>
+        <div className="fixed inset-0 bg-black/70 z-[10000] flex items-center justify-center p-4 select-none" onClick={close} onMouseDown={(e)=>e.preventDefault()}>
           {/* zone gauche */}
           {index > 0 && (
             <div
               role="button"
               aria-label="Précédent"
               onClick={(e)=>{ e.stopPropagation(); prev() }}
-              className="absolute inset-y-0 left-0 w-16 md:w-24 flex items-center justify-center bg-gradient-to-r from-black/40 to-transparent cursor-pointer z-[10001]"
+              className="absolute inset-y-0 left-0 w-16 md:w-24 flex items-center justify-center bg-gradient-to-r from-black/40 to-transparent cursor-pointer z-[10001] select-none"
             >
               <ChevronLeft size={36} className="text-white drop-shadow" />
             </div>
           )}
-          <img src={dataUrls[active]} alt={active} className="max-h-full max-w-full rounded shadow-lg z-[10000]" onClick={(e)=>e.stopPropagation()} />
+          <img src={dataUrls[active]} alt={active} className="max-h-full max-w-full rounded shadow-lg z-[10000] select-none" onClick={(e)=>e.stopPropagation()} draggable={false} />
           {/* zone droite */}
           {index < files.length - 1 && (
             <div
               role="button"
               aria-label="Suivant"
               onClick={(e)=>{ e.stopPropagation(); next() }}
-              className="absolute inset-y-0 right-0 w-16 md:w-24 flex items-center justify-center bg-gradient-to-l from-black/40 to-transparent cursor-pointer z-[10001]"
+              className="absolute inset-y-0 right-0 w-16 md:w-24 flex items-center justify-center bg-gradient-to-l from-black/40 to-transparent cursor-pointer z-[10001] select-none"
             >
               <ChevronRight size={36} className="text-white drop-shadow" />
             </div>

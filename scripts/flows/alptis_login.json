@@ -1,0 +1,16 @@
+[
+  { "type": "goto", "url": "https://pro.alptis.org/", "screenshot_label": "accueil" },
+  { "type": "waitForOptional", "selector": "#axeptio_btn_acceptAll", "timeout_ms": 8000, "screenshot_label": "cookies-visible" },
+  { "type": "clickIfVisible", "selector": "#axeptio_btn_acceptAll", "screenshot_label": "cookies-ok" },
+
+  { "type": "waitForOptional", "selector": "#username", "timeout_ms": 5000, "screenshot_label": "login-form" },
+  { "type": "fillIfVisible", "selector": "#username", "value": "{username}", "screenshot_label": "fill-user" },
+  { "type": "fillIfVisible", "selector": "#password", "value": "{password}", "screenshot_label": "fill-pass" },
+  { "type": "clickIfVisible", "selector": "button[type=submit]", "screenshot_label": "submit" },
+
+  { "type": "waitForOptional", "selector": "#axeptio_btn_acceptAll", "timeout_ms": 8000, "screenshot_label": "cookies-visible-2" },
+  { "type": "clickIfVisible", "selector": "#axeptio_btn_acceptAll", "screenshot_label": "cookies-ok-2" },
+
+  { "type": "newPage", "url": "https://pro.alptis.org/sante-select/informations-projet/", "timeout_ms": 15000, "screenshot_label": "open-projet" },
+  { "type": "screenshot", "screenshot_label": "projet-loaded" }
+]

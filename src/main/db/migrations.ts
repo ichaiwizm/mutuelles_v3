@@ -275,6 +275,34 @@ export function seedFlows(db: Database.Database) {
       insertStep.run(fid, i++, 'fill', '#password', '{password}', null, 'fill-pass', 0, null)
       insertStep.run(fid, i++, 'click', 'button[type="submit"]', null, null, 'submit', 0, null)
       insertStep.run(fid, i++, 'screenshot', null, null, null, 'after-submit', 0, null)
+      // Cookies Axeptio
+      insertStep.run(fid, i++, 'waitFor', '#axeptio_btn_acceptAll', null, null, 'cookies-visible', 10000, null)
+      insertStep.run(fid, i++, 'click', '#axeptio_btn_acceptAll', null, null, 'cookies-ok', 0, null)
+      // Ouvrir la page projet dans un nouvel onglet
+      insertStep.run(fid, i++, 'newPage', null, null, 'https://pro.alptis.org/sante-select/informations-projet/', 'open-projet', 15000, null)
+      insertStep.run(fid, i++, 'screenshot', null, null, null, 'projet-loaded', 0, null)
     }
   })()
+}
+
+// Idempotent small upgrades for existing flows in dev
+export function ensureFlowUpgrades(db: Database.Database) {
+  try {
+    // Ensure alptis_login contains cookies accept and newPage to projet
+    const flow = db.prepare("SELECT id, platform_id FROM flows_catalog WHERE slug = 'alptis_login'").get() as { id?: number; platform_id?: number } | undefined
+    if (!flow?.id) return
+    const fid = Number(flow.id)
+    const count = (db.prepare('SELECT COUNT(*) as c FROM flow_steps WHERE flow_id = ? AND (selector = ? OR type = ?)')
+      .get(fid, '#axeptio_btn_acceptAll', 'newPage') as { c: number }).c
+    if (count > 0) return
+
+    const insertStep = db.prepare(`INSERT INTO flow_steps(flow_id, order_index, type, selector, value, url, screenshot_label, timeout_ms, assert_text)
+                                   VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+    const cur = db.prepare('SELECT id, order_index FROM flow_steps WHERE flow_id = ? ORDER BY order_index, id').all(fid) as Array<{ id:number; order_index:number }>
+    let i = (cur[cur.length-1]?.order_index ?? 0) + 1
+    insertStep.run(fid, i++, 'waitFor', '#axeptio_btn_acceptAll', null, null, 'cookies-visible', 10000, null)
+    insertStep.run(fid, i++, 'click', '#axeptio_btn_acceptAll', null, null, 'cookies-ok', 0, null)
+    insertStep.run(fid, i++, 'newPage', null, null, 'https://pro.alptis.org/sante-select/informations-projet/', 'open-projet', 15000, null)
+    insertStep.run(fid, i++, 'screenshot', null, null, null, 'projet-loaded', 0, null)
+  } catch {}
 }

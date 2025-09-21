@@ -76,7 +76,8 @@ export async function runFlow(flowSlug: string, onProgress: (e: ProgressEvent) =
       const t0 = Date.now()
 
       try {
-        await execStep(page, s, { username: creds.username!, password, platform_id: flow.platform_id })
+        const maybeNewPage = await execStep(page, s, { username: creds.username!, password, platform_id: flow.platform_id, context })
+        if (maybeNewPage) page = maybeNewPage
         const shotPath = path.join(baseDir, `step-${String(idx+1).padStart(2,'0')}-${slugify(label)}.png`)
         if (s.type !== 'screenshot') await page.screenshot({ path: shotPath })
         else await page.screenshot({ path: shotPath })
@@ -133,7 +134,7 @@ function describeStep(s: any) {
   }
 }
 
-async function execStep(page: Page, s: any, ctx: { username: string; password: string; platform_id?: number }) {
+async function execStep(page: Page, s: any, ctx: { username: string; password: string; platform_id?: number; context?: BrowserContext }): Promise<Page|null> {
   if (s.timeout_ms) page.setDefaultTimeout(s.timeout_ms)
   switch (s.type) {
     case 'goto':
@@ -146,33 +147,62 @@ async function execStep(page: Page, s: any, ctx: { username: string; password: s
         }
         if (!target) throw new Error('URL manquante (goto)')
         await page.goto(target, { waitUntil: 'domcontentloaded' })
+        return null
       }
-      break
+    case 'newPage':
+      {
+        const target = s.url as string | null
+        if (!target) throw new Error('URL manquante (newPage)')
+        const newPage = await (ctx.context as BrowserContext).newPage()
+        await newPage.goto(target, { waitUntil: 'domcontentloaded' })
+        return newPage
+      }
     case 'waitFor':
       if (!s.selector) throw new Error('Sélecteur manquant')
       await page.waitForSelector(s.selector)
-      break
+      return null
+    case 'waitForOptional':
+      if (!s.selector) throw new Error('Sélecteur manquant')
+      try { await page.waitForSelector(s.selector) } catch {}
+      return null
     case 'fill': {
       if (!s.selector) throw new Error('Sélecteur manquant')
       const raw = (s.value || '').replace('{username}', ctx.username).replace('{password}', ctx.password)
       await page.fill(s.selector, raw)
-      break }
+      return null }
+    case 'fillIfVisible': {
+      if (!s.selector) throw new Error('Sélecteur manquant')
+      try {
+        const visible = await page.locator(s.selector).isVisible()
+        if (visible) {
+          const raw = (s.value || '').replace('{username}', ctx.username).replace('{password}', ctx.password)
+          await page.fill(s.selector, raw)
+        }
+      } catch {}
+      return null }
     case 'click':
       if (!s.selector) throw new Error('Sélecteur manquant')
       await page.click(s.selector)
-      break
+      return null
+    case 'clickIfVisible':
+      if (!s.selector) throw new Error('Sélecteur manquant')
+      try {
+        const visible = await page.locator(s.selector).isVisible()
+        if (visible) await page.click(s.selector)
+      } catch {}
+      return null
     case 'assertText':
       if (!s.selector || !s.assert_text) throw new Error('Paramètres manquants')
       await page.waitForSelector(s.selector)
       const txt = await page.locator(s.selector).innerText()
       if (!txt.includes(String(s.assert_text))) throw new Error('Texte attendu introuvable')
-      break
+      return null
     case 'screenshot':
       // Rien ici: screenshot fait côté runner pour standardiser le nommage
-      break
+      return null
     case 'sleep':
       await new Promise(r => setTimeout(r, s.timeout_ms || 0))
-      break
+      return null
     default:
       throw new Error(`Type d'étape inconnu: ${s.type}`)
   }
