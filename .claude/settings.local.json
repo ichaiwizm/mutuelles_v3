@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(sqlite3:*)",
+      "Read(//mnt/c/Users/ichai/AppData/Roaming/mutuelles_v3/runs/alptis_login/**)",
+      "Bash(cat:*)",
+      "Read(//mnt/c/Users/ichai/AppData/Roaming/mutuelles_v3/**)",
+      "Bash(sed:*)",
+      "Bash(awk:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
