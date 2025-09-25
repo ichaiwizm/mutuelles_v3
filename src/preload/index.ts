@@ -42,6 +42,7 @@ contextBridge.exposeInMainWorld('api', {
     getScreenshot: (runId: string, filename: string) => ipcRenderer.invoke('automation:getScreenshot', { runId, filename }) as Promise<string>,
     exportRunJson: (runId: string) => ipcRenderer.invoke('automation:exportRunJson', runId) as Promise<string|null>,
     deleteRun: (runId: string) => ipcRenderer.invoke('automation:deleteRun', runId) as Promise<boolean>,
+    deleteAllRuns: () => ipcRenderer.invoke('automation:deleteAllRuns') as Promise<{ deleted: number }>,
     listFlowSteps: (flowSlug: string) => ipcRenderer.invoke('automation:listFlowSteps', flowSlug) as Promise<any[]>
   },
   credentials: {
@@ -99,6 +100,7 @@ declare global {
         getScreenshot: (runId: string, filename: string) => Promise<string>
         exportRunJson: (runId: string) => Promise<string|null>
         deleteRun: (runId: string) => Promise<boolean>
+        deleteAllRuns: () => Promise<{ deleted: number }>
         listFlowSteps: (flowSlug: string) => Promise<any[]>
       }
     }

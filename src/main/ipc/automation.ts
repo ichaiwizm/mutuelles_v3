@@ -53,6 +53,11 @@ export function registerAutomationIpc() {
     return deleteRun(runId)
   })
 
+  ipcMain.handle('automation:deleteAllRuns', async () => {
+    const { deleteAllRuns } = await import('../services/runs')
+    return deleteAllRuns()
+  })
+
   ipcMain.handle('automation:listFlowSteps', async (_e, flowSlug: unknown) => {
     if (typeof flowSlug !== 'string' || !flowSlug) throw new Error('flowSlug invalide')
     const flow = getFlowBySlug(flowSlug)

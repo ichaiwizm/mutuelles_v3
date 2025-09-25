@@ -78,6 +78,26 @@ export function deleteRun(runId: string) {
   return true
 }
 
+export function deleteAllRuns() {
+  const db = getDb()
+  const rows = db.prepare('SELECT screenshots_dir as dir, json_path as jsonPath FROM flows_runs').all() as { dir?: string; jsonPath?: string }[]
+
+  db.prepare('DELETE FROM flows_runs').run()
+
+  for (const row of rows) {
+    try { if (row.jsonPath && fs.existsSync(row.jsonPath)) fs.unlinkSync(row.jsonPath) } catch {}
+    try {
+      if (row.dir && fs.existsSync(row.dir)) {
+        // Node 22: rmSync récursif
+        // @ts-ignore
+        fs.rmSync(row.dir, { recursive: true, force: true })
+      }
+    } catch {}
+  }
+
+  return { deleted: rows.length }
+}
+
 function backfillIfEmpty(flowSlug?: string) {
   const db = getDb()
   const where = flowSlug ? 'WHERE flow_slug = ?' : ''

@@ -2,6 +2,7 @@ import React from 'react'
 import Button from './Button'
 import ConfirmModal from './ConfirmModal'
 import ScreenshotGallery from './ScreenshotGallery'
+import { useToastContext } from '../contexts/ToastContext'
 
 type RunRow = { runId:string; flowSlug:string; startedAt:string; finishedAt?:string|null; status:string; stepsTotal?:number|null; okSteps?:number|null; error?:string|null }
 
@@ -11,9 +12,12 @@ export default function RunHistory({ flowSlug, reloadToken }: { flowSlug?: strin
   const [json, setJson] = React.useState<any>(null)
   const [showJson, setShowJson] = React.useState(false)
   const [confirmDelete, setConfirmDelete] = React.useState<RunRow | null>(null)
+  const [confirmDeleteAll, setConfirmDeleteAll] = React.useState(false)
+  const [loadingDeleteAll, setLoadingDeleteAll] = React.useState(false)
   const [total, setTotal] = React.useState(0)
   const [page, setPage] = React.useState(1)
   const pageSize = 10
+  const toast = useToastContext()
 
   const load = React.useCallback(async () => {
     const offset = (page - 1) * pageSize
@@ -77,12 +81,49 @@ export default function RunHistory({ flowSlug, reloadToken }: { flowSlug?: strin
     } catch {}
   }
 
+  async function doDeleteAll() {
+    setLoadingDeleteAll(true)
+    const tid = toast.loading('Suppression de tout l\'historique…')
+    try {
+      const result = await window.api.automation.deleteAllRuns()
+      setConfirmDeleteAll(false)
+      setSelected(null)
+      setJson(null)
+      setShowJson(false)
+      setPage(1)
+      await load()
+      toast.update(tid, {
+        type: 'success',
+        title: 'Historique effacé',
+        message: `${result.deleted} exécution${result.deleted > 1 ? 's' : ''} supprimée${result.deleted > 1 ? 's' : ''}`,
+        duration: 3000
+      })
+    } catch (e) {
+      toast.update(tid, {
+        type: 'error',
+        title: 'Erreur',
+        message: 'Impossible de supprimer l\'historique',
+        duration: 5000
+      })
+    } finally {
+      setLoadingDeleteAll(false)
+    }
+  }
+
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <div className="text-sm font-medium">Historique</div>
-        <div className="text-xs">
+        <div className="text-xs space-x-3">
           <button className="underline" onClick={load}>Rafraîchir</button>
+          {total > 0 && (
+            <button
+              className="underline text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300"
+              onClick={() => setConfirmDeleteAll(true)}
+            >
+              Supprimer tout
+            </button>
+          )}
         </div>
       </div>
       <div className="rounded-md border border-neutral-200 dark:border-neutral-800 overflow-hidden">
@@ -163,9 +204,19 @@ export default function RunHistory({ flowSlug, reloadToken }: { flowSlug?: strin
         onClose={()=>setConfirmDelete(null)}
         onConfirm={doDelete}
         title="Supprimer le run"
-        message="Supprimer cet historique d’exécution et les fichiers associés (captures et journal) ? Cette action est irréversible."
+        message="Supprimer cet historique d'exécution et les fichiers associés (captures et journal) ? Cette action est irréversible."
         confirmText="Supprimer"
         loading={false}
+      />
+
+      <ConfirmModal
+        isOpen={confirmDeleteAll}
+        onClose={() => setConfirmDeleteAll(false)}
+        onConfirm={doDeleteAll}
+        title="Supprimer tout l'historique"
+        message={`Supprimer tous les historiques d'exécution (${total} exécution${total > 1 ? 's' : ''}) et tous les fichiers associés (captures et journaux) ? Cette action est irréversible.`}
+        confirmText="Tout supprimer"
+        loading={loadingDeleteAll}
       />
     </div>
   )
