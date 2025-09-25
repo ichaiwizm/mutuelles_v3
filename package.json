@@ -12,14 +12,14 @@
     "typecheck": "tsc --noEmit",
     "postinstall": "electron-builder install-app-deps",
     "cmd:add-platform": "cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/commands/add_platform.mjs",
-    "flows:export": "node scripts/flows/export_flow.mjs",
-    "flows:export:all": "node scripts/flows/export_flow.mjs --all",
-    "flows:export:slug": "node scripts/flows/export_flow.mjs --slug",
-    "flows:add": "node scripts/flows/add_flow.mjs",
-    "flows:update": "node scripts/flows/update_flow.mjs",
-    "flows:delete": "node scripts/flows/delete_flow.mjs",
+    "flows:export": "cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/flows/export_flow.mjs",
+    "flows:export:all": "cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/flows/export_flow.mjs --all",
+    "flows:export:slug": "cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/flows/export_flow.mjs --slug",
+    "flows:add": "cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/flows/add_flow.mjs",
+    "flows:update": "cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/flows/update_flow.mjs",
+    "flows:delete": "cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/flows/delete_flow.mjs",
     "flows:lint": "node scripts/flows/lint_flows.mjs",
-    "flows:sync": "node scripts/flows/sync_flows.mjs"
+    "flows:sync": "cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/flows/sync_flows.mjs"
   },
   "dependencies": {
     "better-sqlite3": "^12.4.1",
