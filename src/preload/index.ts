@@ -28,7 +28,7 @@ contextBridge.exposeInMainWorld('api', {
   },
   automation: {
     listFlows: () => ipcRenderer.invoke('automation:listFlows') as Promise<Array<{ id:number; slug:string; name:string; platform_id:number; platform:string; active:boolean }>>,
-    run: (payload: { flowSlug: string; mode?: 'headless'|'dev' }) => ipcRenderer.invoke('automation:run', payload) as Promise<{ runId:string; screenshotsDir:string }>,
+    run: (payload: { flowSlug: string; mode?: 'headless'|'dev'|'dev_private' }) => ipcRenderer.invoke('automation:run', payload) as Promise<{ runId:string; screenshotsDir:string }>,
     onProgress: (runId: string, cb: (e: any) => void) => {
       const channel = `automation:progress:${runId}`
       const handler = (_: any, data: any) => cb(data)
@@ -90,7 +90,7 @@ declare global {
       }
       automation: {
         listFlows: () => Promise<Array<{ id:number; slug:string; name:string; platform_id:number; platform:string; active:boolean }>>
-        run: (payload: { flowSlug: string; mode?: 'headless'|'dev' }) => Promise<{ runId:string; screenshotsDir:string }>
+        run: (payload: { flowSlug: string; mode?: 'headless'|'dev'|'dev_private' }) => Promise<{ runId:string; screenshotsDir:string }>
         onProgress: (runId: string, cb: (e:any)=>void) => (()=>void)
         openRunDir: (dir: string) => Promise<string>
         listRuns: (params?: { flowSlug?: string; limit?: number; offset?: number }) => Promise<{ items: Array<{ runId:string; flowSlug:string; startedAt:string; finishedAt?:string|null; status:string; screenshotsDir?:string|null; jsonPath?:string|null; stepsTotal?:number|null; okSteps?:number|null; error?:string|null }>; total: number }>

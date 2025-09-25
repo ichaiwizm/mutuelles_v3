@@ -10,7 +10,7 @@ export function registerAutomationIpc() {
   ipcMain.handle('automation:listFlows', async () => listFlows())
 
   ipcMain.handle('automation:run', async (e, payload: unknown) => {
-    const parsed = z.object({ flowSlug: z.string().min(1), mode: z.enum(['headless','dev']).optional() }).parse(payload)
+    const parsed = z.object({ flowSlug: z.string().min(1), mode: z.enum(['headless','dev','dev_private']).optional() }).parse(payload)
     const sender = BrowserWindow.fromWebContents(e.sender)
     if (!sender) throw new Error('Fenêtre introuvable')
     return runFlow(parsed.flowSlug, (evt) => {

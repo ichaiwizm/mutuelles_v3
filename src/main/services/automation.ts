@@ -1,7 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { app, safeStorage } from 'electron'
-import { chromium, type BrowserContext, type Page } from 'playwright-core'
+import { chromium, type Browser, type BrowserContext, type Page } from 'playwright-core'
 import { getFlowBySlug, listSteps } from './flows'
 import { getDb } from '../db/connection'
 import { getChromePath } from './chrome'
@@ -17,7 +17,7 @@ type ProgressEvent = {
 
 const activeByProfile = new Map<string, boolean>()
 
-export async function runFlow(flowSlug: string, onProgress: (e: ProgressEvent) => void, opts?: { mode?: 'headless'|'dev' }) {
+export async function runFlow(flowSlug: string, onProgress: (e: ProgressEvent) => void, opts?: { mode?: 'headless'|'dev'|'dev_private' }) {
   const flow = getFlowBySlug(flowSlug)
   if (!flow) throw new Error('Flux introuvable ou inactif')
 
@@ -55,14 +55,22 @@ export async function runFlow(flowSlug: string, onProgress: (e: ProgressEvent) =
         .run(flow.id, runId, flow.slug, startedAt, baseDir, jsonPath)
   send({ type:'run', status:'start', message:`Démarrage run ${flow.slug}` })
   let context: BrowserContext | null = null
+  let browser: Browser | null = null
   let page: Page | null = null
   const summary: any = { runId, flow: flow.slug, startedAt, steps: [], screenshotsDir: baseDir }
 
   try {
-    const headless = opts?.mode !== 'dev'
-    const keepOpen = opts?.mode === 'dev'
-    const args: any = { headless, executablePath: chrome }
-    context = await chromium.launchPersistentContext(prof.user_data_dir, args)
+    const headless = !(opts?.mode === 'dev' || opts?.mode === 'dev_private')
+    const keepOpen = (opts?.mode === 'dev' || opts?.mode === 'dev_private')
+    if (opts?.mode === 'dev_private') {
+      // Navigation privée: contexte non persistant (aucun cache/cookies conservés)
+      browser = await chromium.launch({ headless, executablePath: chrome })
+      context = await browser.newContext()
+    } else {
+      // Modes par défaut: profil persistant (dev) ou headless avec le même profil pour garder l'environnement
+      const args: any = { headless, executablePath: chrome }
+      context = await chromium.launchPersistentContext(prof.user_data_dir, args)
+    }
     page = context.pages()[0] || await context.newPage()
     page.setDefaultTimeout(15000)
 
@@ -106,9 +114,10 @@ export async function runFlow(flowSlug: string, onProgress: (e: ProgressEvent) =
           .run(summary.finishedAt, msg, runId)
     throw e
   } finally {
-    const keepOpen = opts?.mode === 'dev'
+    const keepOpen = (opts?.mode === 'dev' || opts?.mode === 'dev_private')
     if (!keepOpen) {
       try { await context?.close() } catch {}
+      try { await browser?.close() } catch {}
     }
     activeByProfile.delete(prof.user_data_dir)
   }

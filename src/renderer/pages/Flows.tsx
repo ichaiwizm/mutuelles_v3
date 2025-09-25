@@ -19,11 +19,12 @@ export default function Flows() {
 
   async function start(flow: Flow) { return startWithMode(flow, 'headless') }
 
-  async function startWithMode(flow: Flow, mode: 'headless'|'dev') {
+  async function startWithMode(flow: Flow, mode: 'headless'|'dev'|'dev_private') {
     const tid = toast.loading(`Démarrage du flux ${flow.name}…`)
     try {
       const { runId, screenshotsDir } = await window.api.automation.run({ flowSlug: flow.slug, mode })
-      toast.update(tid, { type:'success', title: mode==='dev'?'Flux (Dev) en cours':'Flux en cours', message: flow.name, duration: 2000 })
+      const title = mode==='dev' ? 'Flux (Dev) en cours' : (mode==='dev_private' ? 'Flux (Dev Privé) en cours' : 'Flux en cours')
+      toast.update(tid, { type:'success', title, message: flow.name, duration: 2000 })
       setRunning(prev => ({ ...prev, [flow.slug]: { runId, logs: [], dir: screenshotsDir } }))
       const off = window.api.automation.onProgress(runId, (evt: Progress) => {
         // Log de debug en mode Dev
@@ -61,7 +62,7 @@ export default function Flows() {
             <tr>
               <th className="text-left px-3 py-2">Flux</th>
               <th className="text-left px-3 py-2">Plateforme</th>
-              <th className="px-3 py-2 w-[260px]"></th>
+              <th className="px-3 py-2 w-[400px]"></th>
             </tr>
           </thead>
           <tbody>
@@ -78,6 +79,7 @@ export default function Flows() {
                   <td className="px-3 py-2 text-right space-x-2">
                     <Button onClick={()=>startWithMode(f,'headless')} variant="primary" size="sm">Lancer</Button>
                     <Button onClick={()=>startWithMode(f,'dev')} size="sm">Lancer (Dev)</Button>
+                    <Button onClick={()=>startWithMode(f,'dev_private')} size="sm">Lancer (Dev Privé)</Button>
                   </td>
                 </tr>
                 
