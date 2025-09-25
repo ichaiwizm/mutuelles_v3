@@ -14,6 +14,12 @@ Scripts:
 - `npm run dev` — lance l’app en dev (electron‑vite)
 - `npm run build` — packaging Windows (NSIS)
 - `npm run typecheck` — TypeScript strict
+ - `npm run flows:export` — exporte les flows DB → fichiers JSON
+ - `npm run flows:add -- <file.json>` — ajoute un flow depuis JSON
+ - `npm run flows:update -- <file.json>` — met à jour un flow existant
+ - `npm run flows:delete -- --slug <slug> [--hard]` — supprime (soft par défaut)
+ - `npm run flows:lint` — valide tous les fichiers `flows/**/*.json`
+ - `npm run flows:sync -- [--dir flows] [--apply] [--deactivate-missing]` — synchronise fichiers → DB
 
 Note binaires natifs: `better-sqlite3` est natif. En cas d’erreur après `npm install`: `npx electron-builder install-app-deps`.
 
@@ -58,17 +64,7 @@ Permettent d’ajouter/mettre à jour une plateforme et un flux sans toucher au 
   - `npm run cmd:add-platform -- --slug alptis --name "Alptis" --login https://pro.alptis.org/ --select --field username:text:required --field password:password:required:secure`
   - Options: `--base`, `--website`, `--field key:type[:required][:secure]` (répétable). Par défaut, username/password sont ajoutés si aucun `--field` n’est fourni.
 
-- Ajouter/mettre à jour un flux (steps via JSON):
-  - `npm run cmd:add-flow -- --platform alptis --slug alptis_login --name "Connexion Alptis" --steps steps.json`
-  - Exemple steps.json:
-    `[
-      { "type":"goto" },
-      { "type":"waitFor", "selector":"#username" },
-      { "type":"fill", "selector":"#username", "value":"{username}" },
-      { "type":"fill", "selector":"#password", "value":"{password}" },
-      { "type":"click", "selector":"button[type=submit]" },
-      { "type":"screenshot", "screenshot_label":"after-submit" }
-    ]`
+// Ancienne commande d'ajout de flow retirée au profit des scripts flows:*.
 
 
 Tables:
@@ -198,4 +194,37 @@ Livrables
 Fin du handover — l’utilisateur validera chaque étape avant la suite.
 
 Astuce PowerShell si besoin (positionnel):
-- `npm run cmd:add-flow -- alptis alptis_login "Connexion Alptis" scripts/flows/alptis_login.json`
+// Ancienne commande d'ajout (dépréciée) supprimée.
+
+## Flows as code (JSON)
+
+Chaque flow est décrit dans `flows/<plateforme>/<slug>.json`:
+
+```
+{
+  "version": 1,
+  "platform": "alptis",
+  "slug": "alptis_login",
+  "name": "Connexion Alptis",
+  "active": true,
+  "steps": [
+    { "type": "goto", "url": "https://pro.alptis.org/", "screenshot_label": "accueil", "timeout_ms": 15000 },
+    { "type": "waitFor", "selector": "#username", "screenshot_label": "login-form", "timeout_ms": 10000 },
+    { "type": "fill", "selector": "#username", "value": "{username}", "screenshot_label": "fill-user" },
+    { "type": "fill", "selector": "#password", "value": "{password}", "screenshot_label": "fill-pass" },
+    { "type": "click", "selector": "button[type=\"submit\"]", "screenshot_label": "submit" },
+    { "type": "screenshot", "screenshot_label": "after-submit" }
+  ]
+}
+```
+
+Types supportés: `goto`, `waitFor`, `fill`, `click`, `tryClick`, `assertText`, `screenshot`, `sleep` (et `debugAxeptio` interne).
+
+Règles: `goto.url` requis; `waitFor/click/tryClick/fill.selector` requis; `fill.value` (placeholders `{username}`, `{password}`) ; `assertText.selector/assert_text` requis; `sleep.timeout_ms` requis.
+
+Sécurité & sync:
+- Les commandes effectuent des transactions et valident le schéma JSON.
+- Une sauvegarde DB est créée avant `flows:delete -- --hard` et `flows:sync -- --apply`.
+- `flows:sync` est en dry‑run par défaut. Utiliser `--apply` pour exécuter.
+
+Compat WSL: si `better-sqlite3` pose problème (ELF header), lance les commandes depuis Windows (PowerShell) où Electron et Node natifs Windows sont installés, ou réinstalle les deps sous WSL (`npm ci`).
