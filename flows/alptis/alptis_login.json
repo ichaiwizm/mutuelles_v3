@@ -35,6 +35,16 @@
       "screenshot_label": "submit"
     },
     {
+      "type": "sleep",
+      "timeout_ms": 1500
+    },
+    {
+      "type": "tryClick",
+      "selector": "#axeptio_btn_acceptAll",
+      "screenshot_label": "accept-axeptio",
+      "timeout_ms": 1500
+    },
+    {
       "type": "screenshot",
       "screenshot_label": "after-submit"
     }

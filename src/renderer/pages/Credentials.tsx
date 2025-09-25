@@ -1,5 +1,6 @@
 import React from 'react'
-import { Eye, EyeOff } from 'lucide-react'
+import { Eye, EyeOff, ArrowRight } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import Button from '../components/Button'
 import ConfirmModal from '../components/ConfirmModal'
 import { useToastContext } from '../contexts/ToastContext'
@@ -104,7 +105,20 @@ export default function Credentials() {
           </thead>
           <tbody>
             {rows.length === 0 ? (
-              <tr><td colSpan={5} className="px-3 py-6 text-center text-neutral-500">Aucune plateforme sélectionnée</td></tr>
+              <tr>
+                <td colSpan={5} className="px-3 py-8 text-center">
+                  <div className="space-y-3">
+                    <div className="text-neutral-500">Aucune plateforme sélectionnée</div>
+                    <div className="text-sm text-neutral-400">Vous devez d'abord activer des plateformes pour pouvoir ajouter des identifiants.</div>
+                    <Link to="/platforms">
+                      <Button variant="secondary" size="sm" className="inline-flex items-center gap-2">
+                        Sélectionner des plateformes
+                        <ArrowRight size={14} />
+                      </Button>
+                    </Link>
+                  </div>
+                </td>
+              </tr>
             ) : rows.map((r, index) => (
               <tr key={r.platform_id} className={`border-t border-neutral-200 dark:border-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 ${index % 2 === 0 ? 'bg-white dark:bg-neutral-900' : 'bg-neutral-50/30 dark:bg-neutral-800/20'}`}>
                 <td className="px-3 py-2">{r.name}</td>
