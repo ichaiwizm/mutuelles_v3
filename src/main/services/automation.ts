@@ -123,6 +123,7 @@ function describeStep(s: any) {
     case 'goto': return `Aller sur ${s.url}`
     case 'fill': return `Remplir ${s.selector}`
     case 'click': return `Cliquer ${s.selector}`
+    case 'tryClick': return `Essayer de cliquer ${s.selector}`
     case 'waitFor': return `Attendre ${s.selector}`
     case 'assertText': return `Vérifier texte`
     case 'screenshot': return `Capture écran`
@@ -167,6 +168,15 @@ async function execStep(page: Page, s: any, ctx: { username: string; password: s
       return null
     case 'screenshot':
       // Rien ici: screenshot fait côté runner pour standardiser le nommage
+      return null
+    case 'tryClick':
+      if (!s.selector) throw new Error('Sélecteur manquant')
+      try {
+        await page.waitForSelector(s.selector, { timeout: s.timeout_ms || 1000 })
+        await page.click(s.selector)
+      } catch {
+        // Pas grave si l'élément n'existe pas, on continue
+      }
       return null
     case 'sleep':
       await new Promise(r => setTimeout(r, s.timeout_ms || 0))
