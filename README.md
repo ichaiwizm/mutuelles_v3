@@ -218,6 +218,23 @@ Chaque flow est décrit dans `flows/<plateforme>/<slug>.json`:
 }
 ```
 
+### CLI — Exécuter un flow (sans écrire en DB)
+
+Guide complet: voir `docs/CLI.md`.
+
+Raccourci rapide:
+
+```
+# Dev privée (fenêtre visible) + rapport
+npm run flows:run -- -- alptis_login \
+  --mode dev_private --trace retain-on-failure --video --console \
+  --dom steps --js steps --report html --open \
+  --vars username="VOTRE_LOGIN" --vars password="VOTRE_MDP"
+```
+
+Artefacts: `runs-cli/<slug>/<runId>/` → `report.html`, `index.json`, `progress.ndjson`, `screenshots/`, `network/`, `trace/`, `dom/`, `js/`, `video/`.
+
+
 Types supportés: `goto`, `waitFor`, `fill`, `click`, `tryClick`, `assertText`, `screenshot`, `sleep` (et `debugAxeptio` interne).
 
 Règles: `goto.url` requis; `waitFor/click/tryClick/fill.selector` requis; `fill.value` (placeholders `{username}`, `{password}`) ; `assertText.selector/assert_text` requis; `sleep.timeout_ms` requis.

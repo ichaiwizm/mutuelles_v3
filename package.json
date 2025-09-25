@@ -19,7 +19,10 @@
     "flows:update": "cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/flows/update_flow.mjs",
     "flows:delete": "cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/flows/delete_flow.mjs",
     "flows:lint": "node scripts/flows/lint_flows.mjs",
-    "flows:sync": "cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/flows/sync_flows.mjs"
+    "flows:sync": "cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/flows/sync_flows.mjs",
+    "flows:run": "cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/cli/run_flow.mjs",
+    "flows:run:dev": "npm run flows:run -- --mode dev",
+    "flows:run:devp": "npm run flows:run -- --mode dev_private"
   },
   "dependencies": {
     "better-sqlite3": "^12.4.1",
