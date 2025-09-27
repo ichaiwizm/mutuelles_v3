@@ -104,7 +104,14 @@ export default function LeadDetailModal({ lead, isOpen, onClose, onEdit, onDelet
                     <div className="flex items-start gap-2">
                       <MapPin size={14} className="text-neutral-400 mt-0.5" />
                       <div>
-                        {lead.contact.adresse && <div>{lead.contact.adresse}</div>}
+                        {lead.contact.adresse && (
+                          <div>
+                            {typeof lead.contact.adresse === 'object'
+                              ? `${lead.contact.adresse.rue || ''} ${lead.contact.adresse.code_postal || ''} ${lead.contact.adresse.ville || ''}`.trim()
+                              : lead.contact.adresse
+                            }
+                          </div>
+                        )}
                         {(lead.contact.codePostal || lead.contact.ville) && (
                           <div>{lead.contact.codePostal} {lead.contact.ville}</div>
                         )}

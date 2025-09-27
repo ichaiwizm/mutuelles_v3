@@ -68,19 +68,23 @@ export default function Leads() {
 
   // Handlers pour les actions de la table
   const handleAddLead = () => {
-    setModals(prev => ({ ...prev, addLead: true }))
+    // Ouvre uniquement la modale d'ajout
+    setModals({ addLead: true, editLead: null, detailLead: null, confirmDelete: null })
   }
 
   const handleViewLead = (lead: FullLead) => {
-    setModals(prev => ({ ...prev, detailLead: lead }))
+    // Ouvre uniquement la modale de détail
+    setModals({ addLead: false, editLead: null, detailLead: lead, confirmDelete: null })
   }
 
   const handleEditLead = (lead: FullLead) => {
-    setModals(prev => ({ ...prev, editLead: lead }))
+    // Ouvre uniquement la modale d'édition et ferme la modale de détail si ouverte
+    setModals({ addLead: false, editLead: lead, detailLead: null, confirmDelete: null })
   }
 
   const handleDeleteLead = (lead: FullLead) => {
-    setModals(prev => ({ ...prev, confirmDelete: lead }))
+    // Ouvre uniquement la modale de confirmation
+    setModals({ addLead: false, editLead: null, detailLead: null, confirmDelete: lead })
   }
 
   const confirmDelete = async () => {
