@@ -1,10 +1,11 @@
 import fs from 'node:fs'
 import path from 'node:path'
-import { app, safeStorage } from 'electron'
+import { app } from 'electron'
 import { chromium, type Browser, type BrowserContext, type Page } from 'playwright-core'
 import { getFlowBySlug, listSteps } from './flows'
 import { getDb } from '../db/connection'
 import { getChromePath } from './chrome'
+import { revealPassword } from './platform_credentials'
 
 type ProgressEvent = {
   runId: string
@@ -16,6 +17,7 @@ type ProgressEvent = {
 }
 
 const activeByProfile = new Map<string, boolean>()
+const DEFAULT_TIMEOUT = 15000
 
 export async function runFlow(flowSlug: string, onProgress: (e: ProgressEvent) => void, opts?: { mode?: 'headless'|'dev'|'dev_private' }) {
   const flow = getFlowBySlug(flowSlug)
@@ -27,9 +29,9 @@ export async function runFlow(flowSlug: string, onProgress: (e: ProgressEvent) =
   if (!prof.initialized_at) throw new Error('Profil non initialisé. Initialisez le profil Chrome.')
   const chrome = getChromePath()
   if (!chrome) throw new Error('Chrome non détecté. Définissez le chemin de chrome.exe.')
-  const creds = getDb().prepare('SELECT username, password_encrypted FROM platform_credentials WHERE platform_id = ?').get(flow.platform_id) as { username?:string; password_encrypted?:Buffer }|undefined
-  if (!creds?.username || !creds.password_encrypted) throw new Error('Identifiants manquants pour la plateforme')
-  const password = safeStorage.decryptString(creds.password_encrypted)
+  const creds = getDb().prepare('SELECT username FROM platform_credentials WHERE platform_id = ?').get(flow.platform_id) as { username?:string }|undefined
+  if (!creds?.username) throw new Error('Identifiants manquants pour la plateforme')
+  const password = revealPassword(flow.platform_id)
 
   const runId = `${flow.slug}-${Date.now()}`
   const baseDir = path.join(app.getPath('userData'), 'screenshots', flow.slug, runId)
@@ -72,7 +74,7 @@ export async function runFlow(flowSlug: string, onProgress: (e: ProgressEvent) =
       context = await chromium.launchPersistentContext(prof.user_data_dir, args)
     }
     page = context.pages()[0] || await context.newPage()
-    page.setDefaultTimeout(15000)
+    page.setDefaultTimeout(DEFAULT_TIMEOUT)
 
     // Exécution des steps
     for (let idx = 0; idx < steps.length; idx++) {
@@ -101,17 +103,27 @@ export async function runFlow(flowSlug: string, onProgress: (e: ProgressEvent) =
     summary.finishedAt = new Date().toISOString()
     writeJson(summary)
     const okCount = summary.steps.filter((s:any)=>s.ok).length
-    getDb().prepare(`UPDATE flows_runs SET finished_at=?, status='success', steps_total=?, ok_steps=? WHERE run_uid=?`)
-          .run(summary.finishedAt, summary.steps.length, okCount, runId)
-    send({ type:'run', status:'success', message:'Run terminé', screenshotPath: baseDir })
+    const hasErrors = summary.steps.some((s:any)=>!s.ok)
+    const status = hasErrors ? 'error' : 'success'
+    const statusMessage = hasErrors ? 'Run terminé avec erreurs' : 'Run terminé'
+
+    if (hasErrors) {
+      getDb().prepare(`UPDATE flows_runs SET finished_at=?, status='error', steps_total=?, ok_steps=?, error_message=? WHERE run_uid=?`)
+            .run(summary.finishedAt, steps.length, okCount, 'Une ou plusieurs étapes ont échoué', runId)
+    } else {
+      getDb().prepare(`UPDATE flows_runs SET finished_at=?, status='success', steps_total=?, ok_steps=? WHERE run_uid=?`)
+            .run(summary.finishedAt, steps.length, okCount, runId)
+    }
+    send({ type:'run', status, message: statusMessage, screenshotPath: baseDir })
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e)
     send({ type:'run', status:'error', message: msg })
     summary.finishedAt = new Date().toISOString()
     summary.error = msg
     writeJson(summary)
-    getDb().prepare(`UPDATE flows_runs SET finished_at=?, status='error', error_message=? WHERE run_uid=?`)
-          .run(summary.finishedAt, msg, runId)
+    const okCount = summary.steps.filter((s:any)=>s.ok).length
+    getDb().prepare(`UPDATE flows_runs SET finished_at=?, status='error', steps_total=?, ok_steps=?, error_message=? WHERE run_uid=?`)
+          .run(summary.finishedAt, steps.length, okCount, msg, runId)
     throw e
   } finally {
     const keepOpen = (opts?.mode === 'dev' || opts?.mode === 'dev_private')
@@ -142,7 +154,10 @@ function describeStep(s: any) {
 }
 
 async function execStep(page: Page, s: any, ctx: { username: string; password: string; platform_id?: number; context?: BrowserContext }): Promise<Page|null> {
+  // Appliquer le timeout spécifique à cette étape si défini
   if (s.timeout_ms) page.setDefaultTimeout(s.timeout_ms)
+
+  try {
   switch (s.type) {
     case 'goto':
       {
@@ -192,5 +207,9 @@ async function execStep(page: Page, s: any, ctx: { username: string; password: s
       return null
     default:
       throw new Error(`Type d'étape inconnu: ${s.type}`)
+  }
+  } finally {
+    // Restaurer le timeout par défaut
+    page.setDefaultTimeout(DEFAULT_TIMEOUT)
   }
 }

@@ -156,7 +156,7 @@ export class LeadsService {
     return result.changes > 0
   }
 
-  async updateCleanLead(id: string, data: UpdateLeadData): Promise<boolean> {
+  async replaceCleanLead(id: string, data: UpdateLeadData): Promise<boolean> {
     const stmt = this.db.prepare(`
       UPDATE clean_leads
       SET contact_data = ?, souscripteur_data = ?, conjoint_data = ?, enfants_data = ?, besoins_data = ?

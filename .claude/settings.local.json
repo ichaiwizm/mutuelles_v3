@@ -13,7 +13,8 @@
       "Bash(npm run:*)",
       "Bash(timeout 30 npm run dev)",
       "Bash(timeout 60 npm run leads:check)",
-      "Bash(timeout 60 npm run leads:seed)"
+      "Bash(timeout 60 npm run leads:seed)",
+      "Bash(grep:*)"
     ],
     "deny": [],
     "ask": []

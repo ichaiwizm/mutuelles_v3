@@ -20,7 +20,7 @@ export default {
   required: false,
 
   async run(db, options = {}) {
-    const { skipExisting = true, count = 2 } = options
+    const { skipExisting = true } = options
 
     // Check if profiles already exist
     if (skipExisting) {
@@ -32,46 +32,35 @@ export default {
     }
 
     const insertProfile = db.prepare(`
-      INSERT INTO profiles(name, user_data_dir, browser_channel, created_at)
-      VALUES(?, ?, ?, datetime('now'))
+      INSERT INTO profiles(name, user_data_dir, browser_channel, created_at, initialized_at)
+      VALUES(?, ?, ?, datetime('now'), datetime('now'))
     `)
 
-    const testProfiles = [
-      {
-        name: 'Profil Dev',
-        browser_channel: 'chrome'
-      },
-      {
-        name: 'Profil Test',
-        browser_channel: 'chrome'
-      },
-      {
-        name: 'Profil Alptis',
-        browser_channel: 'chrome'
-      }
-    ]
+    // Create only one profile for the app
+    const profile = {
+      name: 'Profil Test',
+      browser_channel: 'chrome'
+    }
 
     let inserted = 0
 
     const transaction = db.transaction(() => {
-      for (const profile of testProfiles.slice(0, count)) {
-        try {
-          // Create user data directory
-          const userDataDir = createProfileDir(profile.name)
+      try {
+        // Create user data directory
+        const userDataDir = createProfileDir(profile.name)
 
-          insertProfile.run(
-            profile.name,
-            userDataDir,
-            profile.browser_channel
-          )
+        insertProfile.run(
+          profile.name,
+          userDataDir,
+          profile.browser_channel
+        )
 
-          inserted++
-          console.log(`     Created profile: ${profile.name}`)
-          console.log(`       Directory: ${userDataDir}`)
+        inserted++
+        console.log(`     Created profile: ${profile.name}`)
+        console.log(`       Directory: ${userDataDir}`)
 
-        } catch (err) {
-          console.log(`     Error creating profile ${profile.name}: ${err.message}`)
-        }
+      } catch (err) {
+        console.log(`     Error creating profile ${profile.name}: ${err.message}`)
       }
     })
 
@@ -82,13 +71,14 @@ export default {
 }
 
 function createProfileDir(profileName) {
-  // Get profiles base directory
+  // Get profiles base directory - use Windows AppData when Electron not available
   let profilesBaseDir
   if (app && app.getPath) {
     profilesBaseDir = path.join(app.getPath('userData'), 'profiles')
   } else {
-    // Fallback to a temporary directory when Electron is not available
-    profilesBaseDir = path.join(os.tmpdir(), 'mutuelles-profiles')
+    // Use the same path structure that Electron would use
+    const appDataPath = process.env.APPDATA || path.join(os.homedir(), 'AppData', 'Roaming')
+    profilesBaseDir = path.join(appDataPath, 'mutuelles_v3', 'profiles')
   }
 
   fs.mkdirSync(profilesBaseDir, { recursive: true })
