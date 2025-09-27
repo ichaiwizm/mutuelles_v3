@@ -51,6 +51,16 @@ contextBridge.exposeInMainWorld('api', {
     set: (payload: { platform_id:number; username:string; password:string }) => ipcRenderer.invoke('pcreds:set', payload) as Promise<boolean>,
     delete: (platform_id: number) => ipcRenderer.invoke('pcreds:delete', platform_id) as Promise<boolean>,
     reveal: (platform_id: number) => ipcRenderer.invoke('pcreds:reveal', platform_id) as Promise<string>
+  },
+  leads: {
+    create: (data: any) => ipcRenderer.invoke('leads:create', data) as Promise<{ success: boolean; data?: any; error?: string }>,
+    get: (id: string) => ipcRenderer.invoke('leads:get', id) as Promise<{ success: boolean; data?: any; error?: string }>,
+    update: (id: string, data: any) => ipcRenderer.invoke('leads:update', id, data) as Promise<{ success: boolean; data?: any; error?: string }>,
+    delete: (id: string) => ipcRenderer.invoke('leads:delete', id) as Promise<{ success: boolean; error?: string }>,
+    list: (filters?: any, pagination?: any) => ipcRenderer.invoke('leads:list', filters, pagination) as Promise<{ success: boolean; data?: any; error?: string }>,
+    stats: () => ipcRenderer.invoke('leads:stats') as Promise<{ success: boolean; data?: any; error?: string }>,
+    search: (query: string) => ipcRenderer.invoke('leads:search', query) as Promise<{ success: boolean; data?: any; error?: string }>,
+    deleteMany: (ids: string[]) => ipcRenderer.invoke('leads:deleteMany', ids) as Promise<{ success: boolean; data?: any; error?: string }>
   }
 })
 
@@ -88,6 +98,16 @@ declare global {
         set: (payload: { platform_id:number; username:string; password:string }) => Promise<boolean>
         delete: (platform_id: number) => Promise<boolean>
         reveal: (platform_id: number) => Promise<string>
+      }
+      leads: {
+        create: (data: any) => Promise<{ success: boolean; data?: any; error?: string }>
+        get: (id: string) => Promise<{ success: boolean; data?: any; error?: string }>
+        update: (id: string, data: any) => Promise<{ success: boolean; data?: any; error?: string }>
+        delete: (id: string) => Promise<{ success: boolean; error?: string }>
+        list: (filters?: any, pagination?: any) => Promise<{ success: boolean; data?: any; error?: string }>
+        stats: () => Promise<{ success: boolean; data?: any; error?: string }>
+        search: (query: string) => Promise<{ success: boolean; data?: any; error?: string }>
+        deleteMany: (ids: string[]) => Promise<{ success: boolean; data?: any; error?: string }>
       }
       automation: {
         listFlows: () => Promise<Array<{ id:number; slug:string; name:string; platform_id:number; platform:string; active:boolean }>>

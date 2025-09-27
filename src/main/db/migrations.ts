@@ -72,6 +72,49 @@ export function migrate(db: Database.Database) {
       updated_at TEXT DEFAULT (datetime('now'))
     );
 
+    -- Tables Leads Management
+    CREATE TABLE IF NOT EXISTS raw_leads (
+      id TEXT PRIMARY KEY,
+      source TEXT NOT NULL CHECK (source IN ('gmail', 'file', 'manual')),
+      provider TEXT CHECK (provider IN ('assurprospect', 'assurlead', 'generic')),
+      raw_content TEXT NOT NULL,
+      metadata TEXT DEFAULT '{}',
+      extracted_at TEXT DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS clean_leads (
+      id TEXT PRIMARY KEY,
+      raw_lead_id TEXT REFERENCES raw_leads(id) ON DELETE CASCADE,
+      contact_data TEXT NOT NULL DEFAULT '{}',
+      souscripteur_data TEXT NOT NULL DEFAULT '{}',
+      conjoint_data TEXT DEFAULT NULL,
+      enfants_data TEXT DEFAULT '[]',
+      besoins_data TEXT DEFAULT '{}',
+      quality_score INTEGER DEFAULT 0,
+      cleaned_at TEXT DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS platform_leads (
+      id TEXT PRIMARY KEY,
+      clean_lead_id TEXT REFERENCES clean_leads(id) ON DELETE CASCADE,
+      platform_id INTEGER REFERENCES platforms_catalog(id) ON DELETE CASCADE,
+      adapted_data TEXT NOT NULL DEFAULT '{}',
+      status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'completed', 'error')),
+      adapted_at TEXT DEFAULT (datetime('now')),
+      processed_at TEXT,
+      error_message TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS gmail_configs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      email TEXT,
+      refresh_token BLOB,
+      provider_settings TEXT DEFAULT '{}',
+      active INTEGER NOT NULL DEFAULT 1,
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+
     -- Nettoyage des anciennes tables obsolètes
     DROP TABLE IF EXISTS credentials;
     DROP TABLE IF EXISTS platforms;
@@ -203,6 +246,15 @@ export function migrate(db: Database.Database) {
     CREATE INDEX IF NOT EXISTS idx_platform_pages_platform_id ON platform_pages(platform_id);
     CREATE INDEX IF NOT EXISTS idx_platform_fields_page_id ON platform_fields(page_id);
     CREATE INDEX IF NOT EXISTS idx_flows_platform ON flows_catalog(platform_id);
+
+    -- Index pour les tables leads
+    CREATE INDEX IF NOT EXISTS idx_raw_leads_source ON raw_leads(source);
+    CREATE INDEX IF NOT EXISTS idx_raw_leads_extracted_at ON raw_leads(extracted_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_clean_leads_raw_lead_id ON clean_leads(raw_lead_id);
+    CREATE INDEX IF NOT EXISTS idx_clean_leads_quality_score ON clean_leads(quality_score DESC);
+    CREATE INDEX IF NOT EXISTS idx_platform_leads_clean_lead_id ON platform_leads(clean_lead_id);
+    CREATE INDEX IF NOT EXISTS idx_platform_leads_platform_id ON platform_leads(platform_id);
+    CREATE INDEX IF NOT EXISTS idx_platform_leads_status ON platform_leads(status);
     
     -- Historique d'exécution des flux
     CREATE TABLE IF NOT EXISTS flows_runs (

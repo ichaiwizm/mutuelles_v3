@@ -7,6 +7,7 @@ import Platforms from './pages/Platforms'
 import Profiles from './pages/Profiles'
 import Credentials from './pages/Credentials'
 import Flows from './pages/Flows'
+import Leads from './pages/Leads'
 import './styles.css'
 
 const router = createBrowserRouter([
@@ -20,7 +21,8 @@ const router = createBrowserRouter([
       { path: 'profiles', element: <Profiles /> },
       { path: 'credentials', element: <Credentials /> },
       { path: 'flows', element: <Flows /> },
-      
+      { path: 'leads', element: <Leads /> },
+
     ]
   }
 ])
