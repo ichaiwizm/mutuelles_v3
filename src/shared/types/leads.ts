@@ -122,13 +122,7 @@ export interface UpdateLeadData {
 // Filtres pour la recherche de leads
 export interface LeadFilters {
   search?: string;
-  source?: LeadSource;
   provider?: LeadProvider;
-  minScore?: number;
-  platformId?: number;
-  status?: PlatformLeadStatus;
-  dateFrom?: string;
-  dateTo?: string;
 }
 
 // Pagination

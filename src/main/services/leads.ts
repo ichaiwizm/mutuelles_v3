@@ -201,15 +201,11 @@ export class LeadsService {
       params.push(searchTerm, searchTerm, searchTerm, searchTerm)
     }
 
-    if (filters.source) {
-      whereClause += ' AND rl.source = ?'
-      params.push(filters.source)
+    if (filters.provider) {
+      whereClause += ' AND rl.provider = ?'
+      params.push(filters.provider)
     }
 
-    if (filters.minScore !== undefined) {
-      whereClause += ' AND cl.quality_score >= ?'
-      params.push(filters.minScore)
-    }
 
     // Count total
     const countStmt = this.db.prepare(`
