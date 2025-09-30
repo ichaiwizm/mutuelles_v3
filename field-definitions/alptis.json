@@ -1,0 +1,460 @@
+{
+  "_meta": {
+    "platform": "alptis",
+    "last_verified": "2025-09-29",
+    "test_flow": "alptis_test_categories_cadre_exercice",
+    "dependencies_verified": {
+      "cadre_exercice_adherent": [
+        "AGRICULTEURS_EXPLOITANTS",
+        "ARTISANS",
+        "CHEFS_D_ENTREPRISE",
+        "COMMERCANTS_ET_ASSIMILES",
+        "PROFESSIONS_LIBERALES_ET_ASSIMILES"
+      ]
+    },
+    "notes": "Test systématique des 11 catégories effectué avec DOM snapshots. 5 catégories déclenchent la section cadre d'exercice (salarié vs indépendant)."
+  },
+  "platform": "alptis",
+  "fields": [
+    {
+      "key": "date_effet",
+      "type": "date",
+      "label": "Date d’effet",
+      "selector": "#dateEffet input[data-test=\"input\"]",
+      "metadata": { "section": "projet", "required": true }
+    },
+
+    {
+      "key": "civilite_adherent",
+      "type": "radio",
+      "label": "Civilité (adhérent)",
+      "selector": ".section-adherent",
+      "options": {
+        "items": [
+          {
+            "value": "MONSIEUR",
+            "label": "Monsieur",
+            "option_selector": ".section-adherent span[data-test=\"radio\"][value=\"MONSIEUR\"] label"
+          },
+          {
+            "value": "MADAME",
+            "label": "Madame",
+            "option_selector": ".section-adherent span[data-test=\"radio\"][value=\"MADAME\"] label"
+          }
+        ]
+      },
+      "metadata": { "section": "adherent", "required": true }
+    },
+    {
+      "key": "nom_adherent",
+      "type": "text",
+      "label": "Nom (adhérent)",
+      "selector": "#nom",
+      "metadata": { "section": "adherent", "required": true }
+    },
+    {
+      "key": "prenom_adherent",
+      "type": "text",
+      "label": "Prénom (adhérent)",
+      "selector": "#prenom",
+      "metadata": { "section": "adherent", "required": true }
+    },
+    {
+      "key": "date_naissance_adherent",
+      "type": "date",
+      "label": "Date de naissance (adhérent)",
+      "selector": "#date-naissance-adherent input[data-test=\"input\"]",
+      "metadata": { "section": "adherent", "required": true }
+    },
+    {
+      "key": "categorie_adherent",
+      "type": "select",
+      "label": "Catégorie socioprofessionnelle (adhérent)",
+      "selector": ".section-adherent .totem-select__input input[placeholder=\"Sélectionner une catégorie socioprofessionnelle\"]",
+      "options": {
+        "open_selector": ".section-adherent .totem-select__input input[placeholder=\"Sélectionner une catégorie socioprofessionnelle\"]",
+        "items": [
+          {
+            "value": "AGRICULTEURS_EXPLOITANTS",
+            "label": "Agriculteurs exploitants",
+            "option_selector": "div.totem-select-option:has-text(\"Agriculteurs exploitants\")"
+          },
+          {
+            "value": "ARTISANS",
+            "label": "Artisans",
+            "option_selector": "div.totem-select-option:has-text(\"Artisans\")"
+          },
+          {
+            "value": "CADRES",
+            "label": "Cadres",
+            "option_selector": "div.totem-select-option:has-text(\"Cadres\")"
+          },
+          {
+            "value": "CADRES_ET_EMPLOYES_DE_LA_FONCTION_PUBLIQUE",
+            "label": "Cadres et employés de la fonction publique",
+            "option_selector": "div.totem-select-option:has-text(\"Cadres et employés de la fonction publique\")"
+          },
+          {
+            "value": "CHEFS_D_ENTREPRISE",
+            "label": "Chefs d'entreprise",
+            "option_selector": "div.totem-select-option:has-text(\"Chefs d'entreprise\")"
+          },
+          {
+            "value": "COMMERCANTS_ET_ASSIMILES",
+            "label": "Commerçants et assimilés",
+            "option_selector": "div.totem-select-option:has-text(\"Commerçants et assimilés\")"
+          },
+          {
+            "value": "EMPLOYES_AGENTS_DE_MAITRISE",
+            "label": "Employés, agents de maîtrise",
+            "option_selector": "div.totem-select-option:has-text(\"Employés, agents de maîtrise\")"
+          },
+          {
+            "value": "OUVRIERS",
+            "label": "Ouvriers",
+            "option_selector": "div.totem-select-option:has-text(\"Ouvriers\")"
+          },
+          {
+            "value": "PERSONNES_SANS_ACTIVITE_PROFESSIONNELLE",
+            "label": "Personnes sans activité professionnelle",
+            "option_selector": "div.totem-select-option:has-text(\"Personnes sans activité professionnelle\")"
+          },
+          {
+            "value": "PROFESSIONS_LIBERALES_ET_ASSIMILES",
+            "label": "Professions libérales et assimilés",
+            "option_selector": "div.totem-select-option:has-text(\"Professions libérales et assimilés\")"
+          },
+          {
+            "value": "RETRAITES",
+            "label": "Retraités",
+            "option_selector": "div.totem-select-option:has-text(\"Retraités\")"
+          }
+        ]
+      },
+      "metadata": { "section": "adherent", "required": true }
+    },
+    {
+      "key": "cadre_exercice_adherent",
+      "type": "radio",
+      "label": "Cadre d'exercice (adhérent)",
+      "selector": ".section-adherent",
+      "options": {
+        "items": [
+          {
+            "value": "SALARIE",
+            "label": "Salarié",
+            "option_selector": ".section-adherent span[data-test=\"radio\"][value=\"SALARIE\"] label"
+          },
+          {
+            "value": "INDEPENDANT_PRESIDENT_SASU_SAS",
+            "label": "Indépendant Président SASU/SAS",
+            "option_selector": ".section-adherent span[data-test=\"radio\"][value=\"INDEPENDANT_PRESIDENT_SASU_SAS\"] label"
+          }
+        ]
+      },
+      "metadata": { "section": "adherent", "required": true, "conditional": true }
+    },
+    {
+      "key": "regime_adherent",
+      "type": "select",
+      "label": "Régime obligatoire (adhérent)",
+      "selector": ".section-adherent .totem-select__input input[placeholder=\"Sélectionner un régime obligatoire\"]",
+      "options": {
+        "open_selector": ".section-adherent .totem-select__input input[placeholder=\"Sélectionner un régime obligatoire\"]",
+        "items": [
+          {
+            "value": "ALSACE_MOSELLE",
+            "label": "Alsace / Moselle",
+            "option_selector": "div.totem-select-option:has-text(\"Alsace / Moselle\")"
+          },
+          {
+            "value": "AMEXA",
+            "label": "Amexa",
+            "option_selector": "div.totem-select-option:has-text(\"Amexa\")"
+          },
+          {
+            "value": "REGIME_SALARIES_AGRICOLES",
+            "label": "Régime des salariés agricoles",
+            "option_selector": "div.totem-select-option:has-text(\"Régime des salariés agricoles\")"
+          },
+          {
+            "value": "SECURITE_SOCIALE",
+            "label": "Sécurité sociale",
+            "option_selector": "div.totem-select-option:has-text(\"Sécurité sociale\")"
+          },
+          {
+            "value": "SECURITE_SOCIALE_INDEPENDANTS",
+            "label": "Sécurité sociale des indépendants",
+            "option_selector": "div.totem-select-option:has-text(\"Sécurité sociale des indépendants\")"
+          }
+        ]
+      },
+      "metadata": { "section": "adherent", "required": true }
+    },
+    {
+      "key": "code_postal",
+      "type": "text",
+      "label": "Code postal",
+      "selector": "input#codePostal",
+      "metadata": { "section": "adherent", "required": true, "format": "NNNNN" }
+    },
+
+    {
+      "key": "conjoint_toggle",
+      "type": "toggle",
+      "label": "Présence d’un(e) conjoint(e)",
+      "selector": ".totem-section__header:has(.totem-section__header-title:has-text(\"Conjoint(e)\")) label[data-test=\"label\"]",
+      "metadata": {
+        "section": "conjoint",
+        "toggle": {
+          "on_selector": ".totem-section__header:has(.totem-section__header-title:has-text(\"Conjoint(e)\")) label[data-test=\"label\"]",
+          "state_on_selector": ".totem-section:has(.totem-section__header-title:has-text(\"Conjoint(e)\")) .totem-toggle.totem-toggle--on"
+        }
+      }
+    },
+    {
+      "key": "date_naissance_conjoint",
+      "type": "date",
+      "label": "Date de naissance (conjoint)",
+      "selector": "#date-naissance-conjoint input[data-test=\"input\"]",
+      "metadata": { "section": "conjoint" }
+    },
+    {
+      "key": "categorie_conjoint",
+      "type": "select",
+      "label": "Catégorie socioprofessionnelle (conjoint)",
+      "selector": ".sel-c-conjoint-content .totem-select__input input[placeholder=\"Sélectionner une catégorie socioprofessionnelle\"]",
+      "options": {
+        "open_selector": ".sel-c-conjoint-content .totem-select__input input[placeholder=\"Sélectionner une catégorie socioprofessionnelle\"]",
+        "items": [
+          {
+            "value": "AGRICULTEURS_EXPLOITANTS",
+            "label": "Agriculteurs exploitants",
+            "option_selector": "div.totem-select-option:has-text(\"Agriculteurs exploitants\")"
+          },
+          {
+            "value": "ARTISANS",
+            "label": "Artisans",
+            "option_selector": "div.totem-select-option:has-text(\"Artisans\")"
+          },
+          {
+            "value": "CADRES_ET_EMPLOYES_DE_LA_FONCTION_PUBLIQUE",
+            "label": "Cadres et employés de la fonction publique",
+            "option_selector": "div.totem-select-option:has-text(\"Cadres et employés de la fonction publique\")"
+          },
+          {
+            "value": "CHEFS_D_ENTREPRISE",
+            "label": "Chefs d'entreprise",
+            "option_selector": "div.totem-select-option:has-text(\"Chefs d'entreprise\")"
+          },
+          {
+            "value": "COMMERCANTS_ET_ASSIMILES",
+            "label": "Commerçants et assimilés",
+            "option_selector": "div.totem-select-option:has-text(\"Commerçants et assimilés\")"
+          },
+          {
+            "value": "EMPLOYES_AGENTS_DE_MAITRISE",
+            "label": "Employés, agents de maîtrise",
+            "option_selector": "div.totem-select-option:has-text(\"Employés, agents de maîtrise\")"
+          },
+          {
+            "value": "OUVRIERS",
+            "label": "Ouvriers",
+            "option_selector": "div.totem-select-option:has-text(\"Ouvriers\")"
+          },
+          {
+            "value": "PERSONNES_SANS_ACTIVITE_PROFESSIONNELLE",
+            "label": "Personnes sans activité professionnelle",
+            "option_selector": "div.totem-select-option:has-text(\"Personnes sans activité professionnelle\")"
+          },
+          {
+            "value": "PROFESSIONS_LIBERALES_ET_ASSIMILES",
+            "label": "Professions libérales et assimilés",
+            "option_selector": "div.totem-select-option:has-text(\"Professions libérales et assimilés\")"
+          },
+          {
+            "value": "RETRAITES",
+            "label": "Retraités",
+            "option_selector": "div.totem-select-option:has-text(\"Retraités\")"
+          }
+        ]
+      },
+      "metadata": { "section": "conjoint", "note": "Pas d'option CADRES simple pour le conjoint" }
+    },
+    {
+      "key": "regime_conjoint",
+      "type": "select",
+      "label": "Régime obligatoire (conjoint)",
+      "selector": ".sel-c-conjoint-content .totem-select__input input[placeholder=\"Sélectionner un régime obligatoire\"]",
+      "options": {
+        "open_selector": ".sel-c-conjoint-content .totem-select__input input[placeholder=\"Sélectionner un régime obligatoire\"]",
+        "items": [
+          {
+            "value": "ALSACE_MOSELLE",
+            "label": "Alsace / Moselle",
+            "option_selector": "div.totem-select-option:has-text(\"Alsace / Moselle\")"
+          },
+          {
+            "value": "AMEXA",
+            "label": "Amexa",
+            "option_selector": "div.totem-select-option:has-text(\"Amexa\")"
+          },
+          {
+            "value": "REGIME_SALARIES_AGRICOLES",
+            "label": "Régime des salariés agricoles",
+            "option_selector": "div.totem-select-option:has-text(\"Régime des salariés agricoles\")"
+          },
+          {
+            "value": "SECURITE_SOCIALE",
+            "label": "Sécurité sociale",
+            "option_selector": "div.totem-select-option:has-text(\"Sécurité sociale\")"
+          },
+          {
+            "value": "SECURITE_SOCIALE_INDEPENDANTS",
+            "label": "Sécurité sociale des indépendants",
+            "option_selector": "div.totem-select-option:has-text(\"Sécurité sociale des indépendants\")"
+          }
+        ]
+      },
+      "metadata": { "section": "conjoint" }
+    },
+
+    {
+      "key": "enfants_toggle",
+      "type": "toggle",
+      "label": "Présence d’enfant(s)",
+      "selector": ".totem-section__header:has(.totem-section__header-title:has-text(\"Enfants\")) label[data-test=\"label\"]",
+      "metadata": {
+        "section": "enfants",
+        "toggle": {
+          "on_selector": ".totem-section__header:has(.totem-section__header-title:has-text(\"Enfants\")) label[data-test=\"label\"]",
+          "state_on_selector": ".totem-section:has(.totem-section__header-title:has-text(\"Enfants\")) .totem-toggle.totem-toggle--on",
+          "add_button_selector": "button:has-text(\"Ajouter un enfant\")"
+        }
+      }
+    },
+    {
+      "key": "date_naissance_enfant_{i}",
+      "type": "date",
+      "label": "Date de naissance (enfant {i})",
+      "selector": "#date-naissance-enfant-0 input[data-test=\"input\"]",
+      "metadata": {
+        "section": "enfants",
+        "repeat": { "min": 0, "max": 3, "index_base": 0 },
+        "selector_template": "#date-naissance-enfant-{i} input[data-test=\"input\"]"
+      }
+    },
+    {
+      "key": "regime_enfant_{i}",
+      "type": "select",
+      "label": "Régime obligatoire (enfant {i})",
+      "selector": ".sub-section-enfant:nth-of-type(1) .totem-select__input input[placeholder=\"Sélectionner un régime obligatoire\"]",
+      "options": {
+        "open_selector_template": ".sub-section-enfant:nth-of-type({i_plus_1}) .totem-select__input input[placeholder=\"Sélectionner un régime obligatoire\"]",
+        "items": [
+          {
+            "value": "ALSACE_MOSELLE",
+            "label": "Alsace / Moselle",
+            "option_selector": "div.totem-select-option:has-text(\"Alsace / Moselle\")"
+          },
+          {
+            "value": "AMEXA",
+            "label": "Amexa",
+            "option_selector": "div.totem-select-option:has-text(\"Amexa\")"
+          },
+          {
+            "value": "REGIME_SALARIES_AGRICOLES",
+            "label": "Régime des salariés agricoles",
+            "option_selector": "div.totem-select-option:has-text(\"Régime des salariés agricoles\")"
+          },
+          {
+            "value": "SECURITE_SOCIALE",
+            "label": "Sécurité sociale",
+            "option_selector": "div.totem-select-option:has-text(\"Sécurité sociale\")"
+          },
+          {
+            "value": "SECURITE_SOCIALE_INDEPENDANTS",
+            "label": "Sécurité sociale des indépendants",
+            "option_selector": "div.totem-select-option:has-text(\"Sécurité sociale des indépendants\")"
+          }
+        ]
+      },
+      "metadata": {
+        "section": "enfants",
+        "repeat": { "min": 0, "max": 3, "index_base": 0, "nth_base": 1 },
+        "open_selector_template": ".sub-section-enfant:nth-of-type({i_plus_1}) .totem-select__input input[placeholder=\"Sélectionner un régime obligatoire\"]"
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "trigger": "conjoint_toggle",
+      "value": "on",
+      "shows": ["date_naissance_conjoint", "categorie_conjoint", "regime_conjoint"],
+      "metadata": {
+        "state_on_selector": ".totem-section:has(.totem-section__header-title:has-text(\"Conjoint(e)\")) .totem-toggle.totem-toggle--on"
+      }
+    },
+    {
+      "trigger": "categorie_adherent",
+      "value": "AGRICULTEURS_EXPLOITANTS",
+      "shows": ["cadre_exercice_adherent"],
+      "metadata": {
+        "note": "Les agriculteurs exploitants peuvent exercer en tant que salariés ou indépendants",
+        "verified_date": "2025-09-29",
+        "test_flow": "alptis_test_categories_cadre_exercice"
+      }
+    },
+    {
+      "trigger": "categorie_adherent",
+      "value": "ARTISANS",
+      "shows": ["cadre_exercice_adherent"],
+      "metadata": {
+        "note": "Les artisans peuvent exercer en tant que salariés ou indépendants",
+        "verified_date": "2025-09-29",
+        "test_flow": "alptis_test_categories_cadre_exercice"
+      }
+    },
+    {
+      "trigger": "categorie_adherent",
+      "value": "CHEFS_D_ENTREPRISE",
+      "shows": ["cadre_exercice_adherent"],
+      "metadata": {
+        "note": "Les chefs d'entreprise peuvent exercer en tant que salariés ou indépendants",
+        "verified_date": "2025-09-29",
+        "test_flow": "alptis_test_categories_cadre_exercice"
+      }
+    },
+    {
+      "trigger": "categorie_adherent",
+      "value": "COMMERCANTS_ET_ASSIMILES",
+      "shows": ["cadre_exercice_adherent"],
+      "metadata": {
+        "note": "Les commerçants et assimilés peuvent exercer en tant que salariés ou indépendants",
+        "verified_date": "2025-09-29",
+        "test_flow": "alptis_test_categories_cadre_exercice"
+      }
+    },
+    {
+      "trigger": "categorie_adherent",
+      "value": "PROFESSIONS_LIBERALES_ET_ASSIMILES",
+      "shows": ["cadre_exercice_adherent"],
+      "metadata": {
+        "note": "Les professions libérales et assimilées peuvent exercer en tant que salariées ou indépendantes",
+        "verified_date": "2025-09-29",
+        "test_flow": "alptis_test_categories_cadre_exercice"
+      }
+    },
+    {
+      "trigger": "enfants_toggle",
+      "value": "on",
+      "shows": ["date_naissance_enfant_{i}", "regime_enfant_{i}"],
+      "metadata": {
+        "repeat": { "min": 0, "max": 3 },
+        "add_button_selector": "button:has-text(\"Ajouter un enfant\")",
+        "wait_enabled_selector": "button:has-text(\"Ajouter un enfant\"):not([disabled])"
+      }
+    }
+  ]
+}
+

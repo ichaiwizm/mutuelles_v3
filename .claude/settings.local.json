@@ -14,7 +14,12 @@
       "Bash(timeout 30 npm run dev)",
       "Bash(timeout 60 npm run leads:check)",
       "Bash(timeout 60 npm run leads:seed)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(git log:*)",
+      "Bash(xargs:*)",
+      "Bash(for step in step-26 step-31 step-36 step-41 step-46 step-51 step-56 step-61 step-66 step-71 step-76)",
+      "Bash(do echo \"=== $step ===\")",
+      "Bash(done)"
     ],
     "deny": [],
     "ask": []

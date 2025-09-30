@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "platform": "alptis",
+  "slug": "alptis_test_categorie",
+  "name": "Alptis - Test catégorie pour section cachée",
+  "active": true,
+  "steps": [
+    { "type": "goto", "url": "https://pro.alptis.org/", "screenshot_label": "accueil", "timeout_ms": 15000 },
+    { "type": "waitFor", "selector": "#username", "screenshot_label": "login-form", "timeout_ms": 10000 },
+    { "type": "fill", "selector": "#username", "value": "{username}", "screenshot_label": "fill-user" },
+    { "type": "fill", "selector": "#password", "value": "{password}", "screenshot_label": "fill-pass" },
+    { "type": "tryClick", "selector": "#axeptio_btn_acceptAll", "timeout_ms": 5000, "screenshot_label": "accept-axeptio-login" },
+    { "type": "sleep", "timeout_ms": 800, "screenshot_label": "wait-after-axeptio-login" },
+    { "type": "click", "selector": "button[type=\"submit\"]", "screenshot_label": "submit", "timeout_ms": 30000 },
+    { "type": "sleep", "timeout_ms": 2000, "screenshot_label": "wait-after-submit" },
+    { "type": "goto", "url": "https://pro.alptis.org/sante-select/informations-projet/", "screenshot_label": "goto-infos-projet" },
+    { "type": "sleep", "timeout_ms": 1500, "screenshot_label": "post-goto-wait" },
+    { "type": "tryClick", "selector": "#axeptio_overlay #axeptio_btn_acceptAll", "timeout_ms": 5000, "screenshot_label": "accept-axeptio-page" },
+    { "type": "sleep", "timeout_ms": 800, "screenshot_label": "wait-after-axeptio-page" },
+    { "type": "waitFor", "selector": ".page-layout.informations-projet", "screenshot_label": "infos-projet-ready", "timeout_ms": 10000 },
+
+    { "type": "fill", "selector": "#dateEffet input[data-test=\"input\"]", "value": "01/10/2025", "screenshot_label": "fill-date-effet" },
+    { "type": "sleep", "timeout_ms": 500, "screenshot_label": "wait-after-date-effet" },
+
+    { "type": "click", "selector": ".section-adherent span[data-test=\"radio\"][value=\"MADAME\"] label", "screenshot_label": "civilite-madame" },
+    { "type": "fill", "selector": "#nom", "value": "Durand", "screenshot_label": "fill-nom" },
+    { "type": "fill", "selector": "#prenom", "value": "Camille", "screenshot_label": "fill-prenom" },
+    { "type": "fill", "selector": "#date-naissance-adherent input[data-test=\"input\"]", "value": "01/01/1985", "screenshot_label": "fill-naissance-adherent" },
+
+    { "type": "click", "selector": ".section-adherent .totem-select__input input[placeholder=\"Sélectionner une catégorie socioprofessionnelle\"]", "screenshot_label": "open-categorie-adherent" },
+    { "type": "sleep", "timeout_ms": 800, "screenshot_label": "wait-categorie-opened" },
+    { "type": "click", "selector": "div.totem-select-option:has-text(\"Professions libérales et assimilés\")", "screenshot_label": "select-profession-liberale" },
+    { "type": "sleep", "timeout_ms": 1500, "screenshot_label": "wait-after-categorie-LONG" },
+    { "type": "screenshot", "screenshot_label": "AFTER-SELECT-PROFESSION-LIBERALE" },
+
+    { "type": "screenshot", "screenshot_label": "form-final" }
+  ]
+}
