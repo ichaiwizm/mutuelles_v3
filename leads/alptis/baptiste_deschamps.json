@@ -1,0 +1,38 @@
+{
+  "platform": "alptis",
+  "source": "trio",
+  "name": "lead_baptiste_deschamps",
+  "contact": {
+    "civilite": "MONSIEUR",
+    "nom": "DESCHAMPS",
+    "prenom": "BAPTISTE",
+    "adresse": "2 RUE DEBRAY",
+    "code_postal": "44300",
+    "ville": "NANTES",
+    "telephone": "06.99.79.67.14",
+    "email": "baptiste.deschamps@hotmail.fr"
+  },
+  "adherent": {
+    "civilite": "MONSIEUR",
+    "nom": "DESCHAMPS",
+    "prenom": "BAPTISTE",
+    "date_naissance": "02/06/1991",
+    "categorie": "CHEFS_D_ENTREPRISE",
+    "regime": "SECURITE_SOCIALE_INDEPENDANTS",
+    "code_postal": "44300"
+  },
+  "conjoint": {
+    "present": true,
+    "date_naissance": "11/09/1992",
+    "categorie": "PERSONNES_SANS_ACTIVITE_PROFESSIONNELLE",
+    "regime": "SECURITE_SOCIALE"
+  },
+  "enfants": [
+    { "date_naissance": "14/03/2019", "regime": "SECURITE_SOCIALE" },
+    { "date_naissance": "05/05/2021", "regime": "SECURITE_SOCIALE" },
+    { "date_naissance": "08/08/2024", "regime": "SECURITE_SOCIALE" }
+  ],
+  "projet": { "date_effet": "07/04/2025" },
+  "besoin": { "soins_medicaux": 3, "hospitalisation": 3, "optique": 3, "dentaire": 3 }
+}
+

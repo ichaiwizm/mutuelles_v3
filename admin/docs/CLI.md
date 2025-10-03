@@ -193,11 +193,9 @@ Pour alléger les flows, vous pouvez décrire des étapes haut niveau qui s’ap
 
 Runner (WSL → Windows):
 ```
-# Variables d’environnement pour credentials si absents du lead
-export FLOW_USERNAME="..."; export FLOW_PASSWORD="..."
 admin/cli/run_hl_from_wsl.sh --platform alptis \
-  --flow flows/alptis/alptis_login.hl.json \
-  --lead leads/alptis/sample_login.json \
+  --flow flows/alptis/alptis_sante_select_pro_full.hl.json \
+  --lead leads/alptis/baptiste_deschamps.json \
   --mode headless
 ```
 

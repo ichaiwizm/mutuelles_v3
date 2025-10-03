@@ -44,7 +44,9 @@
       "options": {
         "open_selector": ".section-adherent .totem-select__input input[placeholder=\"Sélectionner une catégorie socioprofessionnelle\"]",
         "items": [
-          { "value": "CADRES", "label": "Cadres", "option_selector": "div.totem-select-option:has-text(\\\"Cadres\\\")" }
+          { "value": "CADRES", "label": "Cadres", "option_selector": "div.totem-select-option:has-text(\\\"Cadres\\\")" },
+          { "value": "CHEFS_D_ENTREPRISE", "label": "Chefs d'entreprise", "option_selector": "div.totem-select-option:has-text(\\\"Chefs d'entreprise\\\")" },
+          { "value": "PROFESSIONS_LIBERALES_ET_ASSIMILES", "label": "Professions libérales et assimilés", "option_selector": "div.totem-select-option:has-text(\\\"Professions libérales et assimilés\\\")" }
         ]
       },
       "metadata": { "section": "adherent", "required": true }
@@ -55,7 +57,8 @@
       "options": {
         "open_selector": ".section-adherent .totem-select__input input[placeholder=\"Sélectionner un régime obligatoire\"]",
         "items": [
-          { "value": "SECURITE_SOCIALE", "label": "Sécurité sociale", "option_selector": "div.totem-select-option:has-text(\\\"Sécurité sociale\\\")" }
+          { "value": "SECURITE_SOCIALE", "label": "Sécurité sociale", "option_selector": "div.totem-select-option:has-text(\\\"Sécurité sociale\\\")" },
+          { "value": "SECURITE_SOCIALE_INDEPENDANTS", "label": "Sécurité sociale des indépendants", "option_selector": "div.totem-select-option:has-text(\\\"Sécurité sociale des indépendants\\\")" }
         ]
       },
       "metadata": { "section": "adherent", "required": true }
@@ -78,7 +81,9 @@
       "options": {
         "open_selector": ".sel-c-conjoint-content .totem-select__input input[placeholder=\"Sélectionner une catégorie socioprofessionnelle\"]",
         "items": [
-          { "value": "CADRES", "label": "Cadres", "option_selector": "div.totem-select-option:has-text(\\\"Cadres\\\")" }
+          { "value": "CADRES", "label": "Cadres", "option_selector": "div.totem-select-option:has-text(\\\"Cadres\\\")" },
+          { "value": "PROFESSIONS_LIBERALES_ET_ASSIMILES", "label": "Professions libérales et assimilés", "option_selector": "div.totem-select-option:has-text(\\\"Professions libérales et assimilés\\\")" },
+          { "value": "CHEFS_D_ENTREPRISE", "label": "Chefs d'entreprise", "option_selector": "div.totem-select-option:has-text(\\\"Chefs d'entreprise\\\")" }
         ]
       },
       "metadata": { "section": "conjoint" }

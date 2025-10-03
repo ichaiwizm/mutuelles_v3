@@ -1,0 +1,36 @@
+{
+  "platform": "alptis",
+  "source": "trio",
+  "name": "lead_nicolas_kiss",
+  "contact": {
+    "civilite": "MONSIEUR",
+    "nom": "Kiss",
+    "prenom": "Nicolas",
+    "adresse": "5 rue des hauts graviers",
+    "code_postal": "91360",
+    "ville": "EPINAY SUR ORGE",
+    "telephone": "06.49.83.32.28",
+    "email": "tian-han-men@wanadoo.fr"
+  },
+  "adherent": {
+    "civilite": "MONSIEUR",
+    "nom": "Kiss",
+    "prenom": "Nicolas",
+    "date_naissance": "18/10/1982",
+    "categorie": "PROFESSIONS_LIBERALES_ET_ASSIMILES",
+    "regime": "SECURITE_SOCIALE_INDEPENDANTS",
+    "code_postal": "91360"
+  },
+  "conjoint": {
+    "present": true,
+    "date_naissance": "26/04/1983",
+    "categorie": "PERSONNES_SANS_ACTIVITE_PROFESSIONNELLE",
+    "regime": "SECURITE_SOCIALE"
+  },
+  "enfants": [
+    { "date_naissance": "27/05/2014", "regime": "SECURITE_SOCIALE" }
+  ],
+  "projet": { "date_effet": "20/06/2025" },
+  "besoin": { "soins_medicaux": 2, "hospitalisation": 2, "optique": 3, "dentaire": 4 }
+}
+
