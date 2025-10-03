@@ -47,6 +47,7 @@ contextBridge.exposeInMainWorld('api', {
   },
   admin: {
     listFileFlows: () => ipcRenderer.invoke('admin:listFileFlows') as Promise<Array<{ platform:string; slug:string; name:string; file:string }>>,
+    getLatestRunDir: (slug: string) => ipcRenderer.invoke('admin:getLatestRunDir', slug) as Promise<{ dir:string; report:string|null } | null>,
     runFileFlow: (payload: { slug?: string; file?: string; mode?: 'headless'|'dev'|'dev_private'; keepOpen?: boolean }) => ipcRenderer.invoke('admin:runFileFlow', payload) as Promise<{ runKey:string; pid:number; flow:{ platform:string; slug:string; name:string; file:string } }>,
     onRunOutput: (runKey: string, cb: (e: { type:'stdout'|'stderr'|'exit'; data?: string; code?: number|null; latestRunDir?: string|null }) => void) => {
       const ch = `admin:runOutput:${runKey}`

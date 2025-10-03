@@ -45,6 +45,23 @@ export function registerAdminCliIpc() {
 
   ipcMain.handle('admin:listFileFlows', async () => listFlowFiles(root))
 
+  ipcMain.handle('admin:getLatestRunDir', async (_e, slug: unknown) => {
+    if (typeof slug !== 'string' || !slug) throw new Error('slug invalide')
+    const runsDir = path.join(root, 'admin', 'runs-cli', slug)
+    try {
+      const entries = fs.readdirSync(runsDir).filter(n => {
+        try { return fs.statSync(path.join(runsDir, n)).isDirectory() } catch { return false }
+      })
+      if (!entries.length) return null
+      const latest = entries.sort((a,b) => {
+        try { return fs.statSync(path.join(runsDir, b)).mtimeMs - fs.statSync(path.join(runsDir, a)).mtimeMs } catch { return 0 }
+      })[0]
+      const dir = path.join(runsDir, latest)
+      const report = path.join(dir, 'report.html')
+      return { dir, report: fs.existsSync(report) ? report : null }
+    } catch { return null }
+  })
+
   ipcMain.handle('admin:openPath', async (_e, target: unknown) => {
     const t = typeof target === 'string' ? target : ''
     if (!t) throw new Error('Chemin manquant')
