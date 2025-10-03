@@ -73,7 +73,7 @@ function parseArgs() {
 }
 
 function usage() {
-  console.log(`Usage:\n  npm run flows:run -- -- <slug> [options]\n  npm run flows:run -- -- --file flows/<platform>/<slug>.json [options]\n`)
+  console.log(`Usage:\n  npm run flows:run -- -- <slug> [options]\n  npm run flows:run -- -- --file admin/flows/<platform>/<slug>.json [options]\n`)
 }
 
 function pad2(n) { return String(n).padStart(2, '0') }
@@ -97,7 +97,7 @@ function findProjectRoot(startDir) {
 }
 
 function listFlowFiles(rootDir) {
-  const flowsDir = path.join(rootDir, 'flows')
+  const flowsDir = path.join(rootDir, 'admin', 'flows')
   const out = []
   const walk = (d) => {
     if (!fs.existsSync(d)) return

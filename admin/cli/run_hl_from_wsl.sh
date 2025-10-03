@@ -7,7 +7,7 @@ if ! command -v powershell.exe >/dev/null 2>&1; then
 fi
 
 if [[ $# -lt 1 ]]; then
-  echo "Usage: admin/cli/run_hl_from_wsl.sh --platform <slug> --flow flows/<platform>/<slug>.hl.json --lead leads/<platform>/<lead>.json [options...]" >&2
+  echo "Usage: admin/cli/run_hl_from_wsl.sh --platform <slug> --flow admin/flows/<platform>/<slug>.hl.json --lead admin/leads/<lead>.json [options...]" >&2
   exit 2
 fi
 
@@ -26,4 +26,3 @@ PS_ARGS=$(join_ps_args "${ARGS[@]}")
 
 powershell.exe -NoProfile -NonInteractive -Command \
   "$PS_SET_ENV cd $WIN_PWD; npx --yes cross-env ELECTRON_RUN_AS_NODE=1 electron admin/cli/run_hl_flow.mjs $PS_ARGS"
-

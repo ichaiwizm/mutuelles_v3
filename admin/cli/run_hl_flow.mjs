@@ -10,7 +10,7 @@ try { ({ safeStorage } = __require('electron')) } catch { safeStorage = null }
 import { openDbRO, getPlatformBySlug, getCredentials } from './lib/db_readers.mjs'
 
 function usage(){
-  console.log(`Usage:\n  ELECTRON_RUN_AS_NODE=1 electron admin/cli/run_hl_flow.mjs --platform <slug> --flow flows/<platform>/<slug>.hl.json --lead leads/<platform>/<lead>.json [--fields field-definitions/<platform>.json] [--mode dev|dev_private|headless]`)
+  console.log(`Usage:\n  ELECTRON_RUN_AS_NODE=1 electron admin/cli/run_hl_flow.mjs \\\n+    --platform <slug> \\\n+    --flow admin/flows/<platform>/<slug>.hl.json \\\n+    --lead admin/leads/<lead>.json \\\n+    [--fields admin/field-definitions/<platform>.json] \\\n+    [--mode dev|dev_private|headless]`)
 }
 
 function parseArgs(){
@@ -39,7 +39,7 @@ async function main(){
   const opts = parseArgs()
   if (!opts.platform && !opts.fields) { console.error('--platform ou --fields requis'); usage(); process.exit(2) }
   const root = findProjectRoot(process.cwd())
-  const fields = path.resolve(opts.fields || path.join(root,'field-definitions', `${opts.platform}.json`))
+  const fields = path.resolve(opts.fields || path.join(root,'admin','field-definitions', `${opts.platform}.json`))
   const flow = path.resolve(opts.flow || '')
   const lead = path.resolve(opts.lead || '')
   if (!fs.existsSync(fields)) { console.error('field-definitions introuvable:', fields); process.exit(2) }

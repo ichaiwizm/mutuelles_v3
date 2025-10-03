@@ -5,7 +5,7 @@ Ce guide explique comment exécuter les flows depuis la ligne de commande, en li
 Chemins importants:
 - Script: `admin/cli/run_file_flow.mjs`
 - Helpers DB (lecture seule): `admin/cli/lib/db_readers.mjs`
-- Dossier des flows JSON: `flows/`
+- Dossier des flows JSON: `admin/flows/`
 - Dossier des artefacts (par défaut): `admin/runs-cli/`
 
 ## Prérequis
@@ -43,7 +43,7 @@ Utiliser npm (notez le double `--` pour transmettre les options au script):
 
 ```
 npm run flows:run -- -- <slug> [options]
-npm run flows:run -- -- --file flows/<platform>/<slug>.json [options]
+npm run flows:run -- -- --file admin/flows/<platform>/<slug>.json [options]
 ```
 
 Alias pratiques:
@@ -57,7 +57,7 @@ npx cross-env ELECTRON_RUN_AS_NODE=1 electron admin/cli/run_file_flow.mjs <slug>
 ```
 
 ## Résolution des données
-1. Flow: par `--file`, sinon par `slug` (recherche d’un fichier JSON correspondant dans `flows/`).
+1. Flow: par `--file`, sinon par `slug` (recherche d’un fichier JSON correspondant dans `admin/flows/`).
 2. Plateforme: lue depuis le JSON (`platform`) puis DB `platforms_catalog` (id/slug/name).
 3. URL de login (fallback): `platform_pages` pour `slug='login'` si un `step.goto` n’a pas d’URL.
 4. Identifiants: `platform_credentials` → `username` + déchiffrement du mot de passe via `safeStorage` si possible. Sinon, fournir `--vars username=... --vars password=...`.
@@ -117,7 +117,7 @@ Credentials
 - « Chrome introuvable »: ajoutez `--chrome "C:\\Users\\<vous>\\AppData\\Local\\Google\\Chrome\\Application\\chrome.exe"`.
 - « safeStorage indisponible »: ajoutez `--vars username=... --vars password=...`.
 - « Profil Chrome introuvable (mode dev) »: lancez l’app une fois pour créer/initialiser un profil, ou passez `--profile-dir <chemin>`.
-- « Flow introuvable »: vérifiez `flows/<platform>/<slug>.json`.
+- « Flow introuvable »: vérifiez `admin/flows/<platform>/<slug>.json`.
 - Powershell réécrit les options: utilisez le double `--` ou la forme `npx cross-env ELECTRON_RUN_AS_NODE=1 electron ...`.
 
 ## Limites actuelles
@@ -187,15 +187,15 @@ Pré-requis:
 
 Pour alléger les flows, vous pouvez décrire des étapes haut niveau qui s’appuient sur les définitions de champs par plateforme et un jeu de données “lead”. Pas de DB.
 
-- Fields: `field-definitions/<platform>.json` (ex: `field-definitions/alptis.json`)
-- Lead: `leads/<platform>/<lead>.json` (valeurs, credentials)
-- Flow HL: `flows/<platform>/<slug>.hl.json`
+- Fields: `admin/field-definitions/<platform>.json` (ex: `admin/field-definitions/alptis.json`)
+- Lead: `admin/leads/<lead>.json` (valeurs, credentials)
+- Flow HL: `admin/flows/<platform>/<slug>.hl.json`
 
 Runner (WSL → Windows):
 ```
 admin/cli/run_hl_from_wsl.sh --platform alptis \
-  --flow flows/alptis/alptis_sante_select_pro_full.hl.json \
-  --lead leads/alptis/baptiste_deschamps.json \
+  --flow admin/flows/alptis/alptis_sante_select_pro_full.hl.json \
+  --lead admin/leads/baptiste_deschamps.json \
   --mode headless
 ```
 

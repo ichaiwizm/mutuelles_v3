@@ -20,7 +20,7 @@ function findProjectRoot(startDir: string): string {
 }
 
 function listFlowFiles(rootDir: string): FlowFile[] {
-  const flowsDir = path.join(rootDir, 'flows')
+  const flowsDir = path.join(rootDir, 'admin', 'flows')
   const out: FlowFile[] = []
   const walk = (d: string) => {
     if (!fs.existsSync(d)) return
@@ -117,7 +117,7 @@ export function registerAdminCliIpc() {
   })
 
   ipcMain.handle('admin:listHLFlows', async () => {
-    const flowsDir = path.join(root, 'flows')
+    const flowsDir = path.join(root, 'admin', 'flows')
     const out: Array<{ platform:string; slug:string; name:string; file:string }> = []
     const walk = (d:string) => {
       if (!fs.existsSync(d)) return
@@ -133,13 +133,12 @@ export function registerAdminCliIpc() {
     return out
   })
 
-  ipcMain.handle('admin:listLeads', async (_e, platform: unknown) => {
-    const plat = typeof platform === 'string' ? platform : ''
-    const leadsDir = path.join(root, 'leads', plat)
-    const out: Array<{ platform:string; name:string; file:string }> = []
+  ipcMain.handle('admin:listLeads', async () => {
+    const leadsDir = path.join(root, 'admin', 'leads')
+    const out: Array<{ name:string; file:string }> = []
     try {
       const files = fs.readdirSync(leadsDir).filter(f => f.endsWith('.json'))
-      for (const f of files) out.push({ platform: plat, name: f.replace(/\.json$/,''), file: path.join(leadsDir,f) })
+      for (const f of files) out.push({ name: f.replace(/\.json$/,''), file: path.join(leadsDir,f) })
     } catch {}
     return out
   })
@@ -149,7 +148,7 @@ export function registerAdminCliIpc() {
     if (!wnd) throw new Error('Fenêtre introuvable')
     const { flowFile, leadFile, platform, mode, keepOpen } = payload || {}
     if (!flowFile || !leadFile) throw new Error('flowFile et leadFile requis')
-    const fieldsFile = path.join(root, 'field-definitions', `${platform}.json`)
+    const fieldsFile = path.join(root, 'admin', 'field-definitions', `${platform}.json`)
     if (!fs.existsSync(fieldsFile)) throw new Error('field-definitions introuvable pour '+platform)
     const electronBin = process.execPath
     const script = path.join(root, 'admin', 'cli', 'run_hl_flow.mjs')

@@ -11,7 +11,7 @@ Usage:
 Import field definitions from JSON file to database.
 
 Example:
-  node scripts/metadata/import_fields.mjs field-definitions/alptis.json
+  node scripts/metadata/import_fields.mjs admin/field-definitions/alptis.json
 `)
 }
 

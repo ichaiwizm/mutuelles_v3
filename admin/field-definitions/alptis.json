@@ -1,0 +1,111 @@
+{
+  "platform": "alptis",
+  "fields": [
+    { "key": "login_username", "type": "text", "label": "Nom d’utilisateur", "selector": "#username" },
+    { "key": "login_password", "type": "password", "label": "Mot de passe", "selector": "#password" },
+    { "key": "login_submit", "type": "button", "label": "Connexion", "selector": "button[type=\"submit\"]" },
+
+    { "key": "date_effet", "type": "text", "label": "Date d’effet", "selector": "#dateEffet input[data-test=\"input\"]" },
+
+    { "key": "civilite_adherent", "type": "radio", "label": "Civilité adhérent (MADAME)", "selector": ".section-adherent span[data-test=\"radio\"][value=\"MADAME\"] label" },
+    { "key": "nom_adherent", "type": "text", "label": "Nom adhérent", "selector": "#nom" },
+    { "key": "prenom_adherent", "type": "text", "label": "Prénom adhérent", "selector": "#prenom" },
+    { "key": "date_naissance_adherent", "type": "text", "label": "Date naissance adhérent", "selector": "#date-naissance-adherent input[data-test=\"input\"]" },
+    {
+      "key": "categorie_adherent",
+      "type": "select",
+      "label": "Catégorie socio-professionnelle (adhérent)",
+      "selector": ".section-adherent .totem-select__input input[placeholder=\"Sélectionner une catégorie socioprofessionnelle\"]",
+      "options": {
+        "open_selector": ".section-adherent .totem-select__input input[placeholder=\"Sélectionner une catégorie socioprofessionnelle\"]",
+        "items": [
+          { "value": "CADRES", "label": "Cadres", "option_selector": "div.totem-select-option:has-text(\"Cadres\")" },
+          { "value": "CHEFS_D_ENTREPRISE", "label": "Chefs d’entreprise", "option_selector": "div.totem-select-option:has-text(\"Chefs d’entreprise\")" },
+          { "value": "PROFESSIONS_LIBERALES_ET_ASSIMILES", "label": "Professions libérales", "option_selector": "div.totem-select-option:has-text(\"Professions libérales\")" }
+        ]
+      }
+    },
+    {
+      "key": "regime_adherent",
+      "type": "select",
+      "label": "Régime obligatoire (adhérent)",
+      "selector": ".section-adherent .totem-select__input input[placeholder=\"Sélectionner un régime obligatoire\"]",
+      "options": {
+        "open_selector": ".section-adherent .totem-select__input input[placeholder=\"Sélectionner un régime obligatoire\"]",
+        "items": [
+          { "value": "SECURITE_SOCIALE", "label": "Sécurité sociale", "option_selector": "div.totem-select-option:has-text(\"Sécurité sociale\")" },
+          { "value": "SECURITE_SOCIALE_INDEPENDANTS", "label": "Sécurité sociale indépendants", "option_selector": "div.totem-select-option:has-text(\"indépendants\")" }
+        ]
+      }
+    },
+    { "key": "code_postal", "type": "text", "label": "Code postal", "selector": "input#codePostal" },
+
+    {
+      "key": "conjoint_toggle",
+      "type": "toggle",
+      "label": "Conjoint – Oui/Non",
+      "selector": ".totem-section__header:has(.totem-section__header-title:has-text(\"Conjoint(e)\")) label[data-test=\"label\"]",
+      "metadata": {
+        "toggle": {
+          "on_selector": ".totem-section__header:has(.totem-section__header-title:has-text(\"Conjoint(e)\")) label[data-test=\"label\"]",
+          "state_on_selector": ".totem-section:has(.totem-section__header-title:has-text(\"Conjoint(e)\")) .totem-toggle.totem-toggle--on"
+        }
+      }
+    },
+    { "key": "date_naissance_conjoint", "type": "text", "label": "Date naissance conjoint", "selector": "#date-naissance-conjoint input[data-test=\"input\"]" },
+    {
+      "key": "categorie_conjoint",
+      "type": "select",
+      "label": "Catégorie (conjoint)",
+      "selector": ".sel-c-conjoint-content .totem-select__input input[placeholder=\"Sélectionner une catégorie socioprofessionnelle\"]",
+      "options": {
+        "open_selector": ".sel-c-conjoint-content .totem-select__input input[placeholder=\"Sélectionner une catégorie socioprofessionnelle\"]",
+        "items": [
+          { "value": "CADRES", "label": "Cadres", "option_selector": "div.totem-select-option:has-text(\"Cadres\")" }
+        ]
+      }
+    },
+    {
+      "key": "regime_conjoint",
+      "type": "select",
+      "label": "Régime (conjoint)",
+      "selector": ".sel-c-conjoint-content .totem-select__input input[placeholder=\"Sélectionner un régime obligatoire\"]",
+      "options": {
+        "open_selector": ".sel-c-conjoint-content .totem-select__input input[placeholder=\"Sélectionner un régime obligatoire\"]",
+        "items": [
+          { "value": "SECURITE_SOCIALE", "label": "Sécurité sociale", "option_selector": "div.totem-select-option:has-text(\"Sécurité sociale\")" }
+        ]
+      }
+    },
+
+    {
+      "key": "enfants_toggle",
+      "type": "toggle",
+      "label": "Enfants – Oui/Non",
+      "selector": ".totem-section__header:has(.totem-section__header-title:has-text(\"Enfants\")) label[data-test=\"label\"]",
+      "metadata": {
+        "toggle": {
+          "on_selector": ".totem-section__header:has(.totem-section__header-title:has-text(\"Enfants\")) label[data-test=\"label\"]",
+          "state_on_selector": ".totem-section:has(.totem-section__header-title:has-text(\"Enfants\")) .totem-toggle.totem-toggle--on"
+        }
+      }
+    },
+    { "key": "enfants_add_button", "type": "button", "label": "Ajouter un enfant", "selector": ".totem-section:has(.totem-section__header-title:has-text(\"Enfants\")) button:has-text(\"Ajouter un enfant\")" },
+
+    { "key": "date_naissance_enfant_{i}", "type": "text", "label": "Date naissance enfant {i}", "selector": "#date-naissance-enfant-0 input[data-test=\"input\"]", "metadata": { "dynamicIndex": true } },
+    {
+      "key": "regime_enfant_{i}",
+      "type": "select",
+      "label": "Régime enfant {i}",
+      "selector": ".sub-section-enfant:nth-of-type(1) .totem-select__input input[placeholder=\"Sélectionner un régime obligatoire\"]",
+      "options": {
+        "open_selector": ".sub-section-enfant:nth-of-type(1) .totem-select__input input[placeholder=\"Sélectionner un régime obligatoire\"]",
+        "items": [
+          { "value": "SECURITE_SOCIALE", "label": "Sécurité sociale", "option_selector": "div.totem-select-option:has-text(\"Sécurité sociale\")" }
+        ]
+      },
+      "metadata": { "dynamicIndex": true }
+    }
+  ]
+}
+

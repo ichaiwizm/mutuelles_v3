@@ -57,17 +57,17 @@ Options usuelles : `--mode headless` pour les runs batch, `--mode dev_private` p
 ### Intégration du flow en base
 ```
 # première insertion
-npm run flows:add -- --file flows/alptis/alptis_sante_select_pro_full.json
+npm run flows:add -- --file admin/flows/alptis/alptis_sante_select_pro_full.json
 
 # mise à jour ultérieure
-npm run flows:update -- --file flows/alptis/alptis_sante_select_pro_full.json
+npm run flows:update -- --file admin/flows/alptis/alptis_sante_select_pro_full.json
 
 # contrôle / export
 npm run flows:export -- --slug alptis_sante_select_pro_full
 ```
 
 ## Fichier livré
-- **Flow JSON final** : `flows/alptis/alptis_sante_select_pro_full.json`
+- **Flow JSON final** : `admin/flows/alptis/alptis_sante_select_pro_full.json`
   - Inclut les séquences Axeptio, les `waitFor` d’état, le renseignement complet des sections et les captures documentaires.
 
 ## Points d’attention
