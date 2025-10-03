@@ -15,7 +15,7 @@ function usage(){
 
 function parseArgs(){
   const args = process.argv.slice(2)
-  const opts = { platform:null, fields:null, flow:null, lead:null, mode:'headless' }
+  const opts = { platform:null, fields:null, flow:null, lead:null, mode:'headless', keepOpen:false }
   const take = (i)=>args[++i]
   for (let i=0;i<args.length;i++){
     const a = args[i]
@@ -25,6 +25,7 @@ function parseArgs(){
       case '--flow': opts.flow = take(i); i++; break
       case '--lead': opts.lead = take(i); i++; break
       case '--mode': opts.mode = take(i); i++; break
+      case '--keep-open': opts.keepOpen = true; break
       case '--help': case '-h': usage(); process.exit(0)
       default: if (!a.startsWith('--')) { opts.flow = a } else throw new Error('Option inconnue: '+a)
     }
@@ -44,17 +45,41 @@ async function main(){
   if (!fs.existsSync(fields)) { console.error('field-definitions introuvable:', fields); process.exit(2) }
   if (!fs.existsSync(flow)) { console.error('flow introuvable:', flow); process.exit(2) }
   if (!fs.existsSync(lead)) { console.error('lead introuvable:', lead); process.exit(2) }
-  // Resolve credentials from DB only
-  const db = openDbRO()
-  const plat = getPlatformBySlug(db, opts.platform)
-  const creds = getCredentials(db, plat.id)
-  if (!creds?.username || !creds?.password_encrypted) throw new Error('Identifiants introuvables en DB pour '+opts.platform)
+  // Credentials from parent via file, then via env, else DB fallback
+  let username = null
   let password = null
-  try { if (safeStorage?.isEncryptionAvailable?.() && creds.password_encrypted) { password = safeStorage.decryptString(creds.password_encrypted) } } catch {}
-  if (!password) throw new Error('Déchiffrement du mot de passe impossible (safeStorage)')
-  const username = creds.username
+  const credFile = process.env.ADMIN_CRED_FILE || null
+  if (credFile) {
+    try {
+      const raw = fs.readFileSync(credFile, 'utf-8')
+      const obj = JSON.parse(raw)
+      username = obj?.username || null
+      password = obj?.password || null
+      console.log('[hl] using credentials from file (masked) user=%s', String(username||'').slice(0,3)+'***')
+      try { fs.unlinkSync(credFile) } catch {}
+    } catch (e) {
+      console.log('[hl] failed to read ADMIN_CRED_FILE, fallback to env: %s', String(e?.message||e))
+    }
+  }
+  if (!username || !password) {
+    username = process.env.ADMIN_CRED_USER || null
+    password = process.env.ADMIN_CRED_PASS || null
+    if (username && password) console.log('[hl] using credentials from parent env (masked) user=%s', String(username).slice(0,3)+'***')
+  }
+  if (!username || !password) {
+    console.log('[hl] ADMIN_CRED_* not set; resolving credentials from DB…')
+    const db = openDbRO()
+    const plat = getPlatformBySlug(db, opts.platform)
+    const creds = getCredentials(db, plat.id)
+    if (!creds?.username || !creds?.password_encrypted) throw new Error('Identifiants introuvables en DB pour '+opts.platform)
+    let decrypted = null
+    try { if (safeStorage?.isEncryptionAvailable?.() && creds.password_encrypted) { decrypted = safeStorage.decryptString(creds.password_encrypted) } } catch {}
+    if (!decrypted) throw new Error('Déchiffrement du mot de passe impossible (safeStorage)')
+    username = creds.username
+    password = decrypted
+  }
 
-  await runHighLevelFlow({ fieldsFile:fields, flowFile:flow, leadFile:lead, username, password, mode:opts.mode })
+  await runHighLevelFlow({ fieldsFile:fields, flowFile:flow, leadFile:lead, username, password, mode:opts.mode, keepOpen: opts.keepOpen })
 }
 
 main().catch(e=>{ console.error(e?.stack||e); process.exit(1) })

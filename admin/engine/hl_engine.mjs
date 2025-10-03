@@ -68,6 +68,11 @@ export async function runHighLevelFlow({ fieldsFile, flowFile, leadFile, usernam
     }
     page = context.pages()[0] || await context.newPage()
     page.setDefaultTimeout(15000)
+    context.on('page', (p) => { try { page = p; page.setDefaultTimeout(15000) } catch {} })
+    const ensurePage = async () => {
+      try { if (!page || page.isClosed()) { page = context.pages()[0] || await context.newPage(); page.setDefaultTimeout(15000) } } catch { try { page = await context.newPage() } catch {} }
+      return page
+    }
 
     if (consoleLog) {
       page.on('console', (msg) => { appendText(path.join(networkDir,'console.jsonl'), JSON.stringify({ type:'console', level: msg.type(), text: redactText(msg.text(), redact) })+'\n') })
@@ -92,6 +97,7 @@ export async function runHighLevelFlow({ fieldsFile, flowFile, leadFile, usernam
       const shotName = `step-${String(i+1).padStart(2,'0')}-${slugify(label)}.png`
       const shotPath = path.join(screenshotsDir, shotName)
       try {
+        await ensurePage();
         await execHLStep(page, s, ctx)
         await page.screenshot({ path: shotPath })
         await maybeCollect(stepCollectors(page, i, s, { domDir, jsDir, a11y, domMode: dom, jsMode: jsinfo }))
@@ -101,7 +107,7 @@ export async function runHighLevelFlow({ fieldsFile, flowFile, leadFile, usernam
         const msg = err instanceof Error ? err.message : String(err)
         const errName = `error-${String(i+1).padStart(2,'0')}.png`
         const errPath = path.join(screenshotsDir, errName)
-        try { await page.screenshot({ path: errPath }) } catch {}
+        try { await ensurePage(); await page.screenshot({ path: errPath }) } catch {}
         await maybeCollect(stepCollectors(page, i, s, { domDir, jsDir, a11y, domMode: dom, jsMode: jsinfo, onError: true }))
         emit({ type:s.type, status:'error', stepIndex:i, message: msg, screenshotPath: path.relative(runDir, errPath) })
         stepsSummary.push({ index:i, type:s.type, ok:false, error: msg, screenshot:`screenshots/${errName}` })
@@ -143,13 +149,22 @@ async function execHLStep(page, s, ctx) {
     case 'waitForField': {
       const f = getField(ctx.fields, s.field)
       if (!f.selector) throw new Error(`Selector manquant pour ${s.field}`)
-      await page.waitForSelector(f.selector)
+      await page.waitForSelector(f.selector, { state: 'attached' })
       return }
     case 'fillField': {
       const f = getField(ctx.fields, s.field)
-      const value = resolveValue(s, ctx)
+      let value = resolveValue(s, ctx)
+      // Fallback spécial pour login si la valeur vient uniquement de la DB (pas dans le lead)
+      if ((value === undefined || value === null)) {
+        const key = String(s.field || '').toLowerCase()
+        if (key.includes('login_username') || key.endsWith('username')) value = ctx.username
+        if (key.includes('login_password') || key.endsWith('password')) value = ctx.password
+      }
+      if (value === undefined || value === null) throw new Error(`Valeur manquante pour ${s.field} (leadKey=${s.leadKey||''})`)
       if (!f.selector) throw new Error(`Selector manquant pour ${s.field}`)
       const v = String(value).replace('{username}', ctx.username||'').replace('{password}', ctx.password||'')
+      const logv = String(s.field||'').toLowerCase().includes('password') ? '***' : v
+      console.log('[hl] fillField %s = %s', s.field, logv)
       await page.fill(f.selector, v)
       return }
     case 'toggleField': {
@@ -163,6 +178,7 @@ async function execHLStep(page, s, ctx) {
     case 'selectField': {
       const f = getField(ctx.fields, s.field)
       const value = resolveValue(s, ctx)
+      if (value === undefined || value === null) throw new Error(`Valeur manquante pour ${s.field} (leadKey=${s.leadKey||''})`)
       const open = f?.options?.open_selector || f.selector
       if (!open) throw new Error(`open_selector manquant pour ${s.field}`)
       await page.click(open)
@@ -173,6 +189,7 @@ async function execHLStep(page, s, ctx) {
         item = f?.options?.items?.find((it)=>String(it.label).toLowerCase()===String(value).toLowerCase())
       }
       if (!item?.option_selector) throw new Error(`option_selector manquant pour ${s.field}:${value}`)
+      console.log('[hl] selectField %s -> %s', s.field, String(value))
       await page.click(item.option_selector)
       return }
     case 'clickField': {

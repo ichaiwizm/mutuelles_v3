@@ -7,6 +7,7 @@ export default function Admin() {
   const [busy, setBusy] = useState<string | null>(null)
   const [defaultLead, setDefaultLead] = useState<Record<string,string>>({})
   const [leadsByPlat, setLeadsByPlat] = useState<Record<string, Array<{ platform:string; name:string; file:string }>>>({})
+  const [logs, setLogs] = useState<Record<string,string>>({})
   const unsubRef = useRef<() => void>()
 
   useEffect(() => {
@@ -39,12 +40,25 @@ export default function Admin() {
     const leadFile = defaultLead[flow.platform]
     if (!leadFile) { alert(`Aucun lead trouvé pour ${flow.platform} (leads/${flow.platform}/)`); return }
     setBusy(flow.slug)
+    setLogs(prev => ({ ...prev, [flow.slug]: '' }))
     window.api.adminHL.run({ platform: flow.platform, flowFile: flow.file, leadFile, mode, keepOpen }).then(({ runKey }) => {
       if (unsubRef.current) unsubRef.current()
       unsubRef.current = window.api.adminHL.onRunOutput(runKey, (evt) => {
-        if (evt.type === 'exit') setBusy(null)
+        if (evt.type === 'stdout' || evt.type === 'stderr') {
+          const line = String(evt.data || '')
+          setLogs(prev => {
+            const cur = prev[flow.slug] || ''
+            // limite mémoire: conserver ~8000 derniers caractères
+            const next = (cur + line).slice(-8000)
+            return { ...prev, [flow.slug]: next }
+          })
+        }
+        if (evt.type === 'exit') {
+          setLogs(prev => ({ ...prev, [flow.slug]: (prev[flow.slug]||'') + `\n[exit] code=${evt.code}\n` }))
+          setBusy(null)
+        }
       })
-    }).catch(err => { setBusy(null); console.error(err) })
+    }).catch(err => { setBusy(null); console.error(err); setLogs(prev => ({ ...prev, [flow.slug]: String(err?.message || err) })) })
   }
 
   return (
@@ -73,7 +87,12 @@ export default function Admin() {
                 <button disabled={!!busy} onClick={()=>runHL(f, 'dev_private', true)} className="px-2 py-1 text-xs rounded bg-emerald-700 text-white disabled:opacity-50">Privée + keep</button>
               </div>
             </div>
-            {busy===f.slug ? <div className="mt-2 text-xs text-neutral-600 dark:text-neutral-400">Exécution en cours…</div> : null}
+            {(busy===f.slug || (logs[f.slug] && logs[f.slug].length)) && (
+              <div className="mt-2">
+                <div className="text-xs text-neutral-500 mb-1">Logs</div>
+                <pre className="text-[11px] leading-snug bg-neutral-100 dark:bg-neutral-800/60 rounded p-2 max-h-40 overflow-auto whitespace-pre-wrap">{logs[f.slug] || '—'}</pre>
+              </div>
+            )}
           </div>
         ))}
       </div>
