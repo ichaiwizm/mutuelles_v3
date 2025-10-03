@@ -11,8 +11,8 @@ if ! command -v powershell.exe >/dev/null 2>&1; then
 fi
 
 if [[ $# -lt 1 ]]; then
-  echo "Usage: scripts/cli/run_from_wsl.sh <slug|--file flow.json> [options...]" >&2
-  echo "Exemple: scripts/cli/run_from_wsl.sh alptis_login --mode headless --report html" >&2
+  echo "Usage: admin/cli/run_from_wsl.sh <slug|--file flow.json> [options...]" >&2
+  echo "Exemple: admin/cli/run_from_wsl.sh alptis_login --mode headless --report html" >&2
   exit 2
 fi
 
@@ -43,16 +43,15 @@ join_ps_args() {
 PS_SET_ENV=""
 if [[ -n "${FLOW_USERNAME:-}" ]]; then
   U=${FLOW_USERNAME//"/\`"}
-  PS_SET_ENV+="$env:FLOW_USERNAME=\"$U\"; "
+  PS_SET_ENV+="\$env:FLOW_USERNAME=\"$U\"; "
 fi
 if [[ -n "${FLOW_PASSWORD:-}" ]]; then
   P=${FLOW_PASSWORD//"/\`"}
-  PS_SET_ENV+="$env:FLOW_PASSWORD=\"$P\"; "
+  PS_SET_ENV+="\$env:FLOW_PASSWORD=\"$P\"; "
 fi
 
 PS_ARGS=$(join_ps_args "${CLI_ARGS[@]}")
 
 # Exécute la commande dans PowerShell Windows
 powershell.exe -NoProfile -NonInteractive -Command \
-  "$PS_SET_ENV cd $WIN_PWD; npx --yes cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/cli/run_flow.mjs $PS_ARGS"
-
+  "$PS_SET_ENV cd $WIN_PWD; npx --yes cross-env ELECTRON_RUN_AS_NODE=1 electron admin/cli/run_file_flow.mjs $PS_ARGS"

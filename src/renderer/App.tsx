@@ -12,6 +12,7 @@ const nav = [
   { to: '/credentials', label: 'Identifiants', icon: KeyRound },
   { to: '/leads', label: 'Leads', icon: Users },
   { to: '/flows', label: 'Flux (Dev)', icon: KeyRound },
+  { to: '/admin', label: 'Admin (JSON Flows)', icon: KeyRound },
 ]
 
 export default function App() {

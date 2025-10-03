@@ -64,5 +64,6 @@ dev-data/
 tmp/
 temp/
 runs-cli/
+admin/runs-cli/
 # TypeScript
 *.tsbuildinfo

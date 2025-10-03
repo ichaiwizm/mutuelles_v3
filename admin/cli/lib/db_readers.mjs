@@ -6,7 +6,7 @@ import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
 
 // Reuse project utilities to resolve paths (no DB writes)
-import { getDbPath, getFlowsDir, listFlowFiles, readJsonFile, FlowSchema } from '../../flows/lib/flows_io.mjs'
+import { getDbPath, getFlowsDir, listFlowFiles, readJsonFile, FlowSchema } from '../../../scripts/flows/lib/flows_io.mjs'
 
 const require = createRequire(import.meta.url)
 const Database = require('better-sqlite3')
@@ -85,7 +85,7 @@ export function resolveFlowFileBySlug(slug) {
 
 export function getProjectRoot() {
   const __filename = fileURLToPath(import.meta.url)
-  // from scripts/cli/lib -> up to project root: lib (.) -> cli (..) -> scripts (../..) -> root (../../..)
+  // from admin/cli/lib -> up to project root: lib (.) -> cli (..) -> admin (../..) -> root (../../..)
   return path.resolve(path.dirname(__filename), '../../..')
 }
 

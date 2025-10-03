@@ -3,10 +3,10 @@
 Ce guide explique comment exécuter les flows depuis la ligne de commande, en lisant la DB pour récupérer l’essentiel (plateforme, URL de login, identifiants, profil, chemin Chrome), mais en n’écrivant rien dans la DB. Tous les artefacts sont produits sur disque, par run, avec un rapport HTML.
 
 Chemins importants:
-- Script: `scripts/cli/run_flow.mjs`
-- Helpers DB (lecture seule): `scripts/cli/lib/db_readers.mjs`
+- Script: `admin/cli/run_file_flow.mjs`
+- Helpers DB (lecture seule): `admin/cli/lib/db_readers.mjs`
 - Dossier des flows JSON: `flows/`
-- Dossier des artefacts (par défaut): `runs-cli/`
+- Dossier des artefacts (par défaut): `admin/runs-cli/`
 
 ## Prérequis
 - Windows, Node.js LTS ≥ 18 (recommandé ≥ 20), npm.
@@ -53,7 +53,7 @@ Alias pratiques:
 Alternative robuste (bypass npm) si votre shell réécrit les options:
 
 ```
-npx cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/cli/run_flow.mjs <slug> [options]
+npx cross-env ELECTRON_RUN_AS_NODE=1 electron admin/cli/run_file_flow.mjs <slug> [options]
 ```
 
 ## Résolution des données
@@ -87,7 +87,7 @@ Observabilité
 - `--redact <regex>`: regex de masquage appliquée aux logs texte (défaut: `(password|token|authorization|cookie)=([^;\s]+)`)
 
 Sortie
-- `--out-root <dir>`: dossier racine des runs (défaut `runs-cli`)
+- `--out-root <dir>`: dossier racine des runs (défaut `admin/runs-cli`)
 - `--report html|json|none`: génère `report.html` et/ou `index.json`
 - `--open`: ouvre le dossier du run à la fin
 - `--json`: émet aussi la progression sur stdout en NDJSON
@@ -97,7 +97,7 @@ Credentials
 
 ## Artefacts de sortie
 
-`runs-cli/<slug>/<YYYYMMDD-HHMMSS>-<id>/`
+`admin/runs-cli/<slug>/<YYYYMMDD-HHMMSS>-<id>/`
 - `index.json`: manifeste (métadonnées run, options, steps, artefacts)
 - `report.html`: rapport statique (timeline, captures, liens DOM/JS)
 - `progress.ndjson`: événements temps réel
@@ -107,41 +107,6 @@ Credentials
 - `dom/step-XX.html`, `dom/step-XX.focus.html`
 - `js/step-XX.listeners.json`, `js/scripts/script-*.js`
 - `video/run.webm` (si `--video` et contexte supporté)
-
-## Exemples
-
-1) Dev privée (fenêtre visible) + rapport, sans logs réseau:
-
-```
-npm run flows:run -- -- alptis_login \
-  --mode dev_private --trace retain-on-failure --video --console \
-  --dom steps --js steps --report html --open \
-  --vars username="VOTRE_LOGIN" --vars password="VOTRE_MDP"
-```
-
-2) Dev (profil persistant de la DB), détection auto de Chrome, avec `.env`:
-
-```
-# .env: ALPTIS_USERNAME / ALPTIS_PASSWORD
-npm run flows:run -- -- alptis_login --mode dev --report html --open
-```
-
-3) Forcer le chemin Chrome (install per-user):
-
-```
-npm run flows:run -- -- alptis_login --mode dev \
-  --chrome "C:\\Users\\<vous>\\AppData\\Local\\Google\\Chrome\\Application\\chrome.exe" \
-  --report html --open --vars username="..." --vars password="..."
-```
-
-4) Audit plus lourd (réseau inclus — attention données sensibles):
-
-```
-npm run flows:run -- -- alptis_login \
-  --mode dev_private --trace on --har --video --console --network \
-  --dom all --js steps --report html --open \
-  --vars username="..." --vars password="..."
-```
 
 ## Sécurité & confidentialité
 - Par défaut, une regex de redaction masque `password|token|authorization|cookie` dans les textes, mais elle ne filtre pas automatiquement les bodies binaires.
@@ -165,13 +130,13 @@ Contexte: un agent (ex: pipeline CI, ou un modèle exécutant des commandes) peu
 
 ### Script de confort
 
-Un wrapper est fourni: `scripts/cli/run_from_wsl.sh`.
+Un wrapper est fourni: `admin/cli/run_from_wsl.sh`.
 
 Usage minimal:
 
 ```
 # Depuis WSL, à la racine du repo
-scripts/cli/run_from_wsl.sh alptis_login --mode headless --report html
+admin/cli/run_from_wsl.sh alptis_login --mode headless --report html
 ```
 
 Avec identifiants sans les exposer en ligne de commande (recommandé):
@@ -179,14 +144,14 @@ Avec identifiants sans les exposer en ligne de commande (recommandé):
 ```
 export FLOW_USERNAME="VOTRE_LOGIN"
 export FLOW_PASSWORD="VOTRE_MDP"
-scripts/cli/run_from_wsl.sh alptis_login --mode headless --trace retain-on-failure --console --dom steps --js steps --report html
+admin/cli/run_from_wsl.sh alptis_login --mode headless --trace retain-on-failure --console --dom steps --js steps --report html
 ```
 
 Le script:
 - Convertit le dossier courant WSL en chemin Windows avec `wslpath -w`.
 - Lance PowerShell: `powershell.exe -NoProfile -NonInteractive -Command '...'`.
 - Transmet `FLOW_USERNAME`/`FLOW_PASSWORD` comme variables d’environnement PowerShell (non visibles dans la ligne de commande Electron).
-- Appelle: `npx --yes cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/cli/run_flow.mjs ...` côté Windows.
+- Appelle: `npx --yes cross-env ELECTRON_RUN_AS_NODE=1 electron admin/cli/run_flow.mjs ...` côté Windows.
 
 Avantages:
 - Charge les binaires natifs Windows (`better-sqlite3`) correctement.
@@ -203,7 +168,7 @@ Exemple complet (IA → WSL → PowerShell):
 ```
 export FLOW_USERNAME="Fragoso.n@france-epargne.fr"
 export FLOW_PASSWORD="Nicolas.epargne2024"
-scripts/cli/run_from_wsl.sh alptis_login \
+admin/cli/run_from_wsl.sh alptis_login \
   --mode headless --trace retain-on-failure --console \
   --dom steps --js steps --report html
 ```
@@ -231,7 +196,7 @@ Important: ne placez JAMAIS des identifiants (logins/mots de passe) en clair dan
   ```bash
   export FLOW_USERNAME="<votre_login>"
   export FLOW_PASSWORD="<votre_mot_de_passe>"
-  scripts/cli/run_from_wsl.sh alptis_login --mode headless --report html
+  admin/cli/run_from_wsl.sh alptis_login --mode headless --report html
   # Nettoyage
   unset FLOW_USERNAME FLOW_PASSWORD
   ```
@@ -244,5 +209,5 @@ Important: ne placez JAMAIS des identifiants (logins/mots de passe) en clair dan
   Évitez `--network` dans ce cas (le POST de login peut contenir le mot de passe). A minima, ajoutez `--redact`.
 
 Bonnes pratiques:
-- N’ajoutez jamais des identifiants en clair dans `docs/` ni dans les commit messages.
+- N’ajoutez jamais des identifiants en clair dans `admin/docs/` ni dans les commit messages.
 - Si vous avez besoin de fichiers locaux, créez un dossier non versionné (ex: `.secrets/`, ignoré par Git) et chargez-les dans l’environnement au moment de l’exécution.

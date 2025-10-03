@@ -45,6 +45,17 @@ contextBridge.exposeInMainWorld('api', {
     deleteAllRuns: () => ipcRenderer.invoke('automation:deleteAllRuns') as Promise<{ deleted: number }>,
     listFlowSteps: (flowSlug: string) => ipcRenderer.invoke('automation:listFlowSteps', flowSlug) as Promise<any[]>
   },
+  admin: {
+    listFileFlows: () => ipcRenderer.invoke('admin:listFileFlows') as Promise<Array<{ platform:string; slug:string; name:string; file:string }>>,
+    runFileFlow: (payload: { slug?: string; file?: string; mode?: 'headless'|'dev'|'dev_private'; keepOpen?: boolean }) => ipcRenderer.invoke('admin:runFileFlow', payload) as Promise<{ runKey:string; pid:number; flow:{ platform:string; slug:string; name:string; file:string } }>,
+    onRunOutput: (runKey: string, cb: (e: { type:'stdout'|'stderr'|'exit'; data?: string; code?: number|null; latestRunDir?: string|null }) => void) => {
+      const ch = `admin:runOutput:${runKey}`
+      const handler = (_: any, data: any) => cb(data)
+      ipcRenderer.on(ch, handler)
+      return () => ipcRenderer.removeListener(ch, handler)
+    },
+    openPath: (p: string) => ipcRenderer.invoke('admin:openPath', p) as Promise<string>
+  },
   credentials: {
     listSelected: () => ipcRenderer.invoke('pcreds:listSelected') as Promise<Array<{ platform_id:number; name:string; status:string; selected:boolean; has_creds:boolean; username:string|null }>>,
     get: (platform_id: number) => ipcRenderer.invoke('pcreds:get', platform_id) as Promise<{ username:string|null; has_creds:boolean }>,

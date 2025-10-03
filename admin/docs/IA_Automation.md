@@ -7,11 +7,11 @@
 - Fournir un JSON exploitable par le runner CLI ainsi que les commandes pour l’intégrer en base.
 
 ## Environnement & outils utilisés
-- **Runner CLI** : `scripts/cli/run_flow.mjs` piloté via `scripts/cli/run_from_wsl.sh` (WSL → PowerShell → Electron).
+- **Runner CLI** : `admin/cli/run_file_flow.mjs` piloté via `admin/cli/run_from_wsl.sh` (WSL → PowerShell → Electron).
 - **Playwright core** (chromium / channel Chrome).
 - **BDD SQLite** (lecture seule pour les tests).
 - **Commandes principales** :
-  - `scripts/cli/run_from_wsl.sh <flow> [options]`
+  - `admin/cli/run_from_wsl.sh <flow> [options]`
   - `npm run flows:add -- --file <path>` (insertion en base)
   - `npm run flows:update -- --file <path>` (mise à jour)
   - `npm run flows:export -- --slug <slug>` (contrôle)
@@ -19,7 +19,7 @@
 
 ## Démarche et itérations
 1. **Cartographie initiale**
-   - Lecture des docs (`docs/CLI.md`, README) + inspection du DOM via exécutions headless.
+   - Lecture des docs (`admin/docs/CLI.md`, README) + inspection du DOM via exécutions headless.
    - Extraction des sélecteurs (IDs `#dateEffet`, placeholders, `.totem-select-option`, etc.).
 
 2. **Premier flow brut**
@@ -41,15 +41,15 @@
 
 5. **Validation**
    - Runs de référence :
-     - Headless : `runs-cli/alptis_sante_select_pro_full/alptis_sante_select_pro_full-20250926-095627-3x0h0v/`
-     - Visible (`dev_private`) : `runs-cli/alptis_sante_select_pro_full/alptis_sante_select_pro_full-20250926-131715-qvp70a/`
+     - Headless : `admin/runs-cli/alptis_sante_select_pro_full/alptis_sante_select_pro_full-20250926-095627-3x0h0v/`
+     - Visible (`dev_private`) : `admin/runs-cli/alptis_sante_select_pro_full/alptis_sante_select_pro_full-20250926-131715-qvp70a/`
    - Contrôles DOM (`dom/step-40.html`, `dom/step-64.html`) : classes `totem-toggle--on`, absence de `aria-invalid`.
    - Captures finales : `form-complet.png` + sections.
 
 ## Commandes récapitulatives
 ### Exécution CLI (WSL)
 ```
-scripts/cli/run_from_wsl.sh alptis_sante_select_pro_full \
+admin/cli/run_from_wsl.sh alptis_sante_select_pro_full \
   --mode dev_private --dom steps --report html --trace retain-on-failure --console
 ```
 Options usuelles : `--mode headless` pour les runs batch, `--mode dev_private` pour suivre la fenêtre Chrome Windows.
@@ -77,5 +77,5 @@ npm run flows:export -- --slug alptis_sante_select_pro_full
 - Les options `--dom steps` génèrent des `dom/step-xx*.html` utiles pour analyser les erreurs.
 
 ## Artefacts utiles
-- Rapport visible : `runs-cli/alptis_sante_select_pro_full/alptis_sante_select_pro_full-20250926-131715-qvp70a/report.html`
+- Rapport visible : `admin/runs-cli/alptis_sante_select_pro_full/alptis_sante_select_pro_full-20250926-131715-qvp70a/report.html`
 - Captures sections/forms : même dossier `/screenshots/` (`section-adherent.png`, `section-conjoint.png`, `section-enfants.png`, `form-complet.png`).
