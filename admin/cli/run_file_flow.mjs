@@ -6,6 +6,11 @@ import fs from 'node:fs'
 import path from 'node:path'
 import os from 'node:os'
 import { chromium } from 'playwright-core'
+import { createRequire } from 'node:module'
+const __require = createRequire(import.meta.url)
+let safeStorage
+try { ({ safeStorage } = __require('electron')) } catch { safeStorage = null }
+import { openDbRO, getPlatformBySlug, getCredentials } from './lib/db_readers.mjs'
 
 function parseArgs() {
   const args = process.argv.slice(2)
@@ -56,7 +61,7 @@ function parseArgs() {
       case '--open': opts.open = true; break
       case '--json': opts.json = true; break
       case '--keep-open': opts.keepOpen = true; break
-      case '--vars': { const kv = take(i); i++; const [k,...rest] = String(kv).split('='); opts.vars[k] = rest.join('='); break }
+      // --vars ignoré: les credentials viennent uniquement de la DB
       case '--help':
       case '-h': usage(); process.exit(0)
       default:
@@ -174,10 +179,15 @@ async function main() {
   const chromePath = candidates.find(p => { try { return p && fs.existsSync(p) } catch { return false } })
   const useChannel = !chromePath ? 'chrome' : null
 
-  // Credentials: --vars > .env per-platform > FLOW_* env
-  let username = opts.vars.username || getEnvUser(flow.platform) || process.env.FLOW_USERNAME || null
-  let password = opts.vars.password || getEnvPass(flow.platform) || process.env.FLOW_PASSWORD || null
-  if (!username || !password) { console.error('Identifiants manquants (utilisez .env ALPTIS_USERNAME/PASSWORD ou --vars).'); process.exit(2) }
+  // Credentials: DB only
+  const db = openDbRO()
+  const plat = getPlatformBySlug(db, flow.platform)
+  const creds = getCredentials(db, plat.id)
+  if (!creds?.username || !creds?.password_encrypted) { console.error('Identifiants introuvables en DB pour '+flow.platform); process.exit(2) }
+  let password = null
+  try { if (safeStorage?.isEncryptionAvailable?.() && creds.password_encrypted) { password = safeStorage.decryptString(creds.password_encrypted) } } catch {}
+  if (!password) { console.error('Déchiffrement du mot de passe impossible (safeStorage).'); process.exit(2) }
+  const username = creds.username
 
   const meta = {
     run: { id: runId, slug: flow.slug, platform: flow.platform, startedAt: new Date().toISOString(), mode: opts.mode, chrome: chromePath, profileDir: null },
@@ -421,4 +431,3 @@ async function openPath(target) {
 }
 
 main().catch(err => { console.error(err.stack || err); process.exit(1) })
-

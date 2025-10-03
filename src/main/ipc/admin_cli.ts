@@ -113,4 +113,54 @@ export function registerAdminCliIpc() {
 
     return { runKey, pid: child.pid, flow: item }
   })
+
+  ipcMain.handle('admin:listHLFlows', async () => {
+    const flowsDir = path.join(root, 'flows')
+    const out: Array<{ platform:string; slug:string; name:string; file:string }> = []
+    const walk = (d:string) => {
+      if (!fs.existsSync(d)) return
+      for (const ent of fs.readdirSync(d, { withFileTypes:true })) {
+        const p = path.join(d, ent.name)
+        if (ent.isDirectory()) walk(p)
+        else if (ent.isFile() && ent.name.endsWith('.hl.json')) {
+          try { const obj = JSON.parse(fs.readFileSync(p,'utf-8')); out.push({ platform: obj.platform||'unknown', slug: obj.slug||ent.name, name: obj.name||obj.slug||ent.name, file:p }) } catch {}
+        }
+      }
+    }
+    walk(flowsDir)
+    return out
+  })
+
+  ipcMain.handle('admin:listLeads', async (_e, platform: unknown) => {
+    const plat = typeof platform === 'string' ? platform : ''
+    const leadsDir = path.join(root, 'leads', plat)
+    const out: Array<{ platform:string; name:string; file:string }> = []
+    try {
+      const files = fs.readdirSync(leadsDir).filter(f => f.endsWith('.json'))
+      for (const f of files) out.push({ platform: plat, name: f.replace(/\.json$/,''), file: path.join(leadsDir,f) })
+    } catch {}
+    return out
+  })
+
+  ipcMain.handle('admin:runHLFlow', async (e, payload: any) => {
+    const wnd = BrowserWindow.fromWebContents(e.sender)
+    if (!wnd) throw new Error('Fenêtre introuvable')
+    const { flowFile, leadFile, platform, mode, keepOpen } = payload || {}
+    if (!flowFile || !leadFile) throw new Error('flowFile et leadFile requis')
+    const fieldsFile = path.join(root, 'field-definitions', `${platform}.json`)
+    if (!fs.existsSync(fieldsFile)) throw new Error('field-definitions introuvable pour '+platform)
+    const electronBin = process.execPath
+    const script = path.join(root, 'admin', 'cli', 'run_hl_flow.mjs')
+    const args = [ script, '--platform', platform, '--flow', flowFile, '--lead', leadFile ]
+    if (mode) { args.push('--mode', mode) }
+    if (keepOpen) args.push('--keep-open') // not used directly by run_hl_flow, but harmless if ignored
+    const env = { ...process.env, ELECTRON_RUN_AS_NODE: '1' }
+    const child = spawn(electronBin, args, { cwd: root, env })
+    const runKey = `${path.basename(flowFile)}-${Date.now()}-${child.pid}`
+    const channel = `admin:runOutput:${runKey}`
+    child.stdout.on('data', (b)=>{ try { wnd.webContents.send(channel, { type:'stdout', data: b.toString() }) } catch {} })
+    child.stderr.on('data', (b)=>{ try { wnd.webContents.send(channel, { type:'stderr', data: b.toString() }) } catch {} })
+    child.on('close', (code)=>{ try { wnd.webContents.send(channel, { type:'exit', code }) } catch {} })
+    return { runKey, pid: child.pid }
+  })
 }

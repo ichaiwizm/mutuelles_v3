@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "platform": "alptis",
+  "slug": "alptis_sante_select_pro_full_hl",
+  "name": "Alptis Santé Select – Informations projet (HL)",
+  "trace": "retain-on-failure",
+  "steps": [
+    { "type": "goto", "url": "https://pro.alptis.org/", "label": "accueil" },
+    { "type": "waitForField", "field": "login_username", "label": "login-form" },
+    { "type": "fillField", "field": "login_username", "leadKey": "credentials.username", "label": "fill-user" },
+    { "type": "fillField", "field": "login_password", "leadKey": "credentials.password", "label": "fill-pass" },
+    { "type": "acceptConsent", "selector": "#axeptio_btn_acceptAll", "label": "accept-axeptio-login" },
+    { "type": "sleep", "timeout_ms": 800, "label": "wait-after-axeptio-login" },
+    { "type": "clickField", "field": "login_submit", "label": "submit" },
+
+    { "type": "goto", "url": "https://pro.alptis.org/sante-select/informations-projet/", "label": "goto-infos-projet" },
+    { "type": "sleep", "timeout_ms": 1500, "label": "post-goto-wait" },
+    { "type": "acceptConsent", "selector": "#axeptio_overlay #axeptio_btn_acceptAll", "label": "accept-axeptio-page" },
+    { "type": "waitForField", "field": "date_effet", "label": "infos-projet-ready" },
+
+    { "type": "fillField", "field": "date_effet", "leadKey": "projet.date_effet", "label": "fill-date-effet" },
+    { "type": "sleep", "timeout_ms": 500, "label": "wait-after-date-effet" },
+
+    { "type": "clickField", "field": "civilite_adherent", "label": "civilite-madame", "value": "MADAME" },
+    { "type": "fillField", "field": "nom_adherent", "leadKey": "adherent.nom", "label": "fill-nom" },
+    { "type": "fillField", "field": "prenom_adherent", "leadKey": "adherent.prenom", "label": "fill-prenom" },
+    { "type": "fillField", "field": "date_naissance_adherent", "leadKey": "adherent.date_naissance", "label": "fill-naissance-adherent" },
+    { "type": "selectField", "field": "categorie_adherent", "leadKey": "adherent.categorie", "label": "select-categorie-adherent" },
+    { "type": "selectField", "field": "regime_adherent", "leadKey": "adherent.regime", "label": "select-regime-adherent" },
+    { "type": "fillField", "field": "code_postal", "leadKey": "adherent.code_postal", "label": "fill-code-postal" },
+
+    { "type": "toggleField", "field": "conjoint_toggle", "label": "toggle-conjoint-oui", "state": "on" },
+    { "type": "fillField", "field": "date_naissance_conjoint", "leadKey": "conjoint.date_naissance", "label": "fill-naissance-conjoint" },
+    { "type": "selectField", "field": "categorie_conjoint", "leadKey": "conjoint.categorie", "label": "select-categorie-conjoint" },
+    { "type": "selectField", "field": "regime_conjoint", "leadKey": "conjoint.regime", "label": "select-regime-conjoint" },
+
+    { "type": "toggleField", "field": "enfants_toggle", "label": "toggle-enfants-oui", "state": "on" },
+    { "type": "waitForField", "field": "enfants_add_button", "label": "wait-add-enfant-visible" },
+
+    { "type": "fillField", "field": "date_naissance_enfant_{i}", "label": "fill-naissance-enfant-1", "value": "{lead.enfants[0].date_naissance}", "leadKey": "enfants.0.date_naissance" },
+    { "type": "selectField", "field": "regime_enfant_{i}", "label": "regime-enfant-1", "value": "{lead.enfants[0].regime}", "leadKey": "enfants.0.regime" },
+
+    { "type": "clickField", "field": "enfants_add_button", "label": "add-enfant-2" },
+    { "type": "waitForField", "field": "date_naissance_enfant_{i}", "label": "wait-enfant-2-fields" },
+    { "type": "fillField", "field": "date_naissance_enfant_{i}", "label": "fill-naissance-enfant-2", "value": "{lead.enfants[1].date_naissance}", "leadKey": "enfants.1.date_naissance" },
+    { "type": "selectField", "field": "regime_enfant_{i}", "label": "regime-enfant-2", "value": "{lead.enfants[1].regime}", "leadKey": "enfants.1.regime" },
+
+    { "type": "clickField", "field": "enfants_add_button", "label": "add-enfant-3" },
+    { "type": "waitForField", "field": "date_naissance_enfant_{i}", "label": "wait-enfant-3-fields" },
+    { "type": "fillField", "field": "date_naissance_enfant_{i}", "label": "fill-naissance-enfant-3", "value": "{lead.enfants[2].date_naissance}", "leadKey": "enfants.2.date_naissance" },
+    { "type": "selectField", "field": "regime_enfant_{i}", "label": "regime-enfant-3", "value": "{lead.enfants[2].regime}", "leadKey": "enfants.2.regime" },
+
+    { "type": "sleep", "timeout_ms": 500, "label": "final-wait" }
+  ]
+}
+

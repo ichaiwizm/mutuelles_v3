@@ -57,6 +57,17 @@ contextBridge.exposeInMainWorld('api', {
     },
     openPath: (p: string) => ipcRenderer.invoke('admin:openPath', p) as Promise<string>
   },
+  adminHL: {
+    listHLFlows: () => ipcRenderer.invoke('admin:listHLFlows') as Promise<Array<{ platform:string; slug:string; name:string; file:string }>>,
+    listLeads: (platform: string) => ipcRenderer.invoke('admin:listLeads', platform) as Promise<Array<{ platform:string; name:string; file:string }>>,
+    run: (payload: { platform:string; flowFile:string; leadFile:string; mode?: 'headless'|'dev'|'dev_private'; keepOpen?: boolean }) => ipcRenderer.invoke('admin:runHLFlow', payload) as Promise<{ runKey:string; pid:number }>,
+    onRunOutput: (runKey: string, cb: (e:any)=>void) => {
+      const ch = `admin:runOutput:${runKey}`
+      const h = (_:any, d:any)=>cb(d)
+      ipcRenderer.on(ch, h)
+      return ()=>ipcRenderer.removeListener(ch, h)
+    }
+  },
   credentials: {
     listSelected: () => ipcRenderer.invoke('pcreds:listSelected') as Promise<Array<{ platform_id:number; name:string; status:string; selected:boolean; has_creds:boolean; username:string|null }>>,
     get: (platform_id: number) => ipcRenderer.invoke('pcreds:get', platform_id) as Promise<{ username:string|null; has_creds:boolean }>,
@@ -134,6 +145,12 @@ declare global {
         deleteRun: (runId: string) => Promise<boolean>
         deleteAllRuns: () => Promise<{ deleted: number }>
         listFlowSteps: (flowSlug: string) => Promise<any[]>
+      }
+      adminHL: {
+        listHLFlows: () => Promise<Array<{ platform:string; slug:string; name:string; file:string }>>
+        listLeads: (platform: string) => Promise<Array<{ platform:string; name:string; file:string }>>
+        run: (payload: { platform:string; flowFile:string; leadFile:string; mode?: 'headless'|'dev'|'dev_private'; keepOpen?: boolean }) => Promise<{ runKey:string; pid:number }>
+        onRunOutput: (runKey: string, cb:(e:any)=>void) => (()=>void)
       }
     }
   }

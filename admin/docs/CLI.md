@@ -175,39 +175,30 @@ admin/cli/run_from_wsl.sh alptis_login \
 
 Le script renvoie exactement les mêmes logs et artefacts que l’exécution manuelle sous PowerShell.
 
-### Secrets & identifiants (ne pas committer)
+### Identifiants (DB uniquement)
 
-Important: ne placez JAMAIS des identifiants (logins/mots de passe) en clair dans le dépôt (README, docs, scripts, commits). Utilisez l’une des méthodes ci‑dessous et gardez les secrets hors Git.
+Les runners Admin lisent désormais les identifiants uniquement depuis la base (dev-data/mattuelles.sqlite3) via better-sqlite3 et `electron.safeStorage` pour le déchiffrement. Aucune variable d’environnement ou `--vars` n’est utilisée pour les credentials.
 
-- Via l’app (recommandé si vous exécutez côté Windows): ouvrez l’app, enregistrez les identifiants dans « Identifiants ». Ils sont chiffrés via `safeStorage`. La CLI les lira si le déchiffrement est disponible.
+Pré-requis:
+- Renseigner les identifiants dans l’app (menu Credentials) pour chaque plateforme concernée.
+- Vérifier que le déchiffrement `safeStorage` fonctionne côté Windows.
 
-- Via variables d’environnement (recommandé en CLI/WSL):
+## Mode “High‑Level” (Fields + Lead + Flow)
 
-  PowerShell (session courante seulement):
-  ```powershell
-  $env:FLOW_USERNAME = "<votre_login>"
-  $env:FLOW_PASSWORD = "<votre_mot_de_passe>"
-  npm run flows:run -- -- alptis_login --mode dev_private --report html --open
-  # Nettoyage
-  Remove-Item env:FLOW_USERNAME, env:FLOW_PASSWORD
-  ```
+Pour alléger les flows, vous pouvez décrire des étapes haut niveau qui s’appuient sur les définitions de champs par plateforme et un jeu de données “lead”. Pas de DB.
 
-  WSL (utilise le wrapper IA):
-  ```bash
-  export FLOW_USERNAME="<votre_login>"
-  export FLOW_PASSWORD="<votre_mot_de_passe>"
-  admin/cli/run_from_wsl.sh alptis_login --mode headless --report html
-  # Nettoyage
-  unset FLOW_USERNAME FLOW_PASSWORD
-  ```
+- Fields: `field-definitions/<platform>.json` (ex: `field-definitions/alptis.json`)
+- Lead: `leads/<platform>/<lead>.json` (valeurs, credentials)
+- Flow HL: `flows/<platform>/<slug>.hl.json`
 
-- Via arguments CLI (moins sûr — évitez en CI):
-  ```bash
-  npm run flows:run -- -- alptis_login --mode dev_private \
-    --vars username="<votre_login>" --vars password="<votre_mot_de_passe>"
-  ```
-  Évitez `--network` dans ce cas (le POST de login peut contenir le mot de passe). A minima, ajoutez `--redact`.
+Runner (WSL → Windows):
+```
+# Variables d’environnement pour credentials si absents du lead
+export FLOW_USERNAME="..."; export FLOW_PASSWORD="..."
+admin/cli/run_hl_from_wsl.sh --platform alptis \
+  --flow flows/alptis/alptis_login.hl.json \
+  --lead leads/alptis/sample_login.json \
+  --mode headless
+```
 
-Bonnes pratiques:
-- N’ajoutez jamais des identifiants en clair dans `admin/docs/` ni dans les commit messages.
-- Si vous avez besoin de fichiers locaux, créez un dossier non versionné (ex: `.secrets/`, ignoré par Git) et chargez-les dans l’environnement au moment de l’exécution.
+Artefacts: identiques à ceux du runner classique (report.html, index.json, screenshots/, dom/, js/, trace/ …) sous `admin/runs-cli/<slug>/<runId>/`.

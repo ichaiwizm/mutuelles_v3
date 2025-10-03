@@ -1,0 +1,9 @@
+{
+  "platform": "alptis",
+  "name": "sample_login",
+  "credentials": {
+    "username": "${FLOW_USERNAME}",
+    "password": "${FLOW_PASSWORD}"
+  }
+}
+

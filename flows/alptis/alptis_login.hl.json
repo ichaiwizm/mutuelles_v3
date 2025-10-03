@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "platform": "alptis",
+  "slug": "alptis_login_hl",
+  "name": "Connexion Alptis (HL)",
+  "trace": "retain-on-failure",
+  "steps": [
+    { "type": "goto", "url": "https://pro.alptis.org/", "label": "accueil" },
+    { "type": "waitForField", "field": "login_username", "label": "login-form" },
+    { "type": "fillField", "field": "login_username", "leadKey": "credentials.username", "label": "fill-user" },
+    { "type": "fillField", "field": "login_password", "leadKey": "credentials.password", "label": "fill-pass" },
+    { "type": "clickField", "field": "login_submit", "label": "submit" },
+    { "type": "sleep", "timeout_ms": 1500, "label": "sleep-1" },
+    { "type": "acceptConsent", "selector": "#axeptio_btn_acceptAll", "label": "accept-axeptio" }
+  ]
+}
+
