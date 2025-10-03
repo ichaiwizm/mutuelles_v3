@@ -1,5 +1,4 @@
 {
-  "platform": "alptis",
   "name": "sample_full",
   "credentials": { "username": "${FLOW_USERNAME}", "password": "${FLOW_PASSWORD}" },
   "projet": { "date_effet": "01/10/2025" },
@@ -24,4 +23,3 @@
     { "date_naissance": "07/07/2014", "regime": "SECURITE_SOCIALE" }
   ]
 }
-

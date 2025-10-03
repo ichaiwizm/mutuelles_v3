@@ -1,5 +1,4 @@
 {
-  "platform": "alptis",
   "source": "trio",
   "name": "lead_baptiste_deschamps",
   "contact": {
@@ -35,4 +34,3 @@
   "projet": { "date_effet": "07/04/2025" },
   "besoin": { "soins_medicaux": 3, "hospitalisation": 3, "optique": 3, "dentaire": 3 }
 }
-

@@ -1,5 +1,4 @@
 {
-  "platform": "alptis",
   "source": "assurprospect",
   "name": "lead_xavier_pinelli",
   "contact": {
@@ -26,4 +25,3 @@
   "projet": { "date_effet": "01/04/2025" },
   "besoin": { "motif": "Changer de contrat", "assureur_actuel": "AXA COURTAGE", "formule": "Intermédiaire" }
 }
-

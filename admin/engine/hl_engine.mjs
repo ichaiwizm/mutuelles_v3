@@ -147,12 +147,16 @@ async function execHLStep(page, s, ctx) {
       try { await page.waitForSelector(sel, { timeout: s.timeout_ms || 1500 }); await page.click(sel) } catch {}
       return }
     case 'waitForField': {
-      const f = getField(ctx.fields, s.field)
+      let f = getField(ctx.fields, s.field)
+      const idx = extractDynamicIndex(s)
+      if (idx != null && f?.metadata?.dynamicIndex) f = withDynamicIndex(f, idx)
       if (!f.selector) throw new Error(`Selector manquant pour ${s.field}`)
       await page.waitForSelector(f.selector, { state: 'attached' })
       return }
     case 'fillField': {
-      const f = getField(ctx.fields, s.field)
+      let f = getField(ctx.fields, s.field)
+      const idx = extractDynamicIndex(s)
+      if (idx != null && f?.metadata?.dynamicIndex) f = withDynamicIndex(f, idx)
       let value = resolveValue(s, ctx)
       // Fallback spécial pour login si la valeur vient uniquement de la DB (pas dans le lead)
       if ((value === undefined || value === null)) {
@@ -168,7 +172,9 @@ async function execHLStep(page, s, ctx) {
       await page.fill(f.selector, v)
       return }
     case 'toggleField': {
-      const f = getField(ctx.fields, s.field)
+      let f = getField(ctx.fields, s.field)
+      const idx = extractDynamicIndex(s)
+      if (idx != null && f?.metadata?.dynamicIndex) f = withDynamicIndex(f, idx)
       const onSel = f?.metadata?.toggle?.on_selector || f.selector
       if (!onSel) throw new Error(`toggle on_selector manquant pour ${s.field}`)
       // click label to toggle
@@ -176,7 +182,9 @@ async function execHLStep(page, s, ctx) {
       if (s.state === 'on') { await page.waitForSelector(f?.metadata?.toggle?.state_on_selector || '.totem-toggle--on') }
       return }
     case 'selectField': {
-      const f = getField(ctx.fields, s.field)
+      let f = getField(ctx.fields, s.field)
+      const idx = extractDynamicIndex(s)
+      if (idx != null && f?.metadata?.dynamicIndex) f = withDynamicIndex(f, idx)
       const value = resolveValue(s, ctx)
       if (value === undefined || value === null) throw new Error(`Valeur manquante pour ${s.field} (leadKey=${s.leadKey||''})`)
       const open = f?.options?.open_selector || f.selector
@@ -193,7 +201,9 @@ async function execHLStep(page, s, ctx) {
       await page.click(item.option_selector)
       return }
     case 'clickField': {
-      const f = getField(ctx.fields, s.field)
+      let f = getField(ctx.fields, s.field)
+      const idx = extractDynamicIndex(s)
+      if (idx != null && f?.metadata?.dynamicIndex) f = withDynamicIndex(f, idx)
       if (!f.selector) throw new Error(`Selector manquant pour ${s.field}`)
       await page.click(f.selector)
       return }
@@ -220,6 +230,32 @@ function ensureDir(p){ fs.mkdirSync(p, { recursive:true }) }
 function writeJson(file, data){ ensureDir(path.dirname(file)); fs.writeFileSync(file, JSON.stringify(data,null,2), 'utf-8') }
 function writeText(file, data){ ensureDir(path.dirname(file)); fs.writeFileSync(file, data, 'utf-8') }
 function appendText(file, data){ ensureDir(path.dirname(file)); fs.appendFileSync(file, data, 'utf-8') }
+
+// ---------------- dynamic index helpers ----------------
+function extractDynamicIndex(step){
+  // Try to infer index from leadKey: enfants.0.xxx or enfants[0].xxx
+  const lk = typeof step.leadKey === 'string' ? step.leadKey : ''
+  let m = lk.match(/enfants(?:\.|\[)(\d+)(?:[\].]|\.)/)
+  if (m) return Number(m[1])
+  // Otherwise, attempt from a value template like {lead.enfants[2].date_naissance}
+  if (typeof step.value === 'string') {
+    m = step.value.match(/\{\s*lead\.enfants\[(\d+)\][^}]*\}/)
+    if (m) return Number(m[1])
+  }
+  return null
+}
+
+function withDynamicIndex(fieldDef, i){
+  const clone = JSON.parse(JSON.stringify(fieldDef))
+  const apply = (sel) => sel
+    .replace(/(date-naissance-enfant-)(\d+)/, (_, p, d) => p + String(i))
+    .replace(/(date\s*-?\s*naissance\s*-?\s*enfant-)(\d+)/i, (_, p, d) => p + String(i))
+    .replace(/(sub-section-enfant:nth-of-type\()(\d+)(\))/i, (_, p1, d, p2) => p1 + String(i+1) + p2)
+  if (clone.selector) clone.selector = apply(clone.selector)
+  if (clone?.options?.open_selector) clone.options.open_selector = apply(clone.options.open_selector)
+  // No change needed for items[].option_selector (not indexed)
+  return clone
+}
 function redactText(s, r){ try { return s.replace(new RegExp(r,'gi'), '$1=***') } catch { return s } }
 function detectChromePathCandidates(){ const local = process.env.LOCALAPPDATA || ''; return ['C:/Program Files/Google/Chrome/Application/chrome.exe','C:/Program Files (x86)/Google/Chrome/Application/chrome.exe',`${local}/Google/Chrome/Application/chrome.exe`].map(p=>path.normalize(p)) }
 function detectChromePathFallback(){ for (const p of detectChromePathCandidates()) { try { if (fs.existsSync(p)) return p } catch {} } return undefined }
