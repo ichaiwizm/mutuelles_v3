@@ -34,7 +34,8 @@
       "WebFetch(domain:sso.swisslifeone.fr)",
       "Bash(git mv:*)",
       "Bash(git rm:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(jq:*)"
     ],
     "deny": [],
     "ask": []

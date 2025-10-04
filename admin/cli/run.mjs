@@ -322,8 +322,11 @@ async function main() {
       keepOpen,
       outRoot: 'admin/runs-cli',
       report: 'html',
-      dom: 'errors',
-      jsinfo: 'errors'
+      dom: 'all',           // Capture DOM à chaque step
+      jsinfo: 'all',        // Capture JS listeners à chaque step
+      networkLog: true,     // Activer logs network
+      har: true,           // Générer fichier HAR
+      consoleLog: true     // Capturer console logs
     })
 
     console.log('[run] ✓ Execution completed successfully')

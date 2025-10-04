@@ -25,7 +25,7 @@ export async function runHighLevelFlow({ fieldsFile, flowFile, leadFile, usernam
   const networkDir = path.join(runDir, 'network')
   const traceDir = path.join(runDir, 'trace')
   const videoDir = path.join(runDir, 'video')
-  ensureDir(screenshotsDir); ensureDir(networkDir)
+  ensureDir(screenshotsDir); ensureDir(networkDir); ensureDir(domDir); ensureDir(jsDir)
 
   const emit = (evt) => { const rec = { ts:new Date().toISOString(), ...evt }; appendText(progressFile, JSON.stringify(rec)+'\n'); console.log('[run]', evt.type, evt.status||'', evt.message||'') }
 
@@ -111,7 +111,7 @@ export async function runHighLevelFlow({ fieldsFile, flowFile, leadFile, usernam
         await ensurePage();
         await execHLStep(page, s, ctx)
         await page.screenshot({ path: shotPath })
-        await maybeCollect(stepCollectors(page, i, s, { domDir, jsDir, a11y, domMode: dom, jsMode: jsinfo }))
+        await maybeCollect(stepCollectors(page, i, s, { domDir, jsDir, a11y, domMode: dom, jsMode: jsinfo, ctx }))
         emit({ type:s.type, status:'success', stepIndex:i, screenshotPath: path.relative(runDir, shotPath) })
         stepsSummary.push({ index:i, type:s.type, ok:true, ms: Date.now()-t0, screenshot:`screenshots/${shotName}` })
       } catch (err) {
@@ -119,7 +119,7 @@ export async function runHighLevelFlow({ fieldsFile, flowFile, leadFile, usernam
         const errName = `error-${String(i+1).padStart(2,'0')}.png`
         const errPath = path.join(screenshotsDir, errName)
         try { await ensurePage(); await page.screenshot({ path: errPath }) } catch {}
-        await maybeCollect(stepCollectors(page, i, s, { domDir, jsDir, a11y, domMode: dom, jsMode: jsinfo, onError: true }))
+        await maybeCollect(stepCollectors(page, i, s, { domDir, jsDir, a11y, domMode: dom, jsMode: jsinfo, onError: true, ctx }))
         emit({ type:s.type, status:'error', stepIndex:i, message: msg, screenshotPath: path.relative(runDir, errPath) })
         stepsSummary.push({ index:i, type:s.type, ok:false, error: msg, screenshot:`screenshots/${errName}` })
         break
@@ -442,14 +442,47 @@ function detectChromePathCandidates(){ const local = process.env.LOCALAPPDATA ||
 function detectChromePathFallback(){ for (const p of detectChromePathCandidates()) { try { if (fs.existsSync(p)) return p } catch {} } return undefined }
 function slugify(s){ return String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'') }
 
-async function maybeCollect(p){ if (!p) return; try { await p } catch {} }
+async function maybeCollect(p){
+  if (!p) return
+  try {
+    await p
+  } catch (err) {
+    console.error('[maybeCollect] Erreur lors de la capture:', err.message)
+  }
+}
 function wants(_mode, onError){ return v => { if (!v || v==='none') return false; if (v==='all') return true; if (v==='steps' && !onError) return true; if (v==='errors' && onError) return true; return false } }
-function stepCollectors(page, index, step, { domDir, jsDir, a11y, domMode, jsMode, onError=false }){
+function stepCollectors(page, index, step, { domDir, jsDir, a11y, domMode, jsMode, onError=false, ctx }){
   const should = wants(null, onError)
   const tasks = []
   if (should(domMode)) tasks.push(collectDom(page, index, step, domDir))
   if (a11y && should(domMode)) tasks.push(collectA11y(page, index, domDir))
-  if (should(jsMode) && step.selector) tasks.push(collectJsListeners(page, index, step.selector, jsDir))
+
+  // Résoudre le selector depuis field-definitions si nécessaire
+  let selectorForJS = step.selector
+  if (!selectorForJS && step.field && ctx?.fields) {
+    try {
+      let field = getField(ctx.fields, step.field)
+
+      // Gérer les dynamic fields avec {i}
+      const dynamicIdx = extractDynamicIndex(step)
+      if (dynamicIdx != null && field?.metadata?.dynamicIndex) {
+        field = withDynamicIndex(field, dynamicIdx)
+        console.log(`[stepCollectors] Dynamic field '${step.field}' résolu avec index ${dynamicIdx}`)
+      }
+
+      selectorForJS = field?.selector
+      if (!selectorForJS) {
+        console.warn(`[stepCollectors] Pas de selector pour field '${step.field}' au step ${index+1}`)
+      }
+    } catch (err) {
+      console.warn(`[stepCollectors] Erreur résolution field '${step.field}':`, err.message)
+    }
+  }
+
+  if (should(jsMode) && selectorForJS) {
+    tasks.push(collectJsListeners(page, index, step, selectorForJS, jsDir))
+  }
+
   return Promise.allSettled(tasks)
 }
 
@@ -459,8 +492,116 @@ function renderReportHtml(manifest){
 }
 function escapeHtml(s){ return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c])) }
 
-async function collectDom(page, index, step, domDir){ const full = await page.content(); writeText(path.join(domDir, `step-${String(index+1).padStart(2,'0')}.html`), full) }
-async function collectA11y(page, index, domDir){ try { const snap = await page.accessibility.snapshot({ interestingOnly:false }); writeJson(path.join(domDir, `step-${String(index+1).padStart(2,'0')}.a11y.json`), snap) } catch {} }
-async function collectJsListeners(page, index, selector, jsDir){ try { const client = await page.context().newCDPSession(page); await client.send('DOM.enable'); await client.send('DOMDebugger.enable'); await client.send('Debugger.enable'); const evalRes = await client.send('Runtime.evaluate', { expression: `document.querySelector(${JSON.stringify(selector)})`, objectGroup:'cli-runner', includeCommandLineAPI:true, returnByValue:false }); const objId = evalRes.result.objectId; if (!objId) return; const evts = await client.send('DOMDebugger.getEventListeners', { objectId: objId, depth:-1, pierce:true }); const listeners = evts.listeners||[]; const out=[]; for (const l of listeners){ const info = { type:l.type, useCapture:l.useCapture, passive:l.passive, once:l.once, scriptId:l.scriptId, lineNumber:l.lineNumber, columnNumber:l.columnNumber }; try { if (l.scriptId){ const src = await client.send('Debugger.getScriptSource', { scriptId:l.scriptId }); const dir = path.join(jsDir,'scripts'); const name = `script-${l.scriptId}.js`; writeText(path.join(dir,name), src.scriptSource||''); info.scriptFile = `js/scripts/${name}` } } catch {} out.push(info) } writeJson(path.join(jsDir, `step-${String(index+1).padStart(2,'0')}.listeners.json`), out) } catch {} }
+async function collectDom(page, index, step, domDir){
+  try {
+    // Vérifier que la page existe et n'est pas fermée
+    if (!page || page.isClosed()) {
+      console.warn(`[collectDom] Page fermée pour step ${index+1}`)
+      return
+    }
+
+    const full = await page.content()
+
+    if (!full || full.trim().length < 100) {
+      console.warn(`[collectDom] DOM vide ou trop court pour step ${index+1}: ${full?.length || 0} chars`)
+    }
+
+    writeText(path.join(domDir, `step-${String(index+1).padStart(2,'0')}.html`), full)
+  } catch (err) {
+    console.error(`[collectDom] Erreur step ${index+1}:`, err.message)
+  }
+}
+async function collectA11y(page, index, domDir){
+  try {
+    const snap = await page.accessibility.snapshot({ interestingOnly:false })
+    writeJson(path.join(domDir, `step-${String(index+1).padStart(2,'0')}.a11y.json`), snap)
+  } catch {}
+}
+
+async function collectJsListeners(page, index, step, selector, jsDir){
+  try {
+    console.log(`[collectJsListeners] Step ${index+1}: Début capture pour selector: "${selector}"`)
+
+    const client = await page.context().newCDPSession(page)
+    console.log(`[collectJsListeners] Step ${index+1}: CDP session créée`)
+
+    await client.send('DOM.enable')
+    await client.send('Debugger.enable')
+
+    const evalRes = await client.send('Runtime.evaluate', {
+      expression: `document.querySelector(${JSON.stringify(selector)})`,
+      includeCommandLineAPI:true,
+      returnByValue:false
+    })
+
+    const objId = evalRes.result.objectId
+    if (!objId) {
+      console.warn(`[collectJsListeners] Step ${index+1}: Élément non trouvé pour selector "${selector}"`)
+      return
+    }
+
+    console.log(`[collectJsListeners] Step ${index+1}: Élément trouvé, objId=${objId}`)
+
+    const evts = await client.send('DOMDebugger.getEventListeners', {
+      objectId: objId,
+      depth:-1,
+      pierce:true
+    })
+
+    const listeners = evts.listeners||[]
+    console.log(`[collectJsListeners] Step ${index+1}: ${listeners.length} listener(s) trouvé(s)`)
+
+    const listenersData = []
+    for (const l of listeners){
+      const info = {
+        type:l.type,
+        useCapture:l.useCapture,
+        passive:l.passive,
+        once:l.once,
+        scriptId:l.scriptId,
+        lineNumber:l.lineNumber,
+        columnNumber:l.columnNumber
+      }
+
+      try {
+        if (l.scriptId){
+          const src = await client.send('Debugger.getScriptSource', { scriptId:l.scriptId })
+          const dir = path.join(jsDir,'scripts')
+          const name = `script-${l.scriptId}.js`
+          writeText(path.join(dir,name), src.scriptSource||'')
+          info.scriptFile = `js/scripts/${name}`
+        }
+      } catch (scriptErr) {
+        console.warn(`[collectJsListeners] Step ${index+1}: Erreur récupération script ${l.scriptId}:`, scriptErr.message)
+      }
+
+      listenersData.push(info)
+    }
+
+    // Créer objet avec metadata + listeners
+    const output = {
+      metadata: {
+        stepIndex: index,
+        stepType: step.type,
+        stepLabel: step.label || null,
+        stepField: step.field || null,
+        selector: selector,
+        timestamp: new Date().toISOString(),
+        objectId: objId,
+        listenersCount: listeners.length
+      },
+      listeners: listenersData
+    }
+
+    const filePath = path.join(jsDir, `step-${String(index+1).padStart(2,'0')}.listeners.json`)
+    writeJson(filePath, output)
+    console.log(`[collectJsListeners] Step ${index+1}: Fichier écrit: ${filePath}`)
+
+  } catch (err) {
+    console.error(`[collectJsListeners] Step ${index+1} ERREUR:`, err.message)
+    console.error(`[collectJsListeners] Selector était: "${selector}"`)
+    if (err.stack) console.error(err.stack)
+  }
+}
 
 export function describeHL(s){ switch (s.type){ case 'goto': return `Aller sur ${s.url}`; case 'fillField': return `Remplir ${s.field}`; case 'toggleField': return `Toggle ${s.field} -> ${s.state}`; case 'selectField': return `Sélectionner ${s.field}`; case 'waitForField': return `Attendre ${s.field}`; case 'clickField': return `Cliquer ${s.field}`; case 'acceptConsent': return 'Consentement'; case 'sleep': return `Pause ${s.timeout_ms||0}ms`; default: return s.type } }
