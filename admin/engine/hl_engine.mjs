@@ -92,6 +92,17 @@ export async function runHighLevelFlow({ fieldsFile, flowFile, leadFile, usernam
     for (let i=0;i<flow.steps.length;i++) {
       const s = flow.steps[i]
       const label = s.label || s.type || `step-${i+1}`
+
+      // Support pour skipIfNot: sauter le step si la condition leadKey est falsy
+      if (s.skipIfNot) {
+        const condValue = resolveValue({ leadKey: s.skipIfNot }, ctx)
+        if (condValue === undefined || condValue === null || condValue === false || condValue === '' || (Array.isArray(condValue) && condValue.length === 0)) {
+          console.log('[hl] step %d SKIPPED (skipIfNot: %s is falsy)', i, s.skipIfNot)
+          stepsSummary.push({ index:i, type:s.type, ok:true, skipped:true, reason:'skipIfNot', ms: 0 })
+          continue
+        }
+      }
+
       emit({ type:s.type, status:'start', stepIndex:i, message: describeHL(s) })
       const t0 = Date.now()
       const shotName = `step-${String(i+1).padStart(2,'0')}-${slugify(label)}.png`
@@ -164,12 +175,31 @@ async function execHLStep(page, s, ctx) {
         if (key.includes('login_username') || key.endsWith('username')) value = ctx.username
         if (key.includes('login_password') || key.endsWith('password')) value = ctx.password
       }
-      if (value === undefined || value === null) throw new Error(`Valeur manquante pour ${s.field} (leadKey=${s.leadKey||''})`)
+      // Support pour optional: si la valeur est manquante, skip silencieusement
+      if (value === undefined || value === null) {
+        if (s.optional === true) {
+          console.log('[hl] fillField %s = SKIPPED (optional, valeur manquante)', s.field)
+          return
+        }
+        throw new Error(`Valeur manquante pour ${s.field} (leadKey=${s.leadKey||''})`)
+      }
       if (!f.selector) throw new Error(`Selector manquant pour ${s.field}`)
       const v = String(value).replace('{username}', ctx.username||'').replace('{password}', ctx.password||'')
       const logv = String(s.field||'').toLowerCase().includes('password') ? '***' : v
       console.log('[hl] fillField %s = %s', s.field, logv)
       await page.fill(f.selector, v)
+      // Fermer le calendrier s'il s'ouvre automatiquement (date-picker)
+      const isDateField = (s.field||'').toLowerCase().includes('date') || (f.label||'').toLowerCase().includes('date')
+      if (isDateField) {
+        try {
+          await page.press(f.selector, 'Escape')
+          await new Promise(r => setTimeout(r, 300))
+          console.log('[hl] fillField %s - calendrier fermé', s.field)
+        } catch (err) {
+          // Si Escape échoue, continuer quand même
+          console.log('[hl] fillField %s - Escape ignoré: %s', s.field, err.message)
+        }
+      }
       return }
     case 'toggleField': {
       let f = getField(ctx.fields, s.field)
@@ -177,19 +207,51 @@ async function execHLStep(page, s, ctx) {
       if (idx != null && f?.metadata?.dynamicIndex) f = withDynamicIndex(f, idx)
       const onSel = f?.metadata?.toggle?.on_selector || f.selector
       if (!onSel) throw new Error(`toggle on_selector manquant pour ${s.field}`)
-      // click label to toggle
-      await page.click(f.selector)
-      if (s.state === 'on') { await page.waitForSelector(f?.metadata?.toggle?.state_on_selector || '.totem-toggle--on') }
+      console.log('[hl] toggleField %s -> %s', s.field, s.state)
+
+      // Approche : cliquer directement sur le toggle (span parent) avec force
+      // Les toggles ont des overlays qui bloquent les clics sur l'input
+      const toggleSelector = `${f.selector.replace(' label[data-test="label"]', '')} .totem-toggle`
+
+      // Vérifier l'état actuel avant de cliquer
+      const stateSel = f?.metadata?.toggle?.state_on_selector || `${toggleSelector}.totem-toggle--on`
+      const isCurrentlyOn = await page.locator(stateSel).count() > 0
+
+      if (s.state === 'on' && !isCurrentlyOn) {
+        // Cliquer sur le toggle pour l'activer
+        await page.locator(toggleSelector).click({ force: true })
+        console.log('[hl] toggleField %s - clicked to activate', s.field)
+        // Attendre que l'animation/state update se termine
+        await new Promise(r => setTimeout(r, 300))
+        await page.waitForSelector(stateSel, { state: 'attached', timeout: 20000 })
+        console.log('[hl] toggleField %s - état ON confirmé', s.field)
+      } else if (s.state === 'off' && isCurrentlyOn) {
+        // Cliquer sur le toggle pour le désactiver
+        await page.locator(toggleSelector).click({ force: true })
+        console.log('[hl] toggleField %s - clicked to deactivate', s.field)
+        await new Promise(r => setTimeout(r, 300))
+      } else {
+        console.log('[hl] toggleField %s - already in desired state %s', s.field, s.state)
+      }
       return }
     case 'selectField': {
       let f = getField(ctx.fields, s.field)
       const idx = extractDynamicIndex(s)
       if (idx != null && f?.metadata?.dynamicIndex) f = withDynamicIndex(f, idx)
       const value = resolveValue(s, ctx)
-      if (value === undefined || value === null) throw new Error(`Valeur manquante pour ${s.field} (leadKey=${s.leadKey||''})`)
+      // Support pour optional: si la valeur est manquante, skip silencieusement
+      if (value === undefined || value === null) {
+        if (s.optional === true) {
+          console.log('[hl] selectField %s = SKIPPED (optional, valeur manquante)', s.field)
+          return
+        }
+        throw new Error(`Valeur manquante pour ${s.field} (leadKey=${s.leadKey||''})`)
+      }
       const open = f?.options?.open_selector || f.selector
       if (!open) throw new Error(`open_selector manquant pour ${s.field}`)
       await page.click(open)
+      // Petit wait pour que le dropdown s'ouvre complètement
+      await new Promise(r => setTimeout(r, 300))
       // try find item by value mapping
       let item = f?.options?.items?.find((it)=>String(it.value)===String(value))
       if (!item) {
@@ -198,13 +260,46 @@ async function execHLStep(page, s, ctx) {
       }
       if (!item?.option_selector) throw new Error(`option_selector manquant pour ${s.field}:${value}`)
       console.log('[hl] selectField %s -> %s', s.field, String(value))
+      // Attendre que l'option soit visible avant de cliquer
+      await page.waitForSelector(item.option_selector, { state: 'visible', timeout: 5000 })
       await page.click(item.option_selector)
       return }
     case 'clickField': {
       let f = getField(ctx.fields, s.field)
       const idx = extractDynamicIndex(s)
       if (idx != null && f?.metadata?.dynamicIndex) f = withDynamicIndex(f, idx)
+
+      // Support pour radio-group : chercher l'option basée sur la valeur du lead
+      if (f.type === 'radio-group' && f.options) {
+        const value = resolveValue(s, ctx)
+        if (value === undefined || value === null) {
+          if (s.optional === true) {
+            console.log('[hl] clickField %s = SKIPPED (optional, radio-group, valeur manquante)', s.field)
+            return
+          }
+          throw new Error(`Valeur manquante pour ${s.field} (leadKey=${s.leadKey||''})`)
+        }
+        const option = f.options.find(opt => String(opt.value) === String(value))
+        if (!option) throw new Error(`Option radio non trouvée pour ${s.field}:${value}`)
+        console.log('[hl] clickField (radio) %s = %s', s.field, value)
+        await page.click(option.selector)
+        return
+      }
+
       if (!f.selector) throw new Error(`Selector manquant pour ${s.field}`)
+
+      // Si optional, vérifier d'abord si l'élément existe
+      if (s.optional === true) {
+        try {
+          await page.waitForSelector(f.selector, { state: 'attached', timeout: 1000 })
+          await page.click(f.selector)
+          console.log('[hl] clickField %s (optional, found)', s.field)
+        } catch (err) {
+          console.log('[hl] clickField %s = SKIPPED (optional, not found)', s.field)
+        }
+        return
+      }
+
       await page.click(f.selector)
       return }
     case 'sleep': {

@@ -19,7 +19,19 @@
       "Bash(xargs:*)",
       "Bash(for step in step-26 step-31 step-36 step-41 step-46 step-51 step-56 step-61 step-66 step-71 step-76)",
       "Bash(do echo \"=== $step ===\")",
-      "Bash(done)"
+      "Bash(done)",
+      "Bash(admin/cli/run_hl_from_wsl.sh:*)",
+      "Bash(FLOW_USERNAME=\"test_user\" FLOW_PASSWORD=\"test_pass\" admin/cli/run_hl_from_wsl.sh --platform alptis --flow admin/flows/alptis/alptis_sante_select_pro_full.hl.json --lead admin/leads/sample_full.json --mode dev_private --keep-open)",
+      "Bash(ADMIN_CRED_USER=\"test_user\" ADMIN_CRED_PASS=\"test_pass\" admin/cli/run_hl_from_wsl.sh --platform alptis --flow admin/flows/alptis/alptis_sante_select_pro_full.hl.json --lead admin/leads/sample_full.json --mode dev_private --keep-open)",
+      "Bash(for:*)",
+      "Bash(do echo \"=== $file ===\")",
+      "Read(//dev/pts/**)",
+      "Bash(ADMIN_CRED_USER=\"test_user\" ADMIN_CRED_PASS=\"test_pass\" admin/cli/run_hl_from_wsl.sh --platform alptis --flow admin/flows/alptis/alptis_sante_select_pro_full.hl.json --lead admin/leads/baptiste_deschamps.json --mode dev_private --keep-open)",
+      "Bash(FLOW_USERNAME=\"Fragoso.n@france-epargne.fr\" FLOW_PASSWORD=\"Nicolas.epargne2024\" admin/cli/run_hl_from_wsl.sh --platform alptis --flow admin/flows/alptis/alptis_sante_select_pro_full.hl.json --lead admin/leads/baptiste_deschamps.json --mode headless)",
+      "Bash(export FLOW_USERNAME=\"Fragoso.n@france-epargne.fr\")",
+      "Bash(export FLOW_PASSWORD=\"Nicolas.epargne2024\")",
+      "WebFetch(domain:www.swisslifeone.fr)",
+      "WebFetch(domain:sso.swisslifeone.fr)"
     ],
     "deny": [],
     "ask": []
