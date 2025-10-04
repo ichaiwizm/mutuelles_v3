@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 # Wrapper WSL -> PowerShell pour exécuter le runner CLI unifié côté Windows
-# Objectif: reproduire l'exécution PowerShell (Chrome/Playwright natifs Windows)
-# en gardant les secrets hors de la ligne de commande.
+# Credentials are read from .env file (no env propagation needed)
 
 set -euo pipefail
 
@@ -13,6 +12,8 @@ fi
 if [[ $# -lt 2 ]]; then
   echo "Usage: admin/cli/run_from_wsl.sh <platform> <flowSlugOrPath> [options...]" >&2
   echo "Exemple: admin/cli/run_from_wsl.sh alptis alptis_sante_select_pro_full --headless" >&2
+  echo "" >&2
+  echo "Credentials must be in .env file at project root." >&2
   exit 2
 fi
 
@@ -33,18 +34,9 @@ join_ps_args() {
   (IFS=' '; printf '%s' "${out[*]}")
 }
 
-PS_SET_ENV=""
-if [[ -n "${FLOW_USERNAME:-}" ]]; then
-  U=${FLOW_USERNAME//"/\`"}
-  PS_SET_ENV+="\$env:FLOW_USERNAME=\"$U\"; "
-fi
-if [[ -n "${FLOW_PASSWORD:-}" ]]; then
-  P=${FLOW_PASSWORD//"/\`"}
-  PS_SET_ENV+="\$env:FLOW_PASSWORD=\"$P\"; "
-fi
-
 PS_ARGS=$(join_ps_args "${CLI_ARGS[@]}")
 
 # Exécute la commande dans PowerShell Windows
+# .env sera lu directement par run.mjs côté Windows
 powershell.exe -NoProfile -NonInteractive -Command \
-  "$PS_SET_ENV cd $WIN_PWD; npx --yes cross-env ELECTRON_RUN_AS_NODE=1 electron admin/cli/run.mjs $PS_ARGS"
+  "cd $WIN_PWD; npx --yes cross-env ELECTRON_RUN_AS_NODE=1 electron admin/cli/run.mjs $PS_ARGS"

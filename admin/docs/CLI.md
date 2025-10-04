@@ -23,7 +23,7 @@ Ce guide explique comment exécuter les flows admin depuis la ligne de commande 
 
 ## Configuration des identifiants
 
-### Fichier .env (recommandé)
+### Fichier .env (OBLIGATOIRE)
 
 Créez un fichier `.env` à la racine du projet (déjà dans `.gitignore`):
 
@@ -35,19 +35,20 @@ ALPTIS_PASSWORD=VotreMotDePasse
 SWISSLIFE_USERNAME=VOTRELOGIN
 SWISSLIFE_PASSWORD=VotreMotDePasse
 
-# Fallback générique (si plateforme non spécifiée)
+# Fallback générique
 FLOW_USERNAME=email@example.com
 FLOW_PASSWORD=MotDePasseGenerique
 ```
 
-**⚠️ IMPORTANT**: Ne JAMAIS committer le fichier `.env` avec des credentials réels.
+**⚠️ IMPORTANT**:
+- Le fichier `.env` est la **SEULE** source de credentials (pas de flags CLI, pas de variables d'environnement externes)
+- Ne JAMAIS committer le fichier `.env` avec des credentials réels
 
-### Priorité de résolution des credentials
+### Résolution des credentials (depuis `.env` uniquement)
 
-1. **Flags CLI**: `--username` / `--password` (override tout)
-2. **Env platform (maj)**: `ALPTIS_USERNAME` / `ALPTIS_PASSWORD`
-3. **Env platform (min)**: `alptis_username` / `alptis_password`
-4. **Env générique**: `FLOW_USERNAME` / `FLOW_PASSWORD`
+1. **Platform-specific (majuscules)**: `ALPTIS_USERNAME` / `ALPTIS_PASSWORD`
+2. **Platform-specific (minuscules)**: `alptis_username` / `alptis_password`
+3. **Fallback générique**: `FLOW_USERNAME` / `FLOW_PASSWORD`
 
 ## Usage de base
 
@@ -73,11 +74,7 @@ npx cross-env ELECTRON_RUN_AS_NODE=1 electron admin/cli/run.mjs <platform> <flow
 | Option | Description | Défaut |
 |--------|-------------|--------|
 | `--lead <name\|path>` | Lead spécifique (nom ou chemin) | Aléatoire depuis `admin/leads/` |
-| `--username <user>` | Override username | Depuis `.env` |
-| `--password <pass>` | Override password | Depuis `.env` |
-| `--headless` | Mode headless (invisible) | `false` (mode dev_private visible) |
-| `--keep` | Force keepOpen=true | Auto (true en dev_private, false en headless) |
-| `--no-keep` | Force keepOpen=false | Auto |
+| `--headless` | Mode headless (invisible, auto-close) | `false` (mode visible, fenêtre ouverte) |
 | `--help`, `-h` | Affiche l'aide | — |
 
 ## Exemples
@@ -95,20 +92,8 @@ npm run flows:run -- alptis alptis_sante_select_pro_full --lead baptiste_descham
 ### Mode headless
 
 ```bash
-# Exécution en arrière-plan (invisible)
+# Exécution en arrière-plan (invisible, auto-close)
 npm run flows:run -- alptis alptis_sante_select_pro_full --headless
-
-# Headless mais avec fenêtre ouverte à la fin
-npm run flows:run -- alptis alptis_sante_select_pro_full --headless --keep
-```
-
-### Credentials explicites
-
-```bash
-# Override credentials via flags CLI
-npm run flows:run -- alptis alptis_sante_select_pro_full \
-  --username user@example.com \
-  --password MonMotDePasse
 ```
 
 ### Chemin de flow complet
@@ -132,19 +117,17 @@ admin/cli/run_from_wsl.sh <platform> <flowSlugOrPath> [options]
 ### Exemples WSL
 
 ```bash
-# Basique
+# Basique (credentials depuis .env)
 admin/cli/run_from_wsl.sh alptis alptis_sante_select_pro_full
 
-# Avec credentials via environnement (recommandé pour WSL)
-export FLOW_USERNAME="user@example.com"
-export FLOW_PASSWORD="MonMotDePasse"
-admin/cli/run_from_wsl.sh alptis alptis_sante_select_pro_full
+# Avec lead spécifique
+admin/cli/run_from_wsl.sh alptis alptis_sante_select_pro_full --lead baptiste_deschamps
 
 # Mode headless depuis WSL
 admin/cli/run_from_wsl.sh alptis alptis_sante_select_pro_full --headless
 ```
 
-**Note**: Le wrapper transmet automatiquement les variables `FLOW_USERNAME` et `FLOW_PASSWORD` à PowerShell Windows de manière sécurisée (pas de credentials dans la ligne de commande).
+**Note**: Le wrapper lit automatiquement le fichier `.env` côté Windows. Aucune propagation de variables d'environnement n'est nécessaire.
 
 ## Structure des fichiers
 
@@ -219,23 +202,23 @@ Ouvrez `report.html` dans un navigateur pour visualiser:
 
 ## Modes d'exécution
 
-| Mode | Headless | Fenêtre visible | KeepOpen par défaut | Usage |
-|------|----------|-----------------|---------------------|-------|
+| Mode | Headless | Fenêtre visible | KeepOpen | Usage |
+|------|----------|-----------------|----------|-------|
 | `dev_private` | ❌ | ✅ | ✅ | **Défaut** — Navigation privée visible, fenêtre reste ouverte |
-| `headless` | ✅ | ❌ | ❌ | Mode invisible pour CI/CD ou exécution batch |
+| `headless` | ✅ | ❌ | ❌ | Mode invisible pour CI/CD, auto-close |
 
-**Basculer le mode:**
-- Par défaut: `dev_private` (visible + keepOpen)
-- Avec `--headless`: `headless` (invisible + auto-close)
-- Override keepOpen: `--keep` ou `--no-keep`
+**Comportement automatique:**
+- Par défaut: `dev_private` (visible, fenêtre ouverte)
+- Avec `--headless`: `headless` (invisible, auto-close)
+- Pas d'override CLI pour `keepOpen` (comportement fixe selon mode)
 
 ## Sécurité & confidentialité
 
 ### Credentials
 
-- ✅ **Recommandé**: Fichier `.env` à la racine (jamais commité)
-- ✅ **OK**: Variables d'environnement (`FLOW_USERNAME`/`FLOW_PASSWORD`)
-- ⚠️ **Éviter**: Flags CLI en production (credentials visibles dans process list)
+- ✅ **OBLIGATOIRE**: Fichier `.env` à la racine (jamais commité)
+- ❌ **Pas de flags CLI** pour les credentials
+- ❌ **Pas de variables d'environnement externes** (uniquement `.env`)
 
 ### Artefacts
 
@@ -359,29 +342,13 @@ else
 fi
 ```
 
-### Run avec credentials depuis environnement
+### Run avec toutes les options disponibles
 
 ```bash
-# Bash/WSL
-export ALPTIS_USERNAME="user@example.com"
-export ALPTIS_PASSWORD="secret"
-npm run flows:run -- alptis alptis_sante_select_pro_full
-
-# PowerShell
-$env:ALPTIS_USERNAME="user@example.com"
-$env:ALPTIS_PASSWORD="secret"
-npm run flows:run -- alptis alptis_sante_select_pro_full
-```
-
-### Run avec toutes les options
-
-```bash
+# Toutes les options disponibles
 npm run flows:run -- alptis alptis_sante_select_pro_full \
   --lead baptiste_deschamps \
-  --username user@example.com \
-  --password secret \
-  --headless \
-  --keep
+  --headless
 ```
 
 ## Support

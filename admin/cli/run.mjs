@@ -16,34 +16,34 @@ Arguments:
 
 Options:
   --lead <name|path>    Lead file (name or path, default: random from admin/leads/)
-  --username <user>     Override username
-  --password <pass>     Override password
-  --headless            Run in headless mode (default: dev_private visible)
-  --keep                Force keepOpen=true even in headless
-  --no-keep             Force keepOpen=false even in dev_private
+  --headless            Run in headless mode (default: visible with window kept open)
   --help, -h            Show this help
 
 Examples:
-  # Basic usage (credentials from .env)
+  # Basic usage (credentials from .env, lead random, visible mode)
   admin/cli/run.mjs alptis alptis_sante_select_pro_full
 
   # With specific lead
   admin/cli/run.mjs alptis alptis_sante_select_pro_full --lead baptiste_deschamps
 
-  # Headless mode
+  # Headless mode (invisible, auto-close)
   admin/cli/run.mjs alptis alptis_sante_select_pro_full --headless
 
-  # With explicit credentials
-  admin/cli/run.mjs alptis alptis_sante_select_pro_full --username user@example.com --password secret
+Credentials (.env file ONLY):
+  Create a .env file at project root with:
+    ALPTIS_USERNAME=your.email@example.com    (platform-specific, uppercase)
+    ALPTIS_PASSWORD=YourPassword
 
-Credentials resolution (priority order):
-  1. CLI flags: --username / --password
-  2. Platform-specific env: ALPTIS_USERNAME / ALPTIS_PASSWORD (uppercase)
-  3. Platform-specific env: alptis_username / alptis_password (lowercase)
-  4. Generic env: FLOW_USERNAME / FLOW_PASSWORD
+    Or fallback generic:
+    FLOW_USERNAME=email@example.com
+    FLOW_PASSWORD=Password
 
-Note: Credentials MUST be provided via .env file (recommended) or CLI flags.
-      .env file should be at project root and never committed to git.
+  Resolution order (from .env only):
+    1. <PLATFORM>_USERNAME / <PLATFORM>_PASSWORD (uppercase)
+    2. <platform>_username / <platform>_password (lowercase)
+    3. FLOW_USERNAME / FLOW_PASSWORD (generic fallback)
+
+Note: The .env file is never committed to git (already in .gitignore).
 `)
 }
 
@@ -53,10 +53,7 @@ function parseArgs() {
     platform: null,
     flowSlugOrPath: null,
     lead: null,
-    username: null,
-    password: null,
-    headless: false,
-    keepOpen: null // null = use default based on mode
+    headless: false
   }
 
   let positionalIndex = 0
@@ -69,11 +66,7 @@ function parseArgs() {
     if (a.startsWith('--')) {
       switch (a) {
         case '--lead': opts.lead = take(i); i++; break
-        case '--username': opts.username = take(i); i++; break
-        case '--password': opts.password = take(i); i++; break
         case '--headless': opts.headless = true; break
-        case '--keep': opts.keepOpen = true; break
-        case '--no-keep': opts.keepOpen = false; break
         case '--help':
         case '-h': usage(); process.exit(0)
         default: throw new Error('Unknown option: ' + a)
@@ -124,6 +117,7 @@ function loadDotEnv(rootDir) {
         val = val.slice(1, -1)
       }
       env[key] = val
+      // Also set in process.env for engine compatibility
       if (process.env[key] === undefined) process.env[key] = val
     }
     return env
@@ -140,18 +134,18 @@ function platformEnvKeys(slug) {
   }
 }
 
-function getEnvUser(slug) {
+function getEnvUser(slug, envObj) {
   const { user } = platformEnvKeys(slug)
   for (const k of user) {
-    if (process.env[k] && process.env[k].length) return process.env[k]
+    if (envObj[k] && envObj[k].length) return envObj[k]
   }
   return null
 }
 
-function getEnvPass(slug) {
+function getEnvPass(slug, envObj) {
   const { pass } = platformEnvKeys(slug)
   for (const k of pass) {
-    if (process.env[k] && process.env[k].length) return process.env[k]
+    if (envObj[k] && envObj[k].length) return envObj[k]
   }
   return null
 }
@@ -221,33 +215,30 @@ function resolveLeadFile(rootDir, leadOption) {
   return randomFile
 }
 
-function resolveCredentials(platform, cliUsername, cliPassword) {
-  // Priority 1: CLI flags
-  if (cliUsername && cliPassword) {
-    return { username: cliUsername, password: cliPassword }
-  }
-
-  // Priority 2: Platform-specific env (uppercase + lowercase)
-  const envUser = getEnvUser(platform)
-  const envPass = getEnvPass(platform)
+function resolveCredentials(platform, envObj) {
+  // Priority 1: Platform-specific env (uppercase + lowercase)
+  const envUser = getEnvUser(platform, envObj)
+  const envPass = getEnvPass(platform, envObj)
   if (envUser && envPass) {
     return { username: envUser, password: envPass }
   }
 
-  // Priority 3: Generic env
-  const genericUser = process.env.FLOW_USERNAME || null
-  const genericPass = process.env.FLOW_PASSWORD || null
+  // Priority 2: Generic env fallback
+  const genericUser = envObj.FLOW_USERNAME || null
+  const genericPass = envObj.FLOW_PASSWORD || null
   if (genericUser && genericPass) {
     return { username: genericUser, password: genericPass }
   }
 
   // Not found
   throw new Error(
-    `Credentials not found for platform '${platform}'.\n` +
-    `Please provide them via:\n` +
-    `  1. .env file: ${platform.toUpperCase()}_USERNAME / ${platform.toUpperCase()}_PASSWORD\n` +
-    `  2. .env file: FLOW_USERNAME / FLOW_PASSWORD (generic fallback)\n` +
-    `  3. CLI flags: --username / --password`
+    `Credentials not found for platform '${platform}' in .env file.\n` +
+    `Please add to .env at project root:\n` +
+    `  ${platform.toUpperCase()}_USERNAME=your.email@example.com\n` +
+    `  ${platform.toUpperCase()}_PASSWORD=YourPassword\n` +
+    `Or use generic fallback:\n` +
+    `  FLOW_USERNAME=email@example.com\n` +
+    `  FLOW_PASSWORD=Password`
   )
 }
 
@@ -262,22 +253,20 @@ async function main() {
 
   const rootDir = findProjectRoot(process.cwd())
 
-  // Load .env
-  loadDotEnv(rootDir)
+  // Load .env into object
+  const envObj = loadDotEnv(rootDir)
 
   // Resolve files
   const fieldsFile = resolveFieldsFile(rootDir, opts.platform)
   const flowFile = resolveFlowFile(rootDir, opts.platform, opts.flowSlugOrPath)
   const leadFile = resolveLeadFile(rootDir, opts.lead)
 
-  // Resolve credentials
-  const { username, password } = resolveCredentials(opts.platform, opts.username, opts.password)
+  // Resolve credentials from .env object only
+  const { username, password } = resolveCredentials(opts.platform, envObj)
 
-  // Determine mode and keepOpen
+  // Determine mode and keepOpen (automatic behavior)
   const mode = opts.headless ? 'headless' : 'dev_private'
-  const keepOpen = opts.keepOpen !== null
-    ? opts.keepOpen
-    : (opts.headless ? false : true)
+  const keepOpen = opts.headless ? false : true
 
   console.log('[run] Configuration:')
   console.log(`  Platform: ${opts.platform}`)
