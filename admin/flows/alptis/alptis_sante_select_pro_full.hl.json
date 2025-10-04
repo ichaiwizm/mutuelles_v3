@@ -7,10 +7,11 @@
   "steps": [
     { "type": "goto", "url": "https://pro.alptis.org/", "label": "accueil" },
     { "type": "waitForField", "field": "login_username", "label": "login-form" },
+    { "type": "acceptConsent", "selector": "#axeptio_btn_acceptAll", "label": "accept-axeptio-1" },
     { "type": "fillField", "field": "login_username", "value": "{credentials.username}", "label": "fill-user" },
     { "type": "fillField", "field": "login_password", "value": "{credentials.password}", "label": "fill-pass" },
-    { "type": "acceptConsent", "selector": "#axeptio_btn_acceptAll", "label": "accept-axeptio-login" },
-    { "type": "sleep", "timeout_ms": 800, "label": "wait-after-axeptio-login" },
+    { "type": "acceptConsent", "selector": "#axeptio_btn_acceptAll", "label": "accept-axeptio-2" },
+    { "type": "sleep", "timeout_ms": 800, "label": "wait-before-submit" },
     { "type": "clickField", "field": "login_submit", "label": "submit" },
 
     { "type": "goto", "url": "https://pro.alptis.org/sante-select/informations-projet/", "label": "goto-infos-projet" },
@@ -19,9 +20,12 @@
     { "type": "waitForField", "field": "date_effet", "label": "infos-projet-ready" },
 
     { "type": "fillField", "field": "date_effet", "leadKey": "projet.date_effet", "label": "fill-date-effet" },
-    { "type": "sleep", "timeout_ms": 500, "label": "wait-after-date-effet" },
+    { "type": "sleep", "timeout_ms": 1500, "label": "wait-after-date-effet" },
 
     { "type": "clickField", "field": "civilite_adherent", "leadKey": "adherent.civilite", "label": "select-civilite" },
+    { "type": "sleep", "timeout_ms": 400, "label": "wait-after-civilite" },
+    { "type": "fillField", "field": "date_effet", "leadKey": "projet.date_effet", "label": "refill-date-effet" },
+    { "type": "sleep", "timeout_ms": 500, "label": "wait-after-refill-date" },
     { "type": "fillField", "field": "nom_adherent", "leadKey": "adherent.nom", "label": "fill-nom" },
     { "type": "fillField", "field": "prenom_adherent", "leadKey": "adherent.prenom", "label": "fill-prenom" },
     { "type": "fillField", "field": "date_naissance_adherent", "leadKey": "adherent.date_naissance", "label": "fill-naissance-adherent" },

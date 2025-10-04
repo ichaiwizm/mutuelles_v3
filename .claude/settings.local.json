@@ -35,7 +35,8 @@
       "Bash(git mv:*)",
       "Bash(git rm:*)",
       "Bash(git add:*)",
-      "Bash(jq:*)"
+      "Bash(jq:*)",
+      "Bash(bash admin/cli/run_from_wsl.sh:*)"
     ],
     "deny": [],
     "ask": []
