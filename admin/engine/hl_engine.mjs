@@ -131,8 +131,45 @@ export async function runHighLevelFlow({ fieldsFile, flowFile, leadFile, usernam
     writeJson(path.join(runDir,'index.json'), manifest)
     writeText(path.join(runDir,'report.html'), renderReportHtml(manifest))
     if (tracingStarted) { ensureDir(traceDir); await context.tracing.stop({ path: path.join(traceDir,'trace.zip') }) }
-    if (!keepOpen) { try { await context?.close() } catch {}; try { await browser?.close() } catch {} }
-    emit({ type:'run', status:'success', message:`Terminé – artefacts: ${path.relative(process.cwd(), runDir)}` })
+    if (!keepOpen) {
+      try { await context?.close() } catch {}
+      try { await browser?.close() } catch {}
+      emit({ type:'run', status:'success', message:`Terminé – artefacts: ${path.relative(process.cwd(), runDir)}` })
+    } else {
+      // keepOpen: attendre que l'utilisateur ferme le navigateur
+      emit({ type:'run', status:'success', message:`Terminé – Navigateur laissé ouvert, fermez-le manuellement` })
+      console.log('[hl] ⏸  keepOpen=true - Navigateur laissé ouvert. Fermez-le pour terminer.')
+
+      await new Promise((resolve) => {
+        // Pour les deux modes : détecter quand toutes les pages sont fermées
+        const checkPagesInterval = setInterval(() => {
+          try {
+            const pages = context?.pages() || []
+            if (pages.length === 0) {
+              clearInterval(checkPagesInterval)
+              console.log('[hl] ✓ Toutes les pages fermées')
+              resolve()
+            }
+          } catch {
+            clearInterval(checkPagesInterval)
+            resolve()
+          }
+        }, 500)
+
+        // En plus, écouter la fermeture du browser (si l'user ferme tout Chrome)
+        if (browser) {
+          browser.once('disconnected', () => {
+            clearInterval(checkPagesInterval)
+            console.log('[hl] ✓ Navigateur complètement fermé')
+            resolve()
+          })
+        }
+      })
+
+      // Cleanup final
+      try { await context?.close() } catch {}
+      try { await browser?.close() } catch {}
+    }
     return { runDir }
   } finally {
     // no-op
