@@ -9,13 +9,15 @@ import { runHighLevelFlow } from '../engine/engine.mjs'
 function usage() {
   console.log(`Usage:
   admin/cli/run.mjs <platform> <flowSlugOrPath> [options]
+  admin/cli/run.mjs <flowSlugOrPath> --fields <fieldsPath> [options]
 
 Arguments:
-  platform          Platform slug (ex: alptis, swisslife)
+  platform          Platform slug (ex: alptis, swisslife) - required unless --fields is used
   flowSlugOrPath    Flow slug or full path to .hl.json file
 
 Options:
   --lead <name|path>    Lead file (name or path, default: random from admin/leads/)
+  --fields <path>       Explicit path to field-definitions file (makes platform optional)
   --headless            Run in headless mode (default: visible with window kept open)
   --help, -h            Show this help
 
@@ -28,6 +30,9 @@ Examples:
 
   # Headless mode (invisible, auto-close)
   admin/cli/run.mjs alptis alptis_sante_select_pro_full --headless
+
+  # Using explicit field-definitions file
+  admin/cli/run.mjs my_flow.hl.json --fields admin/field-definitions/custom.json
 
 Credentials (.env file ONLY):
   Create a .env file at project root with:
@@ -53,7 +58,8 @@ function parseArgs() {
     platform: null,
     flowSlugOrPath: null,
     lead: null,
-    headless: false
+    headless: false,
+    fields: null
   }
 
   let positionalIndex = 0
@@ -66,6 +72,7 @@ function parseArgs() {
     if (a.startsWith('--')) {
       switch (a) {
         case '--lead': opts.lead = take(i); i++; break
+        case '--fields': opts.fields = take(i); i++; break
         case '--headless': opts.headless = true; break
         case '--help':
         case '-h': usage(); process.exit(0)
@@ -150,7 +157,21 @@ function getEnvPass(slug, envObj) {
   return null
 }
 
-function resolveFieldsFile(rootDir, platform) {
+function resolveFieldsFile(rootDir, platform, fieldsOption) {
+  // Si --fields est fourni, utiliser ce chemin
+  if (fieldsOption) {
+    const resolved = path.resolve(fieldsOption)
+    if (!fs.existsSync(resolved)) {
+      throw new Error(`Field definitions file not found: ${resolved}`)
+    }
+    return resolved
+  }
+
+  // Sinon, utiliser platform
+  if (!platform) {
+    throw new Error('Either --fields or platform argument is required')
+  }
+
   const fieldsFile = path.join(rootDir, 'admin', 'field-definitions', `${platform}.json`)
   if (!fs.existsSync(fieldsFile)) {
     throw new Error(`Field definitions not found: ${fieldsFile}`)
@@ -168,7 +189,11 @@ function resolveFlowFile(rootDir, platform, flowSlugOrPath) {
     return resolved
   }
 
-  // Otherwise, it's a slug - construct path
+  // Otherwise, it's a slug - construct path (requires platform)
+  if (!platform) {
+    throw new Error('Platform is required when using flow slug (or use full path with --fields)')
+  }
+
   const flowFile = path.join(rootDir, 'admin', 'flows', platform, `${flowSlugOrPath}.hl.json`)
   if (!fs.existsSync(flowFile)) {
     throw new Error(`Flow file not found: ${flowFile}\nTip: Use full path or ensure flow slug exists`)
@@ -245,8 +270,14 @@ function resolveCredentials(platform, envObj) {
 async function main() {
   const opts = parseArgs()
 
-  if (!opts.platform || !opts.flowSlugOrPath) {
-    console.error('Error: Missing required arguments <platform> and <flowSlugOrPath>\n')
+  if (!opts.flowSlugOrPath) {
+    console.error('Error: Missing required argument <flowSlugOrPath>\n')
+    usage()
+    process.exit(2)
+  }
+
+  if (!opts.platform && !opts.fields) {
+    console.error('Error: Either <platform> or --fields must be provided\n')
     usage()
     process.exit(2)
   }
@@ -257,12 +288,14 @@ async function main() {
   const envObj = loadDotEnv(rootDir)
 
   // Resolve files
-  const fieldsFile = resolveFieldsFile(rootDir, opts.platform)
+  const fieldsFile = resolveFieldsFile(rootDir, opts.platform, opts.fields)
   const flowFile = resolveFlowFile(rootDir, opts.platform, opts.flowSlugOrPath)
   const leadFile = resolveLeadFile(rootDir, opts.lead)
 
   // Resolve credentials from .env object only
-  const { username, password } = resolveCredentials(opts.platform, envObj)
+  // Si --fields est utilisé sans platform, déduire platform du flow ou utiliser FLOW_*
+  const platformForCreds = opts.platform || 'FLOW'
+  const { username, password } = resolveCredentials(platformForCreds, envObj)
 
   // Determine mode and keepOpen (automatic behavior)
   const mode = opts.headless ? 'headless' : 'dev_private'

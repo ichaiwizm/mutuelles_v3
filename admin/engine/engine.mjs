@@ -191,8 +191,8 @@ async function execHLStep(page, s, ctx) {
       await page.goto(s.url, { waitUntil:'domcontentloaded' })
       return }
     case 'acceptConsent': {
-      const sel = s.selector || '#axeptio_btn_acceptAll'
-      try { await page.waitForSelector(sel, { timeout: s.timeout_ms || 1500 }); await page.click(sel) } catch {}
+      if (!s.selector) throw new Error('selector requis pour acceptConsent')
+      try { await page.waitForSelector(s.selector, { timeout: s.timeout_ms || 1500 }); await page.click(s.selector) } catch {}
       return }
     case 'waitForField': {
       let f = getField(ctx.fields, s.field)
@@ -206,22 +206,22 @@ async function execHLStep(page, s, ctx) {
       const idx = extractDynamicIndex(s)
       if (idx != null && f?.metadata?.dynamicIndex) f = withDynamicIndex(f, idx)
       let value = resolveValue(s, ctx)
-      // Fallback spécial pour login si la valeur vient uniquement de la DB (pas dans le lead)
-      if ((value === undefined || value === null)) {
-        const key = String(s.field || '').toLowerCase()
-        if (key.includes('login_username') || key.endsWith('username')) value = ctx.username
-        if (key.includes('login_password') || key.endsWith('password')) value = ctx.password
+
+      // Parse templates in value if it's a string
+      if (typeof value === 'string') {
+        value = parseValueTemplates(value, ctx)
       }
+
       // Support pour optional: si la valeur est manquante, skip silencieusement
-      if (value === undefined || value === null) {
+      if (value === undefined || value === null || value === '') {
         if (s.optional === true) {
           console.log('[hl] fillField %s = SKIPPED (optional, valeur manquante)', s.field)
           return
         }
-        throw new Error(`Valeur manquante pour ${s.field} (leadKey=${s.leadKey||''})`)
+        throw new Error(`Valeur manquante pour ${s.field} (leadKey=${s.leadKey||''}, value=${s.value||''})`)
       }
       if (!f.selector) throw new Error(`Selector manquant pour ${s.field}`)
-      const v = String(value).replace('{username}', ctx.username||'').replace('{password}', ctx.password||'')
+      const v = String(value)
       const logv = String(s.field||'').toLowerCase().includes('password') ? '***' : v
       console.log('[hl] fillField %s = %s', s.field, logv)
       await page.fill(f.selector, v)
@@ -242,21 +242,22 @@ async function execHLStep(page, s, ctx) {
       let f = getField(ctx.fields, s.field)
       const idx = extractDynamicIndex(s)
       if (idx != null && f?.metadata?.dynamicIndex) f = withDynamicIndex(f, idx)
-      const onSel = f?.metadata?.toggle?.on_selector || f.selector
-      if (!onSel) throw new Error(`toggle on_selector manquant pour ${s.field}`)
+
+      // Vérifier que metadata.toggle est présent
+      if (!f?.metadata?.toggle) throw new Error(`metadata.toggle manquant pour ${s.field}`)
+      if (!f.metadata.toggle.click_selector) throw new Error(`metadata.toggle.click_selector manquant pour ${s.field}`)
+      if (!f.metadata.toggle.state_on_selector) throw new Error(`metadata.toggle.state_on_selector manquant pour ${s.field}`)
+
+      const clickSel = f.metadata.toggle.click_selector
+      const stateSel = f.metadata.toggle.state_on_selector
       console.log('[hl] toggleField %s -> %s', s.field, s.state)
 
-      // Approche : cliquer directement sur le toggle (span parent) avec force
-      // Les toggles ont des overlays qui bloquent les clics sur l'input
-      const toggleSelector = `${f.selector.replace(' label[data-test="label"]', '')} .totem-toggle`
-
       // Vérifier l'état actuel avant de cliquer
-      const stateSel = f?.metadata?.toggle?.state_on_selector || `${toggleSelector}.totem-toggle--on`
       const isCurrentlyOn = await page.locator(stateSel).count() > 0
 
       if (s.state === 'on' && !isCurrentlyOn) {
         // Cliquer sur le toggle pour l'activer
-        await page.locator(toggleSelector).click({ force: true })
+        await page.locator(clickSel).click({ force: true })
         console.log('[hl] toggleField %s - clicked to activate', s.field)
         // Attendre que l'animation/state update se termine
         await new Promise(r => setTimeout(r, 300))
@@ -264,7 +265,7 @@ async function execHLStep(page, s, ctx) {
         console.log('[hl] toggleField %s - état ON confirmé', s.field)
       } else if (s.state === 'off' && isCurrentlyOn) {
         // Cliquer sur le toggle pour le désactiver
-        await page.locator(toggleSelector).click({ force: true })
+        await page.locator(clickSel).click({ force: true })
         console.log('[hl] toggleField %s - clicked to deactivate', s.field)
         await new Promise(r => setTimeout(r, 300))
       } else {
@@ -352,6 +353,31 @@ function resolveValue(step, ctx) {
   if (typeof step.leadKey === 'string') return getByPath(ctx.lead, step.leadKey)
   return undefined
 }
+
+function parseValueTemplates(value, ctx) {
+  if (!value || typeof value !== 'string') return value
+
+  let result = value
+
+  // Replace {credentials.username}
+  result = result.replace(/\{credentials\.username\}/g, ctx.username || '')
+  // Replace {credentials.password}
+  result = result.replace(/\{credentials\.password\}/g, ctx.password || '')
+
+  // Replace {env.VAR}
+  result = result.replace(/\{env\.([A-Za-z_][A-Za-z0-9_]*)\}/g, (match, varName) => {
+    return process.env[varName] || ''
+  })
+
+  // Replace {lead.path.to.value}
+  result = result.replace(/\{lead\.([^}]+)\}/g, (match, path) => {
+    const val = getByPath(ctx.lead, path)
+    return val !== undefined && val !== null ? String(val) : ''
+  })
+
+  return result
+}
+
 function getByPath(obj, pth) { try { return pth.split('.').reduce((o,k)=>o?.[k], obj) } catch { return undefined } }
 function pickLead(lead, keys) { for (const k of keys) { const v = getByPath(lead, k); if (v !== undefined) return v } return null }
 
@@ -365,27 +391,50 @@ function appendText(file, data){ ensureDir(path.dirname(file)); fs.appendFileSyn
 
 // ---------------- dynamic index helpers ----------------
 function extractDynamicIndex(step){
-  // Try to infer index from leadKey: enfants.0.xxx or enfants[0].xxx
+  // Try to infer index from leadKey: collection[N] or collection.N.xxx
   const lk = typeof step.leadKey === 'string' ? step.leadKey : ''
-  let m = lk.match(/enfants(?:\.|\[)(\d+)(?:[\].]|\.)/)
+
+  // Match array bracket notation: collection[N]
+  let m = lk.match(/\[(\d+)\]/)
   if (m) return Number(m[1])
-  // Otherwise, attempt from a value template like {lead.enfants[2].date_naissance}
+
+  // Match dot notation: collection.N.xxx or collection.N at end
+  m = lk.match(/\.(\d+)(?:\.|$)/)
+  if (m) return Number(m[1])
+
+  // Otherwise, attempt from a value template like {lead.collection[N].xxx}
   if (typeof step.value === 'string') {
-    m = step.value.match(/\{\s*lead\.enfants\[(\d+)\][^}]*\}/)
+    m = step.value.match(/\{\s*lead\.[^}]*\[(\d+)\]/)
     if (m) return Number(m[1])
   }
+
   return null
 }
 
 function withDynamicIndex(fieldDef, i){
   const clone = JSON.parse(JSON.stringify(fieldDef))
-  const apply = (sel) => sel
-    .replace(/(date-naissance-enfant-)(\d+)/, (_, p, d) => p + String(i))
-    .replace(/(date\s*-?\s*naissance\s*-?\s*enfant-)(\d+)/i, (_, p, d) => p + String(i))
-    .replace(/(sub-section-enfant:nth-of-type\()(\d+)(\))/i, (_, p1, d, p2) => p1 + String(i+1) + p2)
+
+  // Système de templating générique basé sur placeholder {i}
+  const placeholder = clone?.metadata?.dynamicIndex?.placeholder || '{i}'
+  const indexBase = clone?.metadata?.dynamicIndex?.indexBase ?? 0
+  const actualIndex = i + indexBase
+
+  const apply = (sel) => {
+    if (!sel || typeof sel !== 'string') return sel
+    // Escape placeholder for regex (handles {i}, {{i}}, etc.)
+    const escapedPlaceholder = placeholder.replace(/[{}]/g, '\\$&')
+    return sel.replace(new RegExp(escapedPlaceholder, 'g'), String(actualIndex))
+  }
+
   if (clone.selector) clone.selector = apply(clone.selector)
   if (clone?.options?.open_selector) clone.options.open_selector = apply(clone.options.open_selector)
-  // No change needed for items[].option_selector (not indexed)
+  // Apply to all items if they have selectors with placeholders
+  if (clone?.options?.items) {
+    for (const item of clone.options.items) {
+      if (item.option_selector) item.option_selector = apply(item.option_selector)
+    }
+  }
+
   return clone
 }
 function redactText(s, r){ try { return s.replace(new RegExp(r,'gi'), '$1=***') } catch { return s } }

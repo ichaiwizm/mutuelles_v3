@@ -7,8 +7,8 @@
   "steps": [
     { "type": "goto", "url": "https://pro.alptis.org/", "label": "accueil" },
     { "type": "waitForField", "field": "login_username", "label": "login-form" },
-    { "type": "fillField", "field": "login_username", "leadKey": "credentials.username", "label": "fill-user" },
-    { "type": "fillField", "field": "login_password", "leadKey": "credentials.password", "label": "fill-pass" },
+    { "type": "fillField", "field": "login_username", "value": "{credentials.username}", "label": "fill-user" },
+    { "type": "fillField", "field": "login_password", "value": "{credentials.password}", "label": "fill-pass" },
     { "type": "acceptConsent", "selector": "#axeptio_btn_acceptAll", "label": "accept-axeptio-login" },
     { "type": "sleep", "timeout_ms": 800, "label": "wait-after-axeptio-login" },
     { "type": "clickField", "field": "login_submit", "label": "submit" },
