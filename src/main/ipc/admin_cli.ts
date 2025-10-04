@@ -151,10 +151,12 @@ export function registerAdminCliIpc() {
     const fieldsFile = path.join(root, 'admin', 'field-definitions', `${platform}.json`)
     if (!fs.existsSync(fieldsFile)) throw new Error('field-definitions introuvable pour '+platform)
     const electronBin = process.execPath
-    const script = path.join(root, 'admin', 'cli', 'run_hl_flow.mjs')
-    const args = [ script, '--platform', platform, '--flow', flowFile, '--lead', leadFile ]
-    if (mode) { args.push('--mode', mode) }
-    if (keepOpen) args.push('--keep-open')
+    const script = path.join(root, 'admin', 'cli', 'run.mjs')
+    // New CLI syntax: run.mjs <platform> <flowSlugOrPath> [--lead <name>] [--headless]
+    const args = [ script, platform, flowFile, '--lead', path.basename(leadFile, '.json') ]
+    // New run.mjs: default is visible with window kept open, --headless for invisible auto-close
+    if (mode === 'headless') { args.push('--headless') }
+    // keepOpen is now the default behavior unless --headless is used
 
     // Resolve credentials in the main process via DB+safeStorage, then pass via env to child (transport only)
     const db = getDb()
