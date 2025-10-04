@@ -1,202 +1,397 @@
-# CLI Flows — Exécution et Observabilité (sans écrire en DB)
+# CLI Admin — Exécution des flows (Unifié)
 
-Ce guide explique comment exécuter les flows depuis la ligne de commande, en lisant la DB pour récupérer l’essentiel (plateforme, URL de login, identifiants, profil, chemin Chrome), mais en n’écrivant rien dans la DB. Tous les artefacts sont produits sur disque, par run, avec un rapport HTML.
+Ce guide explique comment exécuter les flows admin depuis la ligne de commande avec l'architecture unifiée (1 engine + 1 runner).
 
-Chemins importants:
-- Script: `admin/cli/run_file_flow.mjs`
-- Helpers DB (lecture seule): `admin/cli/lib/db_readers.mjs`
-- Dossier des flows JSON: `admin/flows/`
-- Dossier des artefacts (par défaut): `admin/runs-cli/`
+**Architecture:**
+- **Engine**: `admin/engine/engine.mjs` — Moteur d'exécution unifié (field-definitions + lead + flow)
+- **Runner**: `admin/cli/run.mjs` — CLI unique pour tous les flows
+- **Wrapper WSL**: `admin/cli/run_from_wsl.sh` — Exécution depuis WSL vers Windows
+
+**Caractéristiques:**
+- ✅ Zéro dépendance DB (pas de lecture/écriture base de données)
+- ✅ Credentials depuis `.env` (recommandé) ou flags CLI
+- ✅ Mode par défaut: navigation privée visible + fenêtre ouverte
+- ✅ Leads aléatoires ou spécifiques
+- ✅ Artefacts riches (screenshots, DOM, JS, trace, HAR)
 
 ## Prérequis
-- Windows, Node.js LTS ≥ 18 (recommandé ≥ 20), npm.
-- Chrome installé (Stable). La CLI saura le détecter; vous pouvez forcer un chemin via `--chrome`.
-- La DB “dev” se situe en `dev-data/mutuelles.sqlite3` (créée au premier lancement de l’app). La CLI lit:
-  - `platforms_catalog`, `platform_pages` (URL login),
-  - `platform_credentials` (username + mot de passe chiffré),
-  - `profiles` (profil Chrome),
-  - `settings.chrome_path`.
 
-Remarque: en mode CLI, le déchiffrement `safeStorage` peut être indisponible; dans ce cas, utilisez un `.env` à la racine ou passez `--vars username=... --vars password=...`.
+- **OS**: Windows, Node.js LTS ≥ 18 (recommandé ≥ 20), npm
+- **Chrome**: Installé et détectable (Stable) ou chemin explicite
+- **Electron**: Installé via `npm install`
+- **WSL**: (Optionnel) Pour exécution depuis WSL sous Windows
+
+## Configuration des identifiants
 
 ### Fichier .env (recommandé)
 
-Placez un fichier `.env` à la racine (exemple fourni: `.env.example`). Il sera chargé automatiquement par la CLI, sans écraser des variables déjà présentes dans l’environnement.
+Créez un fichier `.env` à la racine du projet (déjà dans `.gitignore`):
 
-Clés prises en charge (par priorité):
-- Par plateforme: `ALPTIS_USERNAME` / `ALPTIS_PASSWORD`, `SWISSLIFE_USERNAME` / `SWISSLIFE_PASSWORD`
-- Alternatives minuscules: `alptis_username` / `alptis_password`, `swisslife_username` / `swisslife_password`
-- Fallback générique: `FLOW_USERNAME` / `FLOW_PASSWORD`
+```env
+# Identifiants par plateforme (recommandé)
+ALPTIS_USERNAME=votre.email@example.com
+ALPTIS_PASSWORD=VotreMotDePasse
 
-Exemple:
-```
-ALPTIS_USERNAME=Fragoso.n@france-epargne.fr
-ALPTIS_PASSWORD=********
-SWISSLIFE_USERNAME=KGLV59L
-SWISSLIFE_PASSWORD=********
-```
-Ces valeurs ne doivent jamais être committées; utilisez `.env` local (déjà ignoré par .gitignore).
+SWISSLIFE_USERNAME=VOTRELOGIN
+SWISSLIFE_PASSWORD=VotreMotDePasse
 
-## Commandes de base
-
-Utiliser npm (notez le double `--` pour transmettre les options au script):
-
-```
-npm run flows:run -- -- <slug> [options]
-npm run flows:run -- -- --file admin/flows/<platform>/<slug>.json [options]
+# Fallback générique (si plateforme non spécifiée)
+FLOW_USERNAME=email@example.com
+FLOW_PASSWORD=MotDePasseGenerique
 ```
 
-Alias pratiques:
-- `npm run flows:run:dev` — équivaut à `--mode dev`
-- `npm run flows:run:devp` — équivaut à `--mode dev_private`
+**⚠️ IMPORTANT**: Ne JAMAIS committer le fichier `.env` avec des credentials réels.
 
-Alternative robuste (bypass npm) si votre shell réécrit les options:
+### Priorité de résolution des credentials
+
+1. **Flags CLI**: `--username` / `--password` (override tout)
+2. **Env platform (maj)**: `ALPTIS_USERNAME` / `ALPTIS_PASSWORD`
+3. **Env platform (min)**: `alptis_username` / `alptis_password`
+4. **Env générique**: `FLOW_USERNAME` / `FLOW_PASSWORD`
+
+## Usage de base
+
+### Commande standard
+
+```bash
+# Via npm (recommandé)
+npm run flows:run -- <platform> <flowSlugOrPath> [options]
+
+# Via electron directement
+npx cross-env ELECTRON_RUN_AS_NODE=1 electron admin/cli/run.mjs <platform> <flowSlugOrPath> [options]
+```
+
+### Arguments
+
+| Argument | Description | Exemple |
+|----------|-------------|---------|
+| `<platform>` | Slug de la plateforme | `alptis`, `swisslife` |
+| `<flowSlugOrPath>` | Slug du flow ou chemin complet | `alptis_sante_select_pro_full` ou `admin/flows/alptis/login.hl.json` |
+
+### Options
+
+| Option | Description | Défaut |
+|--------|-------------|--------|
+| `--lead <name\|path>` | Lead spécifique (nom ou chemin) | Aléatoire depuis `admin/leads/` |
+| `--username <user>` | Override username | Depuis `.env` |
+| `--password <pass>` | Override password | Depuis `.env` |
+| `--headless` | Mode headless (invisible) | `false` (mode dev_private visible) |
+| `--keep` | Force keepOpen=true | Auto (true en dev_private, false en headless) |
+| `--no-keep` | Force keepOpen=false | Auto |
+| `--help`, `-h` | Affiche l'aide | — |
+
+## Exemples
+
+### Exécution basique
+
+```bash
+# Avec credentials depuis .env, lead aléatoire
+npm run flows:run -- alptis alptis_sante_select_pro_full
+
+# Avec lead spécifique
+npm run flows:run -- alptis alptis_sante_select_pro_full --lead baptiste_deschamps
+```
+
+### Mode headless
+
+```bash
+# Exécution en arrière-plan (invisible)
+npm run flows:run -- alptis alptis_sante_select_pro_full --headless
+
+# Headless mais avec fenêtre ouverte à la fin
+npm run flows:run -- alptis alptis_sante_select_pro_full --headless --keep
+```
+
+### Credentials explicites
+
+```bash
+# Override credentials via flags CLI
+npm run flows:run -- alptis alptis_sante_select_pro_full \
+  --username user@example.com \
+  --password MonMotDePasse
+```
+
+### Chemin de flow complet
+
+```bash
+# Utiliser un chemin de flow au lieu d'un slug
+npm run flows:run -- alptis admin/flows/alptis/custom_flow.hl.json
+```
+
+## Exécution depuis WSL (Windows Subsystem for Linux)
+
+Le wrapper `admin/cli/run_from_wsl.sh` permet d'exécuter le runner depuis WSL tout en utilisant Node.js et Chrome Windows natifs.
+
+### Usage WSL
+
+```bash
+# Depuis WSL, à la racine du projet
+admin/cli/run_from_wsl.sh <platform> <flowSlugOrPath> [options]
+```
+
+### Exemples WSL
+
+```bash
+# Basique
+admin/cli/run_from_wsl.sh alptis alptis_sante_select_pro_full
+
+# Avec credentials via environnement (recommandé pour WSL)
+export FLOW_USERNAME="user@example.com"
+export FLOW_PASSWORD="MonMotDePasse"
+admin/cli/run_from_wsl.sh alptis alptis_sante_select_pro_full
+
+# Mode headless depuis WSL
+admin/cli/run_from_wsl.sh alptis alptis_sante_select_pro_full --headless
+```
+
+**Note**: Le wrapper transmet automatiquement les variables `FLOW_USERNAME` et `FLOW_PASSWORD` à PowerShell Windows de manière sécurisée (pas de credentials dans la ligne de commande).
+
+## Structure des fichiers
+
+### Fichiers requis
 
 ```
-npx cross-env ELECTRON_RUN_AS_NODE=1 electron admin/cli/run_file_flow.mjs <slug> [options]
+admin/
+├── engine/
+│   └── engine.mjs              # Moteur d'exécution unifié
+├── cli/
+│   ├── run.mjs                 # Runner CLI principal
+│   └── run_from_wsl.sh         # Wrapper WSL → Windows
+├── field-definitions/
+│   ├── alptis.json             # Définitions champs Alptis
+│   └── swisslife.json          # Définitions champs SwissLife
+├── flows/
+│   ├── alptis/
+│   │   ├── alptis_login.hl.json
+│   │   └── alptis_sante_select_pro_full.hl.json
+│   └── swisslife/
+│       └── swisslife_login.hl.json
+└── leads/
+    ├── baptiste_deschamps.json
+    ├── nicolas_kiss.json
+    └── xavier_pinelli.json
 ```
 
-## Résolution des données
-1. Flow: par `--file`, sinon par `slug` (recherche d’un fichier JSON correspondant dans `admin/flows/`).
-2. Plateforme: lue depuis le JSON (`platform`) puis DB `platforms_catalog` (id/slug/name).
-3. URL de login (fallback): `platform_pages` pour `slug='login'` si un `step.goto` n’a pas d’URL.
-4. Identifiants: `platform_credentials` → `username` + déchiffrement du mot de passe via `safeStorage` si possible. Sinon, fournir `--vars username=... --vars password=...`.
-5. Chrome: priorité `--chrome`, sinon `settings.chrome_path` (si valide), sinon détection locale, sinon `channel: 'chrome'` Playwright (Chrome stable installé).
-6. Profil (mode `dev`): dernier `profiles.initialized_at` (persistant). Surchargable via `--profile-dir`.
+### Résolution automatique
 
-## Options
-
-Exécution
-- `--mode headless|dev|dev_private` (défaut `headless`)
-  - `headless`: Chromium/Chrome en headless (contexte non persistant)
-  - `dev`: Chrome visible et profil persistant (DB `profiles` ou `--profile-dir`)
-  - `dev_private`: Chrome visible, navigation privée (nouveau contexte)
-- `--chrome <path>`: chemin complet de `chrome.exe` (surclasse la détection/DB)
-- `--profile-dir <dir>`: chemin du profil (utilisé en `--mode dev`)
-- `--keep-open`: ne ferme pas le navigateur en fin de run
-
-Observabilité
-- `--trace on|retain-on-failure`: Trace Playwright (screenshots, snapshots, sources → `trace/trace.zip`)
-- `--har`: capture réseau HAR (`network/har.har`)
-- `--video`: enregistre une vidéo (contexts non persistants)
-- `--console`: logs console + erreurs page (`network/console.jsonl`)
-- `--network`: logs réseau JSONL (requêtes/réponses). Attention aux données sensibles; voir “Sécurité”.
-- `--dom errors|steps|all`: snapshots HTML de la page + focus autour des éléments touchés
-- `--js errors|steps|all`: listeners JS (via CDP) + sources des scripts
-- `--a11y`: snapshot accessibilité par étape
-- `--redact <regex>`: regex de masquage appliquée aux logs texte (défaut: `(password|token|authorization|cookie)=([^;\s]+)`)
-
-Sortie
-- `--out-root <dir>`: dossier racine des runs (défaut `admin/runs-cli`)
-- `--report html|json|none`: génère `report.html` et/ou `index.json`
-- `--open`: ouvre le dossier du run à la fin
-- `--json`: émet aussi la progression sur stdout en NDJSON
-
-Credentials
-- `--vars username=... --vars password=...`: identifiants si `safeStorage` indisponible
+| Type | Règle de résolution |
+|------|---------------------|
+| **Fields** | `admin/field-definitions/<platform>.json` |
+| **Flow (slug)** | `admin/flows/<platform>/<slug>.hl.json` |
+| **Flow (path)** | Chemin complet fourni |
+| **Lead (name)** | `admin/leads/<name>.json` |
+| **Lead (path)** | Chemin complet fourni |
+| **Lead (auto)** | Fichier aléatoire dans `admin/leads/` |
 
 ## Artefacts de sortie
 
-`admin/runs-cli/<slug>/<YYYYMMDD-HHMMSS>-<id>/`
-- `index.json`: manifeste (métadonnées run, options, steps, artefacts)
-- `report.html`: rapport statique (timeline, captures, liens DOM/JS)
-- `progress.ndjson`: événements temps réel
-- `screenshots/step-XX-*.png`, `error-XX.png`
-- `trace/trace.zip` (si `--trace`)
-- `network/console.jsonl`, `network/requests.jsonl`, `network/responses.jsonl`, `network/har.har` (si `--har`)
-- `dom/step-XX.html`, `dom/step-XX.focus.html`
-- `js/step-XX.listeners.json`, `js/scripts/script-*.js`
-- `video/run.webm` (si `--video` et contexte supporté)
+Chaque run génère un dossier d'artefacts dans `admin/runs-cli/<slug>/<runId>/`:
+
+```
+admin/runs-cli/alptis_sante_select_pro_full/20250104-143027-a3f2b1/
+├── index.json                  # Manifeste du run (métadonnées, steps, artefacts)
+├── report.html                 # Rapport visuel (timeline, screenshots, liens)
+├── progress.ndjson             # Événements temps réel
+├── screenshots/
+│   ├── step-01-goto.png
+│   ├── step-02-fill-username.png
+│   └── error-03.png            # Capture d'erreur si échec
+├── dom/
+│   ├── step-01.html            # DOM complet à chaque étape (si dom=errors|steps|all)
+│   └── step-01.focus.html      # DOM focalisé sur l'élément interagi
+├── js/
+│   ├── step-01.listeners.json  # Event listeners JS (si jsinfo=errors|steps|all)
+│   └── scripts/
+│       └── script-123.js       # Sources JS extraites
+└── network/
+    ├── console.jsonl           # Logs console page (si --console)
+    ├── requests.jsonl          # Requêtes réseau (si --network)
+    └── responses.jsonl         # Réponses réseau (si --network)
+```
+
+### Fichier report.html
+
+Ouvrez `report.html` dans un navigateur pour visualiser:
+- Timeline des étapes avec statut (OK/ERREUR)
+- Screenshots inline
+- Liens vers DOM, JS listeners, etc.
+- Métadonnées du run (plateforme, mode, durée, Chrome)
+
+## Modes d'exécution
+
+| Mode | Headless | Fenêtre visible | KeepOpen par défaut | Usage |
+|------|----------|-----------------|---------------------|-------|
+| `dev_private` | ❌ | ✅ | ✅ | **Défaut** — Navigation privée visible, fenêtre reste ouverte |
+| `headless` | ✅ | ❌ | ❌ | Mode invisible pour CI/CD ou exécution batch |
+
+**Basculer le mode:**
+- Par défaut: `dev_private` (visible + keepOpen)
+- Avec `--headless`: `headless` (invisible + auto-close)
+- Override keepOpen: `--keep` ou `--no-keep`
 
 ## Sécurité & confidentialité
-- Par défaut, une regex de redaction masque `password|token|authorization|cookie` dans les textes, mais elle ne filtre pas automatiquement les bodies binaires.
-- Si vous activez `--network`, évitez d’envoyer un mot de passe réel, ou ajoutez une regex personnalisée avec `--redact`.
-- Les artefacts contiennent des HTML/scripts potentiellement sensibles. Traitez le dossier du run comme confidentiel.
+
+### Credentials
+
+- ✅ **Recommandé**: Fichier `.env` à la racine (jamais commité)
+- ✅ **OK**: Variables d'environnement (`FLOW_USERNAME`/`FLOW_PASSWORD`)
+- ⚠️ **Éviter**: Flags CLI en production (credentials visibles dans process list)
+
+### Artefacts
+
+Les artefacts peuvent contenir:
+- Screenshots de pages avec données sensibles
+- DOM HTML complet (potentiellement avec tokens, session IDs)
+- Requêtes réseau (bodies, headers)
+
+**⚠️ Traiter le dossier `admin/runs-cli/` comme confidentiel.**
+
+Le dossier est déjà dans `.gitignore` et ne sera jamais commité.
+
+### Redaction
+
+Par défaut, une regex masque les patterns sensibles dans les logs:
+```
+(password|token|authorization|cookie)=([^;\s]+)
+```
+
+Exemple: `password=secret123` → `password=***`
 
 ## Dépannage
-- « Chrome introuvable »: ajoutez `--chrome "C:\\Users\\<vous>\\AppData\\Local\\Google\\Chrome\\Application\\chrome.exe"`.
-- « safeStorage indisponible »: ajoutez `--vars username=... --vars password=...`.
-- « Profil Chrome introuvable (mode dev) »: lancez l’app une fois pour créer/initialiser un profil, ou passez `--profile-dir <chemin>`.
-- « Flow introuvable »: vérifiez `admin/flows/<platform>/<slug>.json`.
-- Powershell réécrit les options: utilisez le double `--` ou la forme `npx cross-env ELECTRON_RUN_AS_NODE=1 electron ...`.
 
-## Limites actuelles
-- Pas d’écriture des runs dans la DB (volontaire). Les runs n’apparaissent pas dans l’UI Historique.
-- Collecte « mutations » et « perf » non documentées ici (réservées pour une itération ultérieure).
+### Erreur: "Credentials not found"
 
-## Section IA — Exécution par un agent depuis WSL (fidèle à PowerShell)
+**Cause**: Aucun credential trouvé pour la plateforme.
 
-Contexte: un agent (ex: pipeline CI, ou un modèle exécutant des commandes) peut se trouver dans WSL (Linux) alors que l’application et ses dépendances (Electron, better‑sqlite3, Chrome) sont installées côté Windows. Exécuter le runner CLI avec Node Linux provoque des erreurs (`invalid ELF header` sur `better-sqlite3`) et `safeStorage` peut être indisponible. La méthode fiable consiste à piloter PowerShell Windows depuis WSL.
+**Solution**:
+1. Vérifier le fichier `.env` à la racine
+2. Vérifier le nom de la plateforme (maj/min)
+3. Utiliser `--username` / `--password` en override
 
-### Script de confort
+### Erreur: "Field definitions not found"
 
-Un wrapper est fourni: `admin/cli/run_from_wsl.sh`.
+**Cause**: Fichier `admin/field-definitions/<platform>.json` manquant.
 
-Usage minimal:
+**Solution**:
+1. Vérifier le slug de la plateforme
+2. Créer le fichier s'il n'existe pas
 
+### Erreur: "Flow file not found"
+
+**Cause**: Fichier flow introuvable.
+
+**Solution**:
+1. Si slug: vérifier `admin/flows/<platform>/<slug>.hl.json`
+2. Si path: vérifier le chemin complet
+
+### Erreur: "No lead files found"
+
+**Cause**: Dossier `admin/leads/` vide.
+
+**Solution**: Ajouter au moins un fichier lead JSON dans `admin/leads/`.
+
+### Chrome introuvable
+
+**Cause**: Chrome non détecté automatiquement.
+
+**Solution**: Installer Chrome Stable ou spécifier le chemin via variable d'env `CHROME_EXE` (non implémenté dans cette version, détection auto seulement).
+
+### Exécution WSL échoue
+
+**Cause**: Binaires Linux incompatibles avec Windows.
+
+**Solution**: Utiliser le wrapper `admin/cli/run_from_wsl.sh` qui exécute via PowerShell Windows.
+
+## Migration depuis anciennes versions
+
+### Anciens runners (dépréciés)
+
+Les runners suivants ont été **supprimés** et remplacés par `admin/cli/run.mjs`:
+
+- ❌ `run_flow.mjs` — Ancien runner avec support DB
+- ❌ `run_file_flow.mjs` — Runner DB-only
+- ❌ `run_hl_flow.mjs` — Runner High-Level avec DB
+
+### Anciens wrappers WSL (dépréciés)
+
+- ❌ `run_hl_from_wsl.sh` — Remplacé par `run_from_wsl.sh`
+
+### Migration des commandes
+
+| Ancien | Nouveau |
+|--------|---------|
+| `npm run flows:run:dev -- <slug>` | `npm run flows:run -- <platform> <slug>` |
+| `npm run flows:run:devp -- <slug>` | `npm run flows:run -- <platform> <slug>` (mode par défaut) |
+| `admin/cli/run_hl_from_wsl.sh --platform alptis --flow ... --lead ...` | `admin/cli/run_from_wsl.sh alptis <slug> --lead <name>` |
+
+### Principales différences
+
+1. **Pas de DB**: Les credentials ne sont PLUS lus depuis la base de données
+2. **Paramètres positionnels**: Platform et flow sont maintenant des arguments obligatoires
+3. **Mode par défaut**: `dev_private` (visible + keepOpen) au lieu de `headless`
+4. **Lead aléatoire**: Si `--lead` non fourni, un lead aléatoire est sélectionné
+5. **Simplification**: 1 seul runner au lieu de 3
+
+## Exemples avancés
+
+### Run avec lead personnalisé
+
+```bash
+# Lead par nom (recherche dans admin/leads/)
+npm run flows:run -- alptis alptis_sante_select_pro_full --lead baptiste_deschamps
+
+# Lead par chemin complet
+npm run flows:run -- alptis alptis_sante_select_pro_full --lead /chemin/vers/mon_lead.json
 ```
-# Depuis WSL, à la racine du repo
-admin/cli/run_from_wsl.sh alptis_login --mode headless --report html
+
+### Run headless pour CI/CD
+
+```bash
+# Mode invisible, auto-close
+npm run flows:run -- alptis alptis_sante_select_pro_full --headless
+
+# Vérifier le code de sortie
+if [ $? -eq 0 ]; then
+  echo "✓ Flow succeeded"
+else
+  echo "✗ Flow failed"
+  exit 1
+fi
 ```
 
-Avec identifiants sans les exposer en ligne de commande (recommandé):
+### Run avec credentials depuis environnement
 
-```
-export FLOW_USERNAME="VOTRE_LOGIN"
-export FLOW_PASSWORD="VOTRE_MDP"
-admin/cli/run_from_wsl.sh alptis_login --mode headless --trace retain-on-failure --console --dom steps --js steps --report html
-```
+```bash
+# Bash/WSL
+export ALPTIS_USERNAME="user@example.com"
+export ALPTIS_PASSWORD="secret"
+npm run flows:run -- alptis alptis_sante_select_pro_full
 
-Le script:
-- Convertit le dossier courant WSL en chemin Windows avec `wslpath -w`.
-- Lance PowerShell: `powershell.exe -NoProfile -NonInteractive -Command '...'`.
-- Transmet `FLOW_USERNAME`/`FLOW_PASSWORD` comme variables d’environnement PowerShell (non visibles dans la ligne de commande Electron).
-- Appelle: `npx --yes cross-env ELECTRON_RUN_AS_NODE=1 electron admin/cli/run_flow.mjs ...` côté Windows.
-
-Avantages:
-- Charge les binaires natifs Windows (`better-sqlite3`) correctement.
-- Lance Chrome via `executablePath` valide ou `channel: 'chrome'` si le chemin DB est invalide.
-- Permet l’exécution headless (ou visible en `--mode dev_private`/`--mode dev`).
-
-Conseils:
-- Pour un run visible (fenêtre Chrome), la commande s’effectue pareil; si WSL n’a pas d’affichage, utilisez `--mode headless`.
-- Si Chrome n’est pas trouvé automatiquement, ajoutez `--chrome "C:\\Users\\<vous>\\AppData\\Local\\Google\\Chrome\\Application\\chrome.exe"` dans la commande (après le `alptis_login`).
-- Évitez `--network` si vous passez le mot de passe réel; sinon fournissez `--redact` plus stricte.
-
-Exemple complet (IA → WSL → PowerShell):
-
-```
-export FLOW_USERNAME="Fragoso.n@france-epargne.fr"
-export FLOW_PASSWORD="Nicolas.epargne2024"
-admin/cli/run_from_wsl.sh alptis_login \
-  --mode headless --trace retain-on-failure --console \
-  --dom steps --js steps --report html
+# PowerShell
+$env:ALPTIS_USERNAME="user@example.com"
+$env:ALPTIS_PASSWORD="secret"
+npm run flows:run -- alptis alptis_sante_select_pro_full
 ```
 
-Le script renvoie exactement les mêmes logs et artefacts que l’exécution manuelle sous PowerShell.
+### Run avec toutes les options
 
-### Identifiants (DB uniquement)
-
-Les runners Admin lisent désormais les identifiants uniquement depuis la base (dev-data/mattuelles.sqlite3) via better-sqlite3 et `electron.safeStorage` pour le déchiffrement. Aucune variable d’environnement ou `--vars` n’est utilisée pour les credentials.
-
-Pré-requis:
-- Renseigner les identifiants dans l’app (menu Credentials) pour chaque plateforme concernée.
-- Vérifier que le déchiffrement `safeStorage` fonctionne côté Windows.
-
-## Mode “High‑Level” (Fields + Lead + Flow)
-
-Pour alléger les flows, vous pouvez décrire des étapes haut niveau qui s’appuient sur les définitions de champs par plateforme et un jeu de données “lead”. Pas de DB.
-
-- Fields: `admin/field-definitions/<platform>.json` (ex: `admin/field-definitions/alptis.json`)
-- Lead: `admin/leads/<lead>.json` (valeurs, credentials)
-- Flow HL: `admin/flows/<platform>/<slug>.hl.json`
-
-Runner (WSL → Windows):
-```
-admin/cli/run_hl_from_wsl.sh --platform alptis \
-  --flow admin/flows/alptis/alptis_sante_select_pro_full.hl.json \
-  --lead admin/leads/baptiste_deschamps.json \
-  --mode headless
+```bash
+npm run flows:run -- alptis alptis_sante_select_pro_full \
+  --lead baptiste_deschamps \
+  --username user@example.com \
+  --password secret \
+  --headless \
+  --keep
 ```
 
-Artefacts: identiques à ceux du runner classique (report.html, index.json, screenshots/, dom/, js/, trace/ …) sous `admin/runs-cli/<slug>/<runId>/`.
+## Support
+
+Pour toute question ou problème:
+1. Consulter cette documentation
+2. Vérifier les artefacts dans `admin/runs-cli/`
+3. Examiner le fichier `report.html` pour diagnostiquer les erreurs
+4. Ouvrir une issue sur le dépôt du projet
+
+---
+
+**Version**: Unified CLI v1.0 (Janvier 2025)

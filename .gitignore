@@ -66,5 +66,9 @@ temp/
 runs-cli/
 admin/runs-cli/
 admin/.tmp/
+
+# Temporary credentials (NEVER commit)
+admin/.tmp/*.json
+
 # TypeScript
 *.tsbuildinfo

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Wrapper WSL -> PowerShell pour exécuter le runner CLI côté Windows
+# Wrapper WSL -> PowerShell pour exécuter le runner CLI unifié côté Windows
 # Objectif: reproduire l'exécution PowerShell (Chrome/Playwright natifs Windows)
-# sans toucher à la DB et en gardant les secrets hors de la ligne de commande.
+# en gardant les secrets hors de la ligne de commande.
 
 set -euo pipefail
 
@@ -10,24 +10,17 @@ if ! command -v powershell.exe >/dev/null 2>&1; then
   exit 1
 fi
 
-if [[ $# -lt 1 ]]; then
-  echo "Usage: admin/cli/run_from_wsl.sh <slug|--file flow.json> [options...]" >&2
-  echo "Exemple: admin/cli/run_from_wsl.sh alptis_login --mode headless --report html" >&2
+if [[ $# -lt 2 ]]; then
+  echo "Usage: admin/cli/run_from_wsl.sh <platform> <flowSlugOrPath> [options...]" >&2
+  echo "Exemple: admin/cli/run_from_wsl.sh alptis alptis_sante_select_pro_full --headless" >&2
   exit 2
 fi
 
 # Convertit le cwd WSL en chemin Windows pour PowerShell
 WIN_PWD=$(wslpath -w "$PWD")
 
-# Premier argument: slug ou --file
-FIRST_ARG=$1; shift || true
-
-# Construit la ligne d'arguments pour le script electron
-CLI_ARGS=()
-CLI_ARGS+=("$FIRST_ARG")
-while [[ $# -gt 0 ]]; do
-  CLI_ARGS+=("$1"); shift
-done
+# Construit la ligne d'arguments
+CLI_ARGS=("$@")
 
 # Assemblage sécurisé pour PowerShell
 join_ps_args() {
@@ -54,4 +47,4 @@ PS_ARGS=$(join_ps_args "${CLI_ARGS[@]}")
 
 # Exécute la commande dans PowerShell Windows
 powershell.exe -NoProfile -NonInteractive -Command \
-  "$PS_SET_ENV cd $WIN_PWD; npx --yes cross-env ELECTRON_RUN_AS_NODE=1 electron admin/cli/run_file_flow.mjs $PS_ARGS"
+  "$PS_SET_ENV cd $WIN_PWD; npx --yes cross-env ELECTRON_RUN_AS_NODE=1 electron admin/cli/run.mjs $PS_ARGS"
