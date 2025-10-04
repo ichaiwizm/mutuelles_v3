@@ -164,7 +164,7 @@ export function registerAdminCliIpc() {
     const username = usernameRow?.username || ''
     const password = revealPassword(row.id)
     // Write creds to a temp file to avoid env propagation issues
-    const tmpDir = path.join(root, 'admin', '.tmp')
+    const tmpDir = path.join(root, 'admin')
     try { fs.mkdirSync(tmpDir, { recursive: true }) } catch {}
     const credFile = path.join(tmpDir, `creds-${Date.now()}-${Math.random().toString(36).slice(2,8)}.json`)
     fs.writeFileSync(credFile, JSON.stringify({ username, password }), 'utf-8')
