@@ -1,0 +1,65 @@
+{
+  "platform": "swisslifeone",
+  "fields": [
+    {
+      "key": "login_button_home",
+      "type": "button",
+      "label": "Bouton Se connecter (page d'accueil)",
+      "selector": ".button-connection"
+    },
+    {
+      "key": "login_username",
+      "type": "text",
+      "label": "Nom d'utilisateur",
+      "selector": "#userNameInput"
+    },
+    {
+      "key": "login_password",
+      "type": "password",
+      "label": "Mot de passe",
+      "selector": "#passwordInput"
+    },
+    {
+      "key": "login_submit",
+      "type": "button",
+      "label": "Connexion",
+      "selector": "#submitButton"
+    },
+    {
+      "key": "menu_etudes_simulateurs",
+      "type": "button",
+      "label": "Menu Études et simulateurs",
+      "selector": "a:has-text('Études et simulateurs')"
+    },
+    {
+      "key": "cookie_tout_autoriser",
+      "type": "button",
+      "label": "Tout autoriser (cookies)",
+      "selector": "button:has-text('Tout autoriser')"
+    },
+    {
+      "key": "menu_simulateurs",
+      "type": "button",
+      "label": "Menu Simulateurs",
+      "selector": ".mat-mdc-menu-item.sous-lien:has-text('Simulateurs')"
+    },
+    {
+      "key": "slsis_nom_projet",
+      "type": "text",
+      "label": "Nom du projet",
+      "selector": "input[placeholder*='Nom du projet'], input[name*='nom'], input[formcontrolname*='nom']"
+    },
+    {
+      "key": "slsis_couverture_individuelle_oui",
+      "type": "radio",
+      "label": "Couverture individuelle - Oui",
+      "selector": "mat-radio-button:has-text('oui'):first-of-type label, input[value='oui']:first-of-type + label"
+    },
+    {
+      "key": "slsis_indemnites_journalieres_oui",
+      "type": "radio",
+      "label": "Indemnités Journalières - Oui",
+      "selector": "mat-radio-button:has-text('oui'):nth-of-type(2) label"
+    }
+  ]
+}

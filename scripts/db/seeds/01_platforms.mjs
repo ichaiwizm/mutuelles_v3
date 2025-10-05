@@ -22,7 +22,7 @@ export default {
     const insertUserPlatform = db.prepare(`INSERT INTO user_platforms(platform_id, selected) VALUES(?, 1)`)
 
     const platforms = [
-      { slug: 'swisslife', name: 'Swisslife' },
+      { slug: 'swisslifeone', name: 'Swiss Life One' },
       { slug: 'alptis', name: 'Alptis' }
     ]
 

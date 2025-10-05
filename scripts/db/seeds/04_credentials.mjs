@@ -123,9 +123,9 @@ export default {
         password_env: 'ALPTIS_PASSWORD'
       },
       {
-        platform: 'swisslife',
-        username_env: 'SWISSLIFE_USERNAME',
-        password_env: 'SWISSLIFE_PASSWORD'
+        platform: 'swisslifeone',
+        username_env: 'SWISSLIFEONE_USERNAME',
+        password_env: 'SWISSLIFEONE_PASSWORD'
       }
     ]
 

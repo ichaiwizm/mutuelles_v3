@@ -14,13 +14,13 @@ export default {
   async run(db, options = {}) {
     const {
       flowsDir = null,
-      slugs = ['alptis_login', 'alptis_sante_select_pro_full'],
+      slugs = ['alptis_login', 'alptis_sante_select_pro_full', 'swisslifeone_login'],
       skipExisting = true
     } = options
 
     // Get project root and flows directory
     const projectRoot = path.resolve(__dirname, '../../../')
-    const defaultFlowsDir = path.join(projectRoot, 'flows')
+    const defaultFlowsDir = path.join(projectRoot, 'admin/flows')
     const flowsDirPath = flowsDir || defaultFlowsDir
 
     if (!fs.existsSync(flowsDirPath)) {
