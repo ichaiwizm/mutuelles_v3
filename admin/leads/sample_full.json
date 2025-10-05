@@ -8,7 +8,9 @@
     "prenom": "Camille",
     "date_naissance": "01/01/1985",
     "categorie": "CADRES",
+    "statut": "SALARIE",
     "regime": "SECURITE_SOCIALE",
+    "departement": "69",
     "code_postal": "69001"
   },
   "conjoint": {

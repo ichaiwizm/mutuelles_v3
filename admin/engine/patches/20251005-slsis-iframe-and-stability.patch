@@ -16,7 +16,8 @@ Title: Iframe targeting + Linux Chrome detection + stability + new HL steps
 - After:
   - enterFrame supports `{ selector }` or `{ urlContains }` (generic), resolved from main page.
   - `safeScreenshot` retries once and does not fail the step on transient navigation errors.
-  - New steps: `pressKey`, `scrollIntoView`, `waitForNetworkIdle` (all generic).
+  - New steps: `pressKey`, `scrollIntoView`, `waitForNetworkIdle`, `typeField` (all génériques).
+  - `selectField` gère désormais automatiquement `selectOption(value)` quand aucune liste d'items n'est fournie et permet d'utiliser `option_selector_template` (`{{value}}`, `{{valueLower}}`, `{{valueUpper}}`) pour viser dynamiquement une option.
   - Frame listeners fallback via `frame.evaluate` (inline handlers map) with graceful skip for `text=`/`:has-text()` selectors.
   - Linux/WSL Chrome paths auto-detected (`/usr/bin/chromium-browser`, `/usr/bin/chromium`, `/usr/bin/google-chrome(-stable)`, `/snap/bin/chromium`).
 
@@ -24,5 +25,4 @@ Title: Iframe targeting + Linux Chrome detection + stability + new HL steps
 - The target application embeds forms inside an iframe and performs dynamic updates. The prior engine lacked robust frame targeting and was sensitive to navigation timing, causing later steps to miss elements or fail to take screenshots. The added generic steps and safer screenshot logic improve reliability across platforms and apps.
 
 4) Why this is generic
-- No SwissLifeOne selectors or assumptions exist in the engine. The new capabilities (URL-based frame selection, key presses, scrolling, network-idle wait, safer screenshots, frame listener fallback) are broadly useful for any web app with iframes or dynamic Material/Angular/legacy forms.
-
+- No SwissLifeOne selectors or assumptions exist in the engine. The new capabilities (URL-based frame selection, key presses, scrolling, typing fallback, selectOption/option-template fallback, network-idle wait, safer screenshots, frame listener fallback) are broadly useful for any web app with iframes or dynamic Material/Angular/legacy forms.

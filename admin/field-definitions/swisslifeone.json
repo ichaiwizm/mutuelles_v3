@@ -71,53 +71,67 @@
       "key": "slsis_regime_social",
       "type": "select",
       "label": "Régime social",
-      "selector": "#regime-social-assure-principal, [name='client.regimeSocial']",
+      "selector": "#regime-social-assure-principal",
       "options": {
-        "open_selector": "[name='client.regimeSocial']",
-        "items": [
-          { "value": "SECURITE_SOCIALE", "label": "Régime Général (CPAM)", "option_selector": "select[name='client.regimeSocial'] option[value='SECURITE_SOCIALE']" },
-          { "value": "TNS", "label": "Régime Général pour TNS (CPAM)", "option_selector": "select[name='client.regimeSocial'] option[value='TNS']" },
-          { "value": "AMEXA", "label": "MSA - Amexa", "option_selector": "select[name='client.regimeSocial'] option[value='AMEXA']" },
-          { "value": "SECURITE_SOCIALE_ALSACE_MOSELLE", "label": "Régime Local (CPAM Alsace Moselle)", "option_selector": "select[name='client.regimeSocial'] option[value='SECURITE_SOCIALE_ALSACE_MOSELLE']" },
-          { "value": "AUTRES_REGIME_SPECIAUX", "label": "Autres régimes spéciaux", "option_selector": "select[name='client.regimeSocial'] option[value='AUTRES_REGIME_SPECIAUX']" }
-        ]
+        "open_selector": "#regime-social-assure-principal",
+        "option_selector_template": "#regime-social-assure-principal option[value='{{valueUpper}}']"
       }
     },
     {
       "key": "slsis_statut",
       "type": "select",
       "label": "Statut",
-      "selector": "#statut-assure-principal, [name='client.statut']"
+      "selector": "#statut-assure-principal",
+      "options": {
+        "open_selector": "#statut-assure-principal",
+        "option_selector_template": "#statut-assure-principal option[value='{{valueUpper}}']"
+      }
     },
     {
       "key": "slsis_departement",
       "type": "select",
       "label": "Département",
-      "selector": "#departement-assure-principal, [name='client.departement']"
+      "selector": "#departement-assure-principal",
+      "options": {
+        "open_selector": "#departement-assure-principal",
+        "option_selector_template": "#departement-assure-principal option[value='{{value}}']"
+      }
     },
     {
       "key": "slsis_couverture_oui",
       "type": "button",
       "label": "Couverture individuelle Oui (label)",
-      "selector": "label[for='projet-confort-hospitalisation-oui'], label:has(input[id*='confort'][value='oui'])"
+      "selector": "label[for='projet-sante-individuelle-oui']"
     },
     {
       "key": "slsis_couverture_non",
       "type": "button",
       "label": "Couverture individuelle Non (label)",
-      "selector": "label[for='projet-confort-hospitalisation-non'], label:has(input[id*='confort'][value='non'])"
+      "selector": "label[for='projet-sante-individuelle-non']"
     },
     {
       "key": "slsis_ij_oui",
       "type": "button",
       "label": "Indemnités journalières Oui (label)",
-      "selector": "label[for='ij-oui'], label:has(input[name*='ij'][value='oui'])"
+      "selector": "label[for='projet-confort-hospitalisation-oui']"
     },
     {
       "key": "slsis_ij_non",
       "type": "button",
       "label": "Indemnités journalières Non (label)",
-      "selector": "label[for='ij-non'], label:has(input[name*='ij'][value='non'])"
+      "selector": "label[for='projet-confort-hospitalisation-non']"
+    },
+    {
+      "key": "slsis_simulation_individuelle",
+      "type": "button",
+      "label": "Type simulation Individuel",
+      "selector": "label[for='simulation-individuelle']"
+    },
+    {
+      "key": "slsis_simulation_couple",
+      "type": "button",
+      "label": "Type simulation Couple",
+      "selector": "label[for='simulation-couple']"
     },
     {
       "key": "slsis_madelin",

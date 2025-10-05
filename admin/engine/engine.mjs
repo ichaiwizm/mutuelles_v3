@@ -263,6 +263,39 @@ async function execHLStep(page, s, ctx, contextStack, getCurrentContext) {
         await activeContext.fill(f.selector, v)
       }
       return }
+    case 'typeField': {
+      let f = getField(ctx.fields, s.field)
+      const idx = extractDynamicIndex(s)
+      if (idx != null && f?.metadata?.dynamicIndex) f = withDynamicIndex(f, idx)
+      let value = resolveValue(s, ctx)
+
+      if (typeof value === 'string') {
+        value = parseValueTemplates(value, ctx)
+      }
+      if (value === undefined || value === null || value === '') {
+        if (s.optional === true) {
+          console.log('[hl] typeField %s = SKIPPED (optional, valeur manquante)', s.field)
+          return
+        }
+        throw new Error(`Valeur manquante pour ${s.field} (leadKey=${s.leadKey||''}, value=${s.value||''})`)
+      }
+      if (!f.selector) throw new Error(`Selector manquant pour ${s.field}`)
+      const locator = activeContext.locator(f.selector)
+      await locator.scrollIntoViewIfNeeded()
+      await locator.click({ clickCount: 1 })
+      await locator.fill('')
+      await locator.pressSequentially(String(value), { delay: 40 })
+      if (s.pressEnter === true) {
+        await locator.press('Enter')
+      }
+      if (s.pressEscape === true) {
+        await locator.press('Escape')
+      }
+      if (s.blur !== false) {
+        await locator.blur().catch(()=>{})
+      }
+      await new Promise(r => setTimeout(r, s.postDelay_ms || 200))
+      return }
     case 'pressKey': {
       // Appuyer sur une touche au niveau du champ (si fourni) sinon au clavier global
       const key = s.key || s.code || 'Escape'
@@ -325,7 +358,10 @@ async function execHLStep(page, s, ctx, contextStack, getCurrentContext) {
       let f = getField(ctx.fields, s.field)
       const idx = extractDynamicIndex(s)
       if (idx != null && f?.metadata?.dynamicIndex) f = withDynamicIndex(f, idx)
-      const value = resolveValue(s, ctx)
+      let value = resolveValue(s, ctx)
+      if (typeof value === 'string') {
+        value = parseValueTemplates(value, ctx)
+      }
       // Support pour optional: si la valeur est manquante, skip silencieusement
       if (value === undefined || value === null) {
         if (s.optional === true) {
@@ -336,18 +372,50 @@ async function execHLStep(page, s, ctx, contextStack, getCurrentContext) {
       }
       const open = f?.options?.open_selector || f.selector
       if (!open) throw new Error(`open_selector manquant pour ${s.field}`)
+      console.log('[hl] selectField %s -> %s', s.field, String(value))
+
+      // Si aucune liste d'items n'est fournie, utiliser selectOption directement
+      if (!f?.options?.items || f.options.items.length === 0) {
+        const stringValue = String(value)
+        if (f?.options?.option_selector_template) {
+          try {
+            await activeContext.selectOption(open, stringValue)
+            await new Promise(r => setTimeout(r, s.postDelay_ms || 200))
+            return
+          } catch (err) {
+            await activeContext.click(open).catch(()=>{})
+            await new Promise(r => setTimeout(r, 150))
+            const optionSelector = buildOptionSelectorFromTemplate(f.options.option_selector_template, stringValue)
+            const optionHandle = await activeContext.waitForSelector(optionSelector, { state: 'attached', timeout: 5000 })
+            await optionHandle.evaluate((opt) => {
+              const select = opt.closest('select')
+              if (!select) return
+              for (const other of Array.from(select.options)) {
+                other.selected = false
+                other.removeAttribute('selected')
+              }
+              select.value = opt.value
+              opt.selected = true
+              opt.setAttribute('selected', 'selected')
+              select.dispatchEvent(new Event('input', { bubbles: true }))
+              select.dispatchEvent(new Event('change', { bubbles: true }))
+            })
+            await new Promise(r => setTimeout(r, s.postDelay_ms || 200))
+            return
+          }
+        }
+        await activeContext.selectOption(open, stringValue)
+        await new Promise(r => setTimeout(r, s.postDelay_ms || 200))
+        return
+      }
+
       await activeContext.click(open)
-      // Petit wait pour que le dropdown s'ouvre complètement
       await new Promise(r => setTimeout(r, 300))
-      // try find item by value mapping
-      let item = f?.options?.items?.find((it)=>String(it.value)===String(value))
+      let item = f.options.items.find((it)=>String(it.value)===String(value))
       if (!item) {
-        // fallback by label
-        item = f?.options?.items?.find((it)=>String(it.label).toLowerCase()===String(value).toLowerCase())
+        item = f.options.items.find((it)=>String(it.label).toLowerCase()===String(value).toLowerCase())
       }
       if (!item?.option_selector) throw new Error(`option_selector manquant pour ${s.field}:${value}`)
-      console.log('[hl] selectField %s -> %s', s.field, String(value))
-      // Attendre que l'option soit visible avant de cliquer
       await activeContext.waitForSelector(item.option_selector, { state: 'visible', timeout: 5000 })
       await activeContext.click(item.option_selector)
       return }
@@ -520,6 +588,13 @@ function withDynamicIndex(fieldDef, i){
   return clone
 }
 function redactText(s, r){ try { return s.replace(new RegExp(r,'gi'), '$1=***') } catch { return s } }
+function buildOptionSelectorFromTemplate(template, value){
+  const strValue = String(value)
+  return template
+    .replace(/\{\{value\}\}/g, strValue)
+    .replace(/\{\{valueLower\}\}/g, strValue.toLowerCase())
+    .replace(/\{\{valueUpper\}\}/g, strValue.toUpperCase())
+}
 async function safeScreenshot(page, file){
   try {
     await page.screenshot({ path:file })
@@ -771,6 +846,7 @@ export function describeHL(s){
   switch (s.type){
     case 'goto': return `Aller sur ${s.url}`
     case 'fillField': return `Remplir ${s.field}`
+    case 'typeField': return `Saisir ${s.field}`
     case 'toggleField': return `Toggle ${s.field} -> ${s.state}`
     case 'selectField': return `Sélectionner ${s.field}`
     case 'waitForField': return `Attendre ${s.field}`

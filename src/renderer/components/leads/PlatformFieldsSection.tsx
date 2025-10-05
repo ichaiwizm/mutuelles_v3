@@ -189,9 +189,9 @@ export default function PlatformFieldsSection({
                   <ToggleSwitch
                     checked={swissLifeOne.projet?.indemnites_journalieres || false}
                     onChange={(val) => updateSwissLifeOne('indemnites_journalieres', val)}
-                    disabled={!editable}
+                    disabled={true}
                     label="Indemnités journalières"
-                    tooltip="Inclure les indemnités journalières en cas d'arrêt de travail"
+                    tooltip="Fonctionnalité désactivée - Indemnités journalières non disponibles"
                   />
                   <ToggleSwitch
                     checked={swissLifeOne.projet?.resiliation_contrat || false}

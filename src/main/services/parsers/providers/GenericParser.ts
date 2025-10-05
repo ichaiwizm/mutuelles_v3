@@ -32,7 +32,7 @@ export class GenericParser extends BaseParser {
     const contact = this.extractContact(sections.contact || normalizedContent)
     const souscripteur = this.extractSouscripteur(sections.souscripteur || normalizedContent)
     const conjoint = this.extractConjoint(sections.conjoint || '')
-    const enfants = this.extractEnfants(sections.enfants || normalizedContent)
+    const enfants = this.extractEnfants(sections.enfants || '')
     const besoins = this.extractBesoins(sections.besoin || normalizedContent)
 
     return {
@@ -52,11 +52,11 @@ export class GenericParser extends BaseParser {
 
     // Patterns de sections possibles
     const sectionRegexes = {
-      contact: /(?:Contact|Informations de contact)\s*\n(.*?)(?=\n(?:Souscripteur|Conjoint|Enfants|Besoin|$))/si,
-      souscripteur: /(?:Souscripteur|Assuré)\s*\n(.*?)(?=\n(?:Conjoint|Enfants|Besoin|$))/si,
-      conjoint: /Conjoint\s*\n(.*?)(?=\n(?:Enfants|Besoin|$))/si,
-      enfants: /Enfants\s*\n(.*?)(?=\n(?:Besoin|$))/si,
-      besoin: /(?:Besoin|Besoins)\s*\n(.*?)(?=\n(?:$))/si
+      contact: /(?:Contact|Informations de contact)\s*\n+(.*?)(?=\n+(?:Souscripteur|Conjoint|Enfants|Besoin|$))/si,
+      souscripteur: /(?:Souscripteur|Assuré)\s*\n+(.*?)(?=\n+(?:Conjoint|Enfants|Besoin|$))/si,
+      conjoint: /Conjoint\s*\n+(.*?)(?=\n+(?:Enfants|Besoin|$))/si,
+      enfants: /Enfants\s*\n+(.*?)(?=\n+(?:Besoin|$))/si,
+      besoin: /(?:Besoin|Besoins)\s*\n+(.*?)$/si
     }
 
     for (const [sectionName, regex] of Object.entries(sectionRegexes)) {
@@ -134,7 +134,9 @@ export class GenericParser extends BaseParser {
    * Extrait les informations du souscripteur
    */
   private static extractSouscripteur(text: string) {
-    const souscripteur: any = {}
+    const souscripteur: any = {
+      nombreEnfants: 0 // Valeur par défaut
+    }
 
     // Date de naissance
     const dobMatch = text.match(/(?:Date de naissance|Né(?:e)? le|Birth date|DDN)\s*:\s*(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/i)
@@ -154,7 +156,7 @@ export class GenericParser extends BaseParser {
       souscripteur.regimeSocial = this.normalizeRegime(regimeMatch[1].trim())
     }
 
-    // Nombre d'enfants
+    // Nombre d'enfants (écrase la valeur par défaut si trouvé)
     const enfantsMatch = text.match(/(?:Nombre d'enfants|Enfants)\s*:\s*(\d+)/i)
     if (enfantsMatch) {
       souscripteur.nombreEnfants = parseInt(enfantsMatch[1])
@@ -196,6 +198,8 @@ export class GenericParser extends BaseParser {
    * Extrait les informations des enfants
    */
   private static extractEnfants(text: string) {
+    if (!text || text.trim() === '') return []
+
     const enfants: any[] = []
 
     // Cherche toutes les dates de naissance d'enfants
