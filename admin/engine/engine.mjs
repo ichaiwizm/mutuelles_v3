@@ -74,6 +74,10 @@ export async function runHighLevelFlow({ fieldsFile, flowFile, leadFile, usernam
       return page
     }
 
+    // Support iframes: stack de contextes (page principale, puis frames)
+    const contextStack = [page]
+    const getCurrentContext = () => contextStack[contextStack.length - 1]
+
     if (consoleLog) {
       page.on('console', (msg) => { appendText(path.join(networkDir,'console.jsonl'), JSON.stringify({ type:'console', level: msg.type(), text: redactText(msg.text(), redact) })+'\n') })
       page.on('pageerror', (err) => { appendText(path.join(networkDir,'console.jsonl'), JSON.stringify({ type:'pageerror', message: String(err?.message||err) })+'\n') })
@@ -109,7 +113,7 @@ export async function runHighLevelFlow({ fieldsFile, flowFile, leadFile, usernam
       const shotPath = path.join(screenshotsDir, shotName)
       try {
         await ensurePage();
-        await execHLStep(page, s, ctx)
+        await execHLStep(page, s, ctx, contextStack, getCurrentContext)
         await page.screenshot({ path: shotPath })
         await maybeCollect(stepCollectors(page, i, s, { domDir, jsDir, a11y, domMode: dom, jsMode: jsinfo, ctx }))
         emit({ type:s.type, status:'success', stepIndex:i, screenshotPath: path.relative(runDir, shotPath) })
@@ -184,22 +188,26 @@ function getField(fields, key) {
   return f
 }
 
-async function execHLStep(page, s, ctx) {
+async function execHLStep(page, s, ctx, contextStack, getCurrentContext) {
+  // Utiliser le contexte courant (page ou frame) pour toutes les opérations
+  const activeContext = getCurrentContext()
+
   switch (s.type) {
     case 'goto': {
       if (!s.url) throw new Error('URL manquante')
+      // goto s'exécute toujours sur la page principale, pas dans un frame
       await page.goto(s.url, { waitUntil:'domcontentloaded' })
       return }
     case 'acceptConsent': {
       if (!s.selector) throw new Error('selector requis pour acceptConsent')
-      try { await page.waitForSelector(s.selector, { timeout: s.timeout_ms || 1500 }); await page.click(s.selector) } catch {}
+      try { await activeContext.waitForSelector(s.selector, { timeout: s.timeout_ms || 1500 }); await activeContext.click(s.selector) } catch {}
       return }
     case 'waitForField': {
       let f = getField(ctx.fields, s.field)
       const idx = extractDynamicIndex(s)
       if (idx != null && f?.metadata?.dynamicIndex) f = withDynamicIndex(f, idx)
       if (!f.selector) throw new Error(`Selector manquant pour ${s.field}`)
-      await page.waitForSelector(f.selector, { state: 'attached' })
+      await activeContext.waitForSelector(f.selector, { state: 'attached' })
       return }
     case 'fillField': {
       let f = getField(ctx.fields, s.field)
@@ -224,12 +232,12 @@ async function execHLStep(page, s, ctx) {
       const v = String(value)
       const logv = String(s.field||'').toLowerCase().includes('password') ? '***' : v
       console.log('[hl] fillField %s = %s', s.field, logv)
-      await page.fill(f.selector, v)
+      await activeContext.fill(f.selector, v)
       // Fermer le calendrier s'il s'ouvre automatiquement (date-picker)
       const isDateField = (s.field||'').toLowerCase().includes('date') || (f.label||'').toLowerCase().includes('date')
       if (isDateField) {
         try {
-          await page.press(f.selector, 'Escape')
+          await activeContext.press(f.selector, 'Escape')
           await new Promise(r => setTimeout(r, 300))
           console.log('[hl] fillField %s - calendrier fermé', s.field)
         } catch (err) {
@@ -253,19 +261,19 @@ async function execHLStep(page, s, ctx) {
       console.log('[hl] toggleField %s -> %s', s.field, s.state)
 
       // Vérifier l'état actuel avant de cliquer
-      const isCurrentlyOn = await page.locator(stateSel).count() > 0
+      const isCurrentlyOn = await activeContext.locator(stateSel).count() > 0
 
       if (s.state === 'on' && !isCurrentlyOn) {
         // Cliquer sur le toggle pour l'activer
-        await page.locator(clickSel).click({ force: true })
+        await activeContext.locator(clickSel).click({ force: true })
         console.log('[hl] toggleField %s - clicked to activate', s.field)
         // Attendre que l'animation/state update se termine
         await new Promise(r => setTimeout(r, 300))
-        await page.waitForSelector(stateSel, { state: 'attached', timeout: 20000 })
+        await activeContext.waitForSelector(stateSel, { state: 'attached', timeout: 20000 })
         console.log('[hl] toggleField %s - état ON confirmé', s.field)
       } else if (s.state === 'off' && isCurrentlyOn) {
         // Cliquer sur le toggle pour le désactiver
-        await page.locator(clickSel).click({ force: true })
+        await activeContext.locator(clickSel).click({ force: true })
         console.log('[hl] toggleField %s - clicked to deactivate', s.field)
         await new Promise(r => setTimeout(r, 300))
       } else {
@@ -287,7 +295,7 @@ async function execHLStep(page, s, ctx) {
       }
       const open = f?.options?.open_selector || f.selector
       if (!open) throw new Error(`open_selector manquant pour ${s.field}`)
-      await page.click(open)
+      await activeContext.click(open)
       // Petit wait pour que le dropdown s'ouvre complètement
       await new Promise(r => setTimeout(r, 300))
       // try find item by value mapping
@@ -299,8 +307,8 @@ async function execHLStep(page, s, ctx) {
       if (!item?.option_selector) throw new Error(`option_selector manquant pour ${s.field}:${value}`)
       console.log('[hl] selectField %s -> %s', s.field, String(value))
       // Attendre que l'option soit visible avant de cliquer
-      await page.waitForSelector(item.option_selector, { state: 'visible', timeout: 5000 })
-      await page.click(item.option_selector)
+      await activeContext.waitForSelector(item.option_selector, { state: 'visible', timeout: 5000 })
+      await activeContext.click(item.option_selector)
       return }
     case 'clickField': {
       let f = getField(ctx.fields, s.field)
@@ -320,7 +328,7 @@ async function execHLStep(page, s, ctx) {
         const option = f.options.find(opt => String(opt.value) === String(value))
         if (!option) throw new Error(`Option radio non trouvée pour ${s.field}:${value}`)
         console.log('[hl] clickField (radio) %s = %s', s.field, value)
-        await page.click(option.selector)
+        await activeContext.click(option.selector)
         return
       }
 
@@ -329,8 +337,8 @@ async function execHLStep(page, s, ctx) {
       // Si optional, vérifier d'abord si l'élément existe
       if (s.optional === true) {
         try {
-          await page.waitForSelector(f.selector, { state: 'attached', timeout: 1000 })
-          await page.click(f.selector)
+          await activeContext.waitForSelector(f.selector, { state: 'attached', timeout: 1000 })
+          await activeContext.click(f.selector)
           console.log('[hl] clickField %s (optional, found)', s.field)
         } catch (err) {
           console.log('[hl] clickField %s = SKIPPED (optional, not found)', s.field)
@@ -338,10 +346,30 @@ async function execHLStep(page, s, ctx) {
         return
       }
 
-      await page.click(f.selector)
+      await activeContext.click(f.selector)
       return }
     case 'sleep': {
       await new Promise(r => setTimeout(r, s.timeout_ms || 0))
+      return }
+    case 'enterFrame': {
+      if (!s.selector) throw new Error('selector requis pour enterFrame')
+      // Toujours chercher l'iframe depuis la page principale
+      const mainPage = contextStack[0]
+      await mainPage.waitForSelector(s.selector, { timeout: s.timeout_ms || 15000 })
+      const frameHandle = await mainPage.$(s.selector)
+      if (!frameHandle) throw new Error(`Iframe introuvable: ${s.selector}`)
+      const frame = await frameHandle.contentFrame()
+      if (!frame) throw new Error(`Impossible d'accéder au contenu de l'iframe: ${s.selector}`)
+      contextStack.push(frame)
+      console.log('[hl] enterFrame %s - contexte empilé (profondeur: %d)', s.selector, contextStack.length)
+      return }
+    case 'exitFrame': {
+      if (contextStack.length <= 1) {
+        console.log('[hl] exitFrame - déjà au contexte principal, ignoré')
+        return
+      }
+      contextStack.pop()
+      console.log('[hl] exitFrame - contexte dépilé (profondeur: %d)', contextStack.length)
       return }
     default:
       throw new Error('Type inconnu (HL): ' + s.type)
@@ -604,4 +632,4 @@ async function collectJsListeners(page, index, step, selector, jsDir){
   }
 }
 
-export function describeHL(s){ switch (s.type){ case 'goto': return `Aller sur ${s.url}`; case 'fillField': return `Remplir ${s.field}`; case 'toggleField': return `Toggle ${s.field} -> ${s.state}`; case 'selectField': return `Sélectionner ${s.field}`; case 'waitForField': return `Attendre ${s.field}`; case 'clickField': return `Cliquer ${s.field}`; case 'acceptConsent': return 'Consentement'; case 'sleep': return `Pause ${s.timeout_ms||0}ms`; default: return s.type } }
+export function describeHL(s){ switch (s.type){ case 'goto': return `Aller sur ${s.url}`; case 'fillField': return `Remplir ${s.field}`; case 'toggleField': return `Toggle ${s.field} -> ${s.state}`; case 'selectField': return `Sélectionner ${s.field}`; case 'waitForField': return `Attendre ${s.field}`; case 'clickField': return `Cliquer ${s.field}`; case 'acceptConsent': return 'Consentement'; case 'sleep': return `Pause ${s.timeout_ms||0}ms`; case 'enterFrame': return `Entrer dans iframe ${s.selector}`; case 'exitFrame': return `Sortir de l'iframe`; default: return s.type } }

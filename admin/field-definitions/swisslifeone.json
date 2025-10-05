@@ -47,19 +47,19 @@
       "key": "slsis_nom_projet",
       "type": "text",
       "label": "Nom du projet",
-      "selector": "input[placeholder*='Nom du projet'], input[name*='nom'], input[formcontrolname*='nom']"
+      "selector": "#nom-projet"
     },
     {
       "key": "slsis_couverture_individuelle_oui",
-      "type": "radio",
+      "type": "button",
       "label": "Couverture individuelle - Oui",
-      "selector": "mat-radio-button:has-text('oui'):first-of-type label, input[value='oui']:first-of-type + label"
+      "selector": "label:has(input[name='swlCommunCommand.besoinCouvertureIndiv'][value='oui'])"
     },
     {
-      "key": "slsis_indemnites_journalieres_oui",
-      "type": "radio",
-      "label": "Indemnités Journalières - Oui",
-      "selector": "mat-radio-button:has-text('oui'):nth-of-type(2) label"
+      "key": "slsis_indemnites_journalieres_non",
+      "type": "button",
+      "label": "Indemnités Journalières - Non",
+      "selector": "label:has(input[name='swlCommunCommand.besoinIndemniteJournaliere'][value='non'])"
     }
   ]
 }
