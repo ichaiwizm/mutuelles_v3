@@ -17,18 +17,21 @@
     "prenom": "Nicolas",
     "date_naissance": "18/10/1982",
     "categorie": "PROFESSIONS_LIBERALES_ET_ASSIMILES",
-    "regime": "SECURITE_SOCIALE_INDEPENDANTS",
-    "code_postal": "91360"
+    "regime": "TNS",
+    "statut": "TNS",
+    "code_postal": "91360",
+    "departement": "91"
   },
   "conjoint": {
     "present": true,
     "date_naissance": "26/04/1983",
     "categorie": "PERSONNES_SANS_ACTIVITE_PROFESSIONNELLE",
-    "regime": "SECURITE_SOCIALE"
+    "regime": "SECURITE_SOCIALE",
+    "statut": "SALARIE"
   },
   "enfants": [
-    { "date_naissance": "27/05/2014", "regime": "SECURITE_SOCIALE" }
+    { "date_naissance": "27/05/2014", "regime": "SECURITE_SOCIALE", "ayant_droit": "CLIENT" }
   ],
-  "projet": { "date_effet": "20/06/2025" },
+  "projet": { "date_effet": "20/06/2025", "nb_enfants": 1 },
   "besoin": { "soins_medicaux": 2, "hospitalisation": 2, "optique": 3, "dentaire": 4 }
 }

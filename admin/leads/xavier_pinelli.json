@@ -17,8 +17,10 @@
     "prenom": "XAVIER",
     "date_naissance": "17/05/1971",
     "categorie": "PROFESSIONS_LIBERALES_ET_ASSIMILES",
-    "regime": "SECURITE_SOCIALE_INDEPENDANTS",
-    "code_postal": "13120"
+    "regime": "TNS",
+    "statut": "TNS",
+    "code_postal": "13120",
+    "departement": "13"
   },
   "conjoint": { "present": false },
   "enfants": [],

@@ -238,29 +238,87 @@ async function execHLStep(page, s, ctx, contextStack, getCurrentContext) {
       const logv = String(s.field||'').toLowerCase().includes('password') ? '***' : v
       console.log('[hl] fillField %s = %s', s.field, logv)
 
-      // Détecter si c'est un champ de date (pour gérer les date-pickers)
-      const isDateField = (s.field||'').toLowerCase().includes('date') || (f.label||'').toLowerCase().includes('date')
+      // Vérifier si la méthode jQuery est demandée explicitement
+      const useJQueryMethod = s.method === 'jquery'
 
-      if (isDateField) {
-        // Pour les champs de date avec jQuery datepicker, utiliser une approche plus robuste
+      if (useJQueryMethod) {
+        // Méthode jQuery: utiliser evaluate pour manipuler jQuery datepicker directement
         try {
+          const result = await activeContext.evaluate(({selector, value}) => {
+            const elem = document.querySelector(selector)
+            if (!elem) return { success: false, error: 'Element not found' }
+
+            // Vérifier si jQuery est disponible
+            if (typeof jQuery === 'undefined' && typeof $ === 'undefined') {
+              return { success: false, error: 'jQuery not available' }
+            }
+
+            const $ = jQuery || window.$
+            const $elem = $(elem)
+
+            // Fermer le datepicker s'il est ouvert
+            if ($elem.datepicker) {
+              try {
+                $elem.datepicker('hide')
+              } catch (e) {}
+            }
+
+            // Définir la valeur de plusieurs façons pour garantir la persistance
+            // 1. Définir l'attribut HTML value
+            elem.value = value
+            elem.setAttribute('value', value)
+
+            // 2. Définir via jQuery
+            $elem.val(value)
+
+            // 3. Si datepicker existe, utiliser sa méthode setDate
+            if ($elem.datepicker && typeof $elem.datepicker === 'function') {
+              try {
+                // Parser la date au format français DD/MM/YYYY
+                const parts = value.split('/')
+                if (parts.length === 3) {
+                  const day = parseInt(parts[0], 10)
+                  const month = parseInt(parts[1], 10) - 1 // mois est 0-indexed en JS
+                  const year = parseInt(parts[2], 10)
+                  const dateObj = new Date(year, month, day)
+                  $elem.datepicker('setDate', dateObj)
+                }
+              } catch (e) {}
+            }
+
+            // 4. Déclencher TOUS les événements pour garantir la détection
+            $elem.trigger('input')
+            $elem.trigger('change')
+            $elem.trigger('keyup')
+            $elem.trigger('blur')
+
+            // Marquer le champ comme valide (retirer classe d'erreur si présente)
+            $elem.removeClass('error').addClass('valid')
+
+            return { success: true, finalValue: elem.value, attrValue: elem.getAttribute('value') }
+          }, { selector: f.selector, value: v })
+
+          if (result.success) {
+            console.log('[hl] fillField %s - date remplie via jQuery (value=%s)', s.field, result.finalValue)
+          } else {
+            throw new Error(result.error || 'jQuery method failed')
+          }
+        } catch (err) {
+          console.log('[hl] fillField %s - méthode jQuery échouée: %s, fallback sur pressSequentially', s.field, err.message)
+          // Fallback sur pressSequentially
           const locator = activeContext.locator(f.selector)
           await locator.click()
           await new Promise(r => setTimeout(r, 200))
           await locator.clear()
           await locator.pressSequentially(v, { delay: 50 })
           await new Promise(r => setTimeout(r, 200))
-          // Fermer le calendrier et déclencher les événements de validation
           await locator.press('Escape')
           await locator.blur()
           await new Promise(r => setTimeout(r, 300))
-          console.log('[hl] fillField %s - date remplie via pressSequentially', s.field)
-        } catch (err) {
-          console.log('[hl] fillField %s - pressSequentially échoué, fallback sur fill(): %s', s.field, err.message)
-          await activeContext.fill(f.selector, v)
+          console.log('[hl] fillField %s - date remplie via pressSequentially (fallback)', s.field)
         }
       } else {
-        // Pour les champs normaux, utiliser fill()
+        // Méthode standard: utiliser fill()
         await activeContext.fill(f.selector, v)
       }
       return }
@@ -493,6 +551,10 @@ async function execHLStep(page, s, ctx, contextStack, getCurrentContext) {
       }
       contextStack.pop()
       console.log('[hl] exitFrame - contexte dépilé (profondeur: %d)', contextStack.length)
+      return }
+    case 'comment': {
+      // Commentaire pour structurer le flow - ignoré à l'exécution
+      if (s.text) console.log('[hl] comment:', s.text)
       return }
     default:
       throw new Error('Type inconnu (HL): ' + s.type)

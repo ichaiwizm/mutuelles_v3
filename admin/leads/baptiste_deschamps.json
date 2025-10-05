@@ -17,14 +17,17 @@
     "prenom": "BAPTISTE",
     "date_naissance": "02/06/1991",
     "categorie": "CHEFS_D_ENTREPRISE",
-    "regime": "SECURITE_SOCIALE_INDEPENDANTS",
-    "code_postal": "44300"
+    "regime": "TNS",
+    "statut": "TNS",
+    "code_postal": "44300",
+    "departement": "44"
   },
   "conjoint": {
     "present": true,
     "date_naissance": "11/09/1992",
     "categorie": "PERSONNES_SANS_ACTIVITE_PROFESSIONNELLE",
-    "regime": "SECURITE_SOCIALE"
+    "regime": "SECURITE_SOCIALE",
+    "statut": "SALARIE"
   },
   "enfants": [
     { "date_naissance": "14/03/2019", "regime": "SECURITE_SOCIALE" },

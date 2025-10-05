@@ -42,7 +42,9 @@
       "Bash(dos2unix:*)",
       "Bash(wslpath:*)",
       "Read(//tmp/**)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(bash:*)",
+      "Bash(HEADLESS=1 bash admin/cli/run_from_wsl.sh swisslifeone swisslifeone_slsis --lead nicolas_kiss)"
     ],
     "deny": [],
     "ask": []
