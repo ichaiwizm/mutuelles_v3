@@ -47,14 +47,16 @@
 
     { "type": "waitForField", "field": "slsis_ij_non", "label": "wait-ij-non" },
     { "type": "clickField", "field": "slsis_ij_non", "label": "click-ij-non" },
-
-    { "type": "selectField", "field": "slsis_gamme", "value": "SwissLife Santé", "label": "select-gamme" },
-    { "type": "waitForNetworkIdle", "label": "network-after-gamme" },
+    { "type": "waitForNetworkIdle", "label": "network-after-couverture" },
 
     { "type": "selectField", "field": "slsis_departement", "value": "{lead.adherent.departement}", "label": "select-departement" },
     { "type": "selectField", "field": "slsis_regime_social", "value": "{lead.adherent.regime}", "label": "select-regime" },
     { "type": "selectField", "field": "slsis_statut", "value": "{lead.adherent.statut}", "label": "select-statut", "optional": true, "postDelay_ms": 300 },
     { "type": "selectField", "field": "slsis_profession", "value": "{lead.adherent.profession}", "label": "select-profession", "skipIfNot": "adherent.profession", "optional": true },
+    { "type": "waitForNetworkIdle", "label": "network-after-identite" },
+
+    { "type": "selectField", "field": "slsis_gamme", "value": "SwissLife Santé", "label": "select-gamme" },
+    { "type": "waitForNetworkIdle", "label": "network-after-gamme" },
 
     { "type": "scrollIntoView", "field": "slsis_madelin", "label": "scroll-madelin" },
     { "type": "clickField", "field": "slsis_madelin", "label": "click-madelin" },

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
-import { Home, Building2, UserCog, KeyRound, Users, Settings } from 'lucide-react'
+import { Home, KeyRound, Users, Settings } from 'lucide-react'
 import ThemeToggle from './components/ThemeToggle'
 import ErrorBoundary from './components/ErrorBoundary'
 import { ToastProvider } from './contexts/ToastContext'

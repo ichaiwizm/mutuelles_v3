@@ -42,24 +42,6 @@ export class LeadsService {
     return { id, extractedAt, ...data }
   }
 
-  async getRawLead(id: string): Promise<RawLead | null> {
-    const row = this.db.prepare(`
-      SELECT id, source, provider, raw_content, metadata, extracted_at
-      FROM raw_leads WHERE id = ?
-    `).get(id) as any
-
-    if (!row) return null
-
-    return {
-      id: row.id,
-      source: row.source,
-      provider: row.provider,
-      rawContent: row.raw_content,
-      metadata: JSON.parse(row.metadata),
-      extractedAt: row.extracted_at
-    }
-  }
-
   // =================== CLEAN LEADS ===================
 
   async createCleanLead(data: Omit<CleanLead, 'id' | 'cleanedAt'>): Promise<CleanLead> {
@@ -171,26 +153,6 @@ export class LeadsService {
     `)
 
     const result = stmt.run(...values)
-    return result.changes > 0
-  }
-
-  async replaceCleanLead(id: string, data: UpdateLeadData): Promise<boolean> {
-    const stmt = this.db.prepare(`
-      UPDATE clean_leads
-      SET contact_data = ?, souscripteur_data = ?, conjoint_data = ?, enfants_data = ?, besoins_data = ?, platform_data = ?
-      WHERE id = ?
-    `)
-
-    const result = stmt.run(
-      JSON.stringify(data.contact),
-      JSON.stringify(data.souscripteur),
-      data.conjoint ? JSON.stringify(data.conjoint) : null,
-      JSON.stringify(data.enfants || []),
-      JSON.stringify(data.besoins || {}),
-      data.platformData ? JSON.stringify(data.platformData) : null,
-      id
-    )
-
     return result.changes > 0
   }
 

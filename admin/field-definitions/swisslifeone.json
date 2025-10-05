@@ -62,7 +62,7 @@
       "selector": "#selection-produit-sante, [name='contratSante.produitId']",
       "options": {
         "open_selector": "#selection-produit-sante, [name='contratSante.produitId']",
-        "option_selector_template": "#selection-produit-sante option:has-text('{{value}}'), [name='contratSante.produitId'] option:has-text('{{value}}')"
+        "option_selector_template": "#selection-produit-sante option:has-text(\"{{value}}\"), [name='contratSante.produitId'] option:has-text(\"{{value}}\")"
       }
     },
     {
@@ -98,7 +98,7 @@
       "selector": "#profession-assure-principal",
       "options": {
         "open_selector": "#profession-assure-principal",
-        "option_selector_template": "#profession-assure-principal option[value='{{valueUpper}}'], #profession-assure-principal option:has-text('{{value}}')"
+        "option_selector_template": "#profession-assure-principal option[value='{{valueUpper}}'], #profession-assure-principal option:has-text(\"{{value}}\")"
       }
     },
     {

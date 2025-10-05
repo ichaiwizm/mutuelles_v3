@@ -211,7 +211,8 @@ async function execHLStep(page, s, ctx, contextStack, getCurrentContext) {
       return }
     case 'waitForNetworkIdle': {
       // Attendre que le réseau soit idle (sur la page principale)
-      await page.waitForLoadState('networkidle')
+      const timeout = typeof s.timeout_ms === 'number' ? s.timeout_ms : 20000
+      await page.waitForLoadState('networkidle', { timeout })
       return }
     case 'fillField': {
       let f = getField(ctx.fields, s.field)

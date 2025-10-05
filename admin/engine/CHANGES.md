@@ -17,6 +17,7 @@ Changes
   - `pressKey { key, field? }` → sends a key to a field (focus + `locator.press`) or to the active context keyboard; useful after date pickers.
   - `scrollIntoView { field }` → ensures the element is within viewport before clicking/filling.
   - `typeField { field, value }` → type sequentially (pressSequentially + blur) for forms that rely on key events instead of simple `.fill()`.
+  - `waitForNetworkIdle` accepte désormais `timeout_ms` (par défaut: 20 s) pour gérer les interfaces lentes.
 
 - enterFrame improved
   - Supports `{ selector }` (existing) or `{ urlContains }` to target a frame by URL substring. Always resolves frames from the main page.
