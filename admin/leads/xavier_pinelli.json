@@ -24,6 +24,6 @@
   },
   "conjoint": { "present": false },
   "enfants": [],
-  "projet": { "date_effet": "01/04/2025" },
+  "projet": { "date_effet": "01/04/2025", "nb_enfants": 0 },
   "besoin": { "motif": "Changer de contrat", "assureur_actuel": "AXA COURTAGE", "formule": "Intermédiaire" }
 }

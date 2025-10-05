@@ -262,6 +262,102 @@
       "type": "select",
       "label": "Ayant droit enfant 2",
       "selector": "#enfants-2-idAyantDroit"
+    },
+    {
+      "key": "slsis_enfant_3_date_naissance",
+      "type": "text",
+      "label": "Date de naissance enfant 3",
+      "selector": "#enfants-3-dateNaissance"
+    },
+    {
+      "key": "slsis_enfant_3_ayant_droit",
+      "type": "select",
+      "label": "Ayant droit enfant 3",
+      "selector": "#enfants-3-idAyantDroit"
+    },
+    {
+      "key": "slsis_enfant_4_date_naissance",
+      "type": "text",
+      "label": "Date de naissance enfant 4",
+      "selector": "#enfants-4-dateNaissance"
+    },
+    {
+      "key": "slsis_enfant_4_ayant_droit",
+      "type": "select",
+      "label": "Ayant droit enfant 4",
+      "selector": "#enfants-4-idAyantDroit"
+    },
+    {
+      "key": "slsis_enfant_5_date_naissance",
+      "type": "text",
+      "label": "Date de naissance enfant 5",
+      "selector": "#enfants-5-dateNaissance"
+    },
+    {
+      "key": "slsis_enfant_5_ayant_droit",
+      "type": "select",
+      "label": "Ayant droit enfant 5",
+      "selector": "#enfants-5-idAyantDroit"
+    },
+    {
+      "key": "slsis_enfant_6_date_naissance",
+      "type": "text",
+      "label": "Date de naissance enfant 6",
+      "selector": "#enfants-6-dateNaissance"
+    },
+    {
+      "key": "slsis_enfant_6_ayant_droit",
+      "type": "select",
+      "label": "Ayant droit enfant 6",
+      "selector": "#enfants-6-idAyantDroit"
+    },
+    {
+      "key": "slsis_enfant_7_date_naissance",
+      "type": "text",
+      "label": "Date de naissance enfant 7",
+      "selector": "#enfants-7-dateNaissance"
+    },
+    {
+      "key": "slsis_enfant_7_ayant_droit",
+      "type": "select",
+      "label": "Ayant droit enfant 7",
+      "selector": "#enfants-7-idAyantDroit"
+    },
+    {
+      "key": "slsis_enfant_8_date_naissance",
+      "type": "text",
+      "label": "Date de naissance enfant 8",
+      "selector": "#enfants-8-dateNaissance"
+    },
+    {
+      "key": "slsis_enfant_8_ayant_droit",
+      "type": "select",
+      "label": "Ayant droit enfant 8",
+      "selector": "#enfants-8-idAyantDroit"
+    },
+    {
+      "key": "slsis_enfant_9_date_naissance",
+      "type": "text",
+      "label": "Date de naissance enfant 9",
+      "selector": "#enfants-9-dateNaissance"
+    },
+    {
+      "key": "slsis_enfant_9_ayant_droit",
+      "type": "select",
+      "label": "Ayant droit enfant 9",
+      "selector": "#enfants-9-idAyantDroit"
+    },
+    {
+      "key": "slsis_enfant_10_date_naissance",
+      "type": "text",
+      "label": "Date de naissance enfant 10",
+      "selector": "#enfants-10-dateNaissance"
+    },
+    {
+      "key": "slsis_enfant_10_ayant_droit",
+      "type": "select",
+      "label": "Ayant droit enfant 10",
+      "selector": "#enfants-10-idAyantDroit"
     }
   ]
 }

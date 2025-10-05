@@ -30,10 +30,10 @@
     "statut": "SALARIE"
   },
   "enfants": [
-    { "date_naissance": "14/03/2019", "regime": "SECURITE_SOCIALE" },
-    { "date_naissance": "05/05/2021", "regime": "SECURITE_SOCIALE" },
-    { "date_naissance": "08/08/2024", "regime": "SECURITE_SOCIALE" }
+    { "date_naissance": "14/03/2019", "regime": "SECURITE_SOCIALE", "ayant_droit": "CLIENT" },
+    { "date_naissance": "05/05/2021", "regime": "SECURITE_SOCIALE", "ayant_droit": "CLIENT" },
+    { "date_naissance": "08/08/2024", "regime": "SECURITE_SOCIALE", "ayant_droit": "CLIENT" }
   ],
-  "projet": { "date_effet": "07/04/2025" },
+  "projet": { "date_effet": "07/04/2025", "nb_enfants": 3 },
   "besoin": { "soins_medicaux": 3, "hospitalisation": 3, "optique": 3, "dentaire": 3 }
 }

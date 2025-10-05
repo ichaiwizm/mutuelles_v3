@@ -1,6 +1,6 @@
 {
   "name": "sample_indiv_nokids",
-  "projet": { "date_effet": "15/10/2025" },
+  "projet": { "date_effet": "15/10/2025", "nb_enfants": 0 },
   "adherent": {
     "civilite": "MONSIEUR",
     "nom": "Test",
