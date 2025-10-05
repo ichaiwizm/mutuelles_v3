@@ -20,8 +20,11 @@
     { "type": "goto", "url": "https://www.swisslifeone.fr/index-swisslifeOne.html#/tarification-et-simulation/slsis", "label": "goto-slsis-page" },
     { "type": "sleep", "timeout_ms": 5000, "label": "wait-slsis-load" },
 
+    { "type": "clickField", "field": "cookie_tout_autoriser", "label": "accept-cookies-page" },
+    { "type": "sleep", "timeout_ms": 1000, "label": "wait-after-cookie" },
+
     { "type": "enterFrame", "selector": "iframe[name='iFrameTarificateur']", "label": "enter-slsis-iframe", "timeout_ms": 10000 },
-    { "type": "sleep", "timeout_ms": 2000, "label": "wait-iframe-ready" },
+    { "type": "sleep", "timeout_ms": 3000, "label": "wait-iframe-ready" },
 
     { "type": "fillField", "field": "slsis_nom_projet", "value": "Projet Test SLSIS", "label": "fill-nom-projet" },
     { "type": "clickField", "field": "slsis_couverture_individuelle_oui", "label": "select-couverture-oui" },

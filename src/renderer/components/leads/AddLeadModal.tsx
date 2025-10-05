@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { X } from 'lucide-react'
+import { X, Sparkles, FileEdit, ArrowLeft } from 'lucide-react'
 import { useToastContext } from '../../contexts/ToastContext'
 import type { CreateLeadData } from '../../../shared/types/leads'
 
@@ -9,10 +9,14 @@ interface AddLeadModalProps {
   onLeadCreated: () => void
 }
 
+type AddMode = 'selection' | 'intelligent' | 'manual'
+
 export default function AddLeadModal({ isOpen, onClose, onLeadCreated }: AddLeadModalProps) {
+  const [mode, setMode] = useState<AddMode>('intelligent')
   const [loading, setLoading] = useState(false)
   const [activeTab, setActiveTab] = useState<'contact' | 'souscripteur' | 'conjoint' | 'enfants' | 'besoins'>('contact')
   const [hasConjoint, setHasConjoint] = useState(false)
+  const [rawText, setRawText] = useState('')
   const toast = useToastContext()
 
   const [formData, setFormData] = useState<CreateLeadData>({
@@ -50,6 +54,22 @@ export default function AddLeadModal({ isOpen, onClose, onLeadCreated }: AddLead
 
   if (!isOpen) return null
 
+  const handleClose = () => {
+    setMode('intelligent')
+    setRawText('')
+    setActiveTab('contact')
+    onClose()
+  }
+
+  const handleProcessText = () => {
+    if (!rawText.trim()) {
+      toast.error('Veuillez coller du texte à traiter')
+      return
+    }
+    // TODO: Implémenter le traitement intelligent du texte
+    toast.info('Traitement intelligent à implémenter')
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
@@ -80,7 +100,7 @@ export default function AddLeadModal({ isOpen, onClose, onLeadCreated }: AddLead
       if (result.success) {
         toast.update(toastId, { type: 'success', title: 'Lead créé avec succès' })
         onLeadCreated()
-        onClose()
+        handleClose()
         // Reset form
         setFormData({
           contact: { civilite: 'M.', nom: '', prenom: '', telephone: '', email: '', adresse: '', codePostal: '', ville: '' },
@@ -90,7 +110,6 @@ export default function AddLeadModal({ isOpen, onClose, onLeadCreated }: AddLead
           besoins: { dateEffet: '', assureActuellement: false, gammes: [], madelin: false, niveaux: { soinsMedicaux: 3, hospitalisation: 3, optique: 2, dentaire: 2 } }
         })
         setHasConjoint(false)
-        setActiveTab('contact')
       } else {
         throw new Error(result.error)
       }
@@ -122,6 +141,76 @@ export default function AddLeadModal({ isOpen, onClose, onLeadCreated }: AddLead
     }))
   }
 
+  // Render mode selection tabs
+  const renderModeSelection = () => (
+    <div className="flex border-b border-neutral-200 dark:border-neutral-800">
+      <button
+        onClick={() => setMode('intelligent')}
+        className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 border-b-2 font-medium text-sm transition-colors ${
+          mode === 'intelligent'
+            ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20'
+            : 'border-transparent text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300'
+        }`}
+      >
+        <Sparkles size={18} />
+        Intelligent
+      </button>
+      <button
+        onClick={() => setMode('manual')}
+        className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 border-b-2 font-medium text-sm transition-colors ${
+          mode === 'manual'
+            ? 'border-emerald-500 text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20'
+            : 'border-transparent text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300'
+        }`}
+      >
+        <FileEdit size={18} />
+        Manuel
+      </button>
+    </div>
+  )
+
+  // Render intelligent mode
+  const renderIntelligentMode = () => (
+    <div className="flex flex-col h-[500px]">
+      <div className="flex-1 p-6 space-y-4">
+        <div>
+          <label className="block text-sm font-medium mb-2">
+            Collez les informations du lead
+          </label>
+          <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-3">
+            Collez ici un email, un message ou tout autre texte contenant les informations du lead.
+            L'IA extraira automatiquement les données pertinentes.
+          </p>
+          <textarea
+            value={rawText}
+            onChange={(e) => setRawText(e.target.value)}
+            placeholder="Exemple: Bonjour, je m'appelle Jean Dupont, j'habite au 123 Rue de Paris 75001, mon email est jean.dupont@email.com..."
+            className="w-full h-64 px-3 py-2 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+        </div>
+      </div>
+
+      {/* Footer */}
+      <div className="flex justify-end gap-3 p-4 border-t border-neutral-200 dark:border-neutral-800">
+        <button
+          type="button"
+          onClick={handleClose}
+          className="px-4 py-2 text-sm rounded-md border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800"
+        >
+          Annuler
+        </button>
+        <button
+          type="button"
+          onClick={handleProcessText}
+          disabled={!rawText.trim() || loading}
+          className="px-4 py-2 text-sm rounded-md bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {loading ? 'Traitement...' : 'Traiter le texte'}
+        </button>
+      </div>
+    </div>
+  )
+
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-white dark:bg-neutral-900 rounded-lg border border-neutral-200 dark:border-neutral-800 w-full max-w-2xl max-h-[90vh] overflow-hidden">
@@ -129,40 +218,50 @@ export default function AddLeadModal({ isOpen, onClose, onLeadCreated }: AddLead
         <div className="flex items-center justify-between p-4 border-b border-neutral-200 dark:border-neutral-800">
           <h2 className="text-lg font-semibold">Ajouter un lead</h2>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-md"
           >
             <X size={20} />
           </button>
         </div>
 
-        {/* Tabs */}
-        <div className="border-b border-neutral-200 dark:border-neutral-800">
-          <nav className="flex space-x-8 px-4">
-            {[
-              { key: 'contact', label: 'Contact' },
-              { key: 'souscripteur', label: 'Souscripteur' },
-              { key: 'conjoint', label: 'Conjoint' },
-              { key: 'enfants', label: 'Enfants' },
-              { key: 'besoins', label: 'Besoins' }
-            ].map(tab => (
-              <button
-                key={tab.key}
-                onClick={() => setActiveTab(tab.key as any)}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === tab.key
-                    ? 'border-neutral-900 dark:border-neutral-100 text-neutral-900 dark:text-neutral-100'
-                    : 'border-transparent text-neutral-500 hover:text-neutral-700 hover:border-neutral-300'
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </nav>
-        </div>
+        {/* Mode selection tabs */}
+        {renderModeSelection()}
 
-        {/* Form Content */}
-        <form onSubmit={handleSubmit} className="flex flex-col h-[500px]">
+        {/* Content based on mode */}
+        {mode === 'intelligent' && renderIntelligentMode()}
+
+        {/* Manual mode form */}
+        {mode === 'manual' && (
+          <>
+            {/* Tabs */}
+            <div className="border-b border-neutral-200 dark:border-neutral-800">
+              <nav className="flex space-x-8 px-4">
+                {[
+                  { key: 'contact', label: 'Contact' },
+                  { key: 'souscripteur', label: 'Souscripteur' },
+                  { key: 'conjoint', label: 'Conjoint' },
+                  { key: 'enfants', label: 'Enfants' },
+                  { key: 'besoins', label: 'Besoins' }
+                ].map(tab => (
+                  <button
+                    key={tab.key}
+                    type="button"
+                    onClick={() => setActiveTab(tab.key as any)}
+                    className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                      activeTab === tab.key
+                        ? 'border-neutral-900 dark:border-neutral-100 text-neutral-900 dark:text-neutral-100'
+                        : 'border-transparent text-neutral-500 hover:text-neutral-700 hover:border-neutral-300'
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </nav>
+            </div>
+
+            {/* Form Content */}
+            <form onSubmit={handleSubmit} className="flex flex-col h-[500px]">
           <div className="flex-1 overflow-y-auto p-4">
             {activeTab === 'contact' && (
               <div className="space-y-4">
@@ -418,24 +517,26 @@ export default function AddLeadModal({ isOpen, onClose, onLeadCreated }: AddLead
             )}
           </div>
 
-          {/* Footer */}
-          <div className="flex justify-end gap-3 p-4 border-t border-neutral-200 dark:border-neutral-800">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-sm rounded-md border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800"
-            >
-              Annuler
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="px-4 py-2 text-sm rounded-md bg-neutral-900 dark:bg-neutral-100 text-neutral-100 dark:text-neutral-900 hover:bg-neutral-800 dark:hover:bg-neutral-200 disabled:opacity-50"
-            >
-              {loading ? 'Création...' : 'Créer le lead'}
-            </button>
-          </div>
-        </form>
+              {/* Footer */}
+              <div className="flex justify-end gap-3 p-4 border-t border-neutral-200 dark:border-neutral-800">
+                <button
+                  type="button"
+                  onClick={handleClose}
+                  className="px-4 py-2 text-sm rounded-md border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="px-4 py-2 text-sm rounded-md bg-neutral-900 dark:bg-neutral-100 text-neutral-100 dark:text-neutral-900 hover:bg-neutral-800 dark:hover:bg-neutral-200 disabled:opacity-50"
+                >
+                  {loading ? 'Création...' : 'Créer le lead'}
+                </button>
+              </div>
+            </form>
+          </>
+        )}
       </div>
     </div>
   )

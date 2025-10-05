@@ -35,7 +35,7 @@
       "key": "cookie_tout_autoriser",
       "type": "button",
       "label": "Tout autoriser (cookies)",
-      "selector": "button:has-text('Tout autoriser')"
+      "selector": "#onetrust-accept-btn-handler"
     },
     {
       "key": "menu_simulateurs",
