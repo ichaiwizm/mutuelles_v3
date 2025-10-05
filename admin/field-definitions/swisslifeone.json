@@ -53,7 +53,7 @@
       "key": "slsis_date_effet",
       "type": "text",
       "label": "Date d'effet",
-      "selector": "#contratSante-dateEffet, [name='contratSante.dateEffet'], #date-effet"
+      "selector": "#contratSante-dateEffet"
     },
     {
       "key": "slsis_gamme",
@@ -65,7 +65,7 @@
       "key": "slsis_date_naissance",
       "type": "text",
       "label": "Date de naissance souscripteur",
-      "selector": "#date-naissance-assure-principal, [name='client.dateNaissance']"
+      "selector": "#date-naissance-assure-principal"
     },
     {
       "key": "slsis_regime_social",

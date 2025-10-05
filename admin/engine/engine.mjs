@@ -232,18 +232,31 @@ async function execHLStep(page, s, ctx, contextStack, getCurrentContext) {
       const v = String(value)
       const logv = String(s.field||'').toLowerCase().includes('password') ? '***' : v
       console.log('[hl] fillField %s = %s', s.field, logv)
-      await activeContext.fill(f.selector, v)
-      // Fermer le calendrier s'il s'ouvre automatiquement (date-picker)
+
+      // Détecter si c'est un champ de date (pour gérer les date-pickers)
       const isDateField = (s.field||'').toLowerCase().includes('date') || (f.label||'').toLowerCase().includes('date')
+
       if (isDateField) {
+        // Pour les champs de date avec jQuery datepicker, utiliser une approche plus robuste
         try {
-          await activeContext.press(f.selector, 'Escape')
+          const locator = activeContext.locator(f.selector)
+          await locator.click()
+          await new Promise(r => setTimeout(r, 200))
+          await locator.clear()
+          await locator.pressSequentially(v, { delay: 50 })
+          await new Promise(r => setTimeout(r, 200))
+          // Fermer le calendrier et déclencher les événements de validation
+          await locator.press('Escape')
+          await locator.blur()
           await new Promise(r => setTimeout(r, 300))
-          console.log('[hl] fillField %s - calendrier fermé', s.field)
+          console.log('[hl] fillField %s - date remplie via pressSequentially', s.field)
         } catch (err) {
-          // Si Escape échoue, continuer quand même
-          console.log('[hl] fillField %s - Escape ignoré: %s', s.field, err.message)
+          console.log('[hl] fillField %s - pressSequentially échoué, fallback sur fill(): %s', s.field, err.message)
+          await activeContext.fill(f.selector, v)
         }
+      } else {
+        // Pour les champs normaux, utiliser fill()
+        await activeContext.fill(f.selector, v)
       }
       return }
     case 'toggleField': {
