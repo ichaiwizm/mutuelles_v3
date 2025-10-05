@@ -6,6 +6,7 @@ import Dashboard from './pages/Dashboard'
 import Platforms from './pages/Platforms'
 import Profiles from './pages/Profiles'
 import Credentials from './pages/Credentials'
+import Config from './pages/Config'
 import Flows from './pages/Flows'
 import Leads from './pages/Leads'
 import Admin from './pages/Admin'
@@ -18,6 +19,7 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <Dashboard /> },
       { path: 'dashboard', element: <Dashboard /> },
+      { path: 'config', element: <Config /> },
       { path: 'platforms', element: <Platforms /> },
       { path: 'profiles', element: <Profiles /> },
       { path: 'credentials', element: <Credentials /> },

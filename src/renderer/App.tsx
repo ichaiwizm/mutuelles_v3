@@ -1,15 +1,13 @@
 import React, { useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
-import { Home, Building2, UserCog, KeyRound, Users } from 'lucide-react'
+import { Home, Building2, UserCog, KeyRound, Users, Settings } from 'lucide-react'
 import ThemeToggle from './components/ThemeToggle'
 import ErrorBoundary from './components/ErrorBoundary'
 import { ToastProvider } from './contexts/ToastContext'
 
 const nav = [
   { to: '/dashboard', label: 'Tableau de bord', icon: Home },
-  { to: '/platforms', label: 'Plateformes', icon: Building2 },
-  { to: '/profiles', label: 'Profils Chrome', icon: UserCog },
-  { to: '/credentials', label: 'Identifiants', icon: KeyRound },
+  { to: '/config', label: 'Configuration', icon: Settings },
   { to: '/leads', label: 'Leads', icon: Users },
   { to: '/flows', label: 'Flux (Dev)', icon: KeyRound },
   { to: '/admin', label: 'Admin (JSON Flows)', icon: KeyRound },

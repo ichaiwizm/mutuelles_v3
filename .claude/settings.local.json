@@ -40,7 +40,8 @@
       "Bash(git commit:*)",
       "Bash(test:*)",
       "Bash(dos2unix:*)",
-      "Bash(wslpath:*)"
+      "Bash(wslpath:*)",
+      "Read(//tmp/**)"
     ],
     "deny": [],
     "ask": []

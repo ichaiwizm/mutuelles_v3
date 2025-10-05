@@ -17,8 +17,8 @@
     { "type": "clickField", "field": "cookie_tout_autoriser", "label": "accept-cookies", "optional": true },
     { "type": "sleep", "timeout_ms": 1000, "label": "wait-after-cookies" },
 
-    { "type": "goto", "url": "https://www.swisslifeone.fr/index-swisslifeOne.html#/tarification-et-simulation/slsis", "label": "goto-slsis-direct" },
-    { "type": "sleep", "timeout_ms": 5000, "label": "wait-slsis-load" },
+    { "type": "goto", "url": "https://oav-pool2.swisslifeone.fr/SLSISWeb/importToken", "label": "goto-iframe-direct" },
+    { "type": "sleep", "timeout_ms": 5000, "label": "wait-iframe-load" },
 
     { "type": "fillField", "field": "slsis_nom_projet", "value": "Projet Test SLSIS", "label": "fill-nom-projet" },
     { "type": "clickField", "field": "slsis_couverture_individuelle_oui", "label": "select-couverture-oui", "optional": true },
