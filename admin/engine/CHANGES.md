@@ -30,7 +30,8 @@ Changes
   - Gracefully skips unsupported selectors in frames (e.g., `text=`, `:has-text()`); records a small metadata stub instead of failing.
 
 - SelectField fallback
-  - When `options.items` is omitted, the engine now executes `selectOption(value)` directly or, if `option_selector_template` is provided, interpolates `{{value}}`/`{{valueLower}}`/`{{valueUpper}}` before clicking the matching option. This avoids enumerating large `<select>` lists.
+  - When `options.items` is omitted, the engine now executes `selectOption(value)` directly or, if `option_selector_template` is provided, interpolates `{{value}}`/`{{valueLower}}`/`{{valueUpper}}` before targeting the option.
+  - The fallback also désélectionne proprement les autres options puis déclenche `input`/`change`, ce qui reste utile pour tous les `<select>` hérités qui attendent des événements clavier.
 
 Notes
 

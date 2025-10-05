@@ -1,0 +1,15 @@
+{
+  "name": "sample_indiv_nokids",
+  "projet": { "date_effet": "15/10/2025" },
+  "adherent": {
+    "civilite": "MONSIEUR",
+    "nom": "Test",
+    "prenom": "Indiv",
+    "date_naissance": "01/01/1990",
+    "statut": "SALARIE",
+    "regime": "SECURITE_SOCIALE",
+    "departement": "69"
+  },
+  "conjoint": { "present": false },
+  "enfants": []
+}

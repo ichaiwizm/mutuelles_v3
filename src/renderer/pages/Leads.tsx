@@ -5,8 +5,7 @@ import type { LeadStats, FullLead, LeadFilters } from '../../shared/types/leads'
 import LeadsTable from '../components/leads/LeadsTable'
 import LeadsFilters from '../components/leads/LeadsFilters'
 import AddLeadModal from '../components/leads/AddLeadModal'
-import EditLeadModal from '../components/leads/EditLeadModal'
-import LeadDetailModal from '../components/leads/LeadDetailModal'
+import ViewEditLeadModal from '../components/leads/ViewEditLeadModal'
 import ConfirmModal from '../components/ConfirmModal'
 
 export default function Leads() {
@@ -17,8 +16,7 @@ export default function Leads() {
   const [pagination, setPagination] = useState({ page: 1, limit: 20 })
   const [modals, setModals] = useState({
     addLead: false,
-    editLead: null as FullLead | null,
-    detailLead: null as FullLead | null,
+    viewEditLead: null as FullLead | null,
     confirmDelete: null as FullLead | null
   })
   const [deleteLoading, setDeleteLoading] = useState(false)
@@ -68,23 +66,19 @@ export default function Leads() {
 
   // Handlers pour les actions de la table
   const handleAddLead = () => {
-    // Ouvre uniquement la modale d'ajout
-    setModals({ addLead: true, editLead: null, detailLead: null, confirmDelete: null })
+    setModals({ addLead: true, viewEditLead: null, confirmDelete: null })
   }
 
   const handleViewLead = (lead: FullLead) => {
-    // Ouvre uniquement la modale de détail
-    setModals({ addLead: false, editLead: null, detailLead: lead, confirmDelete: null })
+    setModals({ addLead: false, viewEditLead: lead, confirmDelete: null })
   }
 
   const handleEditLead = (lead: FullLead) => {
-    // Ouvre uniquement la modale d'édition et ferme la modale de détail si ouverte
-    setModals({ addLead: false, editLead: lead, detailLead: null, confirmDelete: null })
+    setModals({ addLead: false, viewEditLead: lead, confirmDelete: null })
   }
 
   const handleDeleteLead = (lead: FullLead) => {
-    // Ouvre uniquement la modale de confirmation
-    setModals({ addLead: false, editLead: null, detailLead: null, confirmDelete: lead })
+    setModals({ addLead: false, viewEditLead: null, confirmDelete: lead })
   }
 
   const confirmDelete = async () => {
@@ -117,7 +111,7 @@ export default function Leads() {
   }
 
   const closeModals = () => {
-    setModals({ addLead: false, editLead: null, detailLead: null, confirmDelete: null })
+    setModals({ addLead: false, viewEditLead: null, confirmDelete: null })
   }
 
   const handleFiltersChange = (newFilters: LeadFilters) => {
@@ -206,19 +200,12 @@ export default function Leads() {
         onLeadCreated={handleLeadCreated}
       />
 
-      <EditLeadModal
-        lead={modals.editLead}
-        isOpen={!!modals.editLead}
+      <ViewEditLeadModal
+        lead={modals.viewEditLead}
+        isOpen={!!modals.viewEditLead}
         onClose={closeModals}
-        onLeadUpdated={handleLeadCreated}
-      />
-
-      <LeadDetailModal
-        lead={modals.detailLead}
-        isOpen={!!modals.detailLead}
-        onClose={closeModals}
-        onEdit={handleEditLead}
         onDelete={handleDeleteLead}
+        onLeadUpdated={handleLeadCreated}
       />
 
       {/* Modal de confirmation de suppression */}

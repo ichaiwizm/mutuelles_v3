@@ -27,47 +27,43 @@
     { "type": "sleep", "timeout_ms": 800, "label": "wait-iframe-ready" },
 
     { "type": "waitForField", "field": "slsis_nom_projet", "label": "wait-nom-projet" },
-    { "type": "typeField", "field": "slsis_nom_projet", "value": "Projet {lead.adherent.nom}", "label": "type-nom-projet", "postDelay_ms": 200 },
 
-    { "type": "waitForField", "field": "slsis_couverture_oui", "label": "wait-couverture-oui" },
-    { "type": "scrollIntoView", "field": "slsis_couverture_oui", "label": "scroll-couverture" },
-    { "type": "clickField", "field": "slsis_couverture_oui", "label": "click-couverture-oui" },
-    { "type": "sleep", "timeout_ms": 200, "label": "wait-after-couverture" },
+    { "type": "waitForField", "field": "slsis_date_naissance", "label": "wait-date-naissance" },
+    { "type": "typeField", "field": "slsis_date_naissance", "value": "{lead.adherent.date_naissance}", "label": "type-date-naissance", "pressEscape": true, "postDelay_ms": 200 },
+    { "type": "waitForNetworkIdle", "label": "network-after-date-naissance" },
 
-    { "type": "waitForField", "field": "slsis_ij_non", "label": "wait-ij-non" },
-    { "type": "clickField", "field": "slsis_ij_non", "label": "click-ij-non" },
-    { "type": "sleep", "timeout_ms": 200, "label": "wait-after-ij" },
+    { "type": "waitForField", "field": "slsis_date_effet", "label": "wait-date-effet", "optional": true },
+    { "type": "typeField", "field": "slsis_date_effet", "value": "{lead.projet.date_effet}", "label": "type-date-effet", "pressEscape": true, "postDelay_ms": 200, "optional": true },
+    { "type": "waitForNetworkIdle", "label": "network-after-date-effet" },
 
     { "type": "waitForField", "field": "slsis_simulation_individuelle", "label": "wait-simulation-individuelle" },
     { "type": "clickField", "field": "slsis_simulation_individuelle", "label": "click-simulation-individuelle" },
     { "type": "clickField", "field": "slsis_simulation_couple", "label": "click-simulation-couple", "skipIfNot": "conjoint.present" },
-    { "type": "sleep", "timeout_ms": 200, "label": "wait-after-simulation" },
+    { "type": "waitForNetworkIdle", "label": "network-after-simulation" },
 
-    { "type": "waitForField", "field": "slsis_date_effet", "label": "wait-date-effet", "optional": true },
-    { "type": "fillField", "field": "slsis_date_effet", "value": "{lead.projet.date_effet}", "label": "fill-date-effet", "optional": true },
-    { "type": "pressKey", "field": "slsis_date_effet", "key": "Escape", "label": "close-datepicker-effet", "optional": true },
-    { "type": "sleep", "timeout_ms": 300, "label": "wait-after-date-effet" },
+    { "type": "waitForField", "field": "slsis_couverture_oui", "label": "wait-couverture-oui" },
+    { "type": "scrollIntoView", "field": "slsis_couverture_oui", "label": "scroll-couverture" },
+    { "type": "clickField", "field": "slsis_couverture_oui", "label": "click-couverture-oui" },
 
-    { "type": "waitForField", "field": "slsis_date_naissance", "label": "wait-date-naissance" },
-    { "type": "fillField", "field": "slsis_date_naissance", "value": "{lead.adherent.date_naissance}", "label": "fill-date-naissance" },
-    { "type": "pressKey", "field": "slsis_date_naissance", "key": "Escape", "label": "close-datepicker-naissance" },
-    { "type": "sleep", "timeout_ms": 300, "label": "wait-after-naissance" },
+    { "type": "waitForField", "field": "slsis_ij_non", "label": "wait-ij-non" },
+    { "type": "clickField", "field": "slsis_ij_non", "label": "click-ij-non" },
+
+    { "type": "selectField", "field": "slsis_gamme", "value": "SwissLife Santé", "label": "select-gamme" },
+    { "type": "waitForNetworkIdle", "label": "network-after-gamme" },
 
     { "type": "selectField", "field": "slsis_departement", "value": "{lead.adherent.departement}", "label": "select-departement" },
-    { "type": "sleep", "timeout_ms": 200, "label": "wait-after-departement" },
-
     { "type": "selectField", "field": "slsis_regime_social", "value": "{lead.adherent.regime}", "label": "select-regime" },
-    { "type": "sleep", "timeout_ms": 400, "label": "wait-after-regime" },
-
     { "type": "selectField", "field": "slsis_statut", "value": "{lead.adherent.statut}", "label": "select-statut", "optional": true, "postDelay_ms": 300 },
+    { "type": "selectField", "field": "slsis_profession", "value": "{lead.adherent.profession}", "label": "select-profession", "skipIfNot": "adherent.profession", "optional": true },
+
+    { "type": "scrollIntoView", "field": "slsis_madelin", "label": "scroll-madelin" },
+    { "type": "clickField", "field": "slsis_madelin", "label": "click-madelin" },
 
     { "type": "waitForField", "field": "slsis_resiliation_non", "label": "wait-resiliation-non", "optional": true },
     { "type": "clickField", "field": "slsis_resiliation_non", "label": "click-resiliation-non", "optional": true },
-    { "type": "sleep", "timeout_ms": 200, "label": "wait-after-resiliation", "optional": true },
 
     { "type": "waitForField", "field": "slsis_reprise_non", "label": "wait-reprise-non", "optional": true },
     { "type": "clickField", "field": "slsis_reprise_non", "label": "click-reprise-non", "optional": true },
-    { "type": "sleep", "timeout_ms": 200, "label": "wait-after-reprise", "optional": true },
 
     { "type": "exitFrame", "label": "exit-slsis-iframe" }
   ]

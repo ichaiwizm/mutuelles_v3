@@ -59,7 +59,11 @@
       "key": "slsis_gamme",
       "type": "select",
       "label": "Gamme assurance",
-      "selector": "#selection-produit-sante, [name='contratSante.produitId']"
+      "selector": "#selection-produit-sante, [name='contratSante.produitId']",
+      "options": {
+        "open_selector": "#selection-produit-sante, [name='contratSante.produitId']",
+        "option_selector_template": "#selection-produit-sante option:has-text('{{value}}'), [name='contratSante.produitId'] option:has-text('{{value}}')"
+      }
     },
     {
       "key": "slsis_date_naissance",
@@ -85,6 +89,16 @@
       "options": {
         "open_selector": "#statut-assure-principal",
         "option_selector_template": "#statut-assure-principal option[value='{{valueUpper}}']"
+      }
+    },
+    {
+      "key": "slsis_profession",
+      "type": "select",
+      "label": "Profession",
+      "selector": "#profession-assure-principal",
+      "options": {
+        "open_selector": "#profession-assure-principal",
+        "option_selector_template": "#profession-assure-principal option[value='{{valueUpper}}'], #profession-assure-principal option:has-text('{{value}}')"
       }
     },
     {
