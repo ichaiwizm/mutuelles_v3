@@ -1,7 +1,11 @@
 import React, { useState } from 'react'
-import { X, Sparkles, FileEdit, ArrowLeft } from 'lucide-react'
+import { X } from 'lucide-react'
 import { useToastContext } from '../../contexts/ToastContext'
-import type { CreateLeadData } from '../../../shared/types/leads'
+import type { CreateLeadData, LeadProvider } from '../../../shared/types/leads'
+import ModeSelector from './modes/ModeSelector'
+import IntelligentMode from './modes/IntelligentMode'
+import ManualMode from './modes/ManualMode'
+import ParsedLeadConfirmation from './ParsedLeadConfirmation'
 
 interface AddLeadModalProps {
   isOpen: boolean
@@ -9,69 +13,129 @@ interface AddLeadModalProps {
   onLeadCreated: () => void
 }
 
-type AddMode = 'selection' | 'intelligent' | 'manual'
+type AddMode = 'intelligent' | 'manual' | 'confirmation'
+
+const initialFormData: CreateLeadData = {
+  contact: {
+    civilite: 'M.',
+    nom: '',
+    prenom: '',
+    telephone: '',
+    email: '',
+    adresse: '',
+    codePostal: '',
+    ville: ''
+  },
+  souscripteur: {
+    dateNaissance: '',
+    profession: '',
+    regimeSocial: 'Salarié',
+    nombreEnfants: 0
+  },
+  conjoint: undefined,
+  enfants: [],
+  besoins: {
+    dateEffet: '',
+    assureActuellement: false,
+    gammes: [],
+    madelin: false,
+    niveaux: {
+      soinsMedicaux: 3,
+      hospitalisation: 3,
+      optique: 2,
+      dentaire: 2
+    }
+  }
+}
 
 export default function AddLeadModal({ isOpen, onClose, onLeadCreated }: AddLeadModalProps) {
   const [mode, setMode] = useState<AddMode>('intelligent')
   const [loading, setLoading] = useState(false)
-  const [activeTab, setActiveTab] = useState<'contact' | 'souscripteur' | 'conjoint' | 'enfants' | 'besoins'>('contact')
-  const [hasConjoint, setHasConjoint] = useState(false)
   const [rawText, setRawText] = useState('')
+  const [formData, setFormData] = useState<CreateLeadData>(initialFormData)
+  const [parsedData, setParsedData] = useState<CreateLeadData | null>(null)
+  const [parsedProvider, setParsedProvider] = useState<LeadProvider | null>(null)
+  const [parsedScore, setParsedScore] = useState(0)
   const toast = useToastContext()
-
-  const [formData, setFormData] = useState<CreateLeadData>({
-    contact: {
-      civilite: 'M.',
-      nom: '',
-      prenom: '',
-      telephone: '',
-      email: '',
-      adresse: '',
-      codePostal: '',
-      ville: ''
-    },
-    souscripteur: {
-      dateNaissance: '',
-      profession: '',
-      regimeSocial: 'Salarié',
-      nombreEnfants: 0
-    },
-    conjoint: undefined,
-    enfants: [],
-    besoins: {
-      dateEffet: '',
-      assureActuellement: false,
-      gammes: [],
-      madelin: false,
-      niveaux: {
-        soinsMedicaux: 3,
-        hospitalisation: 3,
-        optique: 2,
-        dentaire: 2
-      }
-    }
-  })
 
   if (!isOpen) return null
 
   const handleClose = () => {
     setMode('intelligent')
     setRawText('')
-    setActiveTab('contact')
+    setFormData(initialFormData)
+    setParsedData(null)
+    setParsedProvider(null)
+    setParsedScore(0)
     onClose()
   }
 
-  const handleProcessText = () => {
+  const handleProcessText = async () => {
     if (!rawText.trim()) {
       toast.error('Veuillez coller du texte à traiter')
       return
     }
-    // TODO: Implémenter le traitement intelligent du texte
-    toast.info('Traitement intelligent à implémenter')
+
+    setLoading(true)
+    const toastId = toast.loading('Analyse du texte...')
+
+    try {
+      const result = await window.api.parsers.parse(rawText)
+
+      if (!result.success || !result.data) {
+        throw new Error(result.error || 'Erreur lors du parsing')
+      }
+
+      const { provider, data, score, error } = result.data
+
+      if (error) {
+        throw new Error(error)
+      }
+
+      if (!provider || !data) {
+        throw new Error('Type de lead non reconnu')
+      }
+
+      setParsedData(data)
+      setParsedProvider(provider)
+      setParsedScore(score)
+      setMode('confirmation')
+      toast.update(toastId, { type: 'success', title: 'Lead identifié avec succès' })
+    } catch (error) {
+      toast.update(toastId, {
+        type: 'error',
+        title: 'Erreur de parsing',
+        message: String(error)
+      })
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleConfirmParsedLead = async () => {
+    if (!parsedData) return
+
+    setLoading(true)
+    const toastId = toast.loading('Création du lead...')
+
+    try {
+      const result = await window.api.leads.create(parsedData)
+
+      if (result.success) {
+        toast.update(toastId, { type: 'success', title: 'Lead créé avec succès' })
+        onLeadCreated()
+        handleClose()
+      } else {
+        throw new Error(result.error)
+      }
+    } catch (error) {
+      toast.update(toastId, { type: 'error', title: 'Erreur lors de la création', message: String(error) })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleManualSubmit = async () => {
     setLoading(true)
 
     // Validation basique
@@ -87,29 +151,15 @@ export default function AddLeadModal({ isOpen, onClose, onLeadCreated }: AddLead
       return
     }
 
-    const dataToSubmit = {
-      ...formData,
-      conjoint: hasConjoint ? formData.conjoint : undefined
-    }
-
     const toastId = toast.loading('Création du lead...')
 
     try {
-      const result = await window.api.leads.create(dataToSubmit)
+      const result = await window.api.leads.create(formData)
 
       if (result.success) {
         toast.update(toastId, { type: 'success', title: 'Lead créé avec succès' })
         onLeadCreated()
         handleClose()
-        // Reset form
-        setFormData({
-          contact: { civilite: 'M.', nom: '', prenom: '', telephone: '', email: '', adresse: '', codePostal: '', ville: '' },
-          souscripteur: { dateNaissance: '', profession: '', regimeSocial: 'Salarié', nombreEnfants: 0 },
-          conjoint: undefined,
-          enfants: [],
-          besoins: { dateEffet: '', assureActuellement: false, gammes: [], madelin: false, niveaux: { soinsMedicaux: 3, hospitalisation: 3, optique: 2, dentaire: 2 } }
-        })
-        setHasConjoint(false)
       } else {
         throw new Error(result.error)
       }
@@ -119,97 +169,6 @@ export default function AddLeadModal({ isOpen, onClose, onLeadCreated }: AddLead
       setLoading(false)
     }
   }
-
-  const updateContact = (field: string, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      contact: { ...prev.contact, [field]: value }
-    }))
-  }
-
-  const updateSouscripteur = (field: string, value: string | number) => {
-    setFormData(prev => ({
-      ...prev,
-      souscripteur: { ...prev.souscripteur, [field]: value }
-    }))
-  }
-
-  const updateConjoint = (field: string, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      conjoint: { ...prev.conjoint, [field]: value }
-    }))
-  }
-
-  // Render mode selection tabs
-  const renderModeSelection = () => (
-    <div className="flex border-b border-neutral-200 dark:border-neutral-800">
-      <button
-        onClick={() => setMode('intelligent')}
-        className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 border-b-2 font-medium text-sm transition-colors ${
-          mode === 'intelligent'
-            ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20'
-            : 'border-transparent text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300'
-        }`}
-      >
-        <Sparkles size={18} />
-        Intelligent
-      </button>
-      <button
-        onClick={() => setMode('manual')}
-        className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 border-b-2 font-medium text-sm transition-colors ${
-          mode === 'manual'
-            ? 'border-emerald-500 text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20'
-            : 'border-transparent text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300'
-        }`}
-      >
-        <FileEdit size={18} />
-        Manuel
-      </button>
-    </div>
-  )
-
-  // Render intelligent mode
-  const renderIntelligentMode = () => (
-    <div className="flex flex-col h-[500px]">
-      <div className="flex-1 p-6 space-y-4">
-        <div>
-          <label className="block text-sm font-medium mb-2">
-            Collez les informations du lead
-          </label>
-          <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-3">
-            Collez ici un email, un message ou tout autre texte contenant les informations du lead.
-            L'IA extraira automatiquement les données pertinentes.
-          </p>
-          <textarea
-            value={rawText}
-            onChange={(e) => setRawText(e.target.value)}
-            placeholder="Exemple: Bonjour, je m'appelle Jean Dupont, j'habite au 123 Rue de Paris 75001, mon email est jean.dupont@email.com..."
-            className="w-full h-64 px-3 py-2 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          />
-        </div>
-      </div>
-
-      {/* Footer */}
-      <div className="flex justify-end gap-3 p-4 border-t border-neutral-200 dark:border-neutral-800">
-        <button
-          type="button"
-          onClick={handleClose}
-          className="px-4 py-2 text-sm rounded-md border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800"
-        >
-          Annuler
-        </button>
-        <button
-          type="button"
-          onClick={handleProcessText}
-          disabled={!rawText.trim() || loading}
-          className="px-4 py-2 text-sm rounded-md bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {loading ? 'Traitement...' : 'Traiter le texte'}
-        </button>
-      </div>
-    </div>
-  )
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
@@ -225,317 +184,49 @@ export default function AddLeadModal({ isOpen, onClose, onLeadCreated }: AddLead
           </button>
         </div>
 
-        {/* Mode selection tabs */}
-        {renderModeSelection()}
+        {/* Mode selection tabs (hidden in confirmation mode) */}
+        {mode !== 'confirmation' && (
+          <ModeSelector
+            mode={mode}
+            onModeChange={setMode}
+          />
+        )}
 
         {/* Content based on mode */}
-        {mode === 'intelligent' && renderIntelligentMode()}
+        {mode === 'intelligent' && (
+          <IntelligentMode
+            rawText={rawText}
+            onTextChange={setRawText}
+            onProcess={handleProcessText}
+            onCancel={handleClose}
+            loading={loading}
+          />
+        )}
 
-        {/* Manual mode form */}
+        {mode === 'confirmation' && parsedData && (
+          <ParsedLeadConfirmation
+            provider={parsedProvider}
+            data={parsedData}
+            score={parsedScore}
+            onConfirm={handleConfirmParsedLead}
+            onCancel={() => {
+              setMode('intelligent')
+              setParsedData(null)
+              setParsedProvider(null)
+              setParsedScore(0)
+            }}
+            loading={loading}
+          />
+        )}
+
         {mode === 'manual' && (
-          <>
-            {/* Tabs */}
-            <div className="border-b border-neutral-200 dark:border-neutral-800">
-              <nav className="flex space-x-8 px-4">
-                {[
-                  { key: 'contact', label: 'Contact' },
-                  { key: 'souscripteur', label: 'Souscripteur' },
-                  { key: 'conjoint', label: 'Conjoint' },
-                  { key: 'enfants', label: 'Enfants' },
-                  { key: 'besoins', label: 'Besoins' }
-                ].map(tab => (
-                  <button
-                    key={tab.key}
-                    type="button"
-                    onClick={() => setActiveTab(tab.key as any)}
-                    className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                      activeTab === tab.key
-                        ? 'border-neutral-900 dark:border-neutral-100 text-neutral-900 dark:text-neutral-100'
-                        : 'border-transparent text-neutral-500 hover:text-neutral-700 hover:border-neutral-300'
-                    }`}
-                  >
-                    {tab.label}
-                  </button>
-                ))}
-              </nav>
-            </div>
-
-            {/* Form Content */}
-            <form onSubmit={handleSubmit} className="flex flex-col h-[500px]">
-          <div className="flex-1 overflow-y-auto p-4">
-            {activeTab === 'contact' && (
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Civilité</label>
-                    <select
-                      value={formData.contact.civilite}
-                      onChange={(e) => updateContact('civilite', e.target.value)}
-                      className="w-full px-3 py-2 rounded-md border border-neutral-300 dark:border-neutral-700 bg-transparent"
-                    >
-                      <option value="M.">M.</option>
-                      <option value="Mme">Mme</option>
-                    </select>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Nom *</label>
-                    <input
-                      type="text"
-                      value={formData.contact.nom}
-                      onChange={(e) => updateContact('nom', e.target.value)}
-                      className="w-full px-3 py-2 rounded-md border border-neutral-300 dark:border-neutral-700 bg-transparent"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Prénom *</label>
-                    <input
-                      type="text"
-                      value={formData.contact.prenom}
-                      onChange={(e) => updateContact('prenom', e.target.value)}
-                      className="w-full px-3 py-2 rounded-md border border-neutral-300 dark:border-neutral-700 bg-transparent"
-                      required
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Téléphone</label>
-                    <input
-                      type="tel"
-                      value={formData.contact.telephone}
-                      onChange={(e) => updateContact('telephone', e.target.value)}
-                      className="w-full px-3 py-2 rounded-md border border-neutral-300 dark:border-neutral-700 bg-transparent"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Email</label>
-                    <input
-                      type="email"
-                      value={formData.contact.email}
-                      onChange={(e) => updateContact('email', e.target.value)}
-                      className="w-full px-3 py-2 rounded-md border border-neutral-300 dark:border-neutral-700 bg-transparent"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Adresse</label>
-                  <input
-                    type="text"
-                    value={formData.contact.adresse}
-                    onChange={(e) => updateContact('adresse', e.target.value)}
-                    className="w-full px-3 py-2 rounded-md border border-neutral-300 dark:border-neutral-700 bg-transparent"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Code postal</label>
-                    <input
-                      type="text"
-                      value={formData.contact.codePostal}
-                      onChange={(e) => updateContact('codePostal', e.target.value)}
-                      className="w-full px-3 py-2 rounded-md border border-neutral-300 dark:border-neutral-700 bg-transparent"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Ville</label>
-                    <input
-                      type="text"
-                      value={formData.contact.ville}
-                      onChange={(e) => updateContact('ville', e.target.value)}
-                      className="w-full px-3 py-2 rounded-md border border-neutral-300 dark:border-neutral-700 bg-transparent"
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {activeTab === 'souscripteur' && (
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Date de naissance</label>
-                    <input
-                      type="date"
-                      value={formData.souscripteur.dateNaissance}
-                      onChange={(e) => updateSouscripteur('dateNaissance', e.target.value)}
-                      className="w-full px-3 py-2 rounded-md border border-neutral-300 dark:border-neutral-700 bg-transparent"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Profession</label>
-                    <input
-                      type="text"
-                      value={formData.souscripteur.profession}
-                      onChange={(e) => updateSouscripteur('profession', e.target.value)}
-                      className="w-full px-3 py-2 rounded-md border border-neutral-300 dark:border-neutral-700 bg-transparent"
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Régime social</label>
-                    <select
-                      value={formData.souscripteur.regimeSocial}
-                      onChange={(e) => updateSouscripteur('regimeSocial', e.target.value)}
-                      className="w-full px-3 py-2 rounded-md border border-neutral-300 dark:border-neutral-700 bg-transparent"
-                    >
-                      <option value="Salarié">Salarié</option>
-                      <option value="TNS">TNS</option>
-                      <option value="Fonctionnaire">Fonctionnaire</option>
-                      <option value="Retraité">Retraité</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Nombre d'enfants</label>
-                    <input
-                      type="number"
-                      min="0"
-                      max="10"
-                      value={formData.souscripteur.nombreEnfants}
-                      onChange={(e) => updateSouscripteur('nombreEnfants', parseInt(e.target.value) || 0)}
-                      className="w-full px-3 py-2 rounded-md border border-neutral-300 dark:border-neutral-700 bg-transparent"
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {activeTab === 'conjoint' && (
-              <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    id="hasConjoint"
-                    checked={hasConjoint}
-                    onChange={(e) => {
-                      setHasConjoint(e.target.checked)
-                      if (!e.target.checked) {
-                        setFormData(prev => ({ ...prev, conjoint: undefined }))
-                      } else {
-                        setFormData(prev => ({
-                          ...prev,
-                          conjoint: {
-                            civilite: 'Mme',
-                            prenom: '',
-                            nom: '',
-                            dateNaissance: '',
-                            profession: '',
-                            regimeSocial: 'Salarié'
-                          }
-                        }))
-                      }
-                    }}
-                    className="rounded border-neutral-300 dark:border-neutral-700"
-                  />
-                  <label htmlFor="hasConjoint" className="text-sm font-medium">
-                    Le souscripteur a un conjoint
-                  </label>
-                </div>
-
-                {hasConjoint && formData.conjoint && (
-                  <div className="space-y-4 pt-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium mb-1">Civilité</label>
-                        <select
-                          value={formData.conjoint.civilite}
-                          onChange={(e) => updateConjoint('civilite', e.target.value)}
-                          className="w-full px-3 py-2 rounded-md border border-neutral-300 dark:border-neutral-700 bg-transparent"
-                        >
-                          <option value="M.">M.</option>
-                          <option value="Mme">Mme</option>
-                        </select>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium mb-1">Nom</label>
-                        <input
-                          type="text"
-                          value={formData.conjoint.nom}
-                          onChange={(e) => updateConjoint('nom', e.target.value)}
-                          className="w-full px-3 py-2 rounded-md border border-neutral-300 dark:border-neutral-700 bg-transparent"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium mb-1">Prénom</label>
-                        <input
-                          type="text"
-                          value={formData.conjoint.prenom}
-                          onChange={(e) => updateConjoint('prenom', e.target.value)}
-                          className="w-full px-3 py-2 rounded-md border border-neutral-300 dark:border-neutral-700 bg-transparent"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {activeTab === 'enfants' && (
-              <div className="text-center text-neutral-500">
-                <p>Gestion des enfants à implémenter</p>
-                <p className="text-sm text-neutral-400">
-                  Pour l'instant, utilisez le champ "Nombre d'enfants" dans l'onglet Souscripteur
-                </p>
-              </div>
-            )}
-
-            {activeTab === 'besoins' && (
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1">Date d'effet souhaitée</label>
-                  <input
-                    type="date"
-                    value={formData.besoins?.dateEffet}
-                    onChange={(e) => setFormData(prev => ({
-                      ...prev,
-                      besoins: { ...prev.besoins, dateEffet: e.target.value }
-                    }))}
-                    className="w-full px-3 py-2 rounded-md border border-neutral-300 dark:border-neutral-700 bg-transparent"
-                  />
-                </div>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    id="assureActuellement"
-                    checked={formData.besoins?.assureActuellement}
-                    onChange={(e) => setFormData(prev => ({
-                      ...prev,
-                      besoins: { ...prev.besoins, assureActuellement: e.target.checked }
-                    }))}
-                    className="rounded border-neutral-300 dark:border-neutral-700"
-                  />
-                  <label htmlFor="assureActuellement" className="text-sm font-medium">
-                    Actuellement assuré
-                  </label>
-                </div>
-              </div>
-            )}
-          </div>
-
-              {/* Footer */}
-              <div className="flex justify-end gap-3 p-4 border-t border-neutral-200 dark:border-neutral-800">
-                <button
-                  type="button"
-                  onClick={handleClose}
-                  className="px-4 py-2 text-sm rounded-md border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800"
-                >
-                  Annuler
-                </button>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="px-4 py-2 text-sm rounded-md bg-neutral-900 dark:bg-neutral-100 text-neutral-100 dark:text-neutral-900 hover:bg-neutral-800 dark:hover:bg-neutral-200 disabled:opacity-50"
-                >
-                  {loading ? 'Création...' : 'Créer le lead'}
-                </button>
-              </div>
-            </form>
-          </>
+          <ManualMode
+            formData={formData}
+            onFormDataChange={setFormData}
+            onSubmit={handleManualSubmit}
+            onCancel={handleClose}
+            loading={loading}
+          />
         )}
       </div>
     </div>

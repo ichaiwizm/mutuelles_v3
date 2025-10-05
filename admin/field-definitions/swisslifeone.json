@@ -50,16 +50,112 @@
       "selector": "#nom-projet"
     },
     {
-      "key": "slsis_couverture_individuelle_oui",
-      "type": "button",
-      "label": "Couverture individuelle - Oui",
-      "selector": "label:has(input[name='swlCommunCommand.besoinCouvertureIndiv'][value='oui'])"
+      "key": "slsis_date_effet",
+      "type": "text",
+      "label": "Date d'effet",
+      "selector": "#contratSante-dateEffet, [name='contratSante.dateEffet'], #date-effet"
     },
     {
-      "key": "slsis_indemnites_journalieres_non",
+      "key": "slsis_gamme",
+      "type": "select",
+      "label": "Gamme assurance",
+      "selector": "#selection-produit-sante, [name='contratSante.produitId']"
+    },
+    {
+      "key": "slsis_date_naissance",
+      "type": "text",
+      "label": "Date de naissance souscripteur",
+      "selector": "#date-naissance-assure-principal, [name='client.dateNaissance']"
+    },
+    {
+      "key": "slsis_regime_social",
+      "type": "select",
+      "label": "Régime social",
+      "selector": "#regime-social-assure-principal, [name='client.regimeSocial']"
+    },
+    {
+      "key": "slsis_statut",
+      "type": "select",
+      "label": "Statut",
+      "selector": "#statut-assure-principal, [name='client.statut']"
+    },
+    {
+      "key": "slsis_departement",
+      "type": "select",
+      "label": "Département",
+      "selector": "#departement-assure-principal, [name='client.departement']"
+    },
+    {
+      "key": "slsis_couverture_oui",
       "type": "button",
-      "label": "Indemnités Journalières - Non",
-      "selector": "label:has(input[name='swlCommunCommand.besoinIndemniteJournaliere'][value='non'])"
+      "label": "Couverture individuelle Oui (label)",
+      "selector": "label[for='projet-confort-hospitalisation-oui'], label:has(input[id*='confort'][value='oui'])"
+    },
+    {
+      "key": "slsis_couverture_non",
+      "type": "button",
+      "label": "Couverture individuelle Non (label)",
+      "selector": "label[for='projet-confort-hospitalisation-non'], label:has(input[id*='confort'][value='non'])"
+    },
+    {
+      "key": "slsis_ij_oui",
+      "type": "button",
+      "label": "Indemnités journalières Oui (label)",
+      "selector": "label[for='ij-oui'], label:has(input[name*='ij'][value='oui'])"
+    },
+    {
+      "key": "slsis_ij_non",
+      "type": "button",
+      "label": "Indemnités journalières Non (label)",
+      "selector": "label[for='ij-non'], label:has(input[name*='ij'][value='non'])"
+    },
+    {
+      "key": "slsis_madelin",
+      "type": "button",
+      "label": "Option Loi Madelin (checkbox via label)",
+      "selector": "label[for='loi-madelin-checkbox'], label:has(#madelin)"
+    },
+    {
+      "key": "slsis_resiliation_oui",
+      "type": "button",
+      "label": "Résiliation Oui (label)",
+      "selector": "label[for='resiliation-contrat-oui']"
+    },
+    {
+      "key": "slsis_resiliation_non",
+      "type": "button",
+      "label": "Résiliation Non (label)",
+      "selector": "label[for='resiliation-contrat-non']"
+    },
+    {
+      "key": "slsis_reprise_oui",
+      "type": "button",
+      "label": "Reprise concurrence Oui (label)",
+      "selector": "label[for='reprise-concurrence-oui']"
+    },
+    {
+      "key": "slsis_reprise_non",
+      "type": "button",
+      "label": "Reprise concurrence Non (label)",
+      "selector": "label[for='reprise-concurrence-non']"
+    },
+    {
+      "key": "slsis_btn_suivant_projet",
+      "type": "button",
+      "label": "Bouton Suivant (Projet)",
+      "selector": "#bt-suite-projet, button:has-text('Suivant'), button:has-text('Suite')"
+    },
+    {
+      "key": "slsis_btn_suivant_confort",
+      "type": "button",
+      "label": "Bouton Suivant (Confort Hospitalisation)",
+      "selector": "#bt-suite-confortHospitalisation, button:has-text('Suivant')"
+    },
+    {
+      "key": "slsis_btn_suivant_souscription",
+      "type": "button",
+      "label": "Bouton Suivant (Souscription)",
+      "selector": "#bt-souscription-suite, button:has-text('Suivant')"
     }
   ]
 }

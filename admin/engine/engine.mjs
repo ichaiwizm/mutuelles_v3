@@ -115,7 +115,7 @@ export async function runHighLevelFlow({ fieldsFile, flowFile, leadFile, usernam
         await ensurePage();
         await execHLStep(page, s, ctx, contextStack, getCurrentContext)
         await page.screenshot({ path: shotPath })
-        await maybeCollect(stepCollectors(page, i, s, { domDir, jsDir, a11y, domMode: dom, jsMode: jsinfo, ctx }))
+        await maybeCollect(stepCollectors(page, getCurrentContext(), i, s, { domDir, jsDir, a11y, domMode: dom, jsMode: jsinfo, ctx }))
         emit({ type:s.type, status:'success', stepIndex:i, screenshotPath: path.relative(runDir, shotPath) })
         stepsSummary.push({ index:i, type:s.type, ok:true, ms: Date.now()-t0, screenshot:`screenshots/${shotName}` })
       } catch (err) {
@@ -123,7 +123,7 @@ export async function runHighLevelFlow({ fieldsFile, flowFile, leadFile, usernam
         const errName = `error-${String(i+1).padStart(2,'0')}.png`
         const errPath = path.join(screenshotsDir, errName)
         try { await ensurePage(); await page.screenshot({ path: errPath }) } catch {}
-        await maybeCollect(stepCollectors(page, i, s, { domDir, jsDir, a11y, domMode: dom, jsMode: jsinfo, onError: true, ctx }))
+        await maybeCollect(stepCollectors(page, getCurrentContext(), i, s, { domDir, jsDir, a11y, domMode: dom, jsMode: jsinfo, onError: true, ctx }))
         emit({ type:s.type, status:'error', stepIndex:i, message: msg, screenshotPath: path.relative(runDir, errPath) })
         stepsSummary.push({ index:i, type:s.type, ok:false, error: msg, screenshot:`screenshots/${errName}` })
         break
@@ -479,11 +479,11 @@ async function maybeCollect(p){
   }
 }
 function wants(_mode, onError){ return v => { if (!v || v==='none') return false; if (v==='all') return true; if (v==='steps' && !onError) return true; if (v==='errors' && onError) return true; return false } }
-function stepCollectors(page, index, step, { domDir, jsDir, a11y, domMode, jsMode, onError=false, ctx }){
+function stepCollectors(page, activeContext, index, step, { domDir, jsDir, a11y, domMode, jsMode, onError=false, ctx }){
   const should = wants(null, onError)
   const tasks = []
-  if (should(domMode)) tasks.push(collectDom(page, index, step, domDir))
-  if (a11y && should(domMode)) tasks.push(collectA11y(page, index, domDir))
+  if (should(domMode)) tasks.push(collectDom(activeContext, index, step, domDir))
+  if (a11y && should(domMode)) tasks.push(collectA11y(activeContext, index, domDir))
 
   // Résoudre le selector depuis field-definitions si nécessaire
   let selectorForJS = step.selector
@@ -508,7 +508,7 @@ function stepCollectors(page, index, step, { domDir, jsDir, a11y, domMode, jsMod
   }
 
   if (should(jsMode) && selectorForJS) {
-    tasks.push(collectJsListeners(page, index, step, selectorForJS, jsDir))
+    tasks.push(collectJsListeners(page, activeContext, index, step, selectorForJS, jsDir))
   }
 
   return Promise.allSettled(tasks)
@@ -520,15 +520,15 @@ function renderReportHtml(manifest){
 }
 function escapeHtml(s){ return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c])) }
 
-async function collectDom(page, index, step, domDir){
+async function collectDom(activeContext, index, step, domDir){
   try {
-    // Vérifier que la page existe et n'est pas fermée
-    if (!page || page.isClosed()) {
-      console.warn(`[collectDom] Page fermée pour step ${index+1}`)
+    // Vérifier que le contexte existe et n'est pas fermé
+    if (!activeContext || activeContext.isClosed?.()) {
+      console.warn(`[collectDom] Contexte fermé pour step ${index+1}`)
       return
     }
 
-    const full = await page.content()
+    const full = await activeContext.content()
 
     if (!full || full.trim().length < 100) {
       console.warn(`[collectDom] DOM vide ou trop court pour step ${index+1}: ${full?.length || 0} chars`)
@@ -539,16 +539,26 @@ async function collectDom(page, index, step, domDir){
     console.error(`[collectDom] Erreur step ${index+1}:`, err.message)
   }
 }
-async function collectA11y(page, index, domDir){
+async function collectA11y(activeContext, index, domDir){
   try {
-    const snap = await page.accessibility.snapshot({ interestingOnly:false })
+    // A11y snapshot est seulement disponible sur Page, pas sur Frame
+    if (!activeContext.accessibility) {
+      return
+    }
+    const snap = await activeContext.accessibility.snapshot({ interestingOnly:false })
     writeJson(path.join(domDir, `step-${String(index+1).padStart(2,'0')}.a11y.json`), snap)
   } catch {}
 }
 
-async function collectJsListeners(page, index, step, selector, jsDir){
+async function collectJsListeners(page, activeContext, index, step, selector, jsDir){
   try {
     console.log(`[collectJsListeners] Step ${index+1}: Début capture pour selector: "${selector}"`)
+
+    // CDP fonctionne seulement avec la page principale, pas les frames
+    if (!activeContext.context) {
+      console.log(`[collectJsListeners] Step ${index+1}: Skipped (frame context, CDP not supported)`)
+      return
+    }
 
     const client = await page.context().newCDPSession(page)
     console.log(`[collectJsListeners] Step ${index+1}: CDP session créée`)

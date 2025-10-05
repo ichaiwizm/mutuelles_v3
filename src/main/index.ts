@@ -10,6 +10,7 @@ import { registerBrowsersIpc } from './ipc/browsers'
 import { registerAutomationIpc } from './ipc/automation'
 import { registerAdminCliIpc } from './ipc/admin_cli'
 import { registerLeadsIPC } from './ipc/leads'
+import { registerParsersIPC } from './ipc/parsers'
 
 let mainWindow: BrowserWindow | null = null
 
@@ -53,6 +54,7 @@ app.whenReady().then(() => {
   registerAutomationIpc()
   registerAdminCliIpc()
   registerLeadsIPC()
+  registerParsersIPC()
   createMainWindow()
 
   app.on('activate', () => {

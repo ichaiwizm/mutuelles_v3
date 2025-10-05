@@ -84,6 +84,10 @@ contextBridge.exposeInMainWorld('api', {
     stats: () => ipcRenderer.invoke('leads:stats') as Promise<{ success: boolean; data?: any; error?: string }>,
     search: (query: string) => ipcRenderer.invoke('leads:search', query) as Promise<{ success: boolean; data?: any; error?: string }>,
     deleteMany: (ids: string[]) => ipcRenderer.invoke('leads:deleteMany', ids) as Promise<{ success: boolean; data?: any; error?: string }>
+  },
+  parsers: {
+    parse: (content: string) => ipcRenderer.invoke('parsers:parse', content) as Promise<{ success: boolean; data?: any; error?: string }>,
+    identify: (content: string) => ipcRenderer.invoke('parsers:identify', content) as Promise<{ success: boolean; data?: any; error?: string }>
   }
 })
 
@@ -131,6 +135,10 @@ declare global {
         stats: () => Promise<{ success: boolean; data?: any; error?: string }>
         search: (query: string) => Promise<{ success: boolean; data?: any; error?: string }>
         deleteMany: (ids: string[]) => Promise<{ success: boolean; data?: any; error?: string }>
+      }
+      parsers: {
+        parse: (content: string) => Promise<{ success: boolean; data?: any; error?: string }>
+        identify: (content: string) => Promise<{ success: boolean; data?: any; error?: string }>
       }
       automation: {
         listFlows: () => Promise<Array<{ id:number; slug:string; name:string; platform_id:number; platform:string; active:boolean }>>
