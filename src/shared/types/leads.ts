@@ -70,6 +70,7 @@ export interface CleanLead {
   besoins: BesoinsInfo;
   qualityScore: number;
   cleanedAt: string;
+  platformData?: PlatformData;
 }
 
 // Lead adapté pour une plateforme
@@ -101,6 +102,23 @@ export interface GmailConfig {
   createdAt?: string;
 }
 
+// Platform-specific data
+export interface SwissLifeOneData {
+  projet: {
+    nom: string
+    couverture_individuelle: boolean
+    indemnites_journalieres: boolean
+    resiliation_contrat: boolean
+    reprise_concurrence: boolean
+    loi_madelin: boolean
+  }
+}
+
+export interface PlatformData {
+  swisslifeone?: SwissLifeOneData
+  alptis?: any // Pour plus tard
+}
+
 // Données pour créer un lead
 export interface CreateLeadData {
   contact: ContactInfo;
@@ -108,6 +126,8 @@ export interface CreateLeadData {
   conjoint?: ConjointInfo;
   enfants?: EnfantInfo[];
   besoins?: BesoinsInfo;
+  platformData?: PlatformData;
+  qualityScore?: number; // Score de qualité (0-10) - calculé automatiquement si non fourni
 }
 
 // Données pour mettre à jour un lead
@@ -117,6 +137,7 @@ export interface UpdateLeadData {
   conjoint?: ConjointInfo | null;
   enfants?: EnfantInfo[];
   besoins?: Partial<BesoinsInfo>;
+  platformData?: PlatformData;
 }
 
 // Filtres pour la recherche de leads
@@ -183,4 +204,20 @@ export interface OperationProgress {
   message: string;
   completed: boolean;
   error?: string;
+}
+
+// Informations sur un doublon détecté
+export interface DuplicateInfo {
+  leadId: string;
+  contact: ContactInfo;
+  reasons: string[]; // Ex: ["Email identique", "Téléphone identique"]
+}
+
+// Réponse de création de lead avec informations sur les doublons
+export interface CreateLeadResult {
+  success: boolean;
+  data?: CleanLead;
+  error?: string;
+  duplicates?: DuplicateInfo[]; // Liste des doublons potentiels détectés
+  warning?: string; // Message d'avertissement si des doublons ont été trouvés
 }

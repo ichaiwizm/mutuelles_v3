@@ -7,6 +7,7 @@ import type {
   PaginationParams
 } from '../../shared/types/leads'
 import { z } from 'zod'
+import { BaseParser, type ParsedData } from '../services/parsers/base/BaseParser'
 
 // Instanciation paresseuse du service pour éviter l'erreur de DB non initialisée
 let leadsService: LeadsService | null = null
@@ -59,7 +60,8 @@ const CreateLeadSchema = z.object({
       optique: z.number().optional(),
       dentaire: z.number().optional()
     }).optional()
-  }).optional()
+  }).optional(),
+  qualityScore: z.number().int().min(0).max(10).optional()
 })
 
 const UpdateLeadSchema = CreateLeadSchema.partial()
@@ -86,6 +88,42 @@ export function registerLeadsIPC() {
     try {
       const validated = CreateLeadSchema.parse(data)
 
+      // VÉRIFICATION DES DOUBLONS
+      const duplicates = await getLeadsService().checkForDuplicates(
+        validated.contact,
+        validated.souscripteur
+      )
+
+      if (duplicates.length > 0) {
+        // Retourner un avertissement avec les doublons trouvés
+        return {
+          success: false,
+          error: 'Lead en doublon',
+          data: {
+            isDuplicate: true,
+            duplicates: duplicates.map(d => ({
+              id: d.lead.id,
+              contact: d.lead.contact,
+              reasons: d.reasons
+            }))
+          }
+        }
+      }
+
+      // Calculer le score de qualité si non fourni
+      let qualityScore = validated.qualityScore
+      if (qualityScore === undefined) {
+        // Convertir les données validées en format ParsedData pour le calcul du score
+        const parsedData: ParsedData = {
+          contact: validated.contact,
+          souscripteur: validated.souscripteur,
+          conjoint: validated.conjoint || null,
+          enfants: validated.enfants || [],
+          besoins: validated.besoins || {}
+        }
+        qualityScore = BaseParser.calculateScore(parsedData)
+      }
+
       // Créer d'abord un raw lead pour les créations manuelles
       const rawLead = await getLeadsService().createRawLead({
         source: 'manual',
@@ -93,7 +131,7 @@ export function registerLeadsIPC() {
         metadata: { createdManually: true }
       })
 
-      // Puis créer le clean lead
+      // Puis créer le clean lead avec le score calculé
       const cleanLead = await getLeadsService().createCleanLead({
         rawLeadId: rawLead.id,
         contact: validated.contact,
@@ -101,7 +139,8 @@ export function registerLeadsIPC() {
         conjoint: validated.conjoint,
         enfants: validated.enfants || [],
         besoins: validated.besoins || {},
-        qualityScore: 5 // Score par défaut pour les leads manuels
+        qualityScore: qualityScore,
+        platformData: validated.platformData
       })
 
       return { success: true, data: cleanLead }

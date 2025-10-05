@@ -13,48 +13,60 @@
     { "type": "fillField", "field": "login_username", "value": "{credentials.username}", "label": "fill-user" },
     { "type": "fillField", "field": "login_password", "value": "{credentials.password}", "label": "fill-pass" },
     { "type": "clickField", "field": "login_submit", "label": "submit" },
-    { "type": "sleep", "timeout_ms": 5000, "label": "wait-post-login" },
+    { "type": "sleep", "timeout_ms": 1500, "label": "wait-post-login" },
     { "type": "clickField", "field": "cookie_tout_autoriser", "label": "accept-cookies", "optional": true },
     { "type": "sleep", "timeout_ms": 1000, "label": "wait-after-cookies" },
 
     { "type": "goto", "url": "https://www.swisslifeone.fr/index-swisslifeOne.html#/tarification-et-simulation/slsis", "label": "goto-slsis-page" },
-    { "type": "sleep", "timeout_ms": 5000, "label": "wait-slsis-load" },
+    { "type": "sleep", "timeout_ms": 1500, "label": "wait-slsis-load" },
 
     { "type": "clickField", "field": "cookie_tout_autoriser", "label": "accept-cookies-page", "optional": true },
     { "type": "sleep", "timeout_ms": 1000, "label": "wait-after-cookie" },
 
-    { "type": "enterFrame", "selector": "iframe[name='iFrameTarificateur']", "label": "enter-slsis-iframe", "timeout_ms": 10000 },
-    { "type": "sleep", "timeout_ms": 3000, "label": "wait-iframe-ready" },
+    { "type": "enterFrame", "selector": "iframe[name='iFrameTarificateur']", "label": "enter-slsis-iframe", "timeout_ms": 15000 },
+    { "type": "sleep", "timeout_ms": 800, "label": "wait-iframe-ready" },
 
+    { "type": "waitForField", "field": "slsis_nom_projet", "label": "wait-nom-projet" },
     { "type": "fillField", "field": "slsis_nom_projet", "value": "Projet Test SLSIS", "label": "fill-nom-projet" },
-    { "type": "sleep", "timeout_ms": 500, "label": "wait-after-nom" },
+    { "type": "sleep", "timeout_ms": 300, "label": "wait-after-nom" },
 
+    { "type": "waitForField", "field": "slsis_date_effet", "label": "wait-date-effet", "optional": true },
     { "type": "fillField", "field": "slsis_date_effet", "value": "01/01/2025", "label": "fill-date-effet", "optional": true },
-    { "type": "sleep", "timeout_ms": 1000, "label": "wait-after-date-effet" },
+    { "type": "pressKey", "field": "slsis_date_effet", "key": "Escape", "label": "close-datepicker-effet", "optional": true },
+    { "type": "sleep", "timeout_ms": 400, "label": "wait-after-date-effet" },
 
+    { "type": "waitForField", "field": "slsis_couverture_oui", "label": "wait-couverture-oui" },
+    { "type": "scrollIntoView", "field": "slsis_couverture_oui", "label": "scroll-couverture" },
     { "type": "clickField", "field": "slsis_couverture_oui", "label": "click-couverture-oui" },
-    { "type": "sleep", "timeout_ms": 500, "label": "wait-after-couverture" },
+    { "type": "sleep", "timeout_ms": 300, "label": "wait-after-couverture" },
 
     { "type": "clickField", "field": "slsis_ij_non", "label": "click-ij-non", "optional": true },
-    { "type": "sleep", "timeout_ms": 500, "label": "wait-after-ij" },
+    { "type": "sleep", "timeout_ms": 300, "label": "wait-after-ij" },
 
+    { "type": "waitForField", "field": "slsis_btn_suivant_projet", "label": "wait-btn-suivant-projet", "optional": true },
     { "type": "clickField", "field": "slsis_btn_suivant_projet", "label": "click-suivant-projet", "optional": true },
-    { "type": "sleep", "timeout_ms": 2000, "label": "wait-section-souscripteur" },
+    { "type": "sleep", "timeout_ms": 800, "label": "wait-section-souscripteur" },
 
+    { "type": "waitForField", "field": "slsis_date_naissance", "label": "wait-date-naissance", "optional": true },
     { "type": "fillField", "field": "slsis_date_naissance", "value": "01/01/1980", "label": "fill-date-naissance", "optional": true },
-    { "type": "sleep", "timeout_ms": 1000, "label": "wait-after-naissance" },
+    { "type": "pressKey", "field": "slsis_date_naissance", "key": "Escape", "label": "close-datepicker-naissance", "optional": true },
+    { "type": "sleep", "timeout_ms": 400, "label": "wait-after-naissance" },
 
+    { "type": "waitForField", "field": "slsis_resiliation_non", "label": "wait-resiliation-non", "optional": true },
     { "type": "clickField", "field": "slsis_resiliation_non", "label": "click-resiliation-non", "optional": true },
-    { "type": "sleep", "timeout_ms": 500, "label": "wait-after-resiliation" },
+    { "type": "sleep", "timeout_ms": 300, "label": "wait-after-resiliation" },
 
+    { "type": "waitForField", "field": "slsis_reprise_non", "label": "wait-reprise-non", "optional": true },
     { "type": "clickField", "field": "slsis_reprise_non", "label": "click-reprise-non", "optional": true },
-    { "type": "sleep", "timeout_ms": 500, "label": "wait-after-reprise" },
+    { "type": "sleep", "timeout_ms": 300, "label": "wait-after-reprise" },
 
+    { "type": "waitForField", "field": "slsis_btn_suivant_confort", "label": "wait-btn-suivant-confort", "optional": true },
     { "type": "clickField", "field": "slsis_btn_suivant_confort", "label": "click-suivant-confort", "optional": true },
-    { "type": "sleep", "timeout_ms": 2000, "label": "wait-section-souscription" },
+    { "type": "sleep", "timeout_ms": 800, "label": "wait-section-souscription" },
 
+    { "type": "waitForField", "field": "slsis_btn_suivant_souscription", "label": "wait-btn-suivant-souscription", "optional": true },
     { "type": "clickField", "field": "slsis_btn_suivant_souscription", "label": "click-suivant-souscription", "optional": true },
-    { "type": "sleep", "timeout_ms": 2000, "label": "wait-final" },
+    { "type": "sleep", "timeout_ms": 800, "label": "wait-final" },
 
     { "type": "exitFrame", "label": "exit-slsis-iframe" }
   ]

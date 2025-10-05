@@ -41,7 +41,8 @@
       "Bash(test:*)",
       "Bash(dos2unix:*)",
       "Bash(wslpath:*)",
-      "Read(//tmp/**)"
+      "Read(//tmp/**)",
+      "Bash(node:*)"
     ],
     "deny": [],
     "ask": []

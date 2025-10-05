@@ -114,7 +114,7 @@ export async function runHighLevelFlow({ fieldsFile, flowFile, leadFile, usernam
       try {
         await ensurePage();
         await execHLStep(page, s, ctx, contextStack, getCurrentContext)
-        await page.screenshot({ path: shotPath })
+        await safeScreenshot(page, shotPath)
         await maybeCollect(stepCollectors(page, getCurrentContext(), i, s, { domDir, jsDir, a11y, domMode: dom, jsMode: jsinfo, ctx }))
         emit({ type:s.type, status:'success', stepIndex:i, screenshotPath: path.relative(runDir, shotPath) })
         stepsSummary.push({ index:i, type:s.type, ok:true, ms: Date.now()-t0, screenshot:`screenshots/${shotName}` })
@@ -122,7 +122,7 @@ export async function runHighLevelFlow({ fieldsFile, flowFile, leadFile, usernam
         const msg = err instanceof Error ? err.message : String(err)
         const errName = `error-${String(i+1).padStart(2,'0')}.png`
         const errPath = path.join(screenshotsDir, errName)
-        try { await ensurePage(); await page.screenshot({ path: errPath }) } catch {}
+        try { await ensurePage(); await safeScreenshot(page, errPath) } catch {}
         await maybeCollect(stepCollectors(page, getCurrentContext(), i, s, { domDir, jsDir, a11y, domMode: dom, jsMode: jsinfo, onError: true, ctx }))
         emit({ type:s.type, status:'error', stepIndex:i, message: msg, screenshotPath: path.relative(runDir, errPath) })
         stepsSummary.push({ index:i, type:s.type, ok:false, error: msg, screenshot:`screenshots/${errName}` })
@@ -209,6 +209,10 @@ async function execHLStep(page, s, ctx, contextStack, getCurrentContext) {
       if (!f.selector) throw new Error(`Selector manquant pour ${s.field}`)
       await activeContext.waitForSelector(f.selector, { state: 'attached' })
       return }
+    case 'waitForNetworkIdle': {
+      // Attendre que le réseau soit idle (sur la page principale)
+      await page.waitForLoadState('networkidle')
+      return }
     case 'fillField': {
       let f = getField(ctx.fields, s.field)
       const idx = extractDynamicIndex(s)
@@ -258,6 +262,30 @@ async function execHLStep(page, s, ctx, contextStack, getCurrentContext) {
         // Pour les champs normaux, utiliser fill()
         await activeContext.fill(f.selector, v)
       }
+      return }
+    case 'pressKey': {
+      // Appuyer sur une touche au niveau du champ (si fourni) sinon au clavier global
+      const key = s.key || s.code || 'Escape'
+      if (s.field) {
+        let f = getField(ctx.fields, s.field)
+        const idx = extractDynamicIndex(s)
+        if (idx != null && f?.metadata?.dynamicIndex) f = withDynamicIndex(f, idx)
+        if (!f.selector) throw new Error(`Selector manquant pour ${s.field}`)
+        const locator = activeContext.locator(f.selector)
+        await locator.click({ force: true })
+        await locator.press(key)
+      } else {
+        await activeContext.keyboard.press(key)
+      }
+      return }
+    case 'scrollIntoView': {
+      // Fait défiler jusqu'au champ visé pour fiabiliser le click/fill
+      let f = getField(ctx.fields, s.field)
+      const idx = extractDynamicIndex(s)
+      if (idx != null && f?.metadata?.dynamicIndex) f = withDynamicIndex(f, idx)
+      if (!f.selector) throw new Error(`Selector manquant pour ${s.field}`)
+      await activeContext.locator(f.selector).scrollIntoViewIfNeeded()
+      await new Promise(r => setTimeout(r, s.timeout_ms || 150))
       return }
     case 'toggleField': {
       let f = getField(ctx.fields, s.field)
@@ -365,16 +393,29 @@ async function execHLStep(page, s, ctx, contextStack, getCurrentContext) {
       await new Promise(r => setTimeout(r, s.timeout_ms || 0))
       return }
     case 'enterFrame': {
-      if (!s.selector) throw new Error('selector requis pour enterFrame')
-      // Toujours chercher l'iframe depuis la page principale
+      // Deux modes génériques: par selector (iframe) ou par urlContains
       const mainPage = contextStack[0]
-      await mainPage.waitForSelector(s.selector, { timeout: s.timeout_ms || 15000 })
-      const frameHandle = await mainPage.$(s.selector)
-      if (!frameHandle) throw new Error(`Iframe introuvable: ${s.selector}`)
-      const frame = await frameHandle.contentFrame()
-      if (!frame) throw new Error(`Impossible d'accéder au contenu de l'iframe: ${s.selector}`)
+      let frame = null
+      if (s.selector) {
+        await mainPage.waitForSelector(s.selector, { timeout: s.timeout_ms || 15000 })
+        const frameHandle = await mainPage.$(s.selector)
+        if (!frameHandle) throw new Error(`Iframe introuvable: ${s.selector}`)
+        frame = await frameHandle.contentFrame()
+      } else if (s.urlContains) {
+        const deadline = Date.now() + (s.timeout_ms || 15000)
+        while (Date.now() < deadline) {
+          const frames = mainPage.frames()
+          frame = frames.find(fr => (fr.url() || '').includes(s.urlContains)) || null
+          if (frame) break
+          await new Promise(r => setTimeout(r, 200))
+        }
+        if (!frame) throw new Error(`Aucun frame avec url contenant "${s.urlContains}"`)
+      } else {
+        throw new Error('enterFrame requiert soit selector soit urlContains')
+      }
+      if (!frame) throw new Error('Impossible d\'accéder au contenu du frame')
       contextStack.push(frame)
-      console.log('[hl] enterFrame %s - contexte empilé (profondeur: %d)', s.selector, contextStack.length)
+      console.log('[hl] enterFrame %s - contexte empilé (profondeur: %d)', s.selector || `url~${s.urlContains}`, contextStack.length)
       return }
     case 'exitFrame': {
       if (contextStack.length <= 1) {
@@ -479,7 +520,34 @@ function withDynamicIndex(fieldDef, i){
   return clone
 }
 function redactText(s, r){ try { return s.replace(new RegExp(r,'gi'), '$1=***') } catch { return s } }
-function detectChromePathCandidates(){ const local = process.env.LOCALAPPDATA || ''; return ['C:/Program Files/Google/Chrome/Application/chrome.exe','C:/Program Files (x86)/Google/Chrome/Application/chrome.exe',`${local}/Google/Chrome/Application/chrome.exe`].map(p=>path.normalize(p)) }
+async function safeScreenshot(page, file){
+  try {
+    await page.screenshot({ path:file })
+  } catch (e) {
+    const msg = String(e?.message||'')
+    console.warn('[safeScreenshot] 1st attempt failed:', msg)
+    try { await page.waitForLoadState('domcontentloaded', { timeout: 3000 }) } catch {}
+    try { await page.screenshot({ path:file }) } catch (e2) { console.warn('[safeScreenshot] 2nd attempt failed:', String(e2?.message||'')) }
+  }
+}
+function detectChromePathCandidates(){
+  const local = process.env.LOCALAPPDATA || ''
+  const list = [
+    // Windows
+    'C:/Program Files/Google/Chrome/Application/chrome.exe',
+    'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe',
+    `${local}/Google/Chrome/Application/chrome.exe`,
+    'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',
+    'C:/Program Files/Microsoft/Edge/Application/msedge.exe',
+    // Linux (WSL/CI runners)
+    '/usr/bin/google-chrome',
+    '/usr/bin/google-chrome-stable',
+    '/usr/bin/chromium-browser',
+    '/usr/bin/chromium',
+    '/snap/bin/chromium'
+  ]
+  return list.filter(Boolean).map(p=>path.normalize(p))
+}
 function detectChromePathFallback(){ for (const p of detectChromePathCandidates()) { try { if (fs.existsSync(p)) return p } catch {} } return undefined }
 function slugify(s){ return String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'') }
 
@@ -567,9 +635,53 @@ async function collectJsListeners(page, activeContext, index, step, selector, js
   try {
     console.log(`[collectJsListeners] Step ${index+1}: Début capture pour selector: "${selector}"`)
 
-    // CDP fonctionne seulement avec la page principale, pas les frames
+    // Fallback lisible pour les frames (pas de CDP)
     if (!activeContext.context) {
-      console.log(`[collectJsListeners] Step ${index+1}: Skipped (frame context, CDP not supported)`)
+      try {
+        // Certaines syntaxes Playwright (text=, :has-text()) ne sont pas supportées par querySelector.
+        if (/(:has-text\(|^text=|>>)/.test(selector)) {
+          const filePath = path.join(jsDir, `step-${String(index+1).padStart(2,'0')}.listeners.json`)
+          const output = { metadata: { stepIndex:index, stepType: step.type, stepLabel: step.label||null, stepField: step.field||null, selector, timestamp:new Date().toISOString(), frameContext:true, skipped:'unsupported-selector-for-frame-fallback' }, listeners:{} }
+          writeJson(filePath, output)
+          console.log(`[collectJsListeners] Step ${index+1}: Fallback (frame) ignoré – sélecteur non supporté par querySelector`)
+          return
+        }
+        const data = await activeContext.evaluate((sel) => {
+          const el = document.querySelector(sel)
+          if (!el) return { found:false }
+          const evts = ['click','change','input','blur','focus','submit','keydown','keyup','keypress']
+          const handlers = {}
+          for (const e of evts) {
+            const h = el[`on${e}`]
+            handlers[e] = h ? (typeof h === 'function' ? 'function' : typeof h) : null
+          }
+          return {
+            found: true,
+            tag: el.tagName,
+            id: el.id || null,
+            class: el.className || null,
+            hasInlineHandlers: Object.values(handlers).some(Boolean),
+            handlers
+          }
+        }, selector)
+        const output = {
+          metadata: {
+            stepIndex: index,
+            stepType: step.type,
+            stepLabel: step.label || null,
+            stepField: step.field || null,
+            selector,
+            timestamp: new Date().toISOString(),
+            frameContext: true
+          },
+          listeners: data?.found ? data.handlers : {}
+        }
+        const filePath = path.join(jsDir, `step-${String(index+1).padStart(2,'0')}.listeners.json`)
+        writeJson(filePath, output)
+        console.log(`[collectJsListeners] Step ${index+1}: Fallback (frame) écrit: ${filePath}`)
+      } catch (e) {
+        console.warn(`[collectJsListeners] Step ${index+1}: Fallback frame KO:`, e?.message || e)
+      }
       return
     }
 
@@ -655,4 +767,21 @@ async function collectJsListeners(page, activeContext, index, step, selector, js
   }
 }
 
-export function describeHL(s){ switch (s.type){ case 'goto': return `Aller sur ${s.url}`; case 'fillField': return `Remplir ${s.field}`; case 'toggleField': return `Toggle ${s.field} -> ${s.state}`; case 'selectField': return `Sélectionner ${s.field}`; case 'waitForField': return `Attendre ${s.field}`; case 'clickField': return `Cliquer ${s.field}`; case 'acceptConsent': return 'Consentement'; case 'sleep': return `Pause ${s.timeout_ms||0}ms`; case 'enterFrame': return `Entrer dans iframe ${s.selector}`; case 'exitFrame': return `Sortir de l'iframe`; default: return s.type } }
+export function describeHL(s){
+  switch (s.type){
+    case 'goto': return `Aller sur ${s.url}`
+    case 'fillField': return `Remplir ${s.field}`
+    case 'toggleField': return `Toggle ${s.field} -> ${s.state}`
+    case 'selectField': return `Sélectionner ${s.field}`
+    case 'waitForField': return `Attendre ${s.field}`
+    case 'waitForNetworkIdle': return 'Attendre network idle'
+    case 'pressKey': return `Appuyer ${s.key||s.code||'Escape'}${s.field?` sur ${s.field}`:''}`
+    case 'scrollIntoView': return `Scroller vers ${s.field}`
+    case 'clickField': return `Cliquer ${s.field}`
+    case 'acceptConsent': return 'Consentement'
+    case 'sleep': return `Pause ${s.timeout_ms||0}ms`
+    case 'enterFrame': return `Entrer dans iframe ${s.selector||('url~'+(s.urlContains||''))}`
+    case 'exitFrame': return `Sortir de l'iframe`
+    default: return s.type
+  }
+}

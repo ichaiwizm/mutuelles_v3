@@ -71,7 +71,17 @@
       "key": "slsis_regime_social",
       "type": "select",
       "label": "Régime social",
-      "selector": "#regime-social-assure-principal, [name='client.regimeSocial']"
+      "selector": "#regime-social-assure-principal, [name='client.regimeSocial']",
+      "options": {
+        "open_selector": "[name='client.regimeSocial']",
+        "items": [
+          { "value": "SECURITE_SOCIALE", "label": "Régime Général (CPAM)", "option_selector": "select[name='client.regimeSocial'] option[value='SECURITE_SOCIALE']" },
+          { "value": "TNS", "label": "Régime Général pour TNS (CPAM)", "option_selector": "select[name='client.regimeSocial'] option[value='TNS']" },
+          { "value": "AMEXA", "label": "MSA - Amexa", "option_selector": "select[name='client.regimeSocial'] option[value='AMEXA']" },
+          { "value": "SECURITE_SOCIALE_ALSACE_MOSELLE", "label": "Régime Local (CPAM Alsace Moselle)", "option_selector": "select[name='client.regimeSocial'] option[value='SECURITE_SOCIALE_ALSACE_MOSELLE']" },
+          { "value": "AUTRES_REGIME_SPECIAUX", "label": "Autres régimes spéciaux", "option_selector": "select[name='client.regimeSocial'] option[value='AUTRES_REGIME_SPECIAUX']" }
+        ]
+      }
     },
     {
       "key": "slsis_statut",

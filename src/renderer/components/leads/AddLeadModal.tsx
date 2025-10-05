@@ -96,7 +96,26 @@ export default function AddLeadModal({ isOpen, onClose, onLeadCreated }: AddLead
         throw new Error('Type de lead non reconnu')
       }
 
-      setParsedData(data)
+      // S'assurer que les champs ont des valeurs par défaut et générer platformData
+      const normalizedData = {
+        ...data,
+        souscripteur: {
+          ...data.souscripteur,
+          nombreEnfants: data.souscripteur?.nombreEnfants ?? 0
+        }
+      }
+
+      // Générer les platformData pour l'affichage dans la confirmation
+      // Le backend les régénérera lors de la création finale
+      const { PlatformMappingService } = await import('../../../shared/platformMapping')
+      const platformData = PlatformMappingService.mapToPlatforms(normalizedData)
+
+      const dataWithPlatforms = {
+        ...normalizedData,
+        platformData
+      }
+
+      setParsedData(dataWithPlatforms)
       setParsedProvider(provider)
       setParsedScore(score)
       setMode('confirmation')
@@ -112,21 +131,36 @@ export default function AddLeadModal({ isOpen, onClose, onLeadCreated }: AddLead
     }
   }
 
-  const handleConfirmParsedLead = async () => {
-    if (!parsedData) return
-
+  const handleConfirmParsedLead = async (editedData: CreateLeadData) => {
     setLoading(true)
     const toastId = toast.loading('Création du lead...')
 
     try {
-      const result = await window.api.leads.create(parsedData)
+      // Ajouter le score calculé par le parser aux données du lead
+      const leadDataWithScore = {
+        ...editedData,
+        qualityScore: parsedScore
+      }
+
+      const result = await window.api.leads.create(leadDataWithScore)
 
       if (result.success) {
         toast.update(toastId, { type: 'success', title: 'Lead créé avec succès' })
         onLeadCreated()
         handleClose()
       } else {
-        throw new Error(result.error)
+        // Gérer le cas spécifique des doublons
+        if (result.error === 'Lead en doublon' && result.data?.isDuplicate) {
+          const duplicates = result.data.duplicates
+          const reasons = duplicates[0]?.reasons?.join(', ') || 'Similaire à un lead existant'
+          toast.update(toastId, {
+            type: 'error',
+            title: '⚠️ Lead en doublon',
+            message: `Ce lead existe déjà : ${reasons}. Impossible de créer un doublon.`
+          })
+        } else {
+          throw new Error(result.error)
+        }
       }
     } catch (error) {
       toast.update(toastId, { type: 'error', title: 'Erreur lors de la création', message: String(error) })
@@ -161,7 +195,18 @@ export default function AddLeadModal({ isOpen, onClose, onLeadCreated }: AddLead
         onLeadCreated()
         handleClose()
       } else {
-        throw new Error(result.error)
+        // Gérer le cas spécifique des doublons
+        if (result.error === 'Lead en doublon' && result.data?.isDuplicate) {
+          const duplicates = result.data.duplicates
+          const reasons = duplicates[0]?.reasons?.join(', ') || 'Similaire à un lead existant'
+          toast.update(toastId, {
+            type: 'error',
+            title: '⚠️ Lead en doublon',
+            message: `Ce lead existe déjà : ${reasons}. Impossible de créer un doublon.`
+          })
+        } else {
+          throw new Error(result.error)
+        }
       }
     } catch (error) {
       toast.update(toastId, { type: 'error', title: 'Erreur lors de la création', message: String(error) })
