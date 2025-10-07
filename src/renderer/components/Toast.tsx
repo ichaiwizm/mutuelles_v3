@@ -45,6 +45,15 @@ function ToastComponent({ id, type, title, message, duration, onClose }: ToastCo
     }
   }, [id, type, duration, onClose])
 
+  // Forcer le recalcul du timer si le type change (loading → success/error)
+  const prevTypeRef = React.useRef(type)
+  React.useEffect(() => {
+    if (prevTypeRef.current !== type) {
+      prevTypeRef.current = type
+      // Le useEffect précédent se déclenchera automatiquement car `type` est dans ses dépendances
+    }
+  }, [type])
+
   return (
     <div className={`rounded-md border p-3 shadow-lg ${styles[type]} max-w-md animate-in slide-in-from-right`}>
       <div className="flex items-start gap-3">

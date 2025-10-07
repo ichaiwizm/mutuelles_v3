@@ -23,7 +23,18 @@ export function useToast() {
   }, [])
 
   const updateToast = React.useCallback((id: string, patch: Partial<Omit<Toast, 'id'>>) => {
-    setToasts(prev => prev.map(t => t.id === id ? { ...t, ...patch } : t))
+    setToasts(prev => prev.map(t => {
+      if (t.id !== id) return t
+
+      // Si on passe d'un loading (info avec duration=0) à un autre type, ajouter une duration par défaut
+      const needsDefaultDuration = t.type === 'info' && t.duration === 0 && patch.type && patch.type !== 'info' && patch.duration === undefined
+
+      return {
+        ...t,
+        ...patch,
+        duration: needsDefaultDuration ? 5000 : (patch.duration !== undefined ? patch.duration : t.duration)
+      }
+    }))
     if (patch.duration !== undefined) {
       (window as any).__toastDurationMap = { ...(window as any).__toastDurationMap, [id]: patch.duration }
     }
