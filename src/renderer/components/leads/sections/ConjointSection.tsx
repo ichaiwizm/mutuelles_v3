@@ -8,6 +8,7 @@ interface ConjointSectionProps {
   isEditing: boolean
   validationErrors: Record<string, string>
   onChange: (section: keyof CreateLeadData, field: string, value: any) => void
+  showHeader?: boolean
 }
 
 const REGIME_OPTIONS = [
@@ -23,7 +24,8 @@ export default function ConjointSection({
   data,
   isEditing,
   validationErrors,
-  onChange
+  onChange,
+  showHeader = true
 }: ConjointSectionProps) {
   if (!data.conjoint && !isEditing) return null
 
@@ -33,11 +35,13 @@ export default function ConjointSection({
         ? 'border-blue-300 dark:border-blue-700 bg-blue-50/30 dark:bg-blue-900/10'
         : 'border-neutral-200 dark:border-neutral-800'
     }`}>
-      <div className="flex items-center gap-2 mb-3">
-        <Users size={16} className="text-neutral-500" />
-        <h4 className="font-medium">Conjoint</h4>
-      </div>
-      <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+      {showHeader && (
+        <div className="flex items-center gap-2 mb-3">
+          <Users size={16} className="text-neutral-500" />
+          <h4 className="font-medium">Conjoint</h4>
+        </div>
+      )}
+      <div className={`grid grid-cols-2 gap-x-4 gap-y-3 text-sm ${showHeader ? '' : 'mt-0'}`}>
         <EditableField
           section="conjoint"
           field="dateNaissance"

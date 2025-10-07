@@ -192,6 +192,7 @@ export default function LeadForm({
                 isEditing={formState.isEditing}
                 validationErrors={validationErrors}
                 onChange={handleFieldChange}
+                showHeader={false}
               />
             )}
           </ToggleableSectionWrapper>
@@ -202,6 +203,7 @@ export default function LeadForm({
               isEditing={formState.isEditing}
               validationErrors={validationErrors}
               onChange={handleFieldChange}
+              showHeader={true}
             />
           )
         )}
