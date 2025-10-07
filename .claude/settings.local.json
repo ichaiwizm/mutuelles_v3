@@ -48,7 +48,8 @@
       "Bash(do echo \"=== $table ===\")",
       "Bash(npx tsc:*)",
       "Bash(wc:*)",
-      "Bash(python3:*)"
+      "Bash(python3:*)",
+      "Bash(*)"
     ],
     "deny": [],
     "ask": []
