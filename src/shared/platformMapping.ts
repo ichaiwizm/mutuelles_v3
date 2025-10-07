@@ -1,4 +1,4 @@
-import type { CreateLeadData } from '../../shared/types/leads'
+import type { CreateLeadData } from './types/leads'
 
 // =================== INTERFACES ===================
 

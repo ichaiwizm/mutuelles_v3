@@ -2,7 +2,6 @@ import React, { useState } from 'react'
 import { X } from 'lucide-react'
 import { useToastContext } from '../../contexts/ToastContext'
 import type { CreateLeadData, LeadProvider } from '../../../shared/types/leads'
-import ModeSelector from './modes/ModeSelector'
 import IntelligentMode from './modes/IntelligentMode'
 import ManualMode from './modes/ManualMode'
 import ParsedLeadConfirmation from './ParsedLeadConfirmation'
@@ -11,6 +10,7 @@ interface AddLeadModalProps {
   isOpen: boolean
   onClose: () => void
   onLeadCreated: () => void
+  initialMode?: 'intelligent' | 'manual'
 }
 
 type AddMode = 'intelligent' | 'manual' | 'confirmation'
@@ -48,8 +48,8 @@ const initialFormData: CreateLeadData = {
   }
 }
 
-export default function AddLeadModal({ isOpen, onClose, onLeadCreated }: AddLeadModalProps) {
-  const [mode, setMode] = useState<AddMode>('intelligent')
+export default function AddLeadModal({ isOpen, onClose, onLeadCreated, initialMode = 'intelligent' }: AddLeadModalProps) {
+  const [mode, setMode] = useState<AddMode>(initialMode === 'manual' ? 'manual' : 'intelligent')
   const [loading, setLoading] = useState(false)
   const [rawText, setRawText] = useState('')
   const [formData, setFormData] = useState<CreateLeadData>(initialFormData)
@@ -61,7 +61,7 @@ export default function AddLeadModal({ isOpen, onClose, onLeadCreated }: AddLead
   if (!isOpen) return null
 
   const handleClose = () => {
-    setMode('intelligent')
+    setMode(initialMode === 'manual' ? 'manual' : 'intelligent')
     setRawText('')
     setFormData(initialFormData)
     setParsedData(null)
@@ -228,14 +228,6 @@ export default function AddLeadModal({ isOpen, onClose, onLeadCreated }: AddLead
             <X size={20} />
           </button>
         </div>
-
-        {/* Mode selection tabs (hidden in confirmation mode) */}
-        {mode !== 'confirmation' && (
-          <ModeSelector
-            mode={mode}
-            onModeChange={setMode}
-          />
-        )}
 
         {/* Content based on mode */}
         {mode === 'intelligent' && (

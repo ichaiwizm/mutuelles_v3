@@ -17,6 +17,17 @@ interface LeadFormState {
 function leadFormReducer(state: LeadFormState, action: LeadFormAction): LeadFormState {
   switch (action.type) {
     case 'UPDATE_FIELD':
+      // Si field est vide, on remplace directement la section (pour arrays comme enfants, platformData)
+      if (action.field === '') {
+        return {
+          ...state,
+          data: {
+            ...state.data,
+            [action.section]: action.value
+          }
+        }
+      }
+      // Sinon, on met à jour le champ dans l'objet de la section
       return {
         ...state,
         data: {

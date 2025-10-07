@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { Plus, Upload, Mail } from 'lucide-react'
+import { Plus, Upload, Mail, Sparkles, FileEdit } from 'lucide-react'
 import { useToastContext } from '../contexts/ToastContext'
 import type { LeadStats, FullLead, LeadFilters } from '../../shared/types/leads'
 import LeadsTable from '../components/leads/LeadsTable'
@@ -19,6 +19,7 @@ export default function Leads() {
     viewEditLead: null as FullLead | null,
     confirmDelete: null as FullLead | null
   })
+  const [addLeadMode, setAddLeadMode] = useState<'intelligent' | 'manual'>('intelligent')
   const [deleteLoading, setDeleteLoading] = useState(false)
   const toast = useToastContext()
 
@@ -65,7 +66,8 @@ export default function Leads() {
   }, [loadLeads])
 
   // Handlers pour les actions de la table
-  const handleAddLead = () => {
+  const handleAddLead = (mode: 'intelligent' | 'manual' = 'intelligent') => {
+    setAddLeadMode(mode)
     setModals({ addLead: true, viewEditLead: null, confirmDelete: null })
   }
 
@@ -139,11 +141,18 @@ export default function Leads() {
             Importer
           </button>
           <button
-            onClick={handleAddLead}
-            className="flex items-center gap-2 px-3 py-2 rounded-md bg-neutral-900 dark:bg-neutral-100 text-neutral-100 dark:text-neutral-900 hover:bg-neutral-800 dark:hover:bg-neutral-200 text-sm"
+            onClick={() => handleAddLead('manual')}
+            className="flex items-center gap-2 px-3 py-2 rounded-md border border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 text-sm transition-colors"
           >
-            <Plus size={16} />
-            Ajouter
+            <FileEdit size={16} />
+            Ajouter manuellement
+          </button>
+          <button
+            onClick={() => handleAddLead('intelligent')}
+            className="flex items-center gap-2 px-3 py-2 rounded-md bg-indigo-600 dark:bg-indigo-500 text-white hover:bg-indigo-700 dark:hover:bg-indigo-600 text-sm transition-colors"
+          >
+            <Sparkles size={16} />
+            Ajouter intelligemment
           </button>
         </div>
       </div>
@@ -196,6 +205,7 @@ export default function Leads() {
       {/* Modals */}
       <AddLeadModal
         isOpen={modals.addLead}
+        initialMode={addLeadMode}
         onClose={closeModals}
         onLeadCreated={handleLeadCreated}
       />

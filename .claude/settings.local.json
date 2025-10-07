@@ -46,7 +46,8 @@
       "Bash(bash:*)",
       "Bash(HEADLESS=1 bash admin/cli/run_from_wsl.sh swisslifeone swisslifeone_slsis --lead nicolas_kiss)",
       "Bash(do echo \"=== $table ===\")",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(wc:*)"
     ],
     "deny": [],
     "ask": []

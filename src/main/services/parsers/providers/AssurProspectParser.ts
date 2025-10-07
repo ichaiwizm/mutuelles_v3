@@ -14,12 +14,11 @@ export class AssurProspectParser extends BaseParser {
 
   /**
    * Parse le contenu AssurProspect
+   * NOTE: Le contenu est déjà normalisé par le ParserOrchestrator avant d'arriver ici
    */
   static parse(content: string): ParsedData {
-    const normalizedContent = this.normalizeContent(content)
-
     // Découper le contenu en sections
-    const sections = this.extractSections(normalizedContent)
+    const sections = this.extractSections(content)
 
     // Extraire les données de chaque section
     const contact = this.extractContact(sections.contact || '')
@@ -44,11 +43,11 @@ export class AssurProspectParser extends BaseParser {
     const sections: Record<string, string> = {}
 
     const sectionRegexes = {
-      contact: /Contact\s*\n(.*?)(?=\n(?:Souscripteur|Conjoint|Enfants|Besoin|A noter))/s,
-      souscripteur: /Souscripteur\s*\n(.*?)(?=\n(?:Conjoint|Enfants|Besoin|A noter))/s,
-      conjoint: /Conjoint\s*\n(.*?)(?=\n(?:Enfants|Besoin|A noter))/s,
-      enfants: /Enfants\s*\n(.*?)(?=\n(?:Besoin|A noter))/s,
-      besoin: /Besoin\s*\n(.*?)(?=\n(?:A noter))/s
+      contact: /Contact\s*\n(.*?)(?=\n(?:Souscripteur|Conjoint|Enfants|Besoin|A noter)|$)/s,
+      souscripteur: /Souscripteur\s*\n(.*?)(?=\n(?:Conjoint|Enfants|Besoin|A noter)|$)/s,
+      conjoint: /Conjoint\s*\n(.*?)(?=\n(?:Enfants|Besoin|A noter)|$)/s,
+      enfants: /Enfants\s*\n(.*?)(?=\n(?:Besoin|A noter)|$)/s,
+      besoin: /Besoin\s*\n(.*?)(?=\n(?:A noter)|$)/s
     }
 
     for (const [sectionName, regex] of Object.entries(sectionRegexes)) {
