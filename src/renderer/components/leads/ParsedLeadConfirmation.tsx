@@ -1,6 +1,13 @@
-import React, { useState, useEffect } from 'react'
-import { Check, X, AlertCircle, User, Briefcase, Users, Heart, Edit, RotateCcw, Baby, Plus, Trash2 } from 'lucide-react'
-import type { CreateLeadData, LeadProvider } from '../../../shared/types/leads'
+import React, { useEffect } from 'react'
+import { Check, X, AlertCircle, Edit, RotateCcw } from 'lucide-react'
+import type { CreateLeadData, LeadProvider, EnfantInfo } from '../../../shared/types/leads'
+import { useLeadFormState } from '../../hooks/useLeadFormState'
+import { useLeadValidation } from '../../hooks/useLeadValidation'
+import ContactSection from './sections/ContactSection'
+import SouscripteurSection from './sections/SouscripteurSection'
+import ConjointSection from './sections/ConjointSection'
+import EnfantsSection from './sections/EnfantsSection'
+import BesoinsSection from './sections/BesoinsSection'
 import PlatformFieldsSection from './PlatformFieldsSection'
 
 interface ParsedLeadConfirmationProps {
@@ -13,6 +20,24 @@ interface ParsedLeadConfirmationProps {
   onDataChange?: (data: CreateLeadData) => void
 }
 
+const providerLabels: Record<string, string> = {
+  assurprospect: 'AssurProspect',
+  assurlead: 'Assurlead',
+  generic: 'Générique'
+}
+
+const getScoreColor = (score: number) => {
+  if (score >= 7) return 'text-emerald-600 dark:text-emerald-400'
+  if (score >= 4) return 'text-amber-600 dark:text-amber-400'
+  return 'text-red-600 dark:text-red-400'
+}
+
+const getScoreLabel = (score: number) => {
+  if (score >= 7) return 'Excellent'
+  if (score >= 4) return 'Moyen'
+  return 'Faible'
+}
+
 export default function ParsedLeadConfirmation({
   provider,
   data,
@@ -22,237 +47,65 @@ export default function ParsedLeadConfirmation({
   loading,
   onDataChange
 }: ParsedLeadConfirmationProps) {
-  const [isEditing, setIsEditing] = useState(false)
-  const [editedData, setEditedData] = useState<CreateLeadData>(data)
-  const [originalData] = useState<CreateLeadData>(data)
-  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
+  const formState = useLeadFormState(data)
+  const { validationErrors, validateData, clearError, clearAllErrors } = useLeadValidation()
 
-  // Synchroniser editedData avec data si data change (au cas où)
+  // Synchroniser avec data externe si elle change
   useEffect(() => {
-    setEditedData(data)
+    formState.updateData(data)
   }, [data])
 
   // Notifier le parent des changements
   useEffect(() => {
     if (onDataChange) {
-      onDataChange(editedData)
+      onDataChange(formState.data)
     }
-  }, [editedData, onDataChange])
+  }, [formState.data, onDataChange])
 
-  const getScoreColor = (score: number) => {
-    if (score >= 7) return 'text-emerald-600 dark:text-emerald-400'
-    if (score >= 4) return 'text-amber-600 dark:text-amber-400'
-    return 'text-red-600 dark:text-red-400'
-  }
-
-  const getScoreLabel = (score: number) => {
-    if (score >= 7) return 'Excellent'
-    if (score >= 4) return 'Moyen'
-    return 'Faible'
-  }
-
-  const providerLabels: Record<string, string> = {
-    assurprospect: 'AssurProspect',
-    assurlead: 'Assurlead',
-    generic: 'Générique'
-  }
-
-  // Fonction pour mettre à jour un champ
-  const updateField = (section: keyof CreateLeadData, field: string, value: any) => {
-    setEditedData(prev => ({
-      ...prev,
-      [section]: {
-        ...(prev[section] as any),
-        [field]: value
-      }
-    }))
-    // Effacer l'erreur de validation pour ce champ
-    const fieldKey = `${section}.${field}`
-    if (validationErrors[fieldKey]) {
-      setValidationErrors(prev => {
-        const newErrors = { ...prev }
-        delete newErrors[fieldKey]
-        return newErrors
-      })
-    }
-  }
-
-  // Fonction pour mettre à jour un champ imbriqué (ex: besoins.niveaux.soinsMedicaux)
-  const updateNestedField = (section: keyof CreateLeadData, subSection: string, field: string, value: any) => {
-    setEditedData(prev => ({
-      ...prev,
-      [section]: {
-        ...(prev[section] as any),
-        [subSection]: {
-          ...((prev[section] as any)?.[subSection] || {}),
-          [field]: value
-        }
-      }
-    }))
-  }
-
-  // Validation des données
-  const validateData = (): boolean => {
-    const errors: Record<string, string> = {}
-
-    // Champs obligatoires
-    if (!editedData.contact.nom?.trim()) {
-      errors['contact.nom'] = 'Le nom est obligatoire'
-    }
-    if (!editedData.contact.prenom?.trim()) {
-      errors['contact.prenom'] = 'Le prénom est obligatoire'
-    }
-
-    // Validation email
-    if (editedData.contact.email) {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-      if (!emailRegex.test(editedData.contact.email)) {
-        errors['contact.email'] = 'Format email invalide'
-      }
-    }
-
-    // Validation téléphone (format français basique)
-    if (editedData.contact.telephone) {
-      const phoneRegex = /^(?:(?:\+|00)33|0)\s*[1-9](?:[\s.-]*\d{2}){4}$/
-      if (!phoneRegex.test(editedData.contact.telephone.replace(/\s/g, ''))) {
-        errors['contact.telephone'] = 'Format téléphone invalide'
-      }
-    }
-
-    // Validation code postal
-    if (editedData.contact.codePostal) {
-      const cpRegex = /^\d{5}$/
-      if (!cpRegex.test(editedData.contact.codePostal)) {
-        errors['contact.codePostal'] = 'Code postal invalide (5 chiffres)'
-      }
-    }
-
-    // Validation dates
-    if (editedData.souscripteur?.dateNaissance) {
-      const date = new Date(editedData.souscripteur.dateNaissance)
-      if (isNaN(date.getTime())) {
-        errors['souscripteur.dateNaissance'] = 'Date invalide'
-      }
-    }
-    if (editedData.conjoint?.dateNaissance) {
-      const date = new Date(editedData.conjoint.dateNaissance)
-      if (isNaN(date.getTime())) {
-        errors['conjoint.dateNaissance'] = 'Date invalide'
-      }
-    }
-    if (editedData.besoins?.dateEffet) {
-      const date = new Date(editedData.besoins.dateEffet)
-      if (isNaN(date.getTime())) {
-        errors['besoins.dateEffet'] = 'Date invalide'
-      }
-    }
-
-    setValidationErrors(errors)
-    return Object.keys(errors).length === 0
-  }
-
-  // Annuler les modifications
   const handleCancelEdit = () => {
-    setEditedData(originalData)
-    setIsEditing(false)
-    setValidationErrors({})
+    formState.resetForm()
+    clearAllErrors()
   }
 
-  // Confirmer avec validation
   const handleConfirm = () => {
-    if (isEditing && !validateData()) {
+    if (formState.isEditing && !validateData(formState.data)) {
       return
     }
-    onConfirm(editedData)
+    onConfirm(formState.data)
   }
 
-  // Composant de champ éditable
-  const EditableField = ({
-    section,
-    field,
-    label,
-    value,
-    type = 'text',
-    options,
-    colSpan = 1
-  }: {
-    section: keyof CreateLeadData
-    field: string
-    label: string
-    value: any
-    type?: 'text' | 'email' | 'tel' | 'date' | 'select' | 'number'
-    options?: { value: string; label: string }[]
-    colSpan?: 1 | 2
-  }) => {
-    const fieldKey = `${section}.${field}`
-    const hasError = validationErrors[fieldKey]
+  const handleFieldChange = (section: keyof CreateLeadData, field: string, value: any) => {
+    formState.updateField(section, field, value)
+    clearError(`${section}.${field}`)
+  }
 
-    if (!isEditing) {
-      if (!value && value !== 0) return null
-      return (
-        <div className={colSpan === 2 ? 'col-span-2' : ''}>
-          <span className="text-neutral-500">{label}:</span>
-          <span className="ml-2">{type === 'select' && options ? options.find(o => o.value === value)?.label || value : value}</span>
-        </div>
-      )
-    }
+  const handleNestedFieldChange = (section: keyof CreateLeadData, subSection: string, field: string, value: any) => {
+    formState.updateNestedField(section, subSection, field, value)
+  }
 
-    return (
-      <div className={colSpan === 2 ? 'col-span-2' : ''}>
-        <label className="block text-xs text-neutral-500 mb-1">{label}</label>
-        {type === 'select' && options ? (
-          <select
-            value={value || ''}
-            onChange={(e) => updateField(section, field, e.target.value)}
-            className={`w-full px-2 py-1.5 text-sm rounded border ${
-              hasError
-                ? 'border-red-500 focus:border-red-600'
-                : 'border-neutral-300 dark:border-neutral-700 focus:border-emerald-500'
-            } bg-white dark:bg-neutral-900 focus:outline-none focus:ring-2 ${
-              hasError ? 'focus:ring-red-500/20' : 'focus:ring-emerald-500/20'
-            } transition-colors`}
-          >
-            <option value="">-</option>
-            {options.map(opt => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
-            ))}
-          </select>
-        ) : (
-          <input
-            type={type}
-            value={value || ''}
-            onChange={(e) => updateField(section, field, type === 'number' ? Number(e.target.value) : e.target.value)}
-            className={`w-full px-2 py-1.5 text-sm rounded border ${
-              hasError
-                ? 'border-red-500 focus:border-red-600'
-                : 'border-neutral-300 dark:border-neutral-700 focus:border-emerald-500'
-            } bg-white dark:bg-neutral-900 focus:outline-none focus:ring-2 ${
-              hasError ? 'focus:ring-red-500/20' : 'focus:ring-emerald-500/20'
-            } transition-colors`}
-          />
-        )}
-        {hasError && (
-          <p className="text-xs text-red-600 dark:text-red-400 mt-1">{validationErrors[fieldKey]}</p>
-        )}
-      </div>
-    )
+  const handleEnfantsChange = (enfants: EnfantInfo[]) => {
+    formState.updateField('enfants' as keyof CreateLeadData, '', enfants)
+  }
+
+  const handlePlatformDataChange = (newPlatformData: any) => {
+    formState.updateField('platformData' as keyof CreateLeadData, '', newPlatformData)
   }
 
   return (
     <div className="flex flex-col h-[500px]">
-      {/* Header avec provider et score */}
+      {/* Header */}
       <div className="p-4 border-b border-neutral-200 dark:border-neutral-800">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-3">
-            <div className={`p-2 rounded-full ${isEditing ? 'bg-blue-100 dark:bg-blue-900/30' : 'bg-emerald-100 dark:bg-emerald-900/30'}`}>
-              {isEditing ? (
+            <div className={`p-2 rounded-full ${formState.isEditing ? 'bg-blue-100 dark:bg-blue-900/30' : 'bg-emerald-100 dark:bg-emerald-900/30'}`}>
+              {formState.isEditing ? (
                 <Edit className="w-5 h-5 text-blue-600 dark:text-blue-400" />
               ) : (
                 <Check className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
               )}
             </div>
             <div>
-              <h3 className="font-semibold">{isEditing ? 'Edition du lead' : 'Lead identifié'}</h3>
+              <h3 className="font-semibold">{formState.isEditing ? 'Edition du lead' : 'Lead identifié'}</h3>
               <p className="text-sm text-neutral-500">
                 Source: {provider ? providerLabels[provider] : 'Inconnue'}
               </p>
@@ -266,10 +119,10 @@ export default function ParsedLeadConfirmation({
           </div>
         </div>
 
-        {/* Bouton Modifier / Annuler modifications */}
+        {/* Bouton Modifier / Annuler */}
         {!loading && (
           <div className="flex justify-end">
-            {isEditing ? (
+            {formState.isEditing ? (
               <button
                 type="button"
                 onClick={handleCancelEdit}
@@ -281,7 +134,7 @@ export default function ParsedLeadConfirmation({
             ) : (
               <button
                 type="button"
-                onClick={() => setIsEditing(true)}
+                onClick={() => formState.setEditing(true)}
                 className="flex items-center gap-2 px-3 py-1.5 text-sm rounded-md border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
               >
                 <Edit size={14} />
@@ -292,396 +145,49 @@ export default function ParsedLeadConfirmation({
         )}
       </div>
 
-      {/* Content avec les données parsées */}
+      {/* Content avec sections */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {/* Contact */}
-        <div className={`rounded-lg border p-3 transition-colors ${
-          isEditing
-            ? 'border-blue-300 dark:border-blue-700 bg-blue-50/30 dark:bg-blue-900/10'
-            : 'border-neutral-200 dark:border-neutral-800'
-        }`}>
-          <div className="flex items-center gap-2 mb-3">
-            <User size={16} className="text-neutral-500" />
-            <h4 className="font-medium">Contact</h4>
-          </div>
-          <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
-            <EditableField
-              section="contact"
-              field="civilite"
-              label="Civilité"
-              value={editedData.contact.civilite}
-              type="select"
-              options={[
-                { value: 'M.', label: 'M.' },
-                { value: 'Mme', label: 'Mme' }
-              ]}
-            />
-            <EditableField
-              section="contact"
-              field="nom"
-              label="Nom"
-              value={editedData.contact.nom}
-            />
-            <EditableField
-              section="contact"
-              field="prenom"
-              label="Prénom"
-              value={editedData.contact.prenom}
-            />
-            <EditableField
-              section="contact"
-              field="email"
-              label="Email"
-              value={editedData.contact.email}
-              type="email"
-              colSpan={2}
-            />
-            <EditableField
-              section="contact"
-              field="telephone"
-              label="Téléphone"
-              value={editedData.contact.telephone}
-              type="tel"
-            />
-            <EditableField
-              section="contact"
-              field="adresse"
-              label="Adresse"
-              value={editedData.contact.adresse}
-              colSpan={2}
-            />
-            <EditableField
-              section="contact"
-              field="codePostal"
-              label="Code postal"
-              value={editedData.contact.codePostal}
-            />
-            <EditableField
-              section="contact"
-              field="ville"
-              label="Ville"
-              value={editedData.contact.ville}
-            />
-          </div>
-        </div>
+        <ContactSection
+          data={formState.data}
+          isEditing={formState.isEditing}
+          validationErrors={validationErrors}
+          onChange={handleFieldChange}
+        />
 
-        {/* Souscripteur */}
-        {(editedData.souscripteur || isEditing) && (
-          <div className={`rounded-lg border p-3 transition-colors ${
-            isEditing
-              ? 'border-blue-300 dark:border-blue-700 bg-blue-50/30 dark:bg-blue-900/10'
-              : 'border-neutral-200 dark:border-neutral-800'
-          }`}>
-            <div className="flex items-center gap-2 mb-3">
-              <Briefcase size={16} className="text-neutral-500" />
-              <h4 className="font-medium">Souscripteur</h4>
-            </div>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
-              <EditableField
-                section="souscripteur"
-                field="dateNaissance"
-                label="Date de naissance"
-                value={editedData.souscripteur?.dateNaissance}
-                type="date"
-              />
-              <EditableField
-                section="souscripteur"
-                field="profession"
-                label="Profession"
-                value={editedData.souscripteur?.profession}
-              />
-              <EditableField
-                section="souscripteur"
-                field="regimeSocial"
-                label="Régime"
-                value={editedData.souscripteur?.regimeSocial}
-                type="select"
-                colSpan={2}
-                options={[
-                  { value: 'Salarié', label: 'Salarié' },
-                  { value: 'TNS', label: 'TNS' },
-                  { value: 'Fonctionnaire', label: 'Fonctionnaire' },
-                  { value: 'Retraité', label: 'Retraité' },
-                  { value: 'Libéral', label: 'Libéral' },
-                  { value: 'Indépendant', label: 'Indépendant' }
-                ]}
-              />
-              <EditableField
-                section="souscripteur"
-                field="nombreEnfants"
-                label="Nombre d'enfants"
-                value={editedData.souscripteur?.nombreEnfants ?? 0}
-                type="number"
-              />
-            </div>
-          </div>
-        )}
+        <SouscripteurSection
+          data={formState.data}
+          isEditing={formState.isEditing}
+          validationErrors={validationErrors}
+          onChange={handleFieldChange}
+        />
 
-        {/* Conjoint */}
-        {(editedData.conjoint || isEditing) && (
-          <div className={`rounded-lg border p-3 transition-colors ${
-            isEditing
-              ? 'border-blue-300 dark:border-blue-700 bg-blue-50/30 dark:bg-blue-900/10'
-              : 'border-neutral-200 dark:border-neutral-800'
-          }`}>
-            <div className="flex items-center gap-2 mb-3">
-              <Users size={16} className="text-neutral-500" />
-              <h4 className="font-medium">Conjoint</h4>
-            </div>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
-              <EditableField
-                section="conjoint"
-                field="dateNaissance"
-                label="Date de naissance"
-                value={editedData.conjoint?.dateNaissance}
-                type="date"
-              />
-              <EditableField
-                section="conjoint"
-                field="profession"
-                label="Profession"
-                value={editedData.conjoint?.profession}
-              />
-              <EditableField
-                section="conjoint"
-                field="regimeSocial"
-                label="Régime"
-                value={editedData.conjoint?.regimeSocial}
-                type="select"
-                colSpan={2}
-                options={[
-                  { value: 'Salarié', label: 'Salarié' },
-                  { value: 'TNS', label: 'TNS' },
-                  { value: 'Fonctionnaire', label: 'Fonctionnaire' },
-                  { value: 'Retraité', label: 'Retraité' },
-                  { value: 'Libéral', label: 'Libéral' },
-                  { value: 'Indépendant', label: 'Indépendant' }
-                ]}
-              />
-            </div>
-          </div>
-        )}
+        <ConjointSection
+          data={formState.data}
+          isEditing={formState.isEditing}
+          validationErrors={validationErrors}
+          onChange={handleFieldChange}
+        />
 
-        {/* Enfants */}
-        {((editedData.enfants && editedData.enfants.length > 0) || isEditing) && (
-          <div className={`rounded-lg border p-3 transition-colors ${
-            isEditing
-              ? 'border-blue-300 dark:border-blue-700 bg-blue-50/30 dark:bg-blue-900/10'
-              : 'border-neutral-200 dark:border-neutral-800'
-          }`}>
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <Baby size={16} className="text-neutral-500" />
-                <h4 className="font-medium">Enfants ({editedData.enfants?.length || 0})</h4>
-              </div>
-              {isEditing && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEditedData(prev => ({
-                      ...prev,
-                      enfants: [...(prev.enfants || []), { dateNaissance: '' }]
-                    }))
-                  }}
-                  className="flex items-center gap-1 px-2 py-1 text-xs rounded bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-200 dark:hover:bg-emerald-900/50 transition-colors"
-                >
-                  <Plus size={14} />
-                  Ajouter
-                </button>
-              )}
-            </div>
+        <EnfantsSection
+          data={formState.data}
+          isEditing={formState.isEditing}
+          onEnfantsChange={handleEnfantsChange}
+        />
 
-            {editedData.enfants && editedData.enfants.length > 0 ? (
-              <div className="space-y-3">
-                {editedData.enfants.map((enfant, index) => (
-                  <div key={index} className="flex items-center gap-3 p-2 rounded border border-neutral-200 dark:border-neutral-700 bg-neutral-50/50 dark:bg-neutral-900/50">
-                    <div className="flex-1">
-                      {isEditing ? (
-                        <div>
-                          <label className="block text-xs text-neutral-500 mb-1">
-                            Date de naissance {index + 1}
-                          </label>
-                          <input
-                            type="date"
-                            value={enfant.dateNaissance || ''}
-                            onChange={(e) => {
-                              const newEnfants = [...(editedData.enfants || [])]
-                              newEnfants[index] = { ...newEnfants[index], dateNaissance: e.target.value }
-                              setEditedData(prev => ({ ...prev, enfants: newEnfants }))
-                            }}
-                            className="w-full px-2 py-1.5 text-sm rounded border border-neutral-300 dark:border-neutral-700 focus:border-emerald-500 bg-white dark:bg-neutral-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-colors"
-                          />
-                        </div>
-                      ) : (
-                        <div className="text-sm">
-                          <span className="text-neutral-500">Enfant {index + 1}:</span>
-                          <span className="ml-2 font-medium">{enfant.dateNaissance || '-'}</span>
-                        </div>
-                      )}
-                    </div>
-                    {isEditing && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const newEnfants = editedData.enfants?.filter((_, i) => i !== index)
-                          setEditedData(prev => ({ ...prev, enfants: newEnfants }))
-                        }}
-                        className="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 rounded transition-colors"
-                        title="Supprimer"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-neutral-500">Aucun enfant</p>
-            )}
-          </div>
-        )}
-
-        {/* Besoins */}
-        {(editedData.besoins || isEditing) && (
-          <div className={`rounded-lg border p-3 transition-colors ${
-            isEditing
-              ? 'border-blue-300 dark:border-blue-700 bg-blue-50/30 dark:bg-blue-900/10'
-              : 'border-neutral-200 dark:border-neutral-800'
-          }`}>
-            <div className="flex items-center gap-2 mb-3">
-              <Heart size={16} className="text-neutral-500" />
-              <h4 className="font-medium">Besoins</h4>
-            </div>
-            <div className="space-y-3 text-sm">
-              <div className="grid grid-cols-2 gap-x-4 gap-y-3">
-                <EditableField
-                  section="besoins"
-                  field="dateEffet"
-                  label="Date d'effet"
-                  value={editedData.besoins?.dateEffet}
-                  type="date"
-                />
-                {isEditing ? (
-                  <div>
-                    <label className="block text-xs text-neutral-500 mb-1">Actuellement assuré</label>
-                    <select
-                      value={editedData.besoins?.assureActuellement?.toString() || ''}
-                      onChange={(e) => updateField('besoins', 'assureActuellement', e.target.value === 'true')}
-                      className="w-full px-2 py-1.5 text-sm rounded border border-neutral-300 dark:border-neutral-700 focus:border-emerald-500 bg-white dark:bg-neutral-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-colors"
-                    >
-                      <option value="">-</option>
-                      <option value="true">Oui</option>
-                      <option value="false">Non</option>
-                    </select>
-                  </div>
-                ) : (
-                  editedData.besoins?.assureActuellement !== undefined && (
-                    <div>
-                      <span className="text-neutral-500">Actuellement assuré:</span>
-                      <span className="ml-2">{editedData.besoins.assureActuellement ? 'Oui' : 'Non'}</span>
-                    </div>
-                  )
-                )}
-              </div>
-
-              {/* Niveaux de couverture */}
-              {(editedData.besoins?.niveaux || isEditing) && (
-                <div>
-                  <label className="block text-xs text-neutral-500 mb-2">Niveaux de couverture</label>
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-3">
-                    {isEditing ? (
-                      <>
-                        <div>
-                          <label className="block text-xs text-neutral-400 mb-1">Soins médicaux</label>
-                          <select
-                            value={editedData.besoins?.niveaux?.soinsMedicaux || ''}
-                            onChange={(e) => updateNestedField('besoins', 'niveaux', 'soinsMedicaux', Number(e.target.value) || undefined)}
-                            className="w-full px-2 py-1.5 text-sm rounded border border-neutral-300 dark:border-neutral-700 focus:border-emerald-500 bg-white dark:bg-neutral-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-colors"
-                          >
-                            <option value="">-</option>
-                            <option value="1">Niveau 1</option>
-                            <option value="2">Niveau 2</option>
-                            <option value="3">Niveau 3</option>
-                            <option value="4">Niveau 4</option>
-                          </select>
-                        </div>
-                        <div>
-                          <label className="block text-xs text-neutral-400 mb-1">Hospitalisation</label>
-                          <select
-                            value={editedData.besoins?.niveaux?.hospitalisation || ''}
-                            onChange={(e) => updateNestedField('besoins', 'niveaux', 'hospitalisation', Number(e.target.value) || undefined)}
-                            className="w-full px-2 py-1.5 text-sm rounded border border-neutral-300 dark:border-neutral-700 focus:border-emerald-500 bg-white dark:bg-neutral-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-colors"
-                          >
-                            <option value="">-</option>
-                            <option value="1">Niveau 1</option>
-                            <option value="2">Niveau 2</option>
-                            <option value="3">Niveau 3</option>
-                            <option value="4">Niveau 4</option>
-                          </select>
-                        </div>
-                        <div>
-                          <label className="block text-xs text-neutral-400 mb-1">Optique</label>
-                          <select
-                            value={editedData.besoins?.niveaux?.optique || ''}
-                            onChange={(e) => updateNestedField('besoins', 'niveaux', 'optique', Number(e.target.value) || undefined)}
-                            className="w-full px-2 py-1.5 text-sm rounded border border-neutral-300 dark:border-neutral-700 focus:border-emerald-500 bg-white dark:bg-neutral-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-colors"
-                          >
-                            <option value="">-</option>
-                            <option value="1">Niveau 1</option>
-                            <option value="2">Niveau 2</option>
-                            <option value="3">Niveau 3</option>
-                            <option value="4">Niveau 4</option>
-                          </select>
-                        </div>
-                        <div>
-                          <label className="block text-xs text-neutral-400 mb-1">Dentaire</label>
-                          <select
-                            value={editedData.besoins?.niveaux?.dentaire || ''}
-                            onChange={(e) => updateNestedField('besoins', 'niveaux', 'dentaire', Number(e.target.value) || undefined)}
-                            className="w-full px-2 py-1.5 text-sm rounded border border-neutral-300 dark:border-neutral-700 focus:border-emerald-500 bg-white dark:bg-neutral-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-colors"
-                          >
-                            <option value="">-</option>
-                            <option value="1">Niveau 1</option>
-                            <option value="2">Niveau 2</option>
-                            <option value="3">Niveau 3</option>
-                            <option value="4">Niveau 4</option>
-                          </select>
-                        </div>
-                      </>
-                    ) : (
-                      <div className="col-span-2 grid grid-cols-2 gap-1">
-                        {editedData.besoins?.niveaux?.soinsMedicaux !== undefined && (
-                          <span className="text-xs">Soins: {editedData.besoins.niveaux.soinsMedicaux}</span>
-                        )}
-                        {editedData.besoins?.niveaux?.hospitalisation !== undefined && (
-                          <span className="text-xs">Hospi: {editedData.besoins.niveaux.hospitalisation}</span>
-                        )}
-                        {editedData.besoins?.niveaux?.optique !== undefined && (
-                          <span className="text-xs">Optique: {editedData.besoins.niveaux.optique}</span>
-                        )}
-                        {editedData.besoins?.niveaux?.dentaire !== undefined && (
-                          <span className="text-xs">Dentaire: {editedData.besoins.niveaux.dentaire}</span>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
+        <BesoinsSection
+          data={formState.data}
+          isEditing={formState.isEditing}
+          validationErrors={validationErrors}
+          onChange={handleFieldChange}
+          onNestedChange={handleNestedFieldChange}
+        />
 
         {/* Section Plateformes */}
-        {editedData.platformData && (
+        {formState.data.platformData && (
           <PlatformFieldsSection
-            platformData={editedData.platformData}
-            onPlatformDataChange={(newPlatformData) => {
-              setEditedData(prev => ({
-                ...prev,
-                platformData: newPlatformData
-              }))
-            }}
-            editable={isEditing}
+            platformData={formState.data.platformData}
+            onPlatformDataChange={handlePlatformDataChange}
+            editable={formState.isEditing}
           />
         )}
 
@@ -699,7 +205,7 @@ export default function ParsedLeadConfirmation({
         )}
       </div>
 
-      {/* Footer avec actions */}
+      {/* Footer */}
       <div className="border-t border-neutral-200 dark:border-neutral-800">
         {/* Message d'erreur de validation */}
         {Object.keys(validationErrors).length > 0 && (

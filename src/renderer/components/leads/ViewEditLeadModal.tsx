@@ -143,7 +143,9 @@ export default function ViewEditLeadModal({
             <EnfantsSection
               data={editedData}
               isEditing={isEditing}
-              onDataChange={setEditedData}
+              onEnfantsChange={(enfants) => {
+                setEditedData(prev => prev ? { ...prev, enfants } : null)
+              }}
             />
             <BesoinsSection
               data={editedData}

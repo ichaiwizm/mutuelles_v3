@@ -1,36 +1,33 @@
 import React from 'react'
 import { Baby, Plus, Trash2 } from 'lucide-react'
-import type { CreateLeadData } from '../../../../shared/types/leads'
+import type { CreateLeadData, EnfantInfo } from '../../../../shared/types/leads'
 
 interface EnfantsSectionProps {
   data: CreateLeadData
   isEditing: boolean
-  onDataChange: (data: CreateLeadData) => void
+  onEnfantsChange: (enfants: EnfantInfo[]) => void
 }
 
 export default function EnfantsSection({
   data,
   isEditing,
-  onDataChange
+  onEnfantsChange
 }: EnfantsSectionProps) {
   if (!data.enfants?.length && !isEditing) return null
 
   const handleAddEnfant = () => {
-    onDataChange({
-      ...data,
-      enfants: [...(data.enfants || []), { dateNaissance: '' }]
-    })
+    onEnfantsChange([...(data.enfants || []), { dateNaissance: '' }])
   }
 
   const handleUpdateEnfant = (index: number, dateNaissance: string) => {
     const newEnfants = [...(data.enfants || [])]
     newEnfants[index] = { ...newEnfants[index], dateNaissance }
-    onDataChange({ ...data, enfants: newEnfants })
+    onEnfantsChange(newEnfants)
   }
 
   const handleRemoveEnfant = (index: number) => {
-    const newEnfants = data.enfants?.filter((_, i) => i !== index)
-    onDataChange({ ...data, enfants: newEnfants })
+    const newEnfants = data.enfants?.filter((_, i) => i !== index) || []
+    onEnfantsChange(newEnfants)
   }
 
   return (
