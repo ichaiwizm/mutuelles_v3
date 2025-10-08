@@ -40,6 +40,22 @@
             { "value": "SwissLife Santé", "label": "SwissLife Santé" }
           ]
         }
+      },
+      "simulationType": {
+        "type": "radio",
+        "label": "Type de simulation",
+        "required": true,
+        "carriers": ["swisslifeone"],
+        "notes": "Détermine si la simulation est pour un individuel ou un couple. Change les champs du formulaire disponibles.",
+        "options": [
+          { "value": "INDIVIDUELLE", "label": "Individuelle" },
+          { "value": "COUPLE", "label": "Couple" }
+        ],
+        "conditional": {
+          "COUPLE": {
+            "requires": "spouse.present"
+          }
+        }
       }
     },
     "subscriber": {
@@ -126,7 +142,7 @@
       "departmentCode": {
         "type": "select",
         "label": "Département",
-        "required": false,
+        "required": true,
         "carriers": ["swisslifeone"]
       },
       "status": {
@@ -153,7 +169,16 @@
         "label": "Profession",
         "required": false,
         "carriers": ["swisslifeone"],
-        "notes": "Options chargées dynamiquement par SwissLife selon le statut sélectionné"
+        "notes": "Options chargées dynamiquement par SwissLife selon le statut sélectionné. Professions médicales bénéficient d'une réduction tarifaire de 10%.",
+        "dependsOn": ["status"],
+        "options": [
+          { "value": "MEDECIN", "label": "Médecin" },
+          { "value": "CHIRURGIEN", "label": "Chirurgien" },
+          { "value": "CHIRURGIEN_DENTISTE", "label": "Chirurgien dentiste" },
+          { "value": "PHARMACIEN", "label": "Pharmacien" },
+          { "value": "AUXILIAIRE_MEDICAL", "label": "Auxiliaire médical" },
+          { "value": "AUTRE", "label": "Non médicale" }
+        ]
       }
     },
     "spouse": {
@@ -228,7 +253,40 @@
           "equals": true
         },
         "carriers": ["swisslifeone"],
-        "notes": "Options chargées dynamiquement par SwissLife selon le statut sélectionné"
+        "notes": "Options chargées dynamiquement par SwissLife selon le statut sélectionné. Professions médicales bénéficient d'une réduction tarifaire de 10%.",
+        "dependsOn": ["status"],
+        "options": [
+          { "value": "MEDECIN", "label": "Médecin" },
+          { "value": "CHIRURGIEN", "label": "Chirurgien" },
+          { "value": "CHIRURGIEN_DENTISTE", "label": "Chirurgien dentiste" },
+          { "value": "PHARMACIEN", "label": "Pharmacien" },
+          { "value": "AUXILIAIRE_MEDICAL", "label": "Auxiliaire médical" },
+          { "value": "AUTRE", "label": "Non médicale" }
+        ]
+      },
+      "category": {
+        "type": "select",
+        "label": "Catégorie socioprofessionnelle (conjoint)",
+        "required": false,
+        "showIf": {
+          "field": "conjoint",
+          "equals": true
+        },
+        "carriers": ["alptis"],
+        "notes": "Catégorie socioprofessionnelle du conjoint. Utilise les mêmes valeurs que subscriber.category. Défini dans field-definitions mais non utilisé actuellement dans les flows.",
+        "options": [
+          { "value": "AGRICULTEURS_EXPLOITANTS", "label": "Agriculteurs exploitants" },
+          { "value": "ARTISANS", "label": "Artisans" },
+          { "value": "CADRES", "label": "Cadres" },
+          { "value": "CADRES_EMPLOYES_FONCTION_PUBLIQUE", "label": "Cadres et employés de la fonction publique" },
+          { "value": "CHEFS_D_ENTREPRISE", "label": "Chefs d'entreprise" },
+          { "value": "COMMERCANTS_ET_ASSIMILES", "label": "Commerçants et assimilés" },
+          { "value": "EMPLOYES", "label": "Employés, agents de maîtrise" },
+          { "value": "OUVRIERS", "label": "Ouvriers" },
+          { "value": "PERSONNES_SANS_ACTIVITE_PROFESSIONNELLE", "label": "Personnes sans activité professionnelle" },
+          { "value": "PROFESSIONS_LIBERALES_ET_ASSIMILES", "label": "Professions libérales et assimilés" },
+          { "value": "RETRAITES", "label": "Retraités" }
+        ]
       }
     },
     "children": {

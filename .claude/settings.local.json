@@ -16,7 +16,11 @@
       "Bash(ls:*)",
       "Bash(git log:*)",
       "Bash(sqlite3:*)",
-      "Bash(test:*)"
+      "Bash(test:*)",
+      "Bash(for:*)",
+      "Bash(done)",
+      "Bash(cat:*)",
+      "WebSearch"
     ],
     "deny": [],
     "ask": []
