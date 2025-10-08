@@ -1,0 +1,320 @@
+{
+  "platform": "swisslifeone",
+  "version": 1,
+  "name": "Swiss Life One - UI Form",
+  "meta": {
+    "description": "Définition UI complète pour la saisie des données nécessaires aux flows Swiss Life One",
+    "domainModel": "Les clés domainKey sont indépendantes de la plateforme et peuvent être réutilisées. leadKey pointe vers le chemin réel dans le lead."
+  },
+  "sections": [
+    {
+      "id": "projet",
+      "title": "Projet",
+      "fields": [
+        {
+          "domainKey": "project.name",
+          "leadKey": "projet.nom",
+          "label": "Nom du projet",
+          "widget": "text",
+          "required": true,
+          "defaultTemplate": "{lead.adherent.nom} {lead.adherent.prenom}",
+          "placeholder": "Ex: Jean DUPONT Santé",
+          "hints": "Obligatoire pour Swisslife. Utilisé pour le champ 'Nom du projet'",
+          "validations": { "minLength": 2, "maxLength": 120 }
+        },
+        {
+          "domainKey": "project.dateEffet",
+          "leadKey": "projet.date_effet",
+          "label": "Date d'effet",
+          "widget": "date",
+          "required": true,
+          "format": "DD/MM/YYYY"
+        },
+        {
+          "domainKey": "project.plan",
+          "leadKey": "projet.gamme",
+          "label": "Gamme/Produit",
+          "widget": "select",
+          "required": false,
+          "options": [
+            { "value": "SwissLife Santé", "label": "SwissLife Santé" }
+          ]
+        },
+        {
+          "domainKey": "project.couvertureIndividuelle",
+          "leadKey": "projet.couverture_individuelle",
+          "label": "Couverture individuelle",
+          "widget": "toggle",
+          "required": false,
+          "default": true
+        },
+        {
+          "domainKey": "project.indemnitesJournalieres",
+          "leadKey": "projet.indemnites_journalieres",
+          "label": "Indemnités journalières",
+          "widget": "toggle",
+          "required": false,
+          "default": false
+        },
+        {
+          "domainKey": "project.resiliationContrat",
+          "leadKey": "projet.resiliation_contrat",
+          "label": "Résiliation contrat",
+          "widget": "toggle",
+          "required": false,
+          "default": false
+        },
+        {
+          "domainKey": "project.repriseConcurrence",
+          "leadKey": "projet.reprise_concurrence",
+          "label": "Reprise concurrence",
+          "widget": "toggle",
+          "required": false,
+          "default": false
+        },
+        {
+          "domainKey": "project.loiMadelin",
+          "leadKey": "projet.loi_madelin",
+          "label": "Loi Madelin (< 70 ans)",
+          "widget": "toggle",
+          "required": false,
+          "default": false
+        }
+      ]
+    },
+    {
+      "id": "souscripteur",
+      "title": "Souscripteur",
+      "fields": [
+        {
+          "domainKey": "subscriber.civility",
+          "leadKey": "adherent.civilite",
+          "label": "Civilité",
+          "widget": "select",
+          "required": true,
+          "options": [
+            { "value": "MONSIEUR", "label": "Monsieur" },
+            { "value": "MADAME", "label": "Madame" }
+          ]
+        },
+        {
+          "domainKey": "subscriber.lastName",
+          "leadKey": "adherent.nom",
+          "label": "Nom",
+          "widget": "text",
+          "required": true
+        },
+        {
+          "domainKey": "subscriber.firstName",
+          "leadKey": "adherent.prenom",
+          "label": "Prénom",
+          "widget": "text",
+          "required": true
+        },
+        {
+          "domainKey": "subscriber.birthDate",
+          "leadKey": "adherent.date_naissance",
+          "label": "Date de naissance",
+          "widget": "date",
+          "required": true,
+          "format": "DD/MM/YYYY"
+        },
+        {
+          "domainKey": "subscriber.regime",
+          "leadKey": "adherent.regime",
+          "label": "Régime (plateforme)",
+          "widget": "select",
+          "required": true,
+          "options": [
+            { "value": "SALARIE", "label": "Salarié" },
+            { "value": "TNS", "label": "TNS" },
+            { "value": "FONCTIONNAIRE", "label": "Fonctionnaire" },
+            { "value": "RETRAITE", "label": "Retraité" },
+            { "value": "LIBERAL", "label": "Libéral" },
+            { "value": "INDEPENDANT", "label": "Indépendant" }
+          ]
+        },
+        {
+          "domainKey": "subscriber.status",
+          "leadKey": "adherent.statut",
+          "label": "Statut",
+          "widget": "select",
+          "required": false,
+          "options": [
+            { "value": "SALARIE", "label": "Salarié" },
+            { "value": "TNS", "label": "TNS" },
+            { "value": "FONCTIONNAIRE", "label": "Fonctionnaire" },
+            { "value": "RETRAITE", "label": "Retraité" },
+            { "value": "LIBERAL", "label": "Libéral" },
+            { "value": "INDEPENDANT", "label": "Indépendant" }
+          ]
+        },
+        {
+          "domainKey": "subscriber.profession",
+          "leadKey": "adherent.profession",
+          "label": "Profession",
+          "widget": "text",
+          "required": false
+        },
+        {
+          "domainKey": "subscriber.departmentCode",
+          "leadKey": "adherent.departement",
+          "label": "Département (code à 2 chiffres)",
+          "widget": "text",
+          "required": true,
+          "validations": { "pattern": "^\\d{2}$" },
+          "placeholder": "Ex: 44"
+        }
+      ]
+    },
+    {
+      "id": "conjoint",
+      "title": "Conjoint",
+      "fields": [
+        {
+          "domainKey": "spouse.present",
+          "leadKey": "conjoint.present",
+          "label": "Conjoint présent",
+          "widget": "toggle",
+          "required": false,
+          "default": false
+        },
+        {
+          "domainKey": "spouse.birthDate",
+          "leadKey": "conjoint.date_naissance",
+          "label": "Date de naissance du conjoint",
+          "widget": "date",
+          "required": false,
+          "format": "DD/MM/YYYY",
+          "visibleWhen": { "equals": { "spouse.present": true } }
+        },
+        {
+          "domainKey": "spouse.regime",
+          "leadKey": "conjoint.regime",
+          "label": "Régime (conjoint)",
+          "widget": "select",
+          "required": false,
+          "visibleWhen": { "equals": { "spouse.present": true } },
+          "options": [
+            { "value": "SALARIE", "label": "Salarié" },
+            { "value": "TNS", "label": "TNS" },
+            { "value": "FONCTIONNAIRE", "label": "Fonctionnaire" },
+            { "value": "RETRAITE", "label": "Retraité" },
+            { "value": "LIBERAL", "label": "Libéral" },
+            { "value": "INDEPENDANT", "label": "Indépendant" }
+          ]
+        },
+        {
+          "domainKey": "spouse.status",
+          "leadKey": "conjoint.statut",
+          "label": "Statut (conjoint)",
+          "widget": "select",
+          "required": false,
+          "visibleWhen": { "equals": { "spouse.present": true } },
+          "options": [
+            { "value": "SALARIE", "label": "Salarié" },
+            { "value": "TNS", "label": "TNS" },
+            { "value": "FONCTIONNAIRE", "label": "Fonctionnaire" },
+            { "value": "RETRAITE", "label": "Retraité" },
+            { "value": "LIBERAL", "label": "Libéral" },
+            { "value": "INDEPENDANT", "label": "Indépendant" }
+          ]
+        },
+        {
+          "domainKey": "spouse.profession",
+          "leadKey": "conjoint.profession",
+          "label": "Profession (conjoint)",
+          "widget": "text",
+          "required": false,
+          "visibleWhen": { "equals": { "spouse.present": true } }
+        }
+      ]
+    },
+    {
+      "id": "enfants",
+      "title": "Enfants",
+      "repeatable": {
+        "min": 0,
+        "max": 10,
+        "itemLabelTemplate": "Enfant #{index}"
+      },
+      "fields": [
+        {
+          "domainKey": "children.count",
+          "leadKey": "projet.nb_enfants",
+          "label": "Nombre d'enfants",
+          "widget": "number",
+          "required": false,
+          "min": 0,
+          "max": 10,
+          "hints": "Renseigner pour préremplir le nombre d'enfants à saisir"
+        },
+        {
+          "domainKey": "children[].birthDate",
+          "leadKey": "enfants[].date_naissance",
+          "label": "Date de naissance",
+          "widget": "date",
+          "required": false,
+          "format": "DD/MM/YYYY"
+        },
+        {
+          "domainKey": "children[].ayantDroit",
+          "leadKey": "enfants[].ayant_droit",
+          "label": "Ayant droit",
+          "widget": "select",
+          "required": false,
+          "options": [
+            { "value": "CLIENT", "label": "Client" },
+            { "value": "CONJOINT", "label": "Conjoint" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "besoins",
+      "title": "Besoins",
+      "fields": [
+        {
+          "domainKey": "needs.assureActuellement",
+          "leadKey": "besoin.assureActuellement",
+          "label": "Déjà assuré actuellement",
+          "widget": "toggle",
+          "required": false,
+          "default": false
+        },
+        {
+          "domainKey": "needs.niveaux.soinsMedicaux",
+          "leadKey": "besoin.soins_medicaux",
+          "label": "Soins médicaux",
+          "widget": "select",
+          "required": false,
+          "options": [ {"value":1,"label":"Niveau 1"},{"value":2,"label":"Niveau 2"},{"value":3,"label":"Niveau 3"},{"value":4,"label":"Niveau 4"} ]
+        },
+        {
+          "domainKey": "needs.niveaux.hospitalisation",
+          "leadKey": "besoin.hospitalisation",
+          "label": "Hospitalisation",
+          "widget": "select",
+          "required": false,
+          "options": [ {"value":1,"label":"Niveau 1"},{"value":2,"label":"Niveau 2"},{"value":3,"label":"Niveau 3"},{"value":4,"label":"Niveau 4"} ]
+        },
+        {
+          "domainKey": "needs.niveaux.optique",
+          "leadKey": "besoin.optique",
+          "label": "Optique",
+          "widget": "select",
+          "required": false,
+          "options": [ {"value":1,"label":"Niveau 1"},{"value":2,"label":"Niveau 2"},{"value":3,"label":"Niveau 3"},{"value":4,"label":"Niveau 4"} ]
+        },
+        {
+          "domainKey": "needs.niveaux.dentaire",
+          "leadKey": "besoin.dentaire",
+          "label": "Dentaire",
+          "widget": "select",
+          "required": false,
+          "options": [ {"value":1,"label":"Niveau 1"},{"value":2,"label":"Niveau 2"},{"value":3,"label":"Niveau 3"},{"value":4,"label":"Niveau 4"} ]
+        }
+      ]
+    }
+  ]
+}

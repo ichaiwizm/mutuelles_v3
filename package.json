@@ -36,7 +36,10 @@
     "db:seed:profiles": "cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/db/seed.mjs --only profiles",
     "db:status": "cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/db/status.mjs",
     "db:status:verbose": "cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/db/status.mjs --verbose",
-    "fields:import": "cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/metadata/import_fields.mjs"
+    "fields:import": "cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/metadata/import_fields.mjs",
+    "ui:form:import": "cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/platforms/import_ui_form.mjs",
+    "platforms:fields:import": "cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/platforms/import_field_definitions.mjs",
+    "platforms:fields:export": "cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/platforms/export_field_definitions.mjs"
   },
   "dependencies": {
     "better-sqlite3": "^12.4.1",

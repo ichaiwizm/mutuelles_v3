@@ -1,14 +1,15 @@
 {
   "platform": "alptis",
   "fields": [
-    { "key": "login_username", "type": "text", "label": "Nom d’utilisateur", "selector": "#username" },
-    { "key": "login_password", "type": "password", "label": "Mot de passe", "selector": "#password" },
-    { "key": "login_submit", "type": "button", "label": "Connexion", "selector": "button[type=\"submit\"]" },
+    { "key": "login_username", "domainKey": "auth.username", "type": "text", "label": "Nom d’utilisateur", "selector": "#username" },
+    { "key": "login_password", "domainKey": "auth.password", "type": "password", "label": "Mot de passe", "selector": "#password" },
+    { "key": "login_submit", "domainKey": "auth.submit", "type": "button", "label": "Connexion", "selector": "button[type=\"submit\"]" },
 
-    { "key": "date_effet", "type": "text", "label": "Date d’effet", "selector": "#dateEffet input[data-test=\"input\"]" },
+    { "key": "date_effet", "domainKey": "project.dateEffet", "type": "text", "label": "Date d’effet", "selector": "#dateEffet input[data-test=\"input\"]" },
 
     {
       "key": "civilite_adherent",
+      "domainKey": "subscriber.civility",
       "type": "radio-group",
       "label": "Civilité adhérent",
       "options": [
@@ -16,11 +17,12 @@
         { "value": "MADAME", "label": "Madame", "selector": ".section-adherent span[data-test=\"radio\"][value=\"MADAME\"] label" }
       ]
     },
-    { "key": "nom_adherent", "type": "text", "label": "Nom adhérent", "selector": "#nom" },
-    { "key": "prenom_adherent", "type": "text", "label": "Prénom adhérent", "selector": "#prenom" },
-    { "key": "date_naissance_adherent", "type": "text", "label": "Date naissance adhérent", "selector": "#date-naissance-adherent input[data-test=\"input\"]" },
+    { "key": "nom_adherent", "domainKey": "subscriber.lastName", "type": "text", "label": "Nom adhérent", "selector": "#nom" },
+    { "key": "prenom_adherent", "domainKey": "subscriber.firstName", "type": "text", "label": "Prénom adhérent", "selector": "#prenom" },
+    { "key": "date_naissance_adherent", "domainKey": "subscriber.birthDate", "type": "text", "label": "Date naissance adhérent", "selector": "#date-naissance-adherent input[data-test=\"input\"]" },
     {
       "key": "categorie_adherent",
+      "domainKey": "subscriber.category",
       "type": "select",
       "label": "Catégorie socio-professionnelle (adhérent)",
       "selector": ".section-adherent .totem-select__input input[placeholder=\"Sélectionner une catégorie socioprofessionnelle\"]",
@@ -43,6 +45,7 @@
     },
     {
       "key": "regime_adherent",
+      "domainKey": "subscriber.regime",
       "type": "select",
       "label": "Régime obligatoire (adhérent)",
       "selector": ".section-adherent .totem-select__input input[placeholder=\"Sélectionner un régime obligatoire\"]",
@@ -57,7 +60,7 @@
         ]
       }
     },
-    { "key": "code_postal", "type": "text", "label": "Code postal", "selector": "input#codePostal" },
+    { "key": "code_postal", "domainKey": "subscriber.postalCode", "type": "text", "label": "Code postal", "selector": "input#codePostal" },
 
     { "key": "cadre_exercice_salarie", "type": "radio", "label": "Cadre d'exercice - Salarié", "selector": "label:has-text('Salarié')" },
     { "key": "cadre_exercice_independant", "type": "radio", "label": "Cadre d'exercice - Indépendant", "selector": "label:has-text('Indépendant Président SASU/SAS')" },
@@ -74,9 +77,10 @@
         }
       }
     },
-    { "key": "date_naissance_conjoint", "type": "text", "label": "Date naissance conjoint", "selector": "#date-naissance-conjoint input[data-test=\"input\"]" },
+    { "key": "date_naissance_conjoint", "domainKey": "spouse.birthDate", "type": "text", "label": "Date naissance conjoint", "selector": "#date-naissance-conjoint input[data-test=\"input\"]" },
     {
       "key": "categorie_conjoint",
+      "domainKey": "spouse.category",
       "type": "select",
       "label": "Catégorie (conjoint)",
       "selector": ".sel-c-conjoint-content .totem-select__input input[placeholder=\"Sélectionner une catégorie socioprofessionnelle\"]",
@@ -99,6 +103,7 @@
     },
     {
       "key": "regime_conjoint",
+      "domainKey": "spouse.regime",
       "type": "select",
       "label": "Régime (conjoint)",
       "selector": ".sel-c-conjoint-content .totem-select__input input[placeholder=\"Sélectionner un régime obligatoire\"]",
@@ -130,6 +135,7 @@
 
     {
       "key": "date_naissance_enfant_{i}",
+      "domainKey": "children[].birthDate",
       "type": "text",
       "label": "Date naissance enfant {i}",
       "selector": "#date-naissance-enfant-{i} input[data-test=\"input\"]",
@@ -142,6 +148,7 @@
     },
     {
       "key": "regime_enfant_{i}",
+      "domainKey": "children[].regime",
       "type": "select",
       "label": "Régime enfant {i}",
       "selector": ".sub-section-enfant:nth-of-type({i}) .totem-select__input input[placeholder=\"Sélectionner un régime obligatoire\"]",

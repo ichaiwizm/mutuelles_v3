@@ -86,6 +86,7 @@ export const StepDebugAxeptio = z.object({
 export const StepWaitForField = z.object({
   type: z.literal('waitForField'),
   field: z.string().min(1).optional(),
+  domainField: z.string().min(1).optional(),
   label: z.string().optional(),
   timeout_ms: z.number().int().nonnegative().optional(),
   optional: z.boolean().optional()
@@ -93,7 +94,8 @@ export const StepWaitForField = z.object({
 
 export const StepFillField = z.object({
   type: z.literal('fillField'),
-  field: z.string().min(1),
+  field: z.string().min(1).optional(),
+  domainField: z.string().min(1).optional(),
   value: z.string().optional(),
   leadKey: z.string().optional(),
   label: z.string().optional(),
@@ -107,6 +109,7 @@ export const StepFillField = z.object({
 export const StepClickField = z.object({
   type: z.literal('clickField'),
   field: z.string().min(1).optional(),
+  domainField: z.string().min(1).optional(),
   label: z.string().optional(),
   timeout_ms: z.number().int().nonnegative().optional(),
   optional: z.boolean().optional(),
@@ -115,7 +118,8 @@ export const StepClickField = z.object({
 
 export const StepSelectField = z.object({
   type: z.literal('selectField'),
-  field: z.string().min(1),
+  field: z.string().min(1).optional(),
+  domainField: z.string().min(1).optional(),
   value: z.string().optional(),
   leadKey: z.string().optional(),
   label: z.string().optional(),
@@ -129,7 +133,8 @@ export const StepSelectField = z.object({
 
 export const StepToggleField = z.object({
   type: z.literal('toggleField'),
-  field: z.string().min(1),
+  field: z.string().min(1).optional(),
+  domainField: z.string().min(1).optional(),
   state: z.enum(['on', 'off']).optional(),
   leadKey: z.string().optional(),
   label: z.string().optional(),
@@ -140,7 +145,8 @@ export const StepToggleField = z.object({
 
 export const StepTypeField = z.object({
   type: z.literal('typeField'),
-  field: z.string().min(1),
+  field: z.string().min(1).optional(),
+  domainField: z.string().min(1).optional(),
   value: z.string().optional(),
   leadKey: z.string().optional(),
   label: z.string().optional(),
@@ -160,6 +166,7 @@ export const StepPressKey = z.object({
 export const StepScrollIntoView = z.object({
   type: z.literal('scrollIntoView'),
   field: z.string().min(1).optional(),
+  domainField: z.string().min(1).optional(),
   selector: z.string().optional(),
   label: z.string().optional(),
   timeout_ms: z.number().int().nonnegative().optional()

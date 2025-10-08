@@ -3,24 +3,28 @@
   "fields": [
     {
       "key": "login_button_home",
+      "domainKey": "auth.loginButton",
       "type": "button",
       "label": "Bouton Se connecter (page d'accueil)",
       "selector": ".button-connection"
     },
     {
       "key": "login_username",
+      "domainKey": "auth.username",
       "type": "text",
       "label": "Nom d'utilisateur",
       "selector": "#userNameInput"
     },
     {
       "key": "login_password",
+      "domainKey": "auth.password",
       "type": "password",
       "label": "Mot de passe",
       "selector": "#passwordInput"
     },
     {
       "key": "login_submit",
+      "domainKey": "auth.submit",
       "type": "button",
       "label": "Connexion",
       "selector": "#submitButton"
@@ -33,6 +37,7 @@
     },
     {
       "key": "cookie_tout_autoriser",
+      "domainKey": "consent.acceptAll",
       "type": "button",
       "label": "Tout autoriser (cookies)",
       "selector": "#onetrust-accept-btn-handler"
@@ -45,18 +50,21 @@
     },
     {
       "key": "slsis_nom_projet",
+      "domainKey": "project.name",
       "type": "text",
       "label": "Nom du projet",
       "selector": "#nom-projet"
     },
     {
       "key": "slsis_date_effet",
+      "domainKey": "project.dateEffet",
       "type": "text",
       "label": "Date d'effet",
       "selector": "#contratSante-dateEffet"
     },
     {
       "key": "slsis_gamme",
+      "domainKey": "project.plan",
       "type": "select",
       "label": "Gamme assurance",
       "selector": "#selection-produit-sante, [name='contratSante.produitId']",
@@ -67,30 +75,35 @@
     },
     {
       "key": "slsis_date_naissance",
+      "domainKey": "subscriber.birthDate",
       "type": "text",
       "label": "Date de naissance souscripteur",
       "selector": "#date-naissance-assure-principal"
     },
     {
       "key": "slsis_regime_social",
+      "domainKey": "subscriber.regime",
       "type": "select",
       "label": "Régime social",
       "selector": "#regime-social-assure-principal"
     },
     {
       "key": "slsis_statut",
+      "domainKey": "subscriber.status",
       "type": "select",
       "label": "Statut",
       "selector": "#statut-assure-principal"
     },
     {
       "key": "slsis_profession",
+      "domainKey": "subscriber.profession",
       "type": "select",
       "label": "Profession",
       "selector": "#profession-assure-principal"
     },
     {
       "key": "slsis_departement",
+      "domainKey": "subscriber.departmentCode",
       "type": "select",
       "label": "Département",
       "selector": "#departement-assure-principal"
@@ -121,12 +134,14 @@
     },
     {
       "key": "slsis_simulation_individuelle",
+      "domainKey": "project.simulationType",
       "type": "button",
       "label": "Type simulation Individuel",
       "selector": "label[for='simulation-individuelle']"
     },
     {
       "key": "slsis_simulation_couple",
+      "domainKey": "project.simulationType",
       "type": "button",
       "label": "Type simulation Couple",
       "selector": "label[for='simulation-couple']"
@@ -199,30 +214,35 @@
     },
     {
       "key": "slsis_nb_enfants",
+      "domainKey": "children.count",
       "type": "select",
       "label": "Nombre d'enfants à assurer",
       "selector": "#sante-nombre-enfant-assures"
     },
     {
       "key": "slsis_conjoint_date_naissance",
+      "domainKey": "spouse.birthDate",
       "type": "text",
       "label": "Date de naissance conjoint",
       "selector": "#date-naissance-assure-conjoint"
     },
     {
       "key": "slsis_conjoint_regime_social",
+      "domainKey": "spouse.regime",
       "type": "select",
       "label": "Régime social conjoint",
       "selector": "#regime-social-assure-conjoint"
     },
     {
       "key": "slsis_conjoint_statut",
+      "domainKey": "spouse.status",
       "type": "select",
       "label": "Statut conjoint",
       "selector": "#statut-assure-conjoint"
     },
     {
       "key": "slsis_conjoint_profession",
+      "domainKey": "spouse.profession",
       "type": "select",
       "label": "Profession conjoint",
       "selector": "#profession-assure-conjoint"

@@ -181,11 +181,26 @@ export async function runHighLevelFlow({ fieldsFile, flowFile, leadFile, usernam
 }
 
 // ---------------- HL primitives ----------------
-function getField(fields, key) {
+function getFieldByKey(fields, key) {
   if (!fields?.fields) throw new Error('fields.fields manquant')
   const f = fields.fields.find((x)=>x.key===key)
   if (!f) throw new Error(`Champ introuvable: ${key}`)
   return f
+}
+
+function getFieldByDomain(fields, domainKey) {
+  if (!fields?.fields) throw new Error('fields.fields manquant')
+  const f = fields.fields.find((x)=>x.domainKey===domainKey)
+  if (!f) throw new Error(`Champ introuvable (domain): ${domainKey}`)
+  return f
+}
+
+function resolveFieldDef(ctx, step) {
+  const hasDomain = typeof step.domainField === 'string' && step.domainField.length > 0
+  const hasKey = typeof step.field === 'string' && step.field.length > 0
+  if (hasDomain) return getFieldByDomain(ctx.fields, step.domainField)
+  if (hasKey) return getFieldByKey(ctx.fields, step.field)
+  throw new Error('Step incomplet: ni field ni domainField')
 }
 
 async function execHLStep(page, s, ctx, contextStack, getCurrentContext) {
@@ -203,10 +218,10 @@ async function execHLStep(page, s, ctx, contextStack, getCurrentContext) {
       try { await activeContext.waitForSelector(s.selector, { timeout: s.timeout_ms || 1500 }); await activeContext.click(s.selector) } catch {}
       return }
     case 'waitForField': {
-      let f = getField(ctx.fields, s.field)
+      let f = resolveFieldDef(ctx, s)
       const idx = extractDynamicIndex(s)
       if (idx != null && f?.metadata?.dynamicIndex) f = withDynamicIndex(f, idx)
-      if (!f.selector) throw new Error(`Selector manquant pour ${s.field}`)
+      if (!f.selector) throw new Error(`Selector manquant pour ${s.field||s.domainField}`)
       await activeContext.waitForSelector(f.selector, { state: 'attached' })
       return }
     case 'waitForNetworkIdle': {
@@ -215,7 +230,7 @@ async function execHLStep(page, s, ctx, contextStack, getCurrentContext) {
       await page.waitForLoadState('networkidle', { timeout })
       return }
     case 'fillField': {
-      let f = getField(ctx.fields, s.field)
+      let f = resolveFieldDef(ctx, s)
       const idx = extractDynamicIndex(s)
       if (idx != null && f?.metadata?.dynamicIndex) f = withDynamicIndex(f, idx)
       let value = resolveValue(s, ctx)
@@ -228,15 +243,16 @@ async function execHLStep(page, s, ctx, contextStack, getCurrentContext) {
       // Support pour optional: si la valeur est manquante, skip silencieusement
       if (value === undefined || value === null || value === '') {
         if (s.optional === true) {
-          console.log('[hl] fillField %s = SKIPPED (optional, valeur manquante)', s.field)
+          console.log('[hl] fillField %s = SKIPPED (optional, valeur manquante)', s.field||s.domainField)
           return
         }
-        throw new Error(`Valeur manquante pour ${s.field} (leadKey=${s.leadKey||''}, value=${s.value||''})`)
+        throw new Error(`Valeur manquante pour ${s.field||s.domainField} (leadKey=${s.leadKey||''}, value=${s.value||''})`)
       }
-      if (!f.selector) throw new Error(`Selector manquant pour ${s.field}`)
+      if (!f.selector) throw new Error(`Selector manquant pour ${s.field||s.domainField}`)
       const v = String(value)
-      const logv = String(s.field||'').toLowerCase().includes('password') ? '***' : v
-      console.log('[hl] fillField %s = %s', s.field, logv)
+      const logName = s.field || s.domainField || ''
+      const logv = String(logName).toLowerCase().includes('password') ? '***' : v
+      console.log('[hl] fillField %s = %s', logName, logv)
 
       // Vérifier si la méthode jQuery est demandée explicitement
       const useJQueryMethod = s.method === 'jquery'
@@ -323,7 +339,7 @@ async function execHLStep(page, s, ctx, contextStack, getCurrentContext) {
       }
       return }
     case 'typeField': {
-      let f = getField(ctx.fields, s.field)
+      let f = resolveFieldDef(ctx, s)
       const idx = extractDynamicIndex(s)
       if (idx != null && f?.metadata?.dynamicIndex) f = withDynamicIndex(f, idx)
       let value = resolveValue(s, ctx)
@@ -333,12 +349,12 @@ async function execHLStep(page, s, ctx, contextStack, getCurrentContext) {
       }
       if (value === undefined || value === null || value === '') {
         if (s.optional === true) {
-          console.log('[hl] typeField %s = SKIPPED (optional, valeur manquante)', s.field)
+          console.log('[hl] typeField %s = SKIPPED (optional, valeur manquante)', s.field||s.domainField)
           return
         }
-        throw new Error(`Valeur manquante pour ${s.field} (leadKey=${s.leadKey||''}, value=${s.value||''})`)
+        throw new Error(`Valeur manquante pour ${s.field||s.domainField} (leadKey=${s.leadKey||''}, value=${s.value||''})`)
       }
-      if (!f.selector) throw new Error(`Selector manquant pour ${s.field}`)
+      if (!f.selector) throw new Error(`Selector manquant pour ${s.field||s.domainField}`)
       const locator = activeContext.locator(f.selector)
       await locator.scrollIntoViewIfNeeded()
       await locator.click({ clickCount: 1 })
@@ -358,11 +374,11 @@ async function execHLStep(page, s, ctx, contextStack, getCurrentContext) {
     case 'pressKey': {
       // Appuyer sur une touche au niveau du champ (si fourni) sinon au clavier global
       const key = s.key || s.code || 'Escape'
-      if (s.field) {
-        let f = getField(ctx.fields, s.field)
+      if (s.field || s.domainField) {
+        let f = resolveFieldDef(ctx, s)
         const idx = extractDynamicIndex(s)
         if (idx != null && f?.metadata?.dynamicIndex) f = withDynamicIndex(f, idx)
-        if (!f.selector) throw new Error(`Selector manquant pour ${s.field}`)
+        if (!f.selector) throw new Error(`Selector manquant pour ${s.field||s.domainField}`)
         const locator = activeContext.locator(f.selector)
         await locator.click({ force: true })
         await locator.press(key)
@@ -372,15 +388,19 @@ async function execHLStep(page, s, ctx, contextStack, getCurrentContext) {
       return }
     case 'scrollIntoView': {
       // Fait défiler jusqu'au champ visé pour fiabiliser le click/fill
-      let f = getField(ctx.fields, s.field)
-      const idx = extractDynamicIndex(s)
-      if (idx != null && f?.metadata?.dynamicIndex) f = withDynamicIndex(f, idx)
-      if (!f.selector) throw new Error(`Selector manquant pour ${s.field}`)
-      await activeContext.locator(f.selector).scrollIntoViewIfNeeded()
+      if (s.field || s.domainField) {
+        let f = resolveFieldDef(ctx, s)
+        const idx = extractDynamicIndex(s)
+        if (idx != null && f?.metadata?.dynamicIndex) f = withDynamicIndex(f, idx)
+        if (!f.selector) throw new Error(`Selector manquant pour ${s.field||s.domainField}`)
+        await activeContext.locator(f.selector).scrollIntoViewIfNeeded()
+      } else if (s.selector) {
+        await activeContext.locator(s.selector).scrollIntoViewIfNeeded()
+      }
       await new Promise(r => setTimeout(r, s.timeout_ms || 150))
       return }
     case 'toggleField': {
-      let f = getField(ctx.fields, s.field)
+      let f = resolveFieldDef(ctx, s)
       const idx = extractDynamicIndex(s)
       if (idx != null && f?.metadata?.dynamicIndex) f = withDynamicIndex(f, idx)
 
@@ -414,7 +434,7 @@ async function execHLStep(page, s, ctx, contextStack, getCurrentContext) {
       }
       return }
     case 'selectField': {
-      let f = getField(ctx.fields, s.field)
+      let f = resolveFieldDef(ctx, s)
       const idx = extractDynamicIndex(s)
       if (idx != null && f?.metadata?.dynamicIndex) f = withDynamicIndex(f, idx)
       let value = resolveValue(s, ctx)
@@ -479,7 +499,7 @@ async function execHLStep(page, s, ctx, contextStack, getCurrentContext) {
       await activeContext.click(item.option_selector)
       return }
     case 'clickField': {
-      let f = getField(ctx.fields, s.field)
+      let f = resolveFieldDef(ctx, s)
       const idx = extractDynamicIndex(s)
       if (idx != null && f?.metadata?.dynamicIndex) f = withDynamicIndex(f, idx)
 
@@ -908,15 +928,15 @@ async function collectJsListeners(page, activeContext, index, step, selector, js
 export function describeHL(s){
   switch (s.type){
     case 'goto': return `Aller sur ${s.url}`
-    case 'fillField': return `Remplir ${s.field}`
-    case 'typeField': return `Saisir ${s.field}`
-    case 'toggleField': return `Toggle ${s.field} -> ${s.state}`
-    case 'selectField': return `Sélectionner ${s.field}`
-    case 'waitForField': return `Attendre ${s.field}`
+    case 'fillField': return `Remplir ${s.domainField||s.field}`
+    case 'typeField': return `Saisir ${s.domainField||s.field}`
+    case 'toggleField': return `Toggle ${s.domainField||s.field} -> ${s.state}`
+    case 'selectField': return `Sélectionner ${s.domainField||s.field}`
+    case 'waitForField': return `Attendre ${s.domainField||s.field}`
     case 'waitForNetworkIdle': return 'Attendre network idle'
-    case 'pressKey': return `Appuyer ${s.key||s.code||'Escape'}${s.field?` sur ${s.field}`:''}`
-    case 'scrollIntoView': return `Scroller vers ${s.field}`
-    case 'clickField': return `Cliquer ${s.field}`
+    case 'pressKey': return `Appuyer ${s.key||s.code||'Escape'}${(s.domainField||s.field)?` sur ${s.domainField||s.field}`:''}`
+    case 'scrollIntoView': return `Scroller vers ${s.domainField||s.field}`
+    case 'clickField': return `Cliquer ${s.domainField||s.field}`
     case 'acceptConsent': return 'Consentement'
     case 'sleep': return `Pause ${s.timeout_ms||0}ms`
     case 'enterFrame': return `Entrer dans iframe ${s.selector||('url~'+(s.urlContains||''))}`
