@@ -1,11 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { Plus, Upload, Mail, Sparkles, FileEdit } from 'lucide-react'
+import { Upload, Mail, Sparkles, FileEdit } from 'lucide-react'
 import { useToastContext } from '../contexts/ToastContext'
 import type { LeadStats, FullLead, LeadFilters } from '../../shared/types/leads'
 import LeadsTable from '../components/leads/LeadsTable'
 import LeadsFilters from '../components/leads/LeadsFilters'
-import AddLeadModal from '../components/leads/AddLeadModal'
-import ViewEditLeadModal from '../components/leads/ViewEditLeadModal'
 import ConfirmModal from '../components/ConfirmModal'
 
 export default function Leads() {
@@ -14,12 +12,7 @@ export default function Leads() {
   const [loading, setLoading] = useState({ stats: false, leads: false })
   const [filters, setFilters] = useState<LeadFilters>({})
   const [pagination, setPagination] = useState({ page: 1, limit: 20 })
-  const [modals, setModals] = useState({
-    addLead: false,
-    viewEditLead: null as FullLead | null,
-    confirmDelete: null as FullLead | null
-  })
-  const [addLeadMode, setAddLeadMode] = useState<'intelligent' | 'manual'>('intelligent')
+  const [confirmDelete, setConfirmDelete] = useState<FullLead | null>(null)
   const [deleteLoading, setDeleteLoading] = useState(false)
   const toast = useToastContext()
 
@@ -67,36 +60,35 @@ export default function Leads() {
 
   // Handlers pour les actions de la table
   const handleAddLead = (mode: 'intelligent' | 'manual' = 'intelligent') => {
-    setAddLeadMode(mode)
-    setModals({ addLead: true, viewEditLead: null, confirmDelete: null })
+    // Boutons désactivés - pas d'action
   }
 
   const handleViewLead = (lead: FullLead) => {
-    setModals({ addLead: false, viewEditLead: lead, confirmDelete: null })
+    // Fonction vide
   }
 
   const handleEditLead = (lead: FullLead) => {
-    setModals({ addLead: false, viewEditLead: lead, confirmDelete: null })
+    // Fonction vide
   }
 
   const handleDeleteLead = (lead: FullLead) => {
-    setModals({ addLead: false, viewEditLead: null, confirmDelete: lead })
+    setConfirmDelete(lead)
   }
 
-  const confirmDelete = async () => {
-    if (!modals.confirmDelete) return
+  const handleConfirmDelete = async () => {
+    if (!confirmDelete) return
 
     setDeleteLoading(true)
     const toastId = toast.loading('Suppression du lead...')
 
     try {
-      const result = await window.api.leads.delete(modals.confirmDelete.id)
+      const result = await window.api.leads.delete(confirmDelete.id)
 
       if (result.success) {
         toast.update(toastId, { type: 'success', title: 'Lead supprimé avec succès' })
         loadLeads()
         loadStats()
-        closeModals()
+        setConfirmDelete(null)
       } else {
         throw new Error(result.error)
       }
@@ -107,13 +99,8 @@ export default function Leads() {
     }
   }
 
-  const handleLeadCreated = () => {
-    loadLeads()
-    loadStats()
-  }
-
   const closeModals = () => {
-    setModals({ addLead: false, viewEditLead: null, confirmDelete: null })
+    setConfirmDelete(null)
   }
 
   const handleFiltersChange = (newFilters: LeadFilters) => {
@@ -206,30 +193,14 @@ export default function Leads() {
         onDeleteLead={handleDeleteLead}
       />
 
-      {/* Modals */}
-      <AddLeadModal
-        isOpen={modals.addLead}
-        initialMode={addLeadMode}
-        onClose={closeModals}
-        onLeadCreated={handleLeadCreated}
-      />
-
-      <ViewEditLeadModal
-        lead={modals.viewEditLead}
-        isOpen={!!modals.viewEditLead}
-        onClose={closeModals}
-        onDelete={handleDeleteLead}
-        onLeadUpdated={handleLeadCreated}
-      />
-
       {/* Modal de confirmation de suppression */}
       <ConfirmModal
-        isOpen={!!modals.confirmDelete}
+        isOpen={!!confirmDelete}
         onClose={closeModals}
-        onConfirm={confirmDelete}
+        onConfirm={handleConfirmDelete}
         loading={deleteLoading}
         title="Supprimer le lead"
-        message={`Êtes-vous sûr de vouloir supprimer le lead "${modals.confirmDelete?.contact.prenom} ${modals.confirmDelete?.contact.nom}" ? Cette action est irréversible.`}
+        message={`Êtes-vous sûr de vouloir supprimer le lead "${confirmDelete?.contact.prenom} ${confirmDelete?.contact.nom}" ? Cette action est irréversible.`}
         confirmText="Supprimer"
       />
     </section>
