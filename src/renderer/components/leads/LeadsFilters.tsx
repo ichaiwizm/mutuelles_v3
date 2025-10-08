@@ -1,6 +1,6 @@
 import React from 'react'
 import { Search, X } from 'lucide-react'
-import type { LeadFilters } from '../../../shared/types/leads'
+import type { LeadFilters } from '@shared/types/leads'
 
 interface LeadsFiltersProps {
   filters: LeadFilters

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, ReactNode } from 'react'
 import { Users } from 'lucide-react'
-import type { CreateLeadData, EnfantInfo } from '../../../shared/types/leads'
+import type { CreateLeadData, EnfantInfo } from '@shared/types/leads'
 import { useLeadFormState } from '../../hooks/useLeadFormState'
 import { useLeadValidation } from '../../hooks/useLeadValidation'
 import ContactSection from './sections/ContactSection'

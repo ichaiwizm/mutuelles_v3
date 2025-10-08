@@ -1,6 +1,6 @@
 import React from 'react'
 import { User } from 'lucide-react'
-import type { CreateLeadData } from '../../../../shared/types/leads'
+import type { CreateLeadData } from '@shared/types/leads'
 import EditableField from './EditableField'
 
 interface ContactSectionProps {

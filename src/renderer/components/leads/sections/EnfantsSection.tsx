@@ -1,6 +1,6 @@
 import React from 'react'
 import { Baby, Plus, Trash2 } from 'lucide-react'
-import type { CreateLeadData, EnfantInfo } from '../../../../shared/types/leads'
+import type { CreateLeadData, EnfantInfo } from '@shared/types/leads'
 
 interface EnfantsSectionProps {
   data: CreateLeadData

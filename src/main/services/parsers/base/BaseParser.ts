@@ -1,4 +1,4 @@
-import type { ContactInfo, SouscripteurInfo, ConjointInfo, EnfantInfo, BesoinsInfo } from '../../../../shared/types/leads'
+import type { ContactInfo, SouscripteurInfo, ConjointInfo, EnfantInfo, BesoinsInfo } from '@shared/types/leads'
 
 export interface ParsedData {
   contact: Partial<ContactInfo>

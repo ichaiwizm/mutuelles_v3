@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useToastContext } from '../../contexts/ToastContext'
-import type { FullLead, CreateLeadData } from '../../../shared/types/leads'
+import type { FullLead, CreateLeadData } from '@shared/types/leads'
 import ViewEditLeadModalHeader from './ViewEditLeadModalHeader'
 import LeadForm from './LeadForm'
 

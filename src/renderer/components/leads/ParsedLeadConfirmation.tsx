@@ -1,6 +1,6 @@
 import React from 'react'
 import { Check, Edit, RotateCcw, AlertCircle } from 'lucide-react'
-import type { CreateLeadData, LeadProvider } from '../../../shared/types/leads'
+import type { CreateLeadData, LeadProvider } from '@shared/types/leads'
 import LeadForm from './LeadForm'
 import ErrorBanner from '../common/ErrorBanner'
 

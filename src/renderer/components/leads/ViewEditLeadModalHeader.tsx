@@ -1,6 +1,6 @@
 import React from 'react'
 import { X, Edit, RotateCcw, Trash2, Star } from 'lucide-react'
-import type { FullLead } from '../../../shared/types/leads'
+import type { FullLead } from '@shared/types/leads'
 
 interface ViewEditLeadModalHeaderProps {
   lead: FullLead

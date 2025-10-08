@@ -1,7 +1,18 @@
 {
   "permissions": {
     "allow": [
-      "Read(//mnt/c/Users/**)"
+      "Read(//mnt/c/Users/**)",
+      "Bash(tree:*)",
+      "Bash(npm outdated:*)",
+      "Bash(find:*)",
+      "Bash(du:*)",
+      "Bash(rm:*)",
+      "Bash(rmdir:*)",
+      "Bash(chmod:*)",
+      "Bash(node:*)",
+      "Bash(awk:*)",
+      "Bash(npm uninstall:*)",
+      "Bash(npm install:*)"
     ],
     "deny": [],
     "ask": []

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { X } from 'lucide-react'
 import { useToastContext } from '../../contexts/ToastContext'
-import type { CreateLeadData, LeadProvider } from '../../../shared/types/leads'
+import type { CreateLeadData, LeadProvider } from '@shared/types/leads'
 import IntelligentMode from './modes/IntelligentMode'
 import ManualMode from './modes/ManualMode'
 import ParsedLeadConfirmation from './ParsedLeadConfirmation'
@@ -114,7 +114,7 @@ export default function AddLeadModal({ isOpen, onClose, onLeadCreated, initialMo
 
       // Générer les platformData pour l'affichage dans la confirmation
       // Le backend les régénérera lors de la création finale
-      const { PlatformMappingService } = await import('../../../shared/platformMapping')
+      const { PlatformMappingService } = await import('@shared/platformMapping')
       const platformData = PlatformMappingService.mapToPlatforms(normalizedData)
 
       const dataWithPlatforms = {

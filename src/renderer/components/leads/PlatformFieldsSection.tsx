@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Building2, Info, HelpCircle } from 'lucide-react'
-import type { PlatformData, SwissLifeOneData } from '../../../shared/types/leads'
+import type { PlatformData, SwissLifeOneData } from '@shared/types/leads'
 import PlatformCompletionBadge from './PlatformCompletionBadge'
 
 interface PlatformFieldsSectionProps {

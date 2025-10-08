@@ -1,5 +1,5 @@
 import React from 'react'
-import type { CreateLeadData } from '../../../../shared/types/leads'
+import type { CreateLeadData } from '@shared/types/leads'
 
 interface EditableFieldProps {
   section: keyof CreateLeadData

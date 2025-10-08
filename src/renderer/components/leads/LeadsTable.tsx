@@ -1,6 +1,6 @@
 import React from 'react'
 import { Users, Plus } from 'lucide-react'
-import type { FullLead } from '../../../shared/types/leads'
+import type { FullLead } from '@shared/types/leads'
 import LeadStatusBadge from './LeadStatusBadge'
 
 interface LeadsTableProps {

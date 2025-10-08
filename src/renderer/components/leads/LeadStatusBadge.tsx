@@ -1,5 +1,5 @@
 import React from 'react'
-import type { LeadSource } from '../../../shared/types/leads'
+import type { LeadSource } from '@shared/types/leads'
 
 interface LeadStatusBadgeProps {
   source: LeadSource

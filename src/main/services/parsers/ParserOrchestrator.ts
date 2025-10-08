@@ -1,7 +1,7 @@
 import { AssurProspectParser } from './providers/AssurProspectParser'
 import { GenericParser } from './providers/GenericParser'
 import { BaseParser, type ParsedData } from './base/BaseParser'
-import type { LeadProvider } from '../../../shared/types/leads'
+import type { LeadProvider } from '@shared/types/leads'
 
 export interface ParserResult {
   success: boolean
