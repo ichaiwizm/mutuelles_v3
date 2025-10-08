@@ -4,10 +4,9 @@ import { z } from 'zod'
 export function listCatalog() {
   const rows = getDb().prepare(`
     SELECT c.id, c.slug, c.name, c.status, c.base_url, c.website_url, c.notes,
-           CASE WHEN up.selected = 1 THEN 1 ELSE 0 END AS selected,
+           c.selected,
            CASE WHEN pc.username IS NOT NULL THEN 1 ELSE 0 END AS has_creds
     FROM platforms_catalog c
-    LEFT JOIN user_platforms up ON up.platform_id = c.id
     LEFT JOIN platform_credentials pc ON pc.platform_id = c.id
     ORDER BY c.name
   `).all() as any[]
@@ -18,9 +17,8 @@ export function listCatalog() {
 
 export function setSelected(payload: unknown) {
   const parsed = z.object({ platform_id: z.number().int().positive(), selected: z.boolean() }).parse(payload)
-  const stmt = getDb().prepare(`INSERT INTO user_platforms(platform_id, selected) VALUES(?, ?) 
-                                ON CONFLICT(platform_id) DO UPDATE SET selected=excluded.selected`)
-  stmt.run(parsed.platform_id, parsed.selected ? 1 : 0)
+  const stmt = getDb().prepare(`UPDATE platforms_catalog SET selected = ? WHERE id = ?`)
+  stmt.run(parsed.selected ? 1 : 0, parsed.platform_id)
   return { selected: parsed.selected }
 }
 

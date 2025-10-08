@@ -5,13 +5,12 @@ import { getDb } from '../db/connection'
 export function listSelectedWithCreds() {
   const rows = getDb().prepare(`
     SELECT c.id as platform_id, c.name, c.status,
-           up.selected = 1 AS selected,
+           c.selected = 1 AS selected,
            pc.username IS NOT NULL AS has_creds,
            pc.username as username
     FROM platforms_catalog c
-    LEFT JOIN user_platforms up ON up.platform_id = c.id
     LEFT JOIN platform_credentials pc ON pc.platform_id = c.id
-    WHERE up.selected = 1
+    WHERE c.selected = 1
     ORDER BY c.name
   `).all() as any[]
   return rows.map(r => ({

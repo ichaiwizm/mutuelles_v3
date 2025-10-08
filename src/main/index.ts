@@ -80,7 +80,7 @@ ipcMain.handle('app:getStats', async () => {
   const conn = getDb()
   const count = (sql: string) => (conn.prepare(sql).get() as { c:number }).c
   return {
-    platforms: count('SELECT COUNT(*) as c FROM user_platforms WHERE selected = 1'),
+    platforms: count('SELECT COUNT(*) as c FROM platforms_catalog WHERE selected = 1'),
     profiles: count('SELECT COUNT(*) as c FROM profiles'),
     credentials: count('SELECT COUNT(*) as c FROM platform_credentials')
   }
