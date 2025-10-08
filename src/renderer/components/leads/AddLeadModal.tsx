@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { X } from 'lucide-react'
 import { useToastContext } from '../../contexts/ToastContext'
 import type { CreateLeadData, LeadProvider } from '../../../shared/types/leads'
@@ -57,6 +57,13 @@ export default function AddLeadModal({ isOpen, onClose, onLeadCreated, initialMo
   const [parsedProvider, setParsedProvider] = useState<LeadProvider | null>(null)
   const [parsedScore, setParsedScore] = useState(0)
   const toast = useToastContext()
+
+  // Synchroniser le mode avec initialMode quand la modal s'ouvre
+  useEffect(() => {
+    if (isOpen) {
+      setMode(initialMode === 'manual' ? 'manual' : 'intelligent')
+    }
+  }, [isOpen, initialMode])
 
   if (!isOpen) return null
 

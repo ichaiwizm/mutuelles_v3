@@ -140,20 +140,24 @@ export default function Leads() {
             <Upload size={16} />
             Importer
           </button>
-          <button
-            onClick={() => handleAddLead('manual')}
-            className="flex items-center gap-2 px-3 py-2 rounded-md border border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 text-sm transition-colors"
-          >
-            <FileEdit size={16} />
-            Ajouter manuellement
-          </button>
-          <button
-            onClick={() => handleAddLead('intelligent')}
-            className="flex items-center gap-2 px-3 py-2 rounded-md bg-indigo-600 dark:bg-indigo-500 text-white hover:bg-indigo-700 dark:hover:bg-indigo-600 text-sm transition-colors"
-          >
-            <Sparkles size={16} />
-            Ajouter intelligemment
-          </button>
+          {/* Bouton split pour ajouter un lead */}
+          <div className="inline-flex rounded-md overflow-hidden border border-neutral-300 dark:border-neutral-700">
+            <button
+              onClick={() => handleAddLead('intelligent')}
+              className="flex items-center gap-2 px-3 py-2 bg-indigo-600 dark:bg-indigo-500 text-white hover:bg-indigo-700 dark:hover:bg-indigo-600 text-sm transition-colors"
+            >
+              <Sparkles size={16} />
+              Intelligent
+            </button>
+            <div className="w-px bg-neutral-300 dark:bg-neutral-700" />
+            <button
+              onClick={() => handleAddLead('manual')}
+              className="flex items-center gap-2 px-3 py-2 bg-emerald-600 dark:bg-emerald-500 text-white hover:bg-emerald-700 dark:hover:bg-emerald-600 text-sm transition-colors"
+            >
+              <FileEdit size={16} />
+              Manuel
+            </button>
+          </div>
         </div>
       </div>
 

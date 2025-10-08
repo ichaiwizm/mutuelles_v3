@@ -1,8 +1,7 @@
 {
   "permissions": {
     "allow": [
-      "Bash(cp:*)",
-      "Bash(npm:*)"
+      "Read(//mnt/c/Users/**)"
     ],
     "deny": [],
     "ask": []
