@@ -10,32 +10,194 @@
       "applies": { "carriers": ["alptis"] }, "required": true, "step": "Identité"
     },
 
-    { "name": "date_naissance", "label": "Date de naissance", "type": "date", "required": true, "step": "Identité" },
-    { "name": "code_postal", "label": "Code postal", "type": "text", "required": true, "pattern": "^\\d{5}$", "placeholder": "Ex: 69000", "step": "Identité" },
+    { "name": "categorie", "label": "Catégorie socioprofessionnelle", "type": "select",
+      "options": [
+        { "value": "AGRICULTEURS_EXPLOITANTS", "label": "Agriculteurs exploitants" },
+        { "value": "ARTISANS", "label": "Artisans" },
+        { "value": "CADRES", "label": "Cadres" },
+        { "value": "CADRES_EMPLOYES_FONCTION_PUBLIQUE", "label": "Cadres et employés de la fonction publique" },
+        { "value": "CHEFS_D_ENTREPRISE", "label": "Chefs d'entreprise" },
+        { "value": "COMMERCANTS_ET_ASSIMILES", "label": "Commerçants et assimilés" },
+        { "value": "EMPLOYES", "label": "Employés, agents de maîtrise" },
+        { "value": "OUVRIERS", "label": "Ouvriers" },
+        { "value": "PERSONNES_SANS_ACTIVITE_PROFESSIONNELLE", "label": "Personnes sans activité professionnelle" },
+        { "value": "PROFESSIONS_LIBERALES_ET_ASSIMILES", "label": "Professions libérales et assimilés" },
+        { "value": "RETRAITES", "label": "Retraités" }
+      ],
+      "applies": { "carriers": ["alptis"] }, "step": "Identité"
+    },
+    { "name": "statut_alptis", "label": "Statut", "type": "select",
+      "options": [
+        { "value": "SALARIE", "label": "Salarié" },
+        { "value": "TNS", "label": "TNS" },
+        { "value": "FONCTIONNAIRE", "label": "Fonctionnaire" },
+        { "value": "RETRAITE", "label": "Retraité" },
+        { "value": "LIBERAL", "label": "Libéral" },
+        { "value": "INDEPENDANT", "label": "Indépendant" }
+      ],
+      "applies": { "carriers": ["alptis"] }, "step": "Identité"
+    },
+    { "name": "regime_obligatoire", "label": "Régime obligatoire", "type": "select",
+      "options": [
+        { "value": "ALSACE_MOSELLE", "label": "Alsace / Moselle" },
+        { "value": "AMEXA", "label": "Amexa" },
+        { "value": "REGIME_SALARIES_AGRICOLES", "label": "Régime des salariés agricoles" },
+        { "value": "SECURITE_SOCIALE", "label": "Sécurité sociale" },
+        { "value": "SECURITE_SOCIALE_INDEPENDANTS", "label": "Sécurité sociale des indépendants" }
+      ],
+      "required": true, "applies": { "carriers": ["alptis"] }, "step": "Identité"
+    },
 
-    { "name": "conjoint", "label": "Conjoint", "type": "radio",
-      "options": [ { "value": "oui", "label": "Oui" }, { "value": "non", "label": "Non" } ],
-      "required": true, "default": "non", "step": "Famille"
+    { "name": "date_naissance", "label": "Date de naissance", "type": "date", "format": "DD/MM/YYYY", "required": true, "step": "Identité" },
+    { "name": "code_postal", "label": "Code postal", "type": "text", "required": true, "pattern": "^\\d+$", "placeholder": "Chiffres uniquement", "step": "Identité" },
+
+    { "name": "conjoint", "label": "Conjoint", "type": "switch",
+      "required": true, "default": false, "step": "Famille"
     },
     { "name": "date_naissance_conjoint", "label": "Date de naissance du conjoint", "type": "date",
-      "required": true, "showIf": { "field": "conjoint", "equals": "oui" }, "step": "Famille" },
+      "format": "DD/MM/YYYY", "required": true, "showIf": { "field": "conjoint", "equals": true }, "step": "Famille" },
 
-    { "name": "enfants", "label": "Enfant(s)", "type": "radio",
-      "options": [ { "value": "oui", "label": "Oui" }, { "value": "non", "label": "Non" } ],
-      "required": true, "default": "non", "step": "Famille"
+    { "name": "conjoint_categorie", "label": "Catégorie (conjoint)", "type": "select",
+      "options": [
+        { "value": "AGRICULTEURS_EXPLOITANTS", "label": "Agriculteurs exploitants" },
+        { "value": "ARTISANS", "label": "Artisans" },
+        { "value": "CADRES", "label": "Cadres" },
+        { "value": "CADRES_EMPLOYES_FONCTION_PUBLIQUE", "label": "Cadres et employés de la fonction publique" },
+        { "value": "CHEFS_D_ENTREPRISE", "label": "Chefs d'entreprise" },
+        { "value": "COMMERCANTS_ET_ASSIMILES", "label": "Commerçants et assimilés" },
+        { "value": "EMPLOYES", "label": "Employés, agents de maîtrise" },
+        { "value": "OUVRIERS", "label": "Ouvriers" },
+        { "value": "PERSONNES_SANS_ACTIVITE_PROFESSIONNELLE", "label": "Personnes sans activité professionnelle" },
+        { "value": "PROFESSIONS_LIBERALES_ET_ASSIMILES", "label": "Professions libérales et assimilés" },
+        { "value": "RETRAITES", "label": "Retraités" }
+      ],
+      "showIf": { "field": "conjoint", "equals": true }, "applies": { "carriers": ["alptis"] }, "step": "Famille"
+    },
+    { "name": "conjoint_statut_alptis", "label": "Statut (conjoint)", "type": "select",
+      "options": [
+        { "value": "SALARIE", "label": "Salarié" },
+        { "value": "TNS", "label": "TNS" },
+        { "value": "FONCTIONNAIRE", "label": "Fonctionnaire" },
+        { "value": "RETRAITE", "label": "Retraité" },
+        { "value": "LIBERAL", "label": "Libéral" },
+        { "value": "INDEPENDANT", "label": "Indépendant" }
+      ],
+      "showIf": { "field": "conjoint", "equals": true }, "applies": { "carriers": ["alptis"] }, "step": "Famille"
+    },
+    { "name": "conjoint_regime_obligatoire", "label": "Régime (conjoint)", "type": "select",
+      "options": [
+        { "value": "ALSACE_MOSELLE", "label": "Alsace / Moselle" },
+        { "value": "AMEXA", "label": "Amexa" },
+        { "value": "REGIME_SALARIES_AGRICOLES", "label": "Régime des salariés agricoles" },
+        { "value": "SECURITE_SOCIALE", "label": "Sécurité sociale" },
+        { "value": "SECURITE_SOCIALE_INDEPENDANTS", "label": "Sécurité sociale des indépendants" }
+      ],
+      "showIf": { "field": "conjoint", "equals": true }, "applies": { "carriers": ["alptis"] }, "step": "Famille"
+    },
+
+    { "name": "enfants", "label": "Enfant(s)", "type": "switch",
+      "required": true, "default": false, "step": "Famille"
     },
     { "name": "nb_enfants", "label": "Nombre d'enfants", "type": "number",
-      "min": 1, "max": 10, "required": true, "showIf": { "field": "enfants", "equals": "oui" }, "step": "Famille"
+      "min": 1, "max": 10, "required": true, "showIf": { "field": "enfants", "equals": true }, "step": "Famille"
     },
     { "name": "enfants_naissances", "label": "Dates de naissance des enfants", "type": "date",
+      "format": "DD/MM/YYYY", "repeat": { "countField": "nb_enfants" },
+      "required": true, "showIf": { "field": "enfants", "equals": true }, "step": "Famille"
+    },
+    { "name": "enfants_regimes", "label": "Régime obligatoire (par enfant)", "type": "select",
       "repeat": { "countField": "nb_enfants" },
-      "required": true, "showIf": { "field": "enfants", "equals": "oui" }, "step": "Famille"
+      "options": [
+        { "value": "ALSACE_MOSELLE", "label": "Alsace / Moselle" },
+        { "value": "AMEXA", "label": "Amexa" },
+        { "value": "REGIME_SALARIES_AGRICOLES", "label": "Régime des salariés agricoles" },
+        { "value": "SECURITE_SOCIALE", "label": "Sécurité sociale" },
+        { "value": "SECURITE_SOCIALE_INDEPENDANTS", "label": "Sécurité sociale des indépendants" }
+      ],
+      "required": false, "showIf": { "field": "enfants", "equals": true }, "applies": { "carriers": ["alptis"] }, "step": "Famille"
+    },
+    { "name": "enfants_ayant_droit", "label": "Ayant droit (par enfant)", "type": "select",
+      "repeat": { "countField": "nb_enfants" },
+      "options": [
+        { "value": "CLIENT", "label": "Assuré principal" },
+        { "value": "CONJOINT", "label": "Conjoint", "showIf": { "field": "conjoint", "equals": true } }
+      ],
+      "default": "CLIENT", "required": true, "showIf": { "field": "enfants", "equals": true }, "applies": { "carriers": ["swisslifeone"] }, "step": "Famille"
     },
 
-    { "name": "date_effet", "label": "Date d'effet", "type": "date", "required": true, "step": "Contrat" },
-    { "name": "remplacement_contrat", "label": "Remplacement de contrat", "type": "radio",
-      "options": [ { "value": "oui", "label": "Oui" }, { "value": "non", "label": "Non" } ],
-      "default": "non", "disabled": true, "step": "Contrat"
-    }
+    { "name": "date_effet", "label": "Date d'effet", "type": "date", "format": "DD/MM/YYYY", "required": true, "step": "Contrat" },
+    { "name": "remplacement_contrat", "label": "Remplacement de contrat", "type": "switch",
+      "default": false, "disabled": true, "step": "Contrat"
+    },
+
+    { "name": "nom_projet", "label": "Nom du projet", "type": "text",
+      "defaultTemplate": "{nom} {prenom}", "applies": { "carriers": ["swisslifeone"] }, "step": "Contrat"
+    },
+    { "name": "couverture_individuelle_soins", "label": "Couverture individuelle (frais de soins)", "type": "switch",
+      "default": true, "disabled": true, "applies": { "carriers": ["swisslifeone"] }, "step": "Contrat"
+    },
+    { "name": "indemnites_journalieres_hosp", "label": "Indemnités journalières (hospitalisation)", "type": "switch",
+      "default": false, "disabled": true, "applies": { "carriers": ["swisslifeone"] }, "step": "Contrat"
+    },
+    { "name": "regime_social", "label": "Régime social (assuré principal)", "type": "select",
+      "options": [
+        { "value": "SALARIE", "label": "Salarié" },
+        { "value": "TNS", "label": "TNS" },
+        { "value": "FONCTIONNAIRE", "label": "Fonctionnaire" },
+        { "value": "RETRAITE", "label": "Retraité" },
+        { "value": "LIBERAL", "label": "Libéral" },
+        { "value": "INDEPENDANT", "label": "Indépendant" }
+      ],
+      "default": "SALARIE", "required": true, "applies": { "carriers": ["swisslifeone"] }, "step": "Identité"
+    },
+    { "name": "statut", "label": "Statut (assuré principal)", "type": "select",
+      "options": [
+        { "value": "SALARIE", "label": "Salarié" },
+        { "value": "TNS", "label": "TNS" },
+        { "value": "FONCTIONNAIRE", "label": "Fonctionnaire" },
+        { "value": "RETRAITE", "label": "Retraité" },
+        { "value": "LIBERAL", "label": "Libéral" },
+        { "value": "INDEPENDANT", "label": "Indépendant" }
+      ],
+      "default": "SALARIE", "required": false, "applies": { "carriers": ["swisslifeone"] }, "step": "Identité"
+    },
+    { "name": "profession", "label": "Profession (assuré principal)", "type": "text",
+      "default": "", "required": false, "applies": { "carriers": ["swisslifeone"] }, "step": "Identité" },
+    { "name": "gamme", "label": "Gamme", "type": "select",
+      "options": [ { "value": "SwissLife Santé", "label": "SwissLife Santé" } ],
+      "default": "SwissLife Santé", "disabled": true, "applies": { "carriers": ["swisslifeone"] }, "step": "Contrat"
+    },
+    { "name": "loi_madelin", "label": "Loi Madelin", "type": "switch",
+      "default": true, "disabled": true,
+      "applies": { "carriers": ["swisslifeone"] }, "step": "Contrat",
+      "notes": "Bloqué à oui. Si âge assuré principal >= 70 ans, forcer à non.",
+      "disabledIf": { "ageOf": { "field": "date_naissance", "format": "DD/MM/YYYY" }, "operator": ">=", "value": 70, "forceValue": false }
+    },
+    { "name": "conjoint_regime_social", "label": "Régime social (conjoint)", "type": "select",
+      "options": [
+        { "value": "SALARIE", "label": "Salarié" },
+        { "value": "TNS", "label": "TNS" },
+        { "value": "FONCTIONNAIRE", "label": "Fonctionnaire" },
+        { "value": "RETRAITE", "label": "Retraité" },
+        { "value": "LIBERAL", "label": "Libéral" },
+        { "value": "INDEPENDANT", "label": "Indépendant" }
+      ],
+      "required": false, "showIf": { "field": "conjoint", "equals": true }, "applies": { "carriers": ["swisslifeone"] }, "step": "Famille"
+    },
+    { "name": "conjoint_statut", "label": "Statut (conjoint)", "type": "select",
+      "options": [
+        { "value": "SALARIE", "label": "Salarié" },
+        { "value": "TNS", "label": "TNS" },
+        { "value": "FONCTIONNAIRE", "label": "Fonctionnaire" },
+        { "value": "RETRAITE", "label": "Retraité" },
+        { "value": "LIBERAL", "label": "Libéral" },
+        { "value": "INDEPENDANT", "label": "Indépendant" }
+      ],
+      "required": false, "showIf": { "field": "conjoint", "equals": true }, "applies": { "carriers": ["swisslifeone"] }, "step": "Famille"
+    },
+    { "name": "conjoint_profession", "label": "Profession (conjoint)", "type": "text",
+      "required": false, "showIf": { "field": "conjoint", "equals": true }, "applies": { "carriers": ["swisslifeone"] }, "step": "Famille" },
+    { "name": "reprise_iso", "label": "Reprise de concurrence à iso garanties", "type": "switch",
+      "default": false, "disabled": true, "applies": { "carriers": ["swisslifeone"] }, "step": "Contrat" }
   ]
 }
