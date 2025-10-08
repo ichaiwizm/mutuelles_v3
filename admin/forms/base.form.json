@@ -1,0 +1,41 @@
+{
+  "meta": { "id": "devis-sante-base", "title": "Formulaire Devis Santé (base)", "version": 1 },
+  "steps": ["Identité", "Famille", "Contrat"],
+  "fields": [
+    { "name": "nom", "label": "Nom", "type": "text", "required": true, "step": "Identité" },
+    { "name": "prenom", "label": "Prénom", "type": "text", "required": true, "step": "Identité" },
+
+    { "name": "civilite", "label": "Civilité", "type": "radio",
+      "options": [ { "value": "MONSIEUR", "label": "Monsieur" }, { "value": "MADAME", "label": "Madame" } ],
+      "applies": { "carriers": ["alptis"] }, "required": true, "step": "Identité"
+    },
+
+    { "name": "date_naissance", "label": "Date de naissance", "type": "date", "required": true, "step": "Identité" },
+    { "name": "code_postal", "label": "Code postal", "type": "text", "required": true, "pattern": "^\\d{5}$", "placeholder": "Ex: 69000", "step": "Identité" },
+
+    { "name": "conjoint", "label": "Conjoint", "type": "radio",
+      "options": [ { "value": "oui", "label": "Oui" }, { "value": "non", "label": "Non" } ],
+      "required": true, "default": "non", "step": "Famille"
+    },
+    { "name": "date_naissance_conjoint", "label": "Date de naissance du conjoint", "type": "date",
+      "required": true, "showIf": { "field": "conjoint", "equals": "oui" }, "step": "Famille" },
+
+    { "name": "enfants", "label": "Enfant(s)", "type": "radio",
+      "options": [ { "value": "oui", "label": "Oui" }, { "value": "non", "label": "Non" } ],
+      "required": true, "default": "non", "step": "Famille"
+    },
+    { "name": "nb_enfants", "label": "Nombre d'enfants", "type": "number",
+      "min": 1, "max": 10, "required": true, "showIf": { "field": "enfants", "equals": "oui" }, "step": "Famille"
+    },
+    { "name": "enfants_naissances", "label": "Dates de naissance des enfants", "type": "date",
+      "repeat": { "countField": "nb_enfants" },
+      "required": true, "showIf": { "field": "enfants", "equals": "oui" }, "step": "Famille"
+    },
+
+    { "name": "date_effet", "label": "Date d'effet", "type": "date", "required": true, "step": "Contrat" },
+    { "name": "remplacement_contrat", "label": "Remplacement de contrat", "type": "radio",
+      "options": [ { "value": "oui", "label": "Oui" }, { "value": "non", "label": "Non" } ],
+      "default": "non", "disabled": true, "step": "Contrat"
+    }
+  ]
+}
