@@ -1,0 +1,86 @@
+{
+  "carrier": "alptis",
+  "version": 1,
+  "extends": "base.domain.json@2",
+  "meta": {
+    "name": "Alptis - Configuration UI",
+    "description": "Configuration Alptis référençant le domain model",
+    "lastUpdated": "2025-01-15"
+  },
+  "sections": [
+    {
+      "id": "projet",
+      "title": "Projet",
+      "step": "Contrat",
+      "fields": [
+        "project.dateEffet"
+      ]
+    },
+    {
+      "id": "souscripteur",
+      "title": "Souscripteur",
+      "step": "Identité",
+      "fields": [
+        "subscriber.civility",
+        "subscriber.lastName",
+        "subscriber.firstName",
+        "subscriber.birthDate",
+        "subscriber.category",
+        {
+          "domainKey": "subscriber.regime",
+          "label": "Régime obligatoire (adhérent)",
+          "optionSet": "alptis"
+        },
+        "subscriber.postalCode"
+      ]
+    },
+    {
+      "id": "conjoint",
+      "title": "Conjoint",
+      "step": "Famille",
+      "visibleWhen": { "equals": { "spouse.present": true } },
+      "fields": [
+        "spouse.birthDate",
+        {
+          "domainKey": "spouse.regime",
+          "label": "Régime (conjoint)",
+          "optionSet": "alptis"
+        }
+      ]
+    },
+    {
+      "id": "enfants",
+      "title": "Enfants",
+      "step": "Famille",
+      "repeatable": {
+        "min": 0,
+        "max": 10,
+        "itemLabelTemplate": "Enfant #{index}"
+      },
+      "visibleWhen": { "greaterThan": { "children.count": 0 } },
+      "fields": [
+        "children[].birthDate",
+        {
+          "domainKey": "children[].regime",
+          "optionSet": "alptis"
+        }
+      ]
+    }
+  ],
+  "leadMapping": {
+    "project.dateEffet": "projet.date_effet",
+    "subscriber.civility": "adherent.civilite",
+    "subscriber.lastName": "adherent.nom",
+    "subscriber.firstName": "adherent.prenom",
+    "subscriber.birthDate": "adherent.date_naissance",
+    "subscriber.category": "adherent.categorie",
+    "subscriber.regime": "adherent.regime",
+    "subscriber.postalCode": "adherent.code_postal",
+    "spouse.present": "conjoint.present",
+    "spouse.birthDate": "conjoint.date_naissance",
+    "spouse.regime": "conjoint.regime",
+    "children.count": "projet.nb_enfants",
+    "children[].birthDate": "enfants[].date_naissance",
+    "children[].regime": "enfants[].regime"
+  }
+}

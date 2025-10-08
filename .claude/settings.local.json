@@ -12,7 +12,11 @@
       "Bash(node:*)",
       "Bash(awk:*)",
       "Bash(npm uninstall:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(ls:*)",
+      "Bash(git log:*)",
+      "Bash(sqlite3:*)",
+      "Bash(test:*)"
     ],
     "deny": [],
     "ask": []

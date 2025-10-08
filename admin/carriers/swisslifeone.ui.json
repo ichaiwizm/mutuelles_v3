@@ -1,0 +1,94 @@
+{
+  "carrier": "swisslifeone",
+  "version": 1,
+  "extends": "base.domain.json@2",
+  "meta": {
+    "name": "Swiss Life One - Configuration UI",
+    "description": "Configuration Swiss Life One référençant le domain model",
+    "lastUpdated": "2025-01-15"
+  },
+  "sections": [
+    {
+      "id": "projet",
+      "title": "Projet",
+      "step": "Contrat",
+      "fields": [
+        {
+          "domainKey": "project.name",
+          "required": true,
+          "hints": "Obligatoire pour Swiss Life"
+        },
+        "project.dateEffet",
+        {
+          "domainKey": "project.plan",
+          "optionSet": "swisslifeone"
+        }
+      ]
+    },
+    {
+      "id": "souscripteur",
+      "title": "Souscripteur",
+      "step": "Identité",
+      "fields": [
+        "subscriber.birthDate",
+        "subscriber.departmentCode",
+        {
+          "domainKey": "subscriber.regime",
+          "label": "Régime social",
+          "optionSet": "swisslifeone"
+        },
+        "subscriber.status",
+        "subscriber.profession"
+      ]
+    },
+    {
+      "id": "conjoint",
+      "title": "Conjoint",
+      "step": "Famille",
+      "visibleWhen": {
+        "equals": {
+          "spouse.present": true
+        }
+      },
+      "fields": [
+        "spouse.birthDate",
+        {
+          "domainKey": "spouse.regime",
+          "label": "Régime social (conjoint)",
+          "optionSet": "swisslifeone"
+        },
+        "spouse.status",
+        "spouse.profession"
+      ]
+    },
+    {
+      "id": "enfants",
+      "title": "Enfants",
+      "step": "Famille",
+      "visibleWhen": {
+        "greaterThan": {
+          "children.count": 0
+        }
+      },
+      "fields": [
+        "children.count"
+      ]
+    }
+  ],
+  "leadMapping": {
+    "project.name": "projet.nom",
+    "project.dateEffet": "projet.date_effet",
+    "project.plan": "projet.gamme",
+    "subscriber.birthDate": "adherent.date_naissance",
+    "subscriber.departmentCode": "adherent.departement",
+    "subscriber.regime": "adherent.regime",
+    "subscriber.status": "adherent.statut",
+    "subscriber.profession": "adherent.profession",
+    "spouse.present": "conjoint.present",
+    "spouse.birthDate": "conjoint.date_naissance",
+    "spouse.regime": "conjoint.regime",
+    "spouse.status": "conjoint.statut",
+    "spouse.profession": "conjoint.profession",
+    "children.count": "projet.nb_enfants"
+  }
+}

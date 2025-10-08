@@ -1,0 +1,284 @@
+{
+  "version": 2,
+  "meta": {
+    "id": "health-insurance-domain",
+    "title": "Domain Model - Assurance Santé",
+    "description": "Modèle de domaine universel pour les formulaires d'assurance santé. Contient uniquement les champs effectivement utilisés dans les flows d'automatisation.",
+    "lastUpdated": "2025-01-15",
+    "supportedCarriers": ["alptis", "swisslifeone"]
+  },
+  "domains": {
+    "project": {
+      "name": {
+        "type": "text",
+        "label": "Nom du projet",
+        "required": true,
+        "defaultTemplate": "Simulation {subscriber.lastName} {subscriber.firstName}",
+        "validations": {
+          "minLength": 2,
+          "maxLength": 120
+        },
+        "carriers": ["swisslifeone"]
+      },
+      "dateEffet": {
+        "type": "date",
+        "label": "Date d'effet",
+        "required": true,
+        "format": "DD/MM/YYYY",
+        "carriers": ["alptis", "swisslifeone"]
+      },
+      "plan": {
+        "type": "select",
+        "label": "Gamme/Produit",
+        "required": true,
+        "default": "SwissLife Santé",
+        "disabled": true,
+        "carrierSpecific": true,
+        "carriers": ["swisslifeone"],
+        "optionSets": {
+          "swisslifeone": [
+            { "value": "SwissLife Santé", "label": "SwissLife Santé" }
+          ]
+        }
+      }
+    },
+    "subscriber": {
+      "civility": {
+        "type": "radio",
+        "label": "Civilité",
+        "required": true,
+        "carriers": ["alptis"],
+        "options": [
+          { "value": "MONSIEUR", "label": "Monsieur" },
+          { "value": "MADAME", "label": "Madame" }
+        ]
+      },
+      "lastName": {
+        "type": "text",
+        "label": "Nom",
+        "required": true,
+        "carriers": ["alptis"]
+      },
+      "firstName": {
+        "type": "text",
+        "label": "Prénom",
+        "required": true,
+        "carriers": ["alptis"]
+      },
+      "birthDate": {
+        "type": "date",
+        "label": "Date de naissance",
+        "format": "DD/MM/YYYY",
+        "required": true,
+        "carriers": ["alptis", "swisslifeone"]
+      },
+      "category": {
+        "type": "select",
+        "label": "Catégorie socioprofessionnelle",
+        "required": true,
+        "carriers": ["alptis"],
+        "options": [
+          { "value": "AGRICULTEURS_EXPLOITANTS", "label": "Agriculteurs exploitants" },
+          { "value": "ARTISANS", "label": "Artisans" },
+          { "value": "CADRES", "label": "Cadres" },
+          { "value": "CADRES_EMPLOYES_FONCTION_PUBLIQUE", "label": "Cadres et employés de la fonction publique" },
+          { "value": "CHEFS_D_ENTREPRISE", "label": "Chefs d'entreprise" },
+          { "value": "COMMERCANTS_ET_ASSIMILES", "label": "Commerçants et assimilés" },
+          { "value": "EMPLOYES", "label": "Employés, agents de maîtrise" },
+          { "value": "OUVRIERS", "label": "Ouvriers" },
+          { "value": "PERSONNES_SANS_ACTIVITE_PROFESSIONNELLE", "label": "Personnes sans activité professionnelle" },
+          { "value": "PROFESSIONS_LIBERALES_ET_ASSIMILES", "label": "Professions libérales et assimilés" },
+          { "value": "RETRAITES", "label": "Retraités" }
+        ]
+      },
+      "regime": {
+        "type": "select",
+        "label": "Régime",
+        "required": true,
+        "carrierSpecific": true,
+        "carriers": ["alptis", "swisslifeone"],
+        "notes": "Pour Alptis: 'Régime obligatoire' (régime de sécurité sociale). Pour SwissLife: 'Régime social' (champ distinct de 'statut')",
+        "optionSets": {
+          "alptis": [
+            { "value": "ALSACE_MOSELLE", "label": "Alsace / Moselle" },
+            { "value": "AMEXA", "label": "Amexa" },
+            { "value": "REGIME_SALARIES_AGRICOLES", "label": "Régime des salariés agricoles" },
+            { "value": "SECURITE_SOCIALE", "label": "Sécurité sociale" },
+            { "value": "SECURITE_SOCIALE_INDEPENDANTS", "label": "Sécurité sociale des indépendants" }
+          ],
+          "swisslifeone": [
+            { "value": "SECURITE_SOCIALE", "label": "Régime Général (CPAM)" },
+            { "value": "SECURITE_SOCIALE_ALSACE_MOSELLE", "label": "Régime Local (CPAM Alsace Moselle)" },
+            { "value": "TNS", "label": "Régime Général pour TNS (CPAM)" },
+            { "value": "AMEXA", "label": "Mutualité Sociale Agricole (MSA-Amexa)" },
+            { "value": "AUTRES_REGIME_SPECIAUX", "label": "Autres régimes spéciaux" }
+          ]
+        }
+      },
+      "postalCode": {
+        "type": "text",
+        "label": "Code postal",
+        "required": true,
+        "pattern": "^\\d+$",
+        "placeholder": "Chiffres uniquement",
+        "carriers": ["alptis"]
+      },
+      "departmentCode": {
+        "type": "select",
+        "label": "Département",
+        "required": false,
+        "carriers": ["swisslifeone"]
+      },
+      "status": {
+        "type": "select",
+        "label": "Statut",
+        "required": true,
+        "carriers": ["swisslifeone"],
+        "notes": "Champ distinct de 'regime' dans SwissLife. Même liste d'options mais deux champs HTML séparés (#regime-social-assure-principal vs #statut-assure-principal)",
+        "options": [
+          { "value": "SALARIE", "label": "Salarié et autres statuts" },
+          { "value": "SALARIE_AGRICOLE", "label": "Salarié agricole et autres statuts" },
+          { "value": "EXPLOITANT_AGRICOLE", "label": "Exploitant agricole" },
+          { "value": "TNS", "label": "Travailleur Non Salarié" },
+          { "value": "ETUDIANT", "label": "Etudiant" },
+          { "value": "RETRAITE", "label": "Retraité" },
+          { "value": "RETRAITE_ANCIEN_SALARIE", "label": "Retraité (ancien salarié)" },
+          { "value": "RETRAITE_ANCIEN_EXPLOITANT", "label": "Retraité (ancien exploitant)" },
+          { "value": "TRAVAILLEUR_TRANSFRONTALIER", "label": "Travailleur transfrontalier" },
+          { "value": "FONCTIONNAIRE", "label": "Fonctionnaire" }
+        ]
+      },
+      "profession": {
+        "type": "select",
+        "label": "Profession",
+        "required": false,
+        "carriers": ["swisslifeone"],
+        "notes": "Options chargées dynamiquement par SwissLife selon le statut sélectionné"
+      }
+    },
+    "spouse": {
+      "birthDate": {
+        "type": "date",
+        "label": "Date de naissance du conjoint",
+        "format": "DD/MM/YYYY",
+        "required": true,
+        "showIf": {
+          "field": "conjoint",
+          "equals": true
+        },
+        "carriers": ["alptis", "swisslifeone"]
+      },
+      "regime": {
+        "type": "select",
+        "label": "Régime",
+        "required": false,
+        "carrierSpecific": true,
+        "showIf": {
+          "field": "conjoint",
+          "equals": true
+        },
+        "carriers": ["alptis", "swisslifeone"],
+        "notes": "Pour Alptis: 'Régime obligatoire' (régime de sécurité sociale). Pour SwissLife: 'Régime social' (champ distinct de 'statut')",
+        "optionSets": {
+          "alptis": [
+            { "value": "ALSACE_MOSELLE", "label": "Alsace / Moselle" },
+            { "value": "AMEXA", "label": "Amexa" },
+            { "value": "REGIME_SALARIES_AGRICOLES", "label": "Régime des salariés agricoles" },
+            { "value": "SECURITE_SOCIALE", "label": "Sécurité sociale" },
+            { "value": "SECURITE_SOCIALE_INDEPENDANTS", "label": "Sécurité sociale des indépendants" }
+          ],
+          "swisslifeone": [
+            { "value": "SECURITE_SOCIALE", "label": "Régime Général (CPAM)" },
+            { "value": "SECURITE_SOCIALE_ALSACE_MOSELLE", "label": "Régime Local (CPAM Alsace Moselle)" },
+            { "value": "TNS", "label": "Régime Général pour TNS (CPAM)" },
+            { "value": "AMEXA", "label": "Mutualité Sociale Agricole (MSA-Amexa)" },
+            { "value": "AUTRES_REGIME_SPECIAUX", "label": "Autres régimes spéciaux" }
+          ]
+        }
+      },
+      "status": {
+        "type": "select",
+        "label": "Statut (conjoint)",
+        "required": true,
+        "showIf": {
+          "field": "conjoint",
+          "equals": true
+        },
+        "carriers": ["swisslifeone"],
+        "notes": "Champ distinct de 'regime' dans SwissLife",
+        "options": [
+          { "value": "SALARIE", "label": "Salarié et autres statuts" },
+          { "value": "SALARIE_AGRICOLE", "label": "Salarié agricole et autres statuts" },
+          { "value": "EXPLOITANT_AGRICOLE", "label": "Exploitant agricole" },
+          { "value": "TNS", "label": "Travailleur Non Salarié" },
+          { "value": "ETUDIANT", "label": "Etudiant" },
+          { "value": "RETRAITE", "label": "Retraité" },
+          { "value": "RETRAITE_ANCIEN_SALARIE", "label": "Retraité (ancien salarié)" },
+          { "value": "RETRAITE_ANCIEN_EXPLOITANT", "label": "Retraité (ancien exploitant)" },
+          { "value": "TRAVAILLEUR_TRANSFRONTALIER", "label": "Travailleur transfrontalier" },
+          { "value": "FONCTIONNAIRE", "label": "Fonctionnaire" }
+        ]
+      },
+      "profession": {
+        "type": "select",
+        "label": "Profession (conjoint)",
+        "required": false,
+        "showIf": {
+          "field": "conjoint",
+          "equals": true
+        },
+        "carriers": ["swisslifeone"],
+        "notes": "Options chargées dynamiquement par SwissLife selon le statut sélectionné"
+      }
+    },
+    "children": {
+      "count": {
+        "type": "number",
+        "label": "Nombre d'enfants",
+        "required": false,
+        "min": 0,
+        "max": 10,
+        "carriers": ["swisslifeone"]
+      },
+      "[]": {
+        "birthDate": {
+          "type": "date",
+          "label": "Date de naissance",
+          "format": "DD/MM/YYYY",
+          "required": false,
+          "repeat": {
+            "countField": "nb_enfants"
+          },
+          "showIf": {
+            "field": "enfants",
+            "equals": true
+          },
+          "carriers": ["alptis", "swisslifeone"]
+        },
+        "regime": {
+          "type": "select",
+          "label": "Régime obligatoire (par enfant)",
+          "required": false,
+          "repeat": {
+            "countField": "nb_enfants"
+          },
+          "showIf": {
+            "field": "enfants",
+            "equals": true
+          },
+          "carrierSpecific": true,
+          "carriers": ["alptis"],
+          "optionSets": {
+            "alptis": [
+              { "value": "ALSACE_MOSELLE", "label": "Alsace / Moselle" },
+              { "value": "AMEXA", "label": "Amexa" },
+              { "value": "REGIME_SALARIES_AGRICOLES", "label": "Régime des salariés agricoles" },
+              { "value": "SECURITE_SOCIALE", "label": "Sécurité sociale" },
+              { "value": "SECURITE_SOCIALE_INDEPENDANTS", "label": "Sécurité sociale des indépendants" }
+            ]
+          }
+        }
+      }
+    }
+  }
+}
