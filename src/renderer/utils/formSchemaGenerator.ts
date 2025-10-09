@@ -31,6 +31,11 @@ export interface FormFieldDefinition {
   autoGenerate?: boolean
   template?: string
   platform?: 'alptis' | 'swisslifeone'
+  default?: any
+  defaultExpression?: string
+  defaultsByCarrier?: {
+    [carrier: string]: any
+  }
 }
 
 export interface FormSchema {
@@ -67,6 +72,11 @@ interface DomainConfig {
     countField: string
   }
   disabled?: boolean
+  default?: any
+  defaultExpression?: string
+  defaultsByCarrier?: {
+    [carrier: string]: any
+  }
 }
 
 interface BaseDomain {
@@ -178,6 +188,25 @@ function buildFieldDefinition(
 
   if ((domainField as any).template) {
     field.template = (domainField as any).template
+  }
+
+  // Extract default values
+  if (domainField.default !== undefined) {
+    field.default = domainField.default
+  }
+
+  if (domainField.defaultExpression) {
+    field.defaultExpression = domainField.defaultExpression
+  }
+
+  if (domainField.defaultsByCarrier) {
+    if (carrier) {
+      // If we have a specific carrier, use its default
+      field.default = domainField.defaultsByCarrier[carrier]
+    } else {
+      // Otherwise, store all carrier-specific defaults
+      field.defaultsByCarrier = domainField.defaultsByCarrier
+    }
   }
 
   if (domainField.optionSets && carrier) {

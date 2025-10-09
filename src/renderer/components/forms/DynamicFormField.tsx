@@ -42,6 +42,7 @@ export default function DynamicFormField({
           placeholder={field.placeholder}
           disabled={field.disabled}
           inputMode={field.inputMode}
+          pattern={field.validation?.pattern}
           canGenerate={field.autoGenerate}
           onGenerate={onGenerate}
         />
@@ -89,7 +90,7 @@ export default function DynamicFormField({
       return (
         <NumberField
           label={labelWithBadge}
-          value={value || 0}
+          value={value ?? ''}
           onChange={onChange}
           error={error}
           required={field.required}

@@ -2,8 +2,8 @@ import React, { useId } from 'react'
 
 interface NumberFieldProps {
   label: React.ReactNode
-  value: number
-  onChange: (value: number) => void
+  value: number | string
+  onChange: (value: number | string) => void
   error?: string
   required?: boolean
   min?: number
@@ -24,6 +24,12 @@ export default function NumberField({
   const fieldId = useId()
   const errorId = `${fieldId}-error`
 
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value
+    // Si vide, on garde vide. Sinon on convertit en number
+    onChange(val === '' ? '' : Number(val))
+  }
+
   return (
     <div className="space-y-1">
       <label htmlFor={fieldId} className="block text-sm font-medium">
@@ -33,7 +39,7 @@ export default function NumberField({
         id={fieldId}
         type="number"
         value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
+        onChange={handleChange}
         min={min}
         max={max}
         disabled={disabled}

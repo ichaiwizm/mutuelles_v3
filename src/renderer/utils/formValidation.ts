@@ -16,11 +16,14 @@ function validateField(
   field: FormFieldDefinition,
   value: any
 ): string | undefined {
-  if (field.required && (!value || value === '')) {
+  // Check for empty values (including empty string for number fields)
+  const isEmpty = value === undefined || value === null || value === ''
+
+  if (field.required && isEmpty) {
     return `${field.label} est requis`
   }
 
-  if (!value || value === '') {
+  if (isEmpty) {
     return undefined
   }
 
@@ -31,17 +34,28 @@ function validateField(
     }
   }
 
+  // Validation: Number fields - check postal code has 5 digits
+  if (field.type === 'number' && field.domainKey.includes('postalCode')) {
+    const postalStr = String(value)
+    if (postalStr.length !== 5) {
+      return 'Le code postal doit contenir exactement 5 chiffres'
+    }
+  }
+
+  // Validation: Number fields - check department has 2-3 digits
+  if (field.type === 'number' && field.domainKey.includes('departmentCode')) {
+    const deptStr = String(value)
+    if (deptStr.length < 1 || deptStr.length > 3) {
+      return 'Le département doit contenir 1 à 3 chiffres'
+    }
+  }
+
   if (field.validation) {
     if (field.validation.pattern) {
       const regex = new RegExp(field.validation.pattern)
       if (!regex.test(value)) {
         return `${field.label} ne respecte pas le format attendu`
       }
-    }
-
-    // Validation: Postal code length - must be exactly 5 digits
-    if (field.domainKey.includes('postalCode') && value.length !== 5) {
-      return 'Le code postal doit contenir exactement 5 chiffres'
     }
 
     if (field.validation.minLength && value.length < field.validation.minLength) {

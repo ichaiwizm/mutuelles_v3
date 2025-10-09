@@ -26,6 +26,7 @@
         "label": "Date d'effet",
         "required": true,
         "format": "DD/MM/YYYY",
+        "defaultExpression": "firstOfNextMonth",
         "carriers": ["alptis", "swisslifeone"]
       },
       "plan": {
@@ -48,6 +49,7 @@
         "type": "radio",
         "label": "Civilité",
         "required": true,
+        "default": "MONSIEUR",
         "carriers": ["alptis", "swisslifeone"],
         "options": [
           { "value": "MONSIEUR", "label": "Monsieur" },
@@ -77,6 +79,7 @@
         "type": "select",
         "label": "Catégorie socioprofessionnelle",
         "required": true,
+        "default": "PERSONNES_SANS_ACTIVITE_PROFESSIONNELLE",
         "carriers": ["alptis"],
         "options": [
           { "value": "AGRICULTEURS_EXPLOITANTS", "label": "Agriculteurs exploitants" },
@@ -97,6 +100,10 @@
         "label": "Régime",
         "required": true,
         "carrierSpecific": true,
+        "defaultsByCarrier": {
+          "alptis": "SECURITE_SOCIALE",
+          "swisslifeone": "TNS"
+        },
         "carriers": ["alptis", "swisslifeone"],
         "notes": "Pour Alptis: 'Régime obligatoire' (régime de sécurité sociale). Pour SwissLife: 'Régime social' (champ distinct de 'statut')",
         "optionSets": {
@@ -117,24 +124,30 @@
         }
       },
       "postalCode": {
-        "type": "text",
+        "type": "number",
         "label": "Code postal",
         "required": true,
-        "pattern": "^\\d+$",
-        "placeholder": "Chiffres uniquement",
-        "inputMode": "numeric",
-        "carriers": ["alptis"]
+        "carriers": ["alptis"],
+        "validations": {
+          "min": 1000,
+          "max": 99999
+        }
       },
       "departmentCode": {
-        "type": "select",
+        "type": "number",
         "label": "Département",
         "required": true,
-        "carriers": ["swisslifeone"]
+        "carriers": ["swisslifeone"],
+        "validations": {
+          "min": 1,
+          "max": 999
+        }
       },
       "status": {
         "type": "select",
         "label": "Statut",
         "required": true,
+        "default": "TNS",
         "carriers": ["swisslifeone"],
         "notes": "Champ distinct de 'regime' dans SwissLife. Même liste d'options mais deux champs HTML séparés (#regime-social-assure-principal vs #statut-assure-principal)",
         "options": [
@@ -154,6 +167,7 @@
         "type": "select",
         "label": "Profession",
         "required": false,
+        "default": "AUTRE",
         "carriers": ["swisslifeone"],
         "notes": "Options chargées dynamiquement par SwissLife selon le statut sélectionné. Professions médicales bénéficient d'une réduction tarifaire de 10%.",
         "dependsOn": ["status"],
@@ -184,6 +198,10 @@
         "label": "Régime",
         "required": false,
         "carrierSpecific": true,
+        "defaultsByCarrier": {
+          "alptis": "SECURITE_SOCIALE",
+          "swisslifeone": "TNS"
+        },
         "showIf": {
           "field": "conjoint",
           "equals": true
@@ -211,6 +229,7 @@
         "type": "select",
         "label": "Statut (conjoint)",
         "required": true,
+        "default": "TNS",
         "showIf": {
           "field": "conjoint",
           "equals": true
@@ -234,6 +253,7 @@
         "type": "select",
         "label": "Profession (conjoint)",
         "required": false,
+        "default": "AUTRE",
         "showIf": {
           "field": "conjoint",
           "equals": true
@@ -254,6 +274,7 @@
         "type": "select",
         "label": "Catégorie socioprofessionnelle (conjoint)",
         "required": false,
+        "default": "PERSONNES_SANS_ACTIVITE_PROFESSIONNELLE",
         "showIf": {
           "field": "conjoint",
           "equals": true
@@ -304,6 +325,9 @@
           "type": "select",
           "label": "Régime obligatoire (par enfant)",
           "required": false,
+          "defaultsByCarrier": {
+            "alptis": "SECURITE_SOCIALE"
+          },
           "repeat": {
             "countField": "nb_enfants"
           },
@@ -327,6 +351,7 @@
           "type": "select",
           "label": "Ayant droit",
           "required": false,
+          "default": "1",
           "repeat": {
             "countField": "nb_enfants"
           },

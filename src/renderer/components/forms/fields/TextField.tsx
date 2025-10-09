@@ -10,6 +10,7 @@ interface TextFieldProps {
   placeholder?: string
   disabled?: boolean
   inputMode?: 'text' | 'numeric' | 'decimal' | 'tel' | 'email' | 'url'
+  pattern?: string
   onGenerate?: () => void
   canGenerate?: boolean
 }
@@ -23,6 +24,7 @@ export default function TextField({
   placeholder,
   disabled = false,
   inputMode = 'text',
+  pattern,
   onGenerate,
   canGenerate = false
 }: TextFieldProps) {
@@ -43,6 +45,7 @@ export default function TextField({
           placeholder={placeholder}
           disabled={disabled}
           inputMode={inputMode}
+          pattern={pattern}
           aria-invalid={!!error}
           aria-describedby={error ? errorId : undefined}
           aria-required={required}

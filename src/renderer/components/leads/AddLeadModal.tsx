@@ -1,121 +1,16 @@
 import React, { useState, useEffect } from 'react'
 import Modal from '../Modal'
-import Button from '../Button'
 import CommonFieldsSection from '../forms/CommonFieldsSection'
 import PlatformSpecificSection from '../forms/PlatformSpecificSection'
+import LeadFormActions from './LeadFormActions'
 import { useFormSchema } from '@renderer/hooks/useFormSchema'
-import { validateForm } from '@renderer/utils/formValidation'
-import { transformToCleanLead } from '@renderer/utils/formDataTransformer'
+import { useLeadForm } from '@renderer/hooks/useLeadForm'
 import { useToastContext } from '@renderer/contexts/ToastContext'
-import { FormSchema } from '@renderer/utils/formSchemaGenerator'
-
-function getDefaultValues(schema: FormSchema): Record<string, any> {
-  const defaults: Record<string, any> = {}
-
-  // Date d'effet : 1er du mois suivant
-  const nextMonth = new Date()
-  nextMonth.setMonth(nextMonth.getMonth() + 1)
-  nextMonth.setDate(1)
-  const dateEffet = `01/${String(nextMonth.getMonth() + 1).padStart(2, '0')}/${nextMonth.getFullYear()}`
-
-  const allFields = [
-    ...schema.common,
-    ...schema.platformSpecific.alptis,
-    ...schema.platformSpecific.swisslifeone
-  ]
-
-  allFields.forEach(field => {
-    // Date d'effet
-    if (field.domainKey === 'project.dateEffet') {
-      defaults[field.domainKey] = dateEffet
-    }
-    // Civilité
-    else if (field.domainKey === 'subscriber.civility') {
-      defaults[field.domainKey] = 'MONSIEUR'
-    }
-    // Régime Swiss Life (subscriber)
-    else if (field.domainKey === 'subscriber.regime' && field.platform === 'swisslifeone') {
-      defaults[field.domainKey] = 'TNS'
-    }
-    // Régime Swiss Life (spouse)
-    else if (field.domainKey === 'spouse.regime' && field.platform === 'swisslifeone') {
-      defaults[field.domainKey] = 'TNS'
-    }
-    // Statut Swiss Life (subscriber)
-    else if (field.domainKey === 'subscriber.status') {
-      defaults[field.domainKey] = 'TNS'
-    }
-    // Statut Swiss Life (spouse)
-    else if (field.domainKey === 'spouse.status') {
-      defaults[field.domainKey] = 'TNS'
-    }
-    // Profession Swiss Life (subscriber)
-    else if (field.domainKey === 'subscriber.profession') {
-      defaults[field.domainKey] = 'AUTRE'
-    }
-    // Profession Swiss Life (spouse)
-    else if (field.domainKey === 'spouse.profession') {
-      defaults[field.domainKey] = 'AUTRE'
-    }
-    // Régime Alptis (subscriber)
-    else if (field.domainKey === 'subscriber.regime' && field.platform === 'alptis') {
-      defaults[field.domainKey] = 'SECURITE_SOCIALE'
-    }
-    // Régime Alptis (spouse)
-    else if (field.domainKey === 'spouse.regime' && field.platform === 'alptis') {
-      defaults[field.domainKey] = 'SECURITE_SOCIALE'
-    }
-    // Catégorie Alptis (subscriber)
-    else if (field.domainKey === 'subscriber.category') {
-      defaults[field.domainKey] = 'PERSONNES_SANS_ACTIVITE_PROFESSIONNELLE'
-    }
-    // Catégorie Alptis (spouse)
-    else if (field.domainKey === 'spouse.category') {
-      defaults[field.domainKey] = 'PERSONNES_SANS_ACTIVITE_PROFESSIONNELLE'
-    }
-    // Champs disabled
-    else if (field.disabled && field.options && field.options.length > 0) {
-      defaults[field.domainKey] = field.options[0].value
-    }
-    // Autres select : logique intelligente
-    else if (field.type === 'select' && field.options && field.options.length > 0) {
-      const securiteSociale = field.options.find(opt => opt.value === 'SECURITE_SOCIALE')
-      const cadres = field.options.find(opt => opt.value === 'CADRES')
-      const salarie = field.options.find(opt => opt.value === 'SALARIE')
-      const autre = field.options.find(opt => opt.value === 'AUTRE')
-
-      if (securiteSociale) {
-        defaults[field.domainKey] = 'SECURITE_SOCIALE'
-      } else if (cadres) {
-        defaults[field.domainKey] = 'CADRES'
-      } else if (salarie) {
-        defaults[field.domainKey] = 'SALARIE'
-      } else if (autre) {
-        defaults[field.domainKey] = 'AUTRE'
-      } else {
-        defaults[field.domainKey] = field.options[0].value
-      }
-    }
-    // Radios
-    else if (field.type === 'radio' && field.options && field.options.length > 0) {
-      defaults[field.domainKey] = field.options[0].value
-    }
-  })
-
-  return defaults
-}
 
 interface AddLeadModalProps {
   isOpen: boolean
   onClose: () => void
   onSuccess: () => void
-}
-
-interface FormState {
-  values: Record<string, any>
-  errors: Record<string, string>
-  touched: Record<string, boolean>
-  isSubmitting: boolean
 }
 
 export default function AddLeadModal({
@@ -126,222 +21,54 @@ export default function AddLeadModal({
   const { schema, loading: schemaLoading, error: schemaError } = useFormSchema()
   const toast = useToastContext()
 
-  const [formState, setFormState] = useState<FormState>({
-    values: {},
-    errors: {},
-    touched: {},
-    isSubmitting: false
-  })
-
-  useEffect(() => {
-    if (schema && isOpen && Object.keys(formState.values).length === 0) {
-      const defaultValues = getDefaultValues(schema)
-      setFormState(prev => ({
-        ...prev,
-        values: defaultValues
-      }))
-    }
-  }, [schema, isOpen])
-
-  const [hasSpouse, setHasSpouse] = useState(false)
-  const [hasChildren, setHasChildren] = useState(false)
-  const [children, setChildren] = useState<Array<{ id: string }>>([])
   const [alptisExpanded, setAlptisExpanded] = useState(false)
   const [swisslifeExpanded, setSwisslifeExpanded] = useState(false)
 
+  const leadForm = useLeadForm({
+    schema,
+    onSuccess: () => {
+      toast.success('Lead créé avec succès')
+      onSuccess()
+    },
+    onError: (error) => {
+      toast.error('Erreur lors de la création', error)
+    },
+    onLoadingChange: (isLoading, message) => {
+      if (isLoading && message) {
+        toast.loading(message)
+      }
+    }
+  })
+
+  // Reset form when modal closes
   useEffect(() => {
     if (!isOpen) {
-      setFormState({
-        values: {},
-        errors: {},
-        touched: {},
-        isSubmitting: false
-      })
-      setHasSpouse(false)
-      setHasChildren(false)
-      setChildren([])
+      leadForm.handleReset()
       setAlptisExpanded(false)
       setSwisslifeExpanded(false)
     }
   }, [isOpen])
 
-  const handleFieldChange = (key: string, value: any) => {
-    setFormState(prev => ({
-      ...prev,
-      values: { ...prev.values, [key]: value },
-      touched: { ...prev.touched, [key]: true }
-    }))
-  }
-
-  const handleToggleSpouse = (active: boolean) => {
-    setHasSpouse(active)
-
-    if (active) {
-      // Ajouter valeurs par défaut pour le conjoint
-      setFormState(prev => ({
-        ...prev,
-        values: {
-          ...prev.values,
-          'conjoint': true,
-          'spouse.regime': 'SECURITE_SOCIALE', // Default pour Alptis, peut être changé pour Swiss Life
-          'spouse.status': 'TNS',
-          'spouse.profession': 'AUTRE',
-          'spouse.category': 'PERSONNES_SANS_ACTIVITE_PROFESSIONNELLE'
-        }
-      }))
-    } else {
-      setFormState(prev => {
-        const newValues = { ...prev.values, 'conjoint': false }
-        Object.keys(newValues).forEach(key => {
-          if (key.startsWith('spouse.')) {
-            delete newValues[key]
-          }
-        })
-        return { ...prev, values: newValues }
-      })
-    }
-  }
-
-  const handleToggleChildren = (active: boolean) => {
-    setHasChildren(active)
-
-    if (active) {
-      // Auto-create first child when toggling on with unique ID
-      const newChildren = [{ id: `child-${Date.now()}-0` }]
-      setChildren(newChildren)
-
-      setFormState(prev => ({
-        ...prev,
-        values: {
-          ...prev.values,
-          'enfants': true,
-          'children.count': 1,
-          'children[0].regime': 'SECURITE_SOCIALE',
-          'children[0].ayantDroit': '1'
-        }
-      }))
-    } else {
-      setChildren([])
-      setFormState(prev => {
-        const newValues = { ...prev.values }
-        Object.keys(newValues).forEach(key => {
-          if (key.startsWith('children[')) {
-            delete newValues[key]
-          }
-        })
-        newValues['children.count'] = 0
-        newValues['enfants'] = false
-        return { ...prev, values: newValues }
-      })
-    }
-  }
-
-  const handleAddChild = () => {
-    const childIndex = children.length
-    const newChildren = [...children, { id: `child-${Date.now()}-${childIndex}` }]
-    setChildren(newChildren)
-
-    // Valeurs par défaut pour le nouvel enfant
-    setFormState(prev => ({
-      ...prev,
-      values: {
-        ...prev.values,
-        'children.count': newChildren.length,
-        [`children[${childIndex}].regime`]: 'SECURITE_SOCIALE',
-        [`children[${childIndex}].ayantDroit`]: '1' // Assuré principal
-      }
-    }))
-  }
-
-  const handleRemoveChild = (index: number) => {
-    const newChildren = children.filter((_, i) => i !== index)
-    setChildren(newChildren)
-
-    setFormState(prev => {
-      const newValues = { ...prev.values }
-      Object.keys(newValues).forEach(key => {
-        if (key.startsWith(`children[${index}]`)) {
-          delete newValues[key]
-        }
-      })
-
-      for (let i = index + 1; i < children.length; i++) {
-        Object.keys(newValues).forEach(key => {
-          if (key.startsWith(`children[${i}]`)) {
-            const newKey = key.replace(`children[${i}]`, `children[${i - 1}]`)
-            newValues[newKey] = newValues[key]
-            delete newValues[key]
-          }
-        })
-      }
-
-      newValues['children.count'] = newChildren.length
-      return { ...prev, values: newValues }
-    })
-  }
-
-  const handleSubmit = async () => {
-    if (!schema) return
-
-    const errors = validateForm(schema, formState.values)
-
-    if (Object.keys(errors).length > 0) {
-      setFormState(prev => ({ ...prev, errors }))
-      toast.error('Formulaire invalide', 'Veuillez corriger les erreurs avant de continuer')
-      return
-    }
-
-    setFormState(prev => ({ ...prev, isSubmitting: true, errors: {} }))
-    const toastId = toast.loading('Création du lead...')
-
-    try {
-      const cleanLead = transformToCleanLead(formState.values)
-      const result = await window.api.leads.create(cleanLead)
-
-      if (result.success) {
-        if (result.data?.isDuplicate) {
-          toast.update(toastId, {
-            type: 'warning',
-            title: 'Doublons détectés',
-            message: `${result.data.duplicates?.length || 0} lead(s) similaire(s) trouvé(s)`,
-            duration: 5000
-          })
-        } else {
-          toast.update(toastId, {
-            type: 'success',
-            title: 'Lead créé avec succès'
-          })
-        }
-        onSuccess()
-      } else {
-        throw new Error(result.error || 'Erreur inconnue')
-      }
-    } catch (error) {
-      toast.update(toastId, {
-        type: 'error',
-        title: 'Erreur lors de la création',
-        message: String(error)
-      })
-    } finally {
-      setFormState(prev => ({ ...prev, isSubmitting: false }))
-    }
-  }
-
   const handleGenerateProjectName = () => {
-    const lastName = formState.values['subscriber.lastName'] || ''
-    const firstName = formState.values['subscriber.firstName'] || ''
+    const lastName = leadForm.formState.values['subscriber.lastName'] || ''
+    const firstName = leadForm.formState.values['subscriber.firstName'] || ''
 
     if (lastName && firstName) {
       const generated = `Simulation ${lastName} ${firstName}`
-      handleFieldChange('project.name', generated)
+      leadForm.handleFieldChange('project.name', generated)
       toast.success('Nom généré', generated)
     } else {
       toast.warning('Nom et prénom requis', 'Veuillez d\'abord renseigner le nom et le prénom')
     }
   }
 
+  const handleFillDefaults = () => {
+    leadForm.handleFillDefaults()
+    toast.success('Valeurs par défaut appliquées', 'Les champs vides ont été remplis avec leurs valeurs par défaut')
+  }
+
   const handleClose = () => {
-    if (!formState.isSubmitting) {
+    if (!leadForm.formState.isSubmitting) {
       onClose()
     }
   }
@@ -385,30 +112,41 @@ export default function AddLeadModal({
   return (
     <Modal isOpen={isOpen} onClose={handleClose} title="Ajouter un lead manuellement" size="large">
       <div className="space-y-3">
+        {/* Bouton Remplir par défaut en haut à droite */}
+        <div className="flex justify-end">
+          <button
+            onClick={handleFillDefaults}
+            disabled={leadForm.formState.isSubmitting || !schema}
+            className="px-4 py-2 text-sm font-medium text-neutral-700 dark:text-neutral-300 bg-neutral-100 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded-lg hover:bg-neutral-200 dark:hover:bg-neutral-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            Remplir par défaut
+          </button>
+        </div>
+
         <CommonFieldsSection
           commonFields={schema.common.filter(f => !f.domainKey.startsWith('spouse.') && !f.domainKey.startsWith('children'))}
           spouseFields={allSpouseFields}
           childrenFields={allChildrenFields}
-          values={formState.values}
-          onChange={handleFieldChange}
+          values={leadForm.formState.values}
+          onChange={leadForm.handleFieldChange}
           onGenerate={handleGenerateProjectName}
-          errors={formState.errors}
-          hasSpouse={hasSpouse}
-          onToggleSpouse={handleToggleSpouse}
-          hasChildren={hasChildren}
-          onToggleChildren={handleToggleChildren}
-          children={children}
-          onAddChild={handleAddChild}
-          onRemoveChild={handleRemoveChild}
+          errors={leadForm.formState.errors}
+          hasSpouse={leadForm.hasSpouse}
+          onToggleSpouse={leadForm.handleToggleSpouse}
+          hasChildren={leadForm.hasChildren}
+          onToggleChildren={leadForm.handleToggleChildren}
+          children={leadForm.children}
+          onAddChild={leadForm.handleAddChild}
+          onRemoveChild={leadForm.handleRemoveChild}
         />
 
         <div className="space-y-4">
           <PlatformSpecificSection
             platform="alptis"
             schema={schema}
-            values={formState.values}
-            onChange={handleFieldChange}
-            errors={formState.errors}
+            values={leadForm.formState.values}
+            onChange={leadForm.handleFieldChange}
+            errors={leadForm.formState.errors}
             isExpanded={alptisExpanded}
             onToggle={setAlptisExpanded}
           />
@@ -416,28 +154,29 @@ export default function AddLeadModal({
           <PlatformSpecificSection
             platform="swisslifeone"
             schema={schema}
-            values={formState.values}
-            onChange={handleFieldChange}
-            errors={formState.errors}
+            values={leadForm.formState.values}
+            onChange={leadForm.handleFieldChange}
+            errors={leadForm.formState.errors}
             isExpanded={swisslifeExpanded}
             onToggle={setSwisslifeExpanded}
           />
         </div>
 
         <div className="flex items-center justify-between pt-4 border-t border-neutral-200 dark:border-neutral-800">
-          <Button
+          <button
             onClick={handleClose}
-            disabled={formState.isSubmitting}
+            disabled={leadForm.formState.isSubmitting}
+            className="px-4 py-2 text-sm font-medium text-neutral-700 dark:text-neutral-300 bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             Annuler
-          </Button>
-          <Button
-            onClick={handleSubmit}
-            variant="primary"
-            loading={formState.isSubmitting}
+          </button>
+          <button
+            onClick={leadForm.handleSubmit}
+            disabled={leadForm.formState.isSubmitting}
+            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 dark:bg-blue-500 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            Créer le lead
-          </Button>
+            {leadForm.formState.isSubmitting ? 'Création...' : 'Créer le lead'}
+          </button>
         </div>
       </div>
     </Modal>
