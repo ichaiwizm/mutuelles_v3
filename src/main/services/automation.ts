@@ -161,12 +161,7 @@ async function execStep(page: Page, s: any, ctx: { username: string; password: s
   switch (s.type) {
     case 'goto':
       {
-        let target = s.url as string | null
-        if (!target && (ctx as any).platform_id) {
-          // Fallback: URL de la page login depuis platform_pages
-          const row = getDb().prepare('SELECT url FROM platform_pages WHERE platform_id = ? AND slug = ?').get((ctx as any).platform_id, 'login') as { url?: string } | undefined
-          target = row?.url ?? null
-        }
+        const target = s.url as string | null
         if (!target) throw new Error('URL manquante (goto)')
         await page.goto(target, { waitUntil: 'domcontentloaded' })
       }

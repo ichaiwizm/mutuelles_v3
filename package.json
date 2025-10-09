@@ -40,6 +40,9 @@
     "ui:form:import": "cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/platforms/import_ui_form.mjs",
     "platforms:fields:import": "cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/platforms/import_field_definitions.mjs",
     "platforms:fields:export": "cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/platforms/export_field_definitions.mjs",
+    "platforms:debug": "cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/debug_platforms.mjs",
+    "platforms:fix": "cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/fix_platform_selection.mjs",
+    "platforms:test": "cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/test_platform_leads.mjs",
     "cleanup:runs": "node scripts/cleanup/clean_old_runs.mjs",
     "cleanup:runs:dry": "node scripts/cleanup/clean_old_runs.mjs --dry-run"
   },

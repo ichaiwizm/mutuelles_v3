@@ -1,0 +1,40 @@
+{
+  "leadSlug": "sample_full",
+  "platformSlug": "alptis",
+  "validation": {
+    "isValid": true,
+    "errors": [],
+    "warnings": []
+  },
+  "data": {
+    "login_username": null,
+    "login_password": null,
+    "login_submit": null,
+    "date_effet": "01/10/2025",
+    "civilite_adherent": "MADAME",
+    "nom_adherent": "Durand",
+    "prenom_adherent": "Camille",
+    "date_naissance_adherent": "1985-01-01",
+    "categorie_adherent": "CADRES",
+    "regime_adherent": "SECURITE_SOCIALE",
+    "code_postal": "69001",
+    "cadre_exercice_salarie": "SALARIE",
+    "cadre_exercice_independant": "SALARIE",
+    "conjoint_toggle": true,
+    "date_naissance_conjoint": "1986-02-02",
+    "categorie_conjoint": "CADRES",
+    "regime_conjoint": "SECURITE_SOCIALE",
+    "enfants_toggle": true,
+    "date_naissance_enfant_0": "2010-05-05",
+    "regime_enfant_0": "SECURITE_SOCIALE",
+    "date_naissance_enfant_1": "2012-06-06",
+    "regime_enfant_1": "SECURITE_SOCIALE",
+    "date_naissance_enfant_2": "2014-07-07",
+    "regime_enfant_2": "SECURITE_SOCIALE"
+  },
+  "metadata": {
+    "subscriberAge": 40,
+    "spouseAge": 39,
+    "childrenCount": 3
+  }
+}

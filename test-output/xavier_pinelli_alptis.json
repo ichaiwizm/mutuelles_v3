@@ -1,0 +1,34 @@
+{
+  "leadSlug": "xavier_pinelli",
+  "platformSlug": "alptis",
+  "validation": {
+    "isValid": true,
+    "errors": [],
+    "warnings": []
+  },
+  "data": {
+    "login_username": null,
+    "login_password": null,
+    "login_submit": null,
+    "date_effet": "01/04/2025",
+    "civilite_adherent": "MONSIEUR",
+    "nom_adherent": "PINELLI",
+    "prenom_adherent": "XAVIER",
+    "date_naissance_adherent": "1971-05-17",
+    "categorie_adherent": "PROFESSIONS_LIBERALES_ET_ASSIMILES",
+    "regime_adherent": "TNS",
+    "code_postal": "13120",
+    "cadre_exercice_salarie": "TNS",
+    "cadre_exercice_independant": "TNS",
+    "conjoint_toggle": false,
+    "date_naissance_conjoint": null,
+    "categorie_conjoint": null,
+    "regime_conjoint": null,
+    "enfants_toggle": false
+  },
+  "metadata": {
+    "subscriberAge": 54,
+    "spouseAge": null,
+    "childrenCount": 0
+  }
+}

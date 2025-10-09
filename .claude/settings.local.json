@@ -28,7 +28,8 @@
       "Bash(npx tsc:*)",
       "Bash(npm run build:*)",
       "Bash(npx eslint:*)",
-      "Bash(dos2unix:*)"
+      "Bash(dos2unix:*)",
+      "Bash(npm run:*)"
     ],
     "deny": [],
     "ask": []
