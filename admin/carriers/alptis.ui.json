@@ -42,6 +42,10 @@
       "fields": [
         "spouse.birthDate",
         {
+          "domainKey": "spouse.category",
+          "optionSet": "alptis"
+        },
+        {
           "domainKey": "spouse.regime",
           "label": "Régime (conjoint)",
           "optionSet": "alptis"
@@ -78,6 +82,7 @@
     "subscriber.postalCode": "adherent.code_postal",
     "spouse.present": "conjoint.present",
     "spouse.birthDate": "conjoint.date_naissance",
+    "spouse.category": "conjoint.categorie",
     "spouse.regime": "conjoint.regime",
     "children.count": "projet.nb_enfants",
     "children[].birthDate": "enfants[].date_naissance",

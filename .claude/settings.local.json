@@ -20,7 +20,8 @@
       "Bash(for:*)",
       "Bash(done)",
       "Bash(cat:*)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(python3:*)"
     ],
     "deny": [],
     "ask": []

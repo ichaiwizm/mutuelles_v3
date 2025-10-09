@@ -7,7 +7,7 @@
     "description": "Configuration Swiss Life One référençant le domain model",
     "lastUpdated": "2025-01-15"
   },
-  "sections": [
+  "sections": [ 
     {
       "id": "projet",
       "title": "Projet",
@@ -73,6 +73,25 @@
       "fields": [
         "children.count"
       ]
+    },
+    {
+      "id": "enfants_details",
+      "title": "Détails des enfants",
+      "step": "Famille",
+      "repeatable": {
+        "min": 0,
+        "max": 10,
+        "itemLabelTemplate": "Enfant #{index}"
+      },
+      "visibleWhen": {
+        "greaterThan": {
+          "children.count": 0
+        }
+      },
+      "fields": [
+        "children[].birthDate",
+        "children[].ayantDroit"
+      ]
     }
   ],
   "leadMapping": {
@@ -89,6 +108,8 @@
     "spouse.regime": "conjoint.regime",
     "spouse.status": "conjoint.statut",
     "spouse.profession": "conjoint.profession",
-    "children.count": "projet.nb_enfants"
+    "children.count": "projet.nb_enfants",
+    "children[].birthDate": "enfants[].date_naissance",
+    "children[].ayantDroit": "enfants[].ayant_droit"
   }
 }

@@ -40,22 +40,6 @@
             { "value": "SwissLife Santé", "label": "SwissLife Santé" }
           ]
         }
-      },
-      "simulationType": {
-        "type": "radio",
-        "label": "Type de simulation",
-        "required": true,
-        "carriers": ["swisslifeone"],
-        "notes": "Détermine si la simulation est pour un individuel ou un couple. Change les champs du formulaire disponibles.",
-        "options": [
-          { "value": "INDIVIDUELLE", "label": "Individuelle" },
-          { "value": "COUPLE", "label": "Couple" }
-        ],
-        "conditional": {
-          "COUPLE": {
-            "requires": "spouse.present"
-          }
-        }
       }
     },
     "subscriber": {
@@ -273,7 +257,7 @@
           "equals": true
         },
         "carriers": ["alptis"],
-        "notes": "Catégorie socioprofessionnelle du conjoint. Utilise les mêmes valeurs que subscriber.category. Défini dans field-definitions mais non utilisé actuellement dans les flows.",
+        "notes": "Catégorie socioprofessionnelle du conjoint. Utilise les mêmes valeurs que subscriber.category.",
         "options": [
           { "value": "AGRICULTEURS_EXPLOITANTS", "label": "Agriculteurs exploitants" },
           { "value": "ARTISANS", "label": "Artisans" },
@@ -311,7 +295,8 @@
             "field": "enfants",
             "equals": true
           },
-          "carriers": ["alptis", "swisslifeone"]
+          "carriers": ["alptis", "swisslifeone"],
+          "notes": "Pour SwissLife, utilisé avec le champ ayantDroit pour remplir les champs individuels de chaque enfant."
         },
         "regime": {
           "type": "select",
@@ -335,6 +320,24 @@
               { "value": "SECURITE_SOCIALE_INDEPENDANTS", "label": "Sécurité sociale des indépendants" }
             ]
           }
+        },
+        "ayantDroit": {
+          "type": "select",
+          "label": "Ayant droit",
+          "required": false,
+          "repeat": {
+            "countField": "nb_enfants"
+          },
+          "showIf": {
+            "field": "enfants",
+            "equals": true
+          },
+          "carriers": ["swisslifeone"],
+          "notes": "Indique le parent ayant droit pour l'enfant (souscripteur ou conjoint). Détermine le rattachement de l'enfant.",
+          "options": [
+            { "value": "1", "label": "Assuré principal" },
+            { "value": "2", "label": "Conjoint" }
+          ]
         }
       }
     }
