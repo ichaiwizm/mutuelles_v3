@@ -24,9 +24,11 @@ export default function ToggleableSectionWrapper({
 
   return (
     <div
-      className={`rounded-lg border p-3 transition-colors ${
-        isEditing
-          ? 'border-blue-300 dark:border-blue-700 bg-blue-50/30 dark:bg-blue-900/10'
+      className={`rounded-lg border p-3 transition-all ${
+        isEditing && isActive
+          ? 'border-blue-400 dark:border-blue-600 bg-blue-50/50 dark:bg-blue-950/30 shadow-sm'
+          : isEditing
+          ? 'border-neutral-300 dark:border-neutral-700 bg-neutral-50/50 dark:bg-neutral-900/30'
           : 'border-neutral-200 dark:border-neutral-800'
       }`}
     >

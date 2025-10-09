@@ -30,6 +30,9 @@
       "title": "Souscripteur",
       "step": "Identité",
       "fields": [
+        "subscriber.civility",
+        "subscriber.lastName",
+        "subscriber.firstName",
         "subscriber.birthDate",
         "subscriber.departmentCode",
         {

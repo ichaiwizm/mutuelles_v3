@@ -121,7 +121,14 @@ function buildFieldDefinition(
   const category = parts[0]
   const fieldName = parts[1]
 
-  const domainField = baseDomain.domains[category]?.[fieldName]
+  // Gérer les champs répétables avec notation []
+  let domainField
+  if (domainKey.includes('[]')) {
+    domainField = baseDomain.domains[category]?.['[]']?.[fieldName]
+  } else {
+    domainField = baseDomain.domains[category]?.[fieldName]
+  }
+
   if (!domainField) return null
 
   const field: FormFieldDefinition = {

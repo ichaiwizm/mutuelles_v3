@@ -33,19 +33,6 @@ export default function PlatformSpecificSection({
     swisslifeone: 'Swiss Life One'
   }
 
-  const addPlatformToLabel = (field: any) => {
-    const baseKeys = ['regime', 'status', 'profession', 'category']
-    const fieldName = field.domainKey.split('.')[1]?.replace('[]', '')
-
-    if (baseKeys.includes(fieldName)) {
-      return {
-        ...field,
-        label: `${field.label} (${platformNames[platform]})`
-      }
-    }
-    return field
-  }
-
   // Only show subscriber/project-specific fields, not spouse or children
   const subscriberFields = fields.filter(f =>
     !f.domainKey.startsWith('spouse.') &&
@@ -75,7 +62,7 @@ export default function PlatformSpecificSection({
             {subscriberFields.map(field => (
               <DynamicFormField
                 key={field.domainKey}
-                field={addPlatformToLabel(field)}
+                field={field}
                 value={values[field.domainKey]}
                 onChange={(value) => onChange(field.domainKey, value)}
                 error={errors[field.domainKey]}

@@ -1,5 +1,5 @@
 import React from 'react'
-import { Plus, Trash2 } from 'lucide-react'
+import { Plus, X } from 'lucide-react'
 
 interface RepeatableFieldSetProps {
   title: string
@@ -55,10 +55,10 @@ export default function RepeatableFieldSet({
               <button
                 type="button"
                 onClick={() => onRemove(index)}
-                className="flex items-center gap-1 px-2 py-1 text-xs rounded transition-colors bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50"
+                className="p-1 rounded-full hover:bg-red-100 dark:hover:bg-red-900/30 text-neutral-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                title="Supprimer"
               >
-                <Trash2 size={14} />
-                Supprimer
+                <X size={16} />
               </button>
             </div>
             {renderItem(item, index)}

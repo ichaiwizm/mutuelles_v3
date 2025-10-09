@@ -12,6 +12,7 @@ import { FormSchema } from '@renderer/utils/formSchemaGenerator'
 function getDefaultValues(schema: FormSchema): Record<string, any> {
   const defaults: Record<string, any> = {}
 
+  // Date d'effet : 1er du mois suivant
   const nextMonth = new Date()
   nextMonth.setMonth(nextMonth.getMonth() + 1)
   nextMonth.setDate(1)
@@ -24,11 +25,60 @@ function getDefaultValues(schema: FormSchema): Record<string, any> {
   ]
 
   allFields.forEach(field => {
+    // Date d'effet
     if (field.domainKey === 'project.dateEffet') {
       defaults[field.domainKey] = dateEffet
-    } else if (field.disabled && field.options && field.options.length > 0) {
+    }
+    // Civilité
+    else if (field.domainKey === 'subscriber.civility') {
+      defaults[field.domainKey] = 'MONSIEUR'
+    }
+    // Régime Swiss Life (subscriber)
+    else if (field.domainKey === 'subscriber.regime' && field.platform === 'swisslifeone') {
+      defaults[field.domainKey] = 'TNS'
+    }
+    // Régime Swiss Life (spouse)
+    else if (field.domainKey === 'spouse.regime' && field.platform === 'swisslifeone') {
+      defaults[field.domainKey] = 'TNS'
+    }
+    // Statut Swiss Life (subscriber)
+    else if (field.domainKey === 'subscriber.status') {
+      defaults[field.domainKey] = 'TNS'
+    }
+    // Statut Swiss Life (spouse)
+    else if (field.domainKey === 'spouse.status') {
+      defaults[field.domainKey] = 'TNS'
+    }
+    // Profession Swiss Life (subscriber)
+    else if (field.domainKey === 'subscriber.profession') {
+      defaults[field.domainKey] = 'AUTRE'
+    }
+    // Profession Swiss Life (spouse)
+    else if (field.domainKey === 'spouse.profession') {
+      defaults[field.domainKey] = 'AUTRE'
+    }
+    // Régime Alptis (subscriber)
+    else if (field.domainKey === 'subscriber.regime' && field.platform === 'alptis') {
+      defaults[field.domainKey] = 'SECURITE_SOCIALE'
+    }
+    // Régime Alptis (spouse)
+    else if (field.domainKey === 'spouse.regime' && field.platform === 'alptis') {
+      defaults[field.domainKey] = 'SECURITE_SOCIALE'
+    }
+    // Catégorie Alptis (subscriber)
+    else if (field.domainKey === 'subscriber.category') {
+      defaults[field.domainKey] = 'PERSONNES_SANS_ACTIVITE_PROFESSIONNELLE'
+    }
+    // Catégorie Alptis (spouse)
+    else if (field.domainKey === 'spouse.category') {
+      defaults[field.domainKey] = 'PERSONNES_SANS_ACTIVITE_PROFESSIONNELLE'
+    }
+    // Champs disabled
+    else if (field.disabled && field.options && field.options.length > 0) {
       defaults[field.domainKey] = field.options[0].value
-    } else if (field.type === 'select' && field.options && field.options.length > 0) {
+    }
+    // Autres select : logique intelligente
+    else if (field.type === 'select' && field.options && field.options.length > 0) {
       const securiteSociale = field.options.find(opt => opt.value === 'SECURITE_SOCIALE')
       const cadres = field.options.find(opt => opt.value === 'CADRES')
       const salarie = field.options.find(opt => opt.value === 'SALARIE')
@@ -45,7 +95,9 @@ function getDefaultValues(schema: FormSchema): Record<string, any> {
       } else {
         defaults[field.domainKey] = field.options[0].value
       }
-    } else if (field.type === 'radio' && field.options && field.options.length > 0) {
+    }
+    // Radios
+    else if (field.type === 'radio' && field.options && field.options.length > 0) {
       defaults[field.domainKey] = field.options[0].value
     }
   })
@@ -123,14 +175,23 @@ export default function AddLeadModal({
 
   const handleToggleSpouse = (active: boolean) => {
     setHasSpouse(active)
-    setFormState(prev => ({
-      ...prev,
-      values: { ...prev.values, 'conjoint': active }
-    }))
 
-    if (!active) {
+    if (active) {
+      // Ajouter valeurs par défaut pour le conjoint
+      setFormState(prev => ({
+        ...prev,
+        values: {
+          ...prev.values,
+          'conjoint': true,
+          'spouse.regime': 'TNS', // sera écrasé par les platform-specific si besoin
+          'spouse.status': 'TNS',
+          'spouse.profession': 'AUTRE',
+          'spouse.category': 'PERSONNES_SANS_ACTIVITE_PROFESSIONNELLE'
+        }
+      }))
+    } else {
       setFormState(prev => {
-        const newValues = { ...prev.values }
+        const newValues = { ...prev.values, 'conjoint': false }
         Object.keys(newValues).forEach(key => {
           if (key.startsWith('spouse.')) {
             delete newValues[key]
@@ -143,12 +204,23 @@ export default function AddLeadModal({
 
   const handleToggleChildren = (active: boolean) => {
     setHasChildren(active)
-    setFormState(prev => ({
-      ...prev,
-      values: { ...prev.values, 'enfants': active, 'children.count': active ? children.length : 0 }
-    }))
 
-    if (!active) {
+    if (active) {
+      // Auto-create first child when toggling on
+      const newChildren = [{}]
+      setChildren(newChildren)
+
+      setFormState(prev => ({
+        ...prev,
+        values: {
+          ...prev.values,
+          'enfants': true,
+          'children.count': 1,
+          'children[0].regime': 'SECURITE_SOCIALE',
+          'children[0].ayantDroit': '1'
+        }
+      }))
+    } else {
       setChildren([])
       setFormState(prev => {
         const newValues = { ...prev.values }
@@ -158,6 +230,7 @@ export default function AddLeadModal({
           }
         })
         newValues['children.count'] = 0
+        newValues['enfants'] = false
         return { ...prev, values: newValues }
       })
     }
@@ -166,9 +239,18 @@ export default function AddLeadModal({
   const handleAddChild = () => {
     const newChildren = [...children, {}]
     setChildren(newChildren)
+
+    // Valeurs par défaut pour le nouvel enfant
+    const childIndex = newChildren.length - 1
+
     setFormState(prev => ({
       ...prev,
-      values: { ...prev.values, 'children.count': newChildren.length }
+      values: {
+        ...prev.values,
+        'children.count': newChildren.length,
+        [`children[${childIndex}].regime`]: 'SECURITE_SOCIALE',
+        [`children[${childIndex}].ayantDroit`]: '1' // Assuré principal
+      }
     }))
   }
 

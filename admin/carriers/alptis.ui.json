@@ -13,6 +13,7 @@
       "title": "Projet",
       "step": "Contrat",
       "fields": [
+        "project.name",
         "project.dateEffet"
       ]
     },
@@ -47,7 +48,7 @@
         },
         {
           "domainKey": "spouse.regime",
-          "label": "Régime (conjoint)",
+          "label": "Régime obligatoire (conjoint)",
           "optionSet": "alptis"
         }
       ]

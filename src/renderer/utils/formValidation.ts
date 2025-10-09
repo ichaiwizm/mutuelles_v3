@@ -1,5 +1,17 @@
 import { FormSchema, FormFieldDefinition } from './formSchemaGenerator'
 
+function calculateAge(birthDateStr: string): number {
+  const [day, month, year] = birthDateStr.split('/').map(Number)
+  const birthDate = new Date(year, month - 1, day)
+  const today = new Date()
+  let age = today.getFullYear() - birthDate.getFullYear()
+  const monthDiff = today.getMonth() - birthDate.getMonth()
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+    age--
+  }
+  return age
+}
+
 function validateField(
   field: FormFieldDefinition,
   value: any
@@ -52,6 +64,14 @@ function validateField(
       date.getFullYear() !== year
     ) {
       return `${field.label} n'est pas une date valide`
+    }
+
+    // Validation âge minimum 18 ans pour subscriber et spouse
+    if (field.domainKey === 'subscriber.birthDate' || field.domainKey === 'spouse.birthDate') {
+      const age = calculateAge(value)
+      if (age < 18) {
+        return `Âge minimum requis : 18 ans (actuellement ${age} ans)`
+      }
     }
   }
 
