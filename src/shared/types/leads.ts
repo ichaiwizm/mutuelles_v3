@@ -115,8 +115,9 @@ export interface SwissLifeOneData {
 }
 
 export interface PlatformData {
-  swisslifeone?: SwissLifeOneData
-  alptis?: any // Pour plus tard
+  swisslifeone?: Record<string, any>  // Données platform-specific SwissLife
+  alptis?: Record<string, any>         // Données platform-specific Alptis
+  [key: string]: Record<string, any> | undefined  // Permet d'ajouter d'autres plateformes
 }
 
 // Données pour créer un lead

@@ -38,6 +38,8 @@ export class PlatformLeadsService {
 
   /**
    * Generate platform-specific lead data
+   * PRIORITÉ 1 : Utiliser les données platform-specific que l'utilisateur a remplies manuellement
+   * PRIORITÉ 2 : Générer automatiquement si pas de données manuelles
    */
   async generatePlatformLead(options: GeneratePlatformLeadOptions): Promise<GeneratePlatformLeadResult> {
     try {
@@ -47,11 +49,35 @@ export class PlatformLeadsService {
         return { success: false, error: 'Lead not found' }
       }
 
-      // Get platform info and field definitions
+      // Get platform info
       const platform = this.getPlatformInfo(options.platformId)
       if (!platform) {
         return { success: false, error: 'Platform not found' }
       }
+
+      // PRIORITÉ 1 : Vérifier si l'utilisateur a rempli des données platform-specific
+      const manualPlatformData = lead.platformData?.[platform.slug]
+
+      if (manualPlatformData && Object.keys(manualPlatformData).length > 0) {
+        // L'utilisateur a rempli des données manuellement → LES UTILISER !
+        console.log(`[PlatformLeadsService] Using manual platform data for ${platform.slug}`)
+
+        const platformLeadData: PlatformLeadData = {
+          platformId: options.platformId,
+          platformSlug: platform.slug,
+          cleanLeadId: options.cleanLeadId,
+          cleanLeadVersion: lead.version || 1,
+          data: manualPlatformData,  // ← Données de l'utilisateur
+          generatedAt: new Date().toISOString(),
+          isValid: true,  // Assume valide (vient de l'utilisateur)
+          validationErrors: []
+        }
+
+        return { success: true, data: platformLeadData }
+      }
+
+      // PRIORITÉ 2 : Pas de données manuelles → Générer automatiquement
+      console.log(`[PlatformLeadsService] Generating platform data for ${platform.slug}`)
 
       const fieldDefinitions = this.loadFieldDefinitions(platform.fieldDefinitionsJson)
       const valueMappings = this.loadValueMappings(platform.valueMappingsJson)
@@ -69,7 +95,7 @@ export class PlatformLeadsService {
         }
       }
 
-      // Generate platform data
+      // Generate platform data automatically
       const data = this.generator.generate(lead, fieldDefinitions, valueMappings)
 
       const platformLeadData: PlatformLeadData = {

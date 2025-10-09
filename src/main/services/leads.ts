@@ -48,14 +48,20 @@ export class LeadsService {
     const id = randomUUID()
     const cleanedAt = new Date().toISOString()
 
-    // Générer automatiquement les platformData si non fournies
-    const platformData = data.platformData || PlatformMappingService.mapToPlatforms({
-      contact: data.contact,
-      souscripteur: data.souscripteur,
-      conjoint: data.conjoint,
-      enfants: data.enfants,
-      besoins: data.besoins
-    })
+    // IMPORTANT: Utiliser les platformData fournies par l'utilisateur en priorité
+    // Ne générer automatiquement QUE si platformData est complètement vide
+    let platformData = data.platformData
+
+    if (!platformData || Object.keys(platformData).length === 0) {
+      // Fallback : générer automatiquement SEULEMENT si aucune donnée n'est fournie
+      platformData = PlatformMappingService.mapToPlatforms({
+        contact: data.contact,
+        souscripteur: data.souscripteur,
+        conjoint: data.conjoint,
+        enfants: data.enfants,
+        besoins: data.besoins
+      })
+    }
 
     const stmt = this.db.prepare(`
       INSERT INTO clean_leads (

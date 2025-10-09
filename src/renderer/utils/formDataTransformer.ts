@@ -165,7 +165,7 @@ export function transformToCleanLead(formData: FormData): CreateLeadData {
   }
 
   if (formData['subscriber.postalCode']) {
-    contact.codePostal = formData['subscriber.postalCode']
+    contact.codePostal = String(formData['subscriber.postalCode'])
   }
 
   if (formData['subscriber.birthDate']) {
