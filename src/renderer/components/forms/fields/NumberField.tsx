@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useId } from 'react'
 
 interface NumberFieldProps {
   label: React.ReactNode
@@ -21,19 +21,25 @@ export default function NumberField({
   max,
   disabled = false
 }: NumberFieldProps) {
+  const fieldId = useId()
+  const errorId = `${fieldId}-error`
+
   return (
     <div className="space-y-1">
-      <label className="block text-sm font-medium">
+      <label htmlFor={fieldId} className="block text-sm font-medium">
         {label}
-        {required && <span className="text-red-500 ml-1">*</span>}
       </label>
       <input
+        id={fieldId}
         type="number"
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
         min={min}
         max={max}
         disabled={disabled}
+        aria-invalid={!!error}
+        aria-describedby={error ? errorId : undefined}
+        aria-required={required}
         className={`w-full px-3 py-2 border rounded-md text-sm transition-colors
           ${error
             ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
@@ -44,7 +50,9 @@ export default function NumberField({
         `}
       />
       {error && (
-        <p className="text-xs text-red-500">{error}</p>
+        <p id={errorId} className="text-xs text-red-500" role="alert">
+          {error}
+        </p>
       )}
     </div>
   )

@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useId } from 'react'
 
 interface RadioFieldProps {
   label: React.ReactNode
@@ -19,13 +19,22 @@ export default function RadioField({
   required = false,
   disabled = false
 }: RadioFieldProps) {
+  const groupId = useId()
+  const errorId = `${groupId}-error`
+
   return (
     <div className="space-y-2">
-      <label className="block text-sm font-medium">
+      <label id={groupId} className="block text-sm font-medium">
         {label}
-        {required && <span className="text-red-500 ml-1">*</span>}
       </label>
-      <div className="space-y-2">
+      <div
+        role="radiogroup"
+        aria-labelledby={groupId}
+        aria-invalid={!!error}
+        aria-describedby={error ? errorId : undefined}
+        aria-required={required}
+        className="space-y-2"
+      >
         {options.map((option) => (
           <label
             key={option.value}
@@ -44,7 +53,9 @@ export default function RadioField({
         ))}
       </div>
       {error && (
-        <p className="text-xs text-red-500">{error}</p>
+        <p id={errorId} className="text-xs text-red-500" role="alert">
+          {error}
+        </p>
       )}
     </div>
   )

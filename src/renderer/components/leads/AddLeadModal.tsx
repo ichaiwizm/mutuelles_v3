@@ -145,7 +145,7 @@ export default function AddLeadModal({
 
   const [hasSpouse, setHasSpouse] = useState(false)
   const [hasChildren, setHasChildren] = useState(false)
-  const [children, setChildren] = useState<any[]>([])
+  const [children, setChildren] = useState<Array<{ id: string }>>([])
   const [alptisExpanded, setAlptisExpanded] = useState(false)
   const [swisslifeExpanded, setSwisslifeExpanded] = useState(false)
 
@@ -183,7 +183,7 @@ export default function AddLeadModal({
         values: {
           ...prev.values,
           'conjoint': true,
-          'spouse.regime': 'TNS', // sera écrasé par les platform-specific si besoin
+          'spouse.regime': 'SECURITE_SOCIALE', // Default pour Alptis, peut être changé pour Swiss Life
           'spouse.status': 'TNS',
           'spouse.profession': 'AUTRE',
           'spouse.category': 'PERSONNES_SANS_ACTIVITE_PROFESSIONNELLE'
@@ -206,8 +206,8 @@ export default function AddLeadModal({
     setHasChildren(active)
 
     if (active) {
-      // Auto-create first child when toggling on
-      const newChildren = [{}]
+      // Auto-create first child when toggling on with unique ID
+      const newChildren = [{ id: `child-${Date.now()}-0` }]
       setChildren(newChildren)
 
       setFormState(prev => ({
@@ -237,12 +237,11 @@ export default function AddLeadModal({
   }
 
   const handleAddChild = () => {
-    const newChildren = [...children, {}]
+    const childIndex = children.length
+    const newChildren = [...children, { id: `child-${Date.now()}-${childIndex}` }]
     setChildren(newChildren)
 
     // Valeurs par défaut pour le nouvel enfant
-    const childIndex = newChildren.length - 1
-
     setFormState(prev => ({
       ...prev,
       values: {

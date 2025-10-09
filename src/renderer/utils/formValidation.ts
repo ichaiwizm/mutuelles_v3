@@ -24,12 +24,24 @@ function validateField(
     return undefined
   }
 
+  // Validation: Text fields - check for whitespace-only values
+  if (field.type === 'text' && field.required) {
+    if (value.trim() === '') {
+      return `${field.label} ne peut pas contenir uniquement des espaces`
+    }
+  }
+
   if (field.validation) {
     if (field.validation.pattern) {
       const regex = new RegExp(field.validation.pattern)
       if (!regex.test(value)) {
         return `${field.label} ne respecte pas le format attendu`
       }
+    }
+
+    // Validation: Postal code length - must be exactly 5 digits
+    if (field.domainKey.includes('postalCode') && value.length !== 5) {
+      return 'Le code postal doit contenir exactement 5 chiffres'
     }
 
     if (field.validation.minLength && value.length < field.validation.minLength) {
@@ -66,11 +78,39 @@ function validateField(
       return `${field.label} n'est pas une date valide`
     }
 
-    // Validation âge minimum 18 ans pour subscriber et spouse
+    // Validation: Children birth date - max 26 years, min 0 years, no future dates
+    if (field.domainKey.includes('children[') && field.domainKey.includes('birthDate')) {
+      const age = calculateAge(value)
+      if (age < 0) {
+        return 'La date de naissance ne peut pas être dans le futur'
+      }
+      if (age > 26) {
+        return `Âge maximum pour un enfant : 26 ans (actuellement ${age} ans)`
+      }
+    }
+
+    // Validation: Adults birth date - min 18 years, max 120 years, no future dates
     if (field.domainKey === 'subscriber.birthDate' || field.domainKey === 'spouse.birthDate') {
       const age = calculateAge(value)
+      if (age < 0) {
+        return 'La date de naissance ne peut pas être dans le futur'
+      }
       if (age < 18) {
         return `Âge minimum requis : 18 ans (actuellement ${age} ans)`
+      }
+      if (age > 120) {
+        return `Âge maximum : 120 ans (actuellement ${age} ans)`
+      }
+    }
+
+    // Validation: Date d'effet - must be today or future
+    if (field.domainKey === 'project.dateEffet') {
+      const dateEffet = new Date(year, month - 1, day)
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+
+      if (dateEffet < today) {
+        return 'La date d\'effet doit être aujourd\'hui ou dans le futur'
       }
     }
   }

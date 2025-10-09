@@ -45,7 +45,7 @@ export default function RepeatableFieldSet({
       <div className="space-y-3">
         {items.map((item, index) => (
           <div
-            key={index}
+            key={item.id || index}
             className="p-3 border border-neutral-200 dark:border-neutral-800 rounded-md space-y-3"
           >
             <div className="flex items-center justify-between mb-2">

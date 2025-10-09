@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useId } from 'react'
 import { Wand2 } from 'lucide-react'
 
 interface TextFieldProps {
@@ -26,20 +26,26 @@ export default function TextField({
   onGenerate,
   canGenerate = false
 }: TextFieldProps) {
+  const fieldId = useId()
+  const errorId = `${fieldId}-error`
+
   return (
     <div className="space-y-1">
-      <label className="block text-sm font-medium">
+      <label htmlFor={fieldId} className="block text-sm font-medium">
         {label}
-        {required && <span className="text-red-500 ml-1">*</span>}
       </label>
       <div className="relative">
         <input
+          id={fieldId}
           type="text"
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
           disabled={disabled}
           inputMode={inputMode}
+          aria-invalid={!!error}
+          aria-describedby={error ? errorId : undefined}
+          aria-required={required}
           className={`w-full px-3 py-2 ${canGenerate ? 'pr-9' : ''} border rounded-md text-sm transition-colors
             ${error
               ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
@@ -61,7 +67,9 @@ export default function TextField({
         )}
       </div>
       {error && (
-        <p className="text-xs text-red-500">{error}</p>
+        <p id={errorId} className="text-xs text-red-500" role="alert">
+          {error}
+        </p>
       )}
     </div>
   )

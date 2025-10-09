@@ -57,7 +57,7 @@ function mapRegime(regime: string): string {
 export function transformToCleanLead(formData: FormData): CreateLeadData {
   const contact: ContactInfo = {}
   const souscripteur: SouscripteurInfo = {}
-  const conjoint: ConjointInfo | undefined = formData['spouse.present'] ? {} : undefined
+  const conjoint: ConjointInfo | undefined = formData['conjoint'] ? {} : undefined
   const enfants: EnfantInfo[] = []
   const besoins: BesoinsInfo = {}
 
@@ -85,19 +85,20 @@ export function transformToCleanLead(formData: FormData): CreateLeadData {
     souscripteur.regimeSocial = mapRegime(formData['subscriber.regime'])
   }
 
-  if (formData['subscriber.category']) {
+  // Profession mapping with priority logic (highest to lowest):
+  // 1. profession (SwissLife specific field - most specific)
+  // 2. status (SwissLife "Statut" field)
+  // 3. category (Alptis "Catégorie socioprofessionnelle" - needs mapping)
+  // Note: Only one should be set per platform, but we use priority in case multiple are present
+  if (formData['subscriber.profession']) {
+    souscripteur.profession = formData['subscriber.profession']
+  } else if (formData['subscriber.status']) {
+    souscripteur.profession = formData['subscriber.status']
+  } else if (formData['subscriber.category']) {
     souscripteur.profession = mapCategory(formData['subscriber.category'])
   }
 
-  if (formData['subscriber.status']) {
-    souscripteur.profession = formData['subscriber.status']
-  }
-
-  if (formData['subscriber.profession']) {
-    souscripteur.profession = formData['subscriber.profession']
-  }
-
-  if (conjoint && formData['spouse.present']) {
+  if (conjoint && formData['conjoint']) {
     if (formData['spouse.birthDate']) {
       conjoint.dateNaissance = parseDateToDDMMYYYY(formData['spouse.birthDate'])
     }
@@ -106,16 +107,17 @@ export function transformToCleanLead(formData: FormData): CreateLeadData {
       conjoint.regimeSocial = mapRegime(formData['spouse.regime'])
     }
 
-    if (formData['spouse.category']) {
-      conjoint.profession = mapCategory(formData['spouse.category'])
-    }
-
-    if (formData['spouse.status']) {
-      conjoint.profession = formData['spouse.status']
-    }
-
+    // Profession mapping with priority logic (highest to lowest):
+    // 1. profession (SwissLife specific field - most specific)
+    // 2. status (SwissLife "Statut" field)
+    // 3. category (Alptis "Catégorie socioprofessionnelle" - needs mapping)
+    // Note: Only one should be set per platform, but we use priority in case multiple are present
     if (formData['spouse.profession']) {
       conjoint.profession = formData['spouse.profession']
+    } else if (formData['spouse.status']) {
+      conjoint.profession = formData['spouse.status']
+    } else if (formData['spouse.category']) {
+      conjoint.profession = mapCategory(formData['spouse.category'])
     }
   }
 
@@ -136,7 +138,7 @@ export function transformToCleanLead(formData: FormData): CreateLeadData {
   return {
     contact,
     souscripteur,
-    conjoint: formData['spouse.present'] ? conjoint : undefined,
+    conjoint: formData['conjoint'] ? conjoint : undefined,
     enfants,
     besoins
   }

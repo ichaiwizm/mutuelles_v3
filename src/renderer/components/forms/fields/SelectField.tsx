@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useId } from 'react'
 
 interface SelectFieldProps {
   label: React.ReactNode
@@ -19,16 +19,22 @@ export default function SelectField({
   required = false,
   disabled = false
 }: SelectFieldProps) {
+  const fieldId = useId()
+  const errorId = `${fieldId}-error`
+
   return (
     <div className="space-y-1">
-      <label className="block text-sm font-medium">
+      <label htmlFor={fieldId} className="block text-sm font-medium">
         {label}
-        {required && <span className="text-red-500 ml-1">*</span>}
       </label>
       <select
+        id={fieldId}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         disabled={disabled}
+        aria-invalid={!!error}
+        aria-describedby={error ? errorId : undefined}
+        aria-required={required}
         className={`w-full px-3 py-2 border rounded-md text-sm transition-colors
           ${error
             ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
@@ -46,7 +52,9 @@ export default function SelectField({
         ))}
       </select>
       {error && (
-        <p className="text-xs text-red-500">{error}</p>
+        <p id={errorId} className="text-xs text-red-500" role="alert">
+          {error}
+        </p>
       )}
     </div>
   )
