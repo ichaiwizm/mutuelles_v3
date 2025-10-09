@@ -32,7 +32,7 @@ export function useToast() {
       return {
         ...t,
         ...patch,
-        duration: needsDefaultDuration ? 5000 : (patch.duration !== undefined ? patch.duration : t.duration)
+        duration: needsDefaultDuration ? 1000 : (patch.duration !== undefined ? patch.duration : t.duration)
       }
     }))
     if (patch.duration !== undefined) {

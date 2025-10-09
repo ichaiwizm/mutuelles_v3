@@ -60,6 +60,7 @@ const CreateLeadSchema = z.object({
       dentaire: z.number().optional()
     }).optional()
   }).optional(),
+  platformData: z.record(z.any()).optional(),
   qualityScore: z.number().int().min(0).max(10).optional()
 })
 
@@ -127,6 +128,7 @@ export function registerLeadsIPC() {
         conjoint: validated.conjoint,
         enfants: validated.enfants || [],
         besoins: validated.besoins || {},
+        platformData: validated.platformData,
         qualityScore: qualityScore
       })
 
