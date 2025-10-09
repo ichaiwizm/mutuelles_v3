@@ -5,6 +5,7 @@ interface ModalProps {
   isOpen: boolean
   onClose: () => void
   title?: string
+  headerActions?: React.ReactNode
   size?: 'small' | 'medium' | 'large' | 'xlarge'
   children: React.ReactNode
 }
@@ -13,6 +14,7 @@ export default function Modal({
   isOpen,
   onClose,
   title,
+  headerActions,
   size = 'medium',
   children
 }: ModalProps) {
@@ -54,14 +56,18 @@ export default function Modal({
         className={`relative bg-white dark:bg-neutral-900 rounded-lg border border-neutral-200 dark:border-neutral-800 shadow-xl w-full ${sizeClasses[size]} max-h-[90vh] flex flex-col`}
       >
         {title && (
-          <div className="flex items-center justify-between p-6 border-b border-neutral-200 dark:border-neutral-800">
+          <div className="flex items-center justify-between gap-4 p-6 border-b border-neutral-200 dark:border-neutral-800">
             <h2 className="text-xl font-semibold">{title}</h2>
-            <button
-              onClick={onClose}
-              className="p-1 rounded-md hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
-            >
-              <X size={20} />
-            </button>
+
+            <div className="flex items-center gap-2">
+              {headerActions}
+              <button
+                onClick={onClose}
+                className="p-1 rounded-md hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
           </div>
         )}
 

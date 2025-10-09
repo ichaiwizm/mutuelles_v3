@@ -110,24 +110,28 @@
     },
     {
       "key": "slsis_couverture_oui",
+      "domainKey": "project.couverture",
       "type": "button",
       "label": "Couverture individuelle Oui (label)",
       "selector": "label[for='projet-sante-individuelle-oui']"
     },
     {
       "key": "slsis_couverture_non",
+      "domainKey": "project.couverture",
       "type": "button",
       "label": "Couverture individuelle Non (label)",
       "selector": "label[for='projet-sante-individuelle-non']"
     },
     {
       "key": "slsis_ij_oui",
+      "domainKey": "project.ij",
       "type": "button",
       "label": "Indemnités journalières Oui (label)",
       "selector": "label[for='projet-confort-hospitalisation-oui']"
     },
     {
       "key": "slsis_ij_non",
+      "domainKey": "project.ij",
       "type": "button",
       "label": "Indemnités journalières Non (label)",
       "selector": "label[for='projet-confort-hospitalisation-non']"
@@ -148,30 +152,35 @@
     },
     {
       "key": "slsis_madelin",
+      "domainKey": "project.madelin",
       "type": "button",
       "label": "Option Loi Madelin (checkbox via label)",
       "selector": "label[for='loi-madelin-checkbox'], label:has(#madelin)"
     },
     {
       "key": "slsis_resiliation_oui",
+      "domainKey": "project.resiliation",
       "type": "button",
       "label": "Résiliation Oui (label)",
       "selector": "label[for='resiliation-contrat-oui']"
     },
     {
       "key": "slsis_resiliation_non",
+      "domainKey": "project.resiliation",
       "type": "button",
       "label": "Résiliation Non (label)",
       "selector": "label[for='resiliation-contrat-non']"
     },
     {
       "key": "slsis_reprise_oui",
+      "domainKey": "project.reprise",
       "type": "button",
       "label": "Reprise concurrence Oui (label)",
       "selector": "label[for='reprise-concurrence-oui']"
     },
     {
       "key": "slsis_reprise_non",
+      "domainKey": "project.reprise",
       "type": "button",
       "label": "Reprise concurrence Non (label)",
       "selector": "label[for='reprise-concurrence-non']"

@@ -1,5 +1,5 @@
 import React from 'react'
-import { FormFieldDefinition } from '@renderer/utils/formSchemaGenerator'
+import { FormFieldDefinition, shouldShowField } from '@renderer/utils/formSchemaGenerator'
 import DynamicFormField from '../DynamicFormField'
 
 interface SubscriberFieldsSectionProps {
@@ -15,7 +15,10 @@ export default function SubscriberFieldsSection({
   onChange,
   errors
 }: SubscriberFieldsSectionProps) {
-  if (subscriberFields.length === 0) {
+  // Filter fields based on showIf conditions
+  const visibleFields = subscriberFields.filter(field => shouldShowField(field, values))
+
+  if (visibleFields.length === 0) {
     return null
   }
 
@@ -25,7 +28,7 @@ export default function SubscriberFieldsSection({
         Informations complémentaires
       </h3>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        {subscriberFields.map(field => (
+        {visibleFields.map(field => (
           <DynamicFormField
             key={field.domainKey}
             field={field}

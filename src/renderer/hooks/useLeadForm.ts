@@ -63,13 +63,13 @@ export function useLeadForm({ schema, onSuccess, onError, onLoadingChange }: Use
   const handleToggleSpouse = (active: boolean) => {
     setHasSpouse(active)
 
-    if (active && schema) {
-      const spouseDefaults = getSpouseDefaults(schema)
+    if (active) {
+      // Ne PAS remplir automatiquement, juste marquer le conjoint comme présent
       setFormState(prev => ({
         ...prev,
         values: {
           ...prev.values,
-          ...spouseDefaults
+          'conjoint': true
         }
       }))
     } else {
@@ -88,18 +88,17 @@ export function useLeadForm({ schema, onSuccess, onError, onLoadingChange }: Use
   const handleToggleChildren = (active: boolean) => {
     setHasChildren(active)
 
-    if (active && schema) {
+    if (active) {
       const newChildren = [{ id: `child-${Date.now()}-0` }]
       setChildren(newChildren)
 
-      const childDefaults = getChildDefaults(schema, 0)
+      // Ne PAS remplir automatiquement, juste créer le premier enfant
       setFormState(prev => ({
         ...prev,
         values: {
           ...prev.values,
           'enfants': true,
-          'children.count': 1,
-          ...childDefaults
+          'children.count': 1
         }
       }))
     } else {
@@ -119,19 +118,16 @@ export function useLeadForm({ schema, onSuccess, onError, onLoadingChange }: Use
   }
 
   const handleAddChild = () => {
-    if (!schema) return
-
     const childIndex = children.length
     const newChildren = [...children, { id: `child-${Date.now()}-${childIndex}` }]
     setChildren(newChildren)
 
-    const childDefaults = getChildDefaults(schema, childIndex)
+    // Ne PAS remplir automatiquement, juste ajouter l'enfant
     setFormState(prev => ({
       ...prev,
       values: {
         ...prev.values,
-        'children.count': newChildren.length,
-        ...childDefaults
+        'children.count': newChildren.length
       }
     }))
   }

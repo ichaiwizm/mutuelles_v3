@@ -4,7 +4,7 @@ import swisslifeConfigJson from '../../../admin/carriers/swisslifeone.ui.json'
 
 export interface FormFieldDefinition {
   domainKey: string
-  type: 'text' | 'date' | 'select' | 'radio' | 'number'
+  type: 'text' | 'date' | 'select' | 'radio' | 'number' | 'toggle' | 'checkbox'
   label: string
   required: boolean
   options?: Array<{ value: string; label: string }>
@@ -17,7 +17,8 @@ export interface FormFieldDefinition {
   }
   showIf?: {
     field: string
-    equals: any
+    equals?: any
+    oneOf?: any[]
   }
   repeat?: {
     countField: string
@@ -66,7 +67,8 @@ interface DomainConfig {
   format?: string
   showIf?: {
     field: string
-    equals: any
+    equals?: any
+    oneOf?: any[]
   }
   repeat?: {
     countField: string
@@ -282,6 +284,36 @@ function classifyFields(
 }
 
 export async function generateFormSchema(): Promise<FormSchema> {
-  const { baseDomain, alptisConfig, swisslifeConfig } = await loadConfigurations()
+  const { baseDomain, alptisConfig, swisslifeConfig} = await loadConfigurations()
   return classifyFields(baseDomain, alptisConfig, swisslifeConfig)
+}
+
+/**
+ * Utility function to check if a field should be shown based on showIf conditions
+ */
+export function shouldShowField(
+  field: FormFieldDefinition,
+  values: Record<string, any>
+): boolean {
+  if (!field.showIf) {
+    return true
+  }
+
+  const fieldValue = values[field.showIf.field]
+
+  // Support for 'equals' condition
+  if (field.showIf.equals !== undefined) {
+    return fieldValue === field.showIf.equals
+  }
+
+  // Support for 'oneOf' condition
+  if (field.showIf.oneOf !== undefined) {
+    // Field must have a value AND be in the oneOf array
+    if (fieldValue === undefined || fieldValue === null || fieldValue === '') {
+      return false
+    }
+    return field.showIf.oneOf.includes(fieldValue)
+  }
+
+  return true
 }

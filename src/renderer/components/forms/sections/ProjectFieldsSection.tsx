@@ -40,7 +40,7 @@ export default function ProjectFieldsSection({
         {civilityField && (
           <div className="flex-shrink-0">
             <CivilitySwitch
-              value={values['subscriber.civility'] || 'MONSIEUR'}
+              value={values['subscriber.civility'] || ''}
               onChange={(value) => onChange('subscriber.civility', value)}
               error={errors['subscriber.civility']}
             />

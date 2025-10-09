@@ -22,7 +22,12 @@
         {
           "domainKey": "project.plan",
           "optionSet": "swisslifeone"
-        }
+        },
+        "project.couverture",
+        "project.ij",
+        "project.madelin",
+        "project.resiliation",
+        "project.reprise"
       ]
     },
     {
@@ -101,6 +106,12 @@
     "project.name": "projet.nom",
     "project.dateEffet": "projet.date_effet",
     "project.plan": "projet.gamme",
+    "project.simulationType": "projet.type_simulation",
+    "project.couverture": "projet.couverture_individuelle",
+    "project.ij": "projet.indemnites_journalieres",
+    "project.madelin": "projet.loi_madelin",
+    "project.resiliation": "projet.resiliation",
+    "project.reprise": "projet.reprise_concurrence",
     "subscriber.birthDate": "adherent.date_naissance",
     "subscriber.departmentCode": "adherent.departement",
     "subscriber.regime": "adherent.regime",
@@ -111,6 +122,7 @@
     "spouse.regime": "conjoint.regime",
     "spouse.status": "conjoint.statut",
     "spouse.profession": "conjoint.profession",
+    "children.present": "enfants.present",
     "children.count": "projet.nb_enfants",
     "children[].birthDate": "enfants[].date_naissance",
     "children[].ayantDroit": "enfants[].ayant_droit"

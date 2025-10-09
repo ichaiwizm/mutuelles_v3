@@ -36,7 +36,7 @@ function evaluateDefaultExpression(expression: DefaultExpression): string {
  * Computes the default value for a single field based on its definition
  * and fallback logic for select/radio fields
  */
-export function computeDefaultValue(field: FormFieldDefinition): any {
+export function computeDefaultValue(field: FormFieldDefinition, currentValues?: Record<string, any>): any {
   // 1. Check for explicit default value from schema (HIGHEST PRIORITY)
   if (field.default !== undefined) {
     return field.default
@@ -92,9 +92,19 @@ export function getAllDefaults(schema: FormSchema): Record<string, any> {
     ...schema.platformSpecific.swisslifeone
   ]
 
+  // Use a Map to deduplicate by domainKey, keeping the first occurrence
+  const seenKeys = new Set<string>()
+
   // Compute defaults for each field
   allFields.forEach(field => {
-    const defaultValue = computeDefaultValue(field)
+    // Skip if we've already processed this domainKey
+    if (seenKeys.has(field.domainKey)) {
+      return
+    }
+
+    seenKeys.add(field.domainKey)
+
+    const defaultValue = computeDefaultValue(field, defaults)
     if (defaultValue !== undefined) {
       defaults[field.domainKey] = defaultValue
     }

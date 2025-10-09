@@ -1,6 +1,6 @@
 import React from 'react'
 import { ChevronDown, ChevronRight } from 'lucide-react'
-import { FormSchema } from '@renderer/utils/formSchemaGenerator'
+import { FormSchema, shouldShowField } from '@renderer/utils/formSchemaGenerator'
 import DynamicFormField from './DynamicFormField'
 
 interface PlatformSpecificSectionProps {
@@ -39,6 +39,9 @@ export default function PlatformSpecificSection({
     !f.domainKey.startsWith('children')
   )
 
+  // Filter fields based on showIf conditions
+  const visibleFields = subscriberFields.filter(field => shouldShowField(field, values))
+
   return (
     <div className="border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
       <button
@@ -56,10 +59,10 @@ export default function PlatformSpecificSection({
         )}
       </button>
 
-      {isExpanded && subscriberFields.length > 0 && (
+      {isExpanded && visibleFields.length > 0 && (
         <div className="p-3">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {subscriberFields.map(field => (
+            {visibleFields.map(field => (
               <DynamicFormField
                 key={field.domainKey}
                 field={field}

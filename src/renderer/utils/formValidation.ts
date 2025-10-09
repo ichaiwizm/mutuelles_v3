@@ -140,7 +140,23 @@ function shouldValidateField(
     return true
   }
 
-  return values[field.showIf.field] === field.showIf.equals
+  const fieldValue = values[field.showIf.field]
+
+  // Support for 'equals' condition
+  if (field.showIf.equals !== undefined) {
+    return fieldValue === field.showIf.equals
+  }
+
+  // Support for 'oneOf' condition
+  if (field.showIf.oneOf !== undefined) {
+    // Field must have a value AND be in the oneOf array
+    if (fieldValue === undefined || fieldValue === null || fieldValue === '') {
+      return false
+    }
+    return field.showIf.oneOf.includes(fieldValue)
+  }
+
+  return true
 }
 
 export function validateForm(

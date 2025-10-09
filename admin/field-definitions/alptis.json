@@ -62,11 +62,12 @@
     },
     { "key": "code_postal", "domainKey": "subscriber.postalCode", "type": "text", "label": "Code postal", "selector": "input#codePostal" },
 
-    { "key": "cadre_exercice_salarie", "type": "radio", "label": "Cadre d'exercice - Salarié", "selector": "label:has-text('Salarié')" },
-    { "key": "cadre_exercice_independant", "type": "radio", "label": "Cadre d'exercice - Indépendant", "selector": "label:has-text('Indépendant Président SASU/SAS')" },
+    { "key": "cadre_exercice_salarie", "domainKey": "subscriber.workFramework", "type": "radio", "label": "Cadre d'exercice - Salarié", "selector": "label:has-text('Salarié')" },
+    { "key": "cadre_exercice_independant", "domainKey": "subscriber.workFramework", "type": "radio", "label": "Cadre d'exercice - Indépendant", "selector": "label:has-text('Indépendant Président SASU/SAS')" },
 
     {
       "key": "conjoint_toggle",
+      "domainKey": "spouse.present",
       "type": "toggle",
       "label": "Conjoint – Oui/Non",
       "selector": ".totem-section__header:has(.totem-section__header-title:has-text(\"Conjoint(e)\")) label[data-test=\"label\"]",
@@ -121,6 +122,7 @@
 
     {
       "key": "enfants_toggle",
+      "domainKey": "children.present",
       "type": "toggle",
       "label": "Enfants – Oui/Non",
       "selector": ".totem-section__header:has(.totem-section__header-title:has-text(\"Enfants\")) label[data-test=\"label\"]",

@@ -110,19 +110,22 @@ export default function AddLeadModal({
   ]
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title="Ajouter un lead manuellement" size="large">
+    <Modal
+      isOpen={isOpen}
+      onClose={handleClose}
+      title="Ajouter un lead manuellement"
+      size="large"
+      headerActions={
+        <button
+          onClick={handleFillDefaults}
+          disabled={leadForm.formState.isSubmitting || !schema}
+          className="px-3 py-1.5 text-sm font-medium text-neutral-700 dark:text-neutral-300 bg-neutral-100 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded-md hover:bg-neutral-200 dark:hover:bg-neutral-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        >
+          Remplir par défaut
+        </button>
+      }
+    >
       <div className="space-y-3">
-        {/* Bouton Remplir par défaut en haut à droite */}
-        <div className="flex justify-end">
-          <button
-            onClick={handleFillDefaults}
-            disabled={leadForm.formState.isSubmitting || !schema}
-            className="px-4 py-2 text-sm font-medium text-neutral-700 dark:text-neutral-300 bg-neutral-100 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded-lg hover:bg-neutral-200 dark:hover:bg-neutral-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            Remplir par défaut
-          </button>
-        </div>
-
         <CommonFieldsSection
           commonFields={schema.common.filter(f => !f.domainKey.startsWith('spouse.') && !f.domainKey.startsWith('children'))}
           spouseFields={allSpouseFields}

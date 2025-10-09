@@ -27,6 +27,7 @@
         "subscriber.firstName",
         "subscriber.birthDate",
         "subscriber.category",
+        "subscriber.workFramework",
         {
           "domainKey": "subscriber.regime",
           "label": "Régime obligatoire (adhérent)",
@@ -46,6 +47,7 @@
           "domainKey": "spouse.category",
           "optionSet": "alptis"
         },
+        "spouse.workFramework",
         {
           "domainKey": "spouse.regime",
           "label": "Régime obligatoire (conjoint)",
@@ -79,12 +81,15 @@
     "subscriber.firstName": "adherent.prenom",
     "subscriber.birthDate": "adherent.date_naissance",
     "subscriber.category": "adherent.categorie",
+    "subscriber.workFramework": "adherent.cadre_exercice",
     "subscriber.regime": "adherent.regime",
     "subscriber.postalCode": "adherent.code_postal",
     "spouse.present": "conjoint.present",
     "spouse.birthDate": "conjoint.date_naissance",
     "spouse.category": "conjoint.categorie",
+    "spouse.workFramework": "conjoint.cadre_exercice",
     "spouse.regime": "conjoint.regime",
+    "children.present": "enfants.present",
     "children.count": "projet.nb_enfants",
     "children[].birthDate": "enfants[].date_naissance",
     "children[].regime": "enfants[].regime"

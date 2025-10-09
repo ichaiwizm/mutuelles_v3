@@ -42,6 +42,51 @@
             { "value": "SwissLife Santé", "label": "SwissLife Santé" }
           ]
         }
+      },
+      "couverture": {
+        "type": "toggle",
+        "label": "Couverture individuelle",
+        "required": false,
+        "default": true,
+        "carriers": ["swisslifeone"],
+        "notes": "Active la couverture individuelle. Requis pour activer le formulaire dans l'interface SwissLife."
+      },
+      "ij": {
+        "type": "toggle",
+        "label": "Indemnités journalières",
+        "required": false,
+        "default": false,
+        "disabled": true,
+        "carriers": ["swisslifeone"],
+        "notes": "Option confort hospitalier: indemnités journalières en cas d'hospitalisation. Figé à NON (non modifiable)."
+      },
+      "madelin": {
+        "type": "toggle",
+        "label": "Loi Madelin",
+        "required": false,
+        "default": true,
+        "carriers": ["swisslifeone"],
+        "notes": "Option Loi Madelin: permet la déductibilité fiscale des cotisations pour les TNS (Travailleurs Non Salariés). Champ critique pour les indépendants. Par défaut OUI.",
+        "showIf": {
+          "field": "subscriber.status",
+          "oneOf": ["TNS", "EXPLOITANT_AGRICOLE"]
+        }
+      },
+      "resiliation": {
+        "type": "toggle",
+        "label": "Résiliation de contrat",
+        "required": false,
+        "default": false,
+        "carriers": ["swisslifeone"],
+        "notes": "Indique si le client résilie un contrat existant. Impact sur les modalités de prise d'effet."
+      },
+      "reprise": {
+        "type": "toggle",
+        "label": "Reprise concurrence",
+        "required": false,
+        "default": false,
+        "carriers": ["swisslifeone"],
+        "notes": "Indique si le contrat reprend un contrat concurrent existant. Impact commercial et administratif."
       }
     },
     "subscriber": {
@@ -179,9 +224,39 @@
           { "value": "AUXILIAIRE_MEDICAL", "label": "Auxiliaire médical" },
           { "value": "AUTRE", "label": "Non médicale" }
         ]
+      },
+      "workFramework": {
+        "type": "radio",
+        "label": "Cadre d'exercice",
+        "required": false,
+        "default": "SALARIE",
+        "carriers": ["alptis"],
+        "notes": "Détermine si le souscripteur exerce en tant que salarié ou indépendant. Ce champ apparaît uniquement pour certaines catégories socioprofessionnelles indépendantes/TNS.",
+        "showIf": {
+          "field": "subscriber.category",
+          "oneOf": [
+            "CHEFS_D_ENTREPRISE",
+            "PROFESSIONS_LIBERALES_ET_ASSIMILES",
+            "ARTISANS",
+            "COMMERCANTS_ET_ASSIMILES",
+            "AGRICULTEURS_EXPLOITANTS"
+          ]
+        },
+        "options": [
+          { "value": "SALARIE", "label": "Salarié" },
+          { "value": "INDEPENDANT", "label": "Indépendant Président SASU/SAS" }
+        ]
       }
     },
     "spouse": {
+      "present": {
+        "type": "toggle",
+        "label": "Inclure le conjoint",
+        "required": false,
+        "default": false,
+        "carriers": ["alptis", "swisslifeone"],
+        "notes": "Toggle pour activer/désactiver la section conjoint. Pour Alptis, c'est un vrai toggle UI. Pour SwissLife, c'est déduit automatiquement (simulation individuelle vs couple)."
+      },
       "birthDate": {
         "type": "date",
         "label": "Date de naissance du conjoint",
@@ -294,9 +369,39 @@
           { "value": "PROFESSIONS_LIBERALES_ET_ASSIMILES", "label": "Professions libérales et assimilés" },
           { "value": "RETRAITES", "label": "Retraités" }
         ]
+      },
+      "workFramework": {
+        "type": "radio",
+        "label": "Cadre d'exercice (conjoint)",
+        "required": false,
+        "default": "SALARIE",
+        "carriers": ["alptis"],
+        "notes": "Détermine si le conjoint exerce en tant que salarié ou indépendant. Visible uniquement pour certaines catégories socioprofessionnelles.",
+        "showIf": {
+          "field": "spouse.category",
+          "oneOf": [
+            "CHEFS_D_ENTREPRISE",
+            "PROFESSIONS_LIBERALES_ET_ASSIMILES",
+            "ARTISANS",
+            "COMMERCANTS_ET_ASSIMILES",
+            "AGRICULTEURS_EXPLOITANTS"
+          ]
+        },
+        "options": [
+          { "value": "SALARIE", "label": "Salarié" },
+          { "value": "INDEPENDANT", "label": "Indépendant Président SASU/SAS" }
+        ]
       }
     },
     "children": {
+      "present": {
+        "type": "toggle",
+        "label": "Inclure des enfants",
+        "required": false,
+        "default": false,
+        "carriers": ["alptis", "swisslifeone"],
+        "notes": "Toggle pour activer/désactiver la section enfants. Pour Alptis, c'est un vrai toggle UI avec un bouton pour ajouter dynamiquement des enfants. Pour SwissLife, c'est déduit du champ 'count'."
+      },
       "count": {
         "type": "number",
         "label": "Nombre d'enfants",

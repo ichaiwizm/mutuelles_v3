@@ -5,6 +5,7 @@ import DateField from './fields/DateField'
 import SelectField from './fields/SelectField'
 import RadioField from './fields/RadioField'
 import NumberField from './fields/NumberField'
+import ToggleField from './fields/ToggleField'
 import PlatformBadge from './PlatformBadge'
 
 interface DynamicFormFieldProps {
@@ -13,6 +14,7 @@ interface DynamicFormFieldProps {
   onChange: (value: any) => void
   onGenerate?: () => void
   error?: string
+  hidePlatformBadge?: boolean
 }
 
 export default function DynamicFormField({
@@ -20,10 +22,11 @@ export default function DynamicFormField({
   value,
   onChange,
   onGenerate,
-  error
+  error,
+  hidePlatformBadge = false
 }: DynamicFormFieldProps) {
-  // Add platform badge to label if field is platform-specific
-  const labelWithBadge = field.platform ? (
+  // Add platform badge to label if field is platform-specific (unless hidden)
+  const labelWithBadge = field.platform && !hidePlatformBadge ? (
     <span className="flex items-center gap-2">
       {field.label}
       <PlatformBadge platform={field.platform} />
@@ -96,6 +99,19 @@ export default function DynamicFormField({
           required={field.required}
           min={field.validation?.min}
           max={field.validation?.max}
+          disabled={field.disabled}
+        />
+      )
+
+    case 'toggle':
+    case 'checkbox':
+      return (
+        <ToggleField
+          label={labelWithBadge}
+          value={value === true || value === 'true'}
+          onChange={onChange}
+          error={error}
+          required={field.required}
           disabled={field.disabled}
         />
       )
