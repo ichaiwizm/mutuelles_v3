@@ -1,0 +1,292 @@
+import { FormSchema, FormFieldDefinition, shouldShowField } from './formSchemaGenerator'
+
+/**
+ * Test data pools for random generation
+ */
+const FIRST_NAMES_MALE = ['Baptiste', 'Nicolas', 'Xavier', 'Thomas', 'Alexandre', 'Julien', 'Maxime', 'Lucas', 'Hugo', 'Louis']
+const FIRST_NAMES_FEMALE = ['Marie', 'Sophie', 'Julie', 'Emma', 'Clara', 'Léa', 'Chloé', 'Laura', 'Sarah', 'Camille']
+const LAST_NAMES = ['Deschamps', 'Dupont', 'Martin', 'Bernard', 'Dubois', 'Thomas', 'Robert', 'Petit', 'Richard', 'Durand']
+
+const DEPARTMENTS = [
+  { code: 75, postalCodes: [75001, 75008, 75015, 75016, 75020] },
+  { code: 44, postalCodes: [44000, 44100, 44200, 44300] },
+  { code: 69, postalCodes: [69001, 69003, 69006, 69009] },
+  { code: 13, postalCodes: [13001, 13008, 13013, 13015] },
+  { code: 33, postalCodes: [33000, 33100, 33200, 33300] },
+  { code: 59, postalCodes: [59000, 59100, 59200, 59300] },
+  { code: 31, postalCodes: [31000, 31100, 31200, 31300] },
+  { code: 35, postalCodes: [35000, 35200, 35400, 35700] },
+  { code: 67, postalCodes: [67000, 67100, 67200, 67300] },
+  { code: 38, postalCodes: [38000, 38100, 38200, 38400] }
+]
+
+/**
+ * Utility functions
+ */
+function randomChoice<T>(array: T[]): T {
+  return array[Math.floor(Math.random() * array.length)]
+}
+
+function randomInt(min: number, max: number): number {
+  return Math.floor(Math.random() * (max - min + 1)) + min
+}
+
+function randomBoolean(trueProbability: number = 0.5): boolean {
+  return Math.random() < trueProbability
+}
+
+function formatDate(date: Date): string {
+  const day = String(date.getDate()).padStart(2, '0')
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const year = date.getFullYear()
+  return `${day}/${month}/${year}`
+}
+
+function generateBirthDate(minAge: number, maxAge: number): string {
+  const age = randomInt(minAge, maxAge)
+  const birthDate = new Date()
+  birthDate.setFullYear(birthDate.getFullYear() - age)
+  birthDate.setMonth(randomInt(0, 11))
+  birthDate.setDate(randomInt(1, 28)) // Safe day for all months
+  return formatDate(birthDate)
+}
+
+function generateFirstOfNextMonth(): string {
+  const date = new Date()
+  date.setMonth(date.getMonth() + 1)
+  date.setDate(1)
+  return formatDate(date)
+}
+
+/**
+ * Generate random test data for the entire form
+ */
+export function generateRandomTestData(schema: FormSchema): Record<string, any> {
+  const testData: Record<string, any> = {}
+
+  // STEP 1: Basic identity
+  const civility = randomChoice(['MONSIEUR', 'MADAME'])
+  const firstName = civility === 'MONSIEUR'
+    ? randomChoice(FIRST_NAMES_MALE)
+    : randomChoice(FIRST_NAMES_FEMALE)
+  const lastName = randomChoice(LAST_NAMES)
+
+  testData['subscriber.civility'] = civility
+  testData['subscriber.firstName'] = firstName
+  testData['subscriber.lastName'] = lastName
+
+  // STEP 2: Subscriber birth date
+  testData['subscriber.birthDate'] = generateBirthDate(25, 65)
+
+  // STEP 3: Determine which fields are available (carrier-specific)
+  const allFields = [
+    ...schema.common,
+    ...schema.platformSpecific.alptis,
+    ...schema.platformSpecific.swisslifeone
+  ]
+
+  const hasAlptisFields = schema.platformSpecific.alptis.length > 0
+  const hasSwissLifeFields = schema.platformSpecific.swisslifeone.length > 0
+
+  // Helper to find field definition
+  const findField = (domainKey: string): FormFieldDefinition | undefined => {
+    return allFields.find(f => f.domainKey === domainKey)
+  }
+
+  // STEP 4: Carrier-specific fields for subscriber
+  if (hasAlptisFields) {
+    // Category
+    const categoryField = findField('subscriber.category')
+    if (categoryField?.options) {
+      const category = randomChoice(categoryField.options).value
+      testData['subscriber.category'] = category
+
+      // Conditional: workFramework (only for certain categories)
+      const workFrameworkField = findField('subscriber.workFramework')
+      if (workFrameworkField) {
+        const categoriesRequiringWorkFramework = [
+          'CHEFS_D_ENTREPRISE',
+          'PROFESSIONS_LIBERALES_ET_ASSIMILES',
+          'ARTISANS',
+          'COMMERCANTS_ET_ASSIMILES',
+          'AGRICULTEURS_EXPLOITANTS'
+        ]
+        if (categoriesRequiringWorkFramework.includes(category) && workFrameworkField.options) {
+          testData['subscriber.workFramework'] = randomBoolean(0.6) ? 'SALARIE' : 'INDEPENDANT'
+        }
+      }
+    }
+
+    // Regime (Alptis)
+    const regimeField = findField('subscriber.regime')
+    if (regimeField?.carrierOptions?.alptis) {
+      testData['subscriber.regime'] = randomChoice(regimeField.carrierOptions.alptis).value
+    } else if (regimeField?.options) {
+      testData['subscriber.regime'] = randomChoice(regimeField.options).value
+    }
+
+    // Postal code
+    const dept = randomChoice(DEPARTMENTS)
+    testData['subscriber.postalCode'] = randomChoice(dept.postalCodes)
+  }
+
+  if (hasSwissLifeFields) {
+    // Status
+    const statusField = findField('subscriber.status')
+    if (statusField?.options) {
+      const status = randomChoice(statusField.options).value
+      testData['subscriber.status'] = status
+
+      // Conditional: madelin (only for TNS or EXPLOITANT_AGRICOLE)
+      const madelinField = findField('project.madelin')
+      if (madelinField && (status === 'TNS' || status === 'EXPLOITANT_AGRICOLE')) {
+        testData['project.madelin'] = randomBoolean(0.7)
+      }
+    }
+
+    // Profession
+    const professionField = findField('subscriber.profession')
+    if (professionField?.options) {
+      testData['subscriber.profession'] = randomChoice(professionField.options).value
+    }
+
+    // Regime (SwissLife)
+    const regimeField = findField('subscriber.regime')
+    if (regimeField?.carrierOptions?.swisslifeone) {
+      testData['subscriber.regime'] = randomChoice(regimeField.carrierOptions.swisslifeone).value
+    } else if (regimeField?.options) {
+      testData['subscriber.regime'] = randomChoice(regimeField.options).value
+    }
+
+    // Department code
+    const dept = randomChoice(DEPARTMENTS)
+    testData['subscriber.departmentCode'] = dept.code
+
+    // Project name (auto-generated)
+    testData['project.name'] = `Simulation ${lastName} ${firstName}`
+
+    // Project plan (fixed)
+    testData['project.plan'] = 'SwissLife Santé'
+
+    // Project toggles
+    testData['project.couverture'] = true
+    testData['project.ij'] = false
+    testData['project.resiliation'] = randomBoolean(0.2)
+    testData['project.reprise'] = randomBoolean(0.15)
+  }
+
+  // STEP 5: Project date
+  testData['project.dateEffet'] = generateFirstOfNextMonth()
+
+  // STEP 6: Spouse (60% chance)
+  const hasSpouse = randomBoolean(0.6)
+  testData['conjoint'] = hasSpouse
+
+  if (hasSpouse) {
+    // Spouse birth date (±5 years from subscriber)
+    const subscriberAge = 45 // approximate middle age
+    testData['spouse.birthDate'] = generateBirthDate(subscriberAge - 5, subscriberAge + 5)
+
+    if (hasAlptisFields) {
+      // Spouse category
+      const spouseCategoryField = findField('spouse.category')
+      if (spouseCategoryField?.options) {
+        const spouseCategory = randomChoice(spouseCategoryField.options).value
+        testData['spouse.category'] = spouseCategory
+
+        // Conditional: spouse workFramework
+        const spouseWorkFrameworkField = findField('spouse.workFramework')
+        if (spouseWorkFrameworkField) {
+          const categoriesRequiringWorkFramework = [
+            'CHEFS_D_ENTREPRISE',
+            'PROFESSIONS_LIBERALES_ET_ASSIMILES',
+            'ARTISANS',
+            'COMMERCANTS_ET_ASSIMILES',
+            'AGRICULTEURS_EXPLOITANTS'
+          ]
+          if (categoriesRequiringWorkFramework.includes(spouseCategory) && spouseWorkFrameworkField.options) {
+            testData['spouse.workFramework'] = randomBoolean(0.6) ? 'SALARIE' : 'INDEPENDANT'
+          }
+        }
+      }
+
+      // Spouse regime (Alptis)
+      const spouseRegimeField = findField('spouse.regime')
+      if (spouseRegimeField?.carrierOptions?.alptis) {
+        testData['spouse.regime'] = randomChoice(spouseRegimeField.carrierOptions.alptis).value
+      } else if (spouseRegimeField?.options) {
+        testData['spouse.regime'] = randomChoice(spouseRegimeField.options).value
+      }
+    }
+
+    if (hasSwissLifeFields) {
+      // Spouse status
+      const spouseStatusField = findField('spouse.status')
+      if (spouseStatusField?.options) {
+        testData['spouse.status'] = randomChoice(spouseStatusField.options).value
+      }
+
+      // Spouse profession
+      const spouseProfessionField = findField('spouse.profession')
+      if (spouseProfessionField?.options) {
+        testData['spouse.profession'] = randomChoice(spouseProfessionField.options).value
+      }
+
+      // Spouse regime (SwissLife)
+      const spouseRegimeField = findField('spouse.regime')
+      if (spouseRegimeField?.carrierOptions?.swisslifeone) {
+        testData['spouse.regime'] = randomChoice(spouseRegimeField.carrierOptions.swisslifeone).value
+      } else if (spouseRegimeField?.options) {
+        testData['spouse.regime'] = randomChoice(spouseRegimeField.options).value
+      }
+    }
+  }
+
+  // STEP 7: Children (probabilities: 30%/30%/25%/15% for 0/1/2/3)
+  const rand = Math.random()
+  let nbChildren = 0
+  if (rand < 0.30) {
+    nbChildren = 0
+  } else if (rand < 0.60) {
+    nbChildren = 1
+  } else if (rand < 0.85) {
+    nbChildren = 2
+  } else {
+    nbChildren = 3
+  }
+
+  testData['enfants'] = nbChildren > 0
+  testData['children.count'] = nbChildren
+
+  if (nbChildren > 0) {
+    for (let i = 0; i < nbChildren; i++) {
+      // Birth date for each child
+      testData[`children[${i}].birthDate`] = generateBirthDate(0, 25)
+
+      if (hasAlptisFields) {
+        // Children regime (Alptis)
+        const childRegimeField = findField('children[].regime')
+        if (childRegimeField?.carrierOptions?.alptis) {
+          testData[`children[${i}].regime`] = randomChoice(childRegimeField.carrierOptions.alptis).value
+        } else if (childRegimeField?.options) {
+          testData[`children[${i}].regime`] = randomChoice(childRegimeField.options).value
+        }
+      }
+
+      if (hasSwissLifeFields) {
+        // Children ayantDroit (SwissLife)
+        // 80% assuré principal (1), 20% conjoint (2) if spouse present
+        const childAyantDroitField = findField('children[].ayantDroit')
+        if (childAyantDroitField?.options) {
+          if (hasSpouse && randomBoolean(0.2)) {
+            testData[`children[${i}].ayantDroit`] = '2'
+          } else {
+            testData[`children[${i}].ayantDroit`] = '1'
+          }
+        }
+      }
+    }
+  }
+
+  return testData
+}

@@ -3,6 +3,7 @@ import { FormSchema } from '@renderer/utils/formSchemaGenerator'
 import { validateForm } from '@renderer/utils/formValidation'
 import { transformToCleanLead } from '@renderer/utils/formDataTransformer'
 import { getAllDefaults, getSpouseDefaults, getChildDefaults, applyDefaultsToForm } from '@renderer/utils/defaultValueService'
+import { generateRandomTestData } from '@renderer/utils/testDataGenerator'
 
 interface FormState {
   values: Record<string, any>
@@ -29,6 +30,7 @@ export interface UseLeadFormReturn {
   handleAddChild: () => void
   handleRemoveChild: (index: number) => void
   handleFillDefaults: () => void
+  handleFillTest: () => void
   handleSubmit: () => Promise<void>
   handleReset: () => void
 }
@@ -172,6 +174,39 @@ export function useLeadForm({ schema, onSuccess, onError, onLoadingChange }: Use
     }))
   }
 
+  const handleFillTest = () => {
+    if (!schema) return
+
+    const testData = generateRandomTestData(schema)
+
+    // Update form state with test data
+    setFormState(prev => ({
+      ...prev,
+      values: testData
+    }))
+
+    // Activate spouse toggle if conjoint present in test data
+    if (testData['conjoint'] === true) {
+      setHasSpouse(true)
+    } else {
+      setHasSpouse(false)
+    }
+
+    // Activate children toggle and create child items if children present
+    const childrenCount = testData['children.count'] || 0
+    if (childrenCount > 0) {
+      setHasChildren(true)
+      const newChildren: ChildItem[] = []
+      for (let i = 0; i < childrenCount; i++) {
+        newChildren.push({ id: `child-${Date.now()}-${i}` })
+      }
+      setChildren(newChildren)
+    } else {
+      setHasChildren(false)
+      setChildren([])
+    }
+  }
+
   const handleSubmit = async () => {
     if (!schema) return
 
@@ -226,6 +261,7 @@ export function useLeadForm({ schema, onSuccess, onError, onLoadingChange }: Use
     handleAddChild,
     handleRemoveChild,
     handleFillDefaults,
+    handleFillTest,
     handleSubmit,
     handleReset
   }

@@ -67,6 +67,11 @@ export default function AddLeadModal({
     toast.success('Valeurs par défaut appliquées', 'Les champs vides ont été remplis avec leurs valeurs par défaut')
   }
 
+  const handleFillTest = () => {
+    leadForm.handleFillTest()
+    toast.success('Données de test générées', 'Le formulaire a été rempli avec des données aléatoires pour les tests')
+  }
+
   const handleClose = () => {
     if (!leadForm.formState.isSubmitting) {
       onClose()
@@ -116,13 +121,22 @@ export default function AddLeadModal({
       title="Ajouter un lead manuellement"
       size="large"
       headerActions={
-        <button
-          onClick={handleFillDefaults}
-          disabled={leadForm.formState.isSubmitting || !schema}
-          className="px-3 py-1.5 text-sm font-medium text-neutral-700 dark:text-neutral-300 bg-neutral-100 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded-md hover:bg-neutral-200 dark:hover:bg-neutral-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-        >
-          Remplir par défaut
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={handleFillDefaults}
+            disabled={leadForm.formState.isSubmitting || !schema}
+            className="px-3 py-1.5 text-sm font-medium text-neutral-700 dark:text-neutral-300 bg-neutral-100 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded-md hover:bg-neutral-200 dark:hover:bg-neutral-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            Remplir par défaut
+          </button>
+          <button
+            onClick={handleFillTest}
+            disabled={leadForm.formState.isSubmitting || !schema}
+            className="px-3 py-1.5 text-sm font-medium text-orange-700 dark:text-orange-300 bg-orange-100 dark:bg-orange-900/30 border border-orange-300 dark:border-orange-700 rounded-md hover:bg-orange-200 dark:hover:bg-orange-900/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            Remplir Test
+          </button>
+        </div>
       }
     >
       <div className="space-y-3">
