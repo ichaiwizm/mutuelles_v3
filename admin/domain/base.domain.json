@@ -13,7 +13,8 @@
         "type": "text",
         "label": "Nom du projet",
         "required": true,
-        "defaultTemplate": "Simulation {subscriber.lastName} {subscriber.firstName}",
+        "autoGenerate": true,
+        "template": "Simulation {subscriber.lastName} {subscriber.firstName}",
         "validations": {
           "minLength": 2,
           "maxLength": 120
@@ -47,7 +48,7 @@
         "type": "radio",
         "label": "Civilité",
         "required": true,
-        "carriers": ["alptis"],
+        "carriers": ["alptis", "swisslifeone"],
         "options": [
           { "value": "MONSIEUR", "label": "Monsieur" },
           { "value": "MADAME", "label": "Madame" }
@@ -57,13 +58,13 @@
         "type": "text",
         "label": "Nom",
         "required": true,
-        "carriers": ["alptis"]
+        "carriers": ["alptis", "swisslifeone"]
       },
       "firstName": {
         "type": "text",
         "label": "Prénom",
         "required": true,
-        "carriers": ["alptis"]
+        "carriers": ["alptis", "swisslifeone"]
       },
       "birthDate": {
         "type": "date",
@@ -121,6 +122,7 @@
         "required": true,
         "pattern": "^\\d+$",
         "placeholder": "Chiffres uniquement",
+        "inputMode": "numeric",
         "carriers": ["alptis"]
       },
       "departmentCode": {

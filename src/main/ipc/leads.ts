@@ -7,7 +7,6 @@ import type {
   PaginationParams
 } from '../../shared/types/leads'
 import { z } from 'zod'
-import { BaseParser, type ParsedData } from '../services/parsers/base/BaseParser'
 
 // Instanciation paresseuse du service pour éviter l'erreur de DB non initialisée
 let leadsService: LeadsService | null = null
@@ -110,19 +109,8 @@ export function registerLeadsIPC() {
         }
       }
 
-      // Calculer le score de qualité si non fourni
-      let qualityScore = validated.qualityScore
-      if (qualityScore === undefined) {
-        // Convertir les données validées en format ParsedData pour le calcul du score
-        const parsedData: ParsedData = {
-          contact: validated.contact,
-          souscripteur: validated.souscripteur,
-          conjoint: validated.conjoint || null,
-          enfants: validated.enfants || [],
-          besoins: validated.besoins || {}
-        }
-        qualityScore = BaseParser.calculateScore(parsedData)
-      }
+      // Utiliser un score de qualité par défaut si non fourni
+      const qualityScore = validated.qualityScore ?? 5
 
       // Créer d'abord un raw lead pour les créations manuelles
       const rawLead = await getLeadsService().createRawLead({
@@ -139,8 +127,7 @@ export function registerLeadsIPC() {
         conjoint: validated.conjoint,
         enfants: validated.enfants || [],
         besoins: validated.besoins || {},
-        qualityScore: qualityScore,
-        platformData: validated.platformData
+        qualityScore: qualityScore
       })
 
       return { success: true, data: cleanLead }

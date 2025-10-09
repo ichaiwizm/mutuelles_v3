@@ -5,6 +5,7 @@ import type { LeadStats, FullLead, LeadFilters } from '../../shared/types/leads'
 import LeadsTable from '../components/leads/LeadsTable'
 import LeadsFilters from '../components/leads/LeadsFilters'
 import ConfirmModal from '../components/ConfirmModal'
+import AddLeadModal from '@renderer/components/leads/AddLeadModal'
 
 export default function Leads() {
   const [stats, setStats] = useState<LeadStats | null>(null)
@@ -14,6 +15,7 @@ export default function Leads() {
   const [pagination, setPagination] = useState({ page: 1, limit: 20 })
   const [confirmDelete, setConfirmDelete] = useState<FullLead | null>(null)
   const [deleteLoading, setDeleteLoading] = useState(false)
+  const [showAddLeadModal, setShowAddLeadModal] = useState(false)
   const toast = useToastContext()
 
   // Charger les statistiques
@@ -60,7 +62,11 @@ export default function Leads() {
 
   // Handlers pour les actions de la table
   const handleAddLead = (mode: 'intelligent' | 'manual' = 'intelligent') => {
-    // Boutons désactivés - pas d'action
+    if (mode === 'manual') {
+      setShowAddLeadModal(true)
+    } else {
+      toast.info('Ajout intelligent', 'Fonctionnalité en cours de développement')
+    }
   }
 
   const handleViewLead = (lead: FullLead) => {
@@ -202,6 +208,17 @@ export default function Leads() {
         title="Supprimer le lead"
         message={`Êtes-vous sûr de vouloir supprimer le lead "${confirmDelete?.contact.prenom} ${confirmDelete?.contact.nom}" ? Cette action est irréversible.`}
         confirmText="Supprimer"
+      />
+
+      {/* Modal d'ajout de lead */}
+      <AddLeadModal
+        isOpen={showAddLeadModal}
+        onClose={() => setShowAddLeadModal(false)}
+        onSuccess={() => {
+          loadLeads()
+          loadStats()
+          setShowAddLeadModal(false)
+        }}
       />
     </section>
   )
