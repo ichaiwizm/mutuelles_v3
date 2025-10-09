@@ -82,7 +82,7 @@ export function computeDefaultValue(field: FormFieldDefinition, currentValues?: 
 /**
  * Generates all default values for a complete form schema
  */
-export function getAllDefaults(schema: FormSchema): Record<string, any> {
+export function getAllDefaults(schema: FormSchema, currentValues?: Record<string, any>): Record<string, any> {
   const defaults: Record<string, any> = {}
 
   // Collect all fields from schema
@@ -106,7 +106,19 @@ export function getAllDefaults(schema: FormSchema): Record<string, any> {
 
     const defaultValue = computeDefaultValue(field, defaults)
     if (defaultValue !== undefined) {
-      defaults[field.domainKey] = defaultValue
+      // Handle repeatable children fields with [] notation
+      if (field.domainKey.startsWith('children[].')) {
+        // Determine number of children
+        const childrenCount = currentValues?.['children.count'] || 0
+
+        // Generate indexed keys for each child
+        for (let i = 0; i < childrenCount; i++) {
+          const indexedKey = field.domainKey.replace('children[].', `children[${i}].`)
+          defaults[indexedKey] = defaultValue
+        }
+      } else {
+        defaults[field.domainKey] = defaultValue
+      }
     }
   })
 

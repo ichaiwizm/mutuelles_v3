@@ -163,7 +163,7 @@ export function useLeadForm({ schema, onSuccess, onError, onLoadingChange }: Use
   const handleFillDefaults = () => {
     if (!schema) return
 
-    const defaults = getAllDefaults(schema)
+    const defaults = getAllDefaults(schema, formState.values)
     const updatedValues = applyDefaultsToForm(formState.values, defaults, { overwrite: false })
 
     setFormState(prev => ({
