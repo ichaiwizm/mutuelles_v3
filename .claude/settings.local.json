@@ -30,7 +30,8 @@
       "Bash(npx eslint:*)",
       "Bash(dos2unix:*)",
       "Bash(npm run:*)",
-      "Bash(timeout 10 npm run db:reset:*)"
+      "Bash(timeout 10 npm run db:reset:*)",
+      "Bash(ajv validate:*)"
     ],
     "deny": [],
     "ask": []

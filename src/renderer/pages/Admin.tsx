@@ -1,12 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react'
 
 type FlowItem = { platform: string; slug: string; name: string; file: string }
+type LeadDB = { id: string; data: { contact: any; souscripteur: any } }
 
 export default function Admin() {
   const [items, setItems] = useState<FlowItem[]>([])
   const [busy, setBusy] = useState<string | null>(null)
   const [defaultLeadByFlow, setDefaultLeadByFlow] = useState<Record<string,string>>({})
-  const [leads, setLeads] = useState<Array<{ name:string; file:string }>>([])
+  const [leads, setLeads] = useState<LeadDB[]>([])
   const [logs, setLogs] = useState<Record<string,string>>({})
   const unsubRef = useRef<() => void>()
 
@@ -17,12 +18,16 @@ export default function Admin() {
         try {
           const hls = await window.api.adminHL.listHLFlows()
           list.push(...hls.map(f => ({ ...f })))
-          const allLeads = await window.api.adminHL.listLeads()
-          setLeads(allLeads)
-          const leadMap: Record<string,string> = {}
-          const first = allLeads?.[0]?.file || ''
-          for (const fl of hls) leadMap[fl.slug] = first
-          setDefaultLeadByFlow(leadMap)
+
+          // Charger les leads depuis la DB au lieu des fichiers
+          const response = await window.api.leads.list({}, { limit: 100 })
+          if (response.success && response.data?.items) {
+            setLeads(response.data.items)
+            const leadMap: Record<string,string> = {}
+            const firstId = response.data.items?.[0]?.id || ''
+            for (const fl of hls) leadMap[fl.slug] = firstId
+            setDefaultLeadByFlow(leadMap)
+          }
         } catch {}
       }
       setItems(list)
@@ -33,11 +38,11 @@ export default function Admin() {
 
   function runHL(flow: FlowItem, mode: 'headless'|'dev'|'dev_private', keepOpen?: boolean) {
     if (busy) return
-    const leadFile = defaultLeadByFlow[flow.slug]
-    if (!leadFile) { alert(`Aucun lead trouvé (admin/leads/)`); return }
+    const leadId = defaultLeadByFlow[flow.slug]
+    if (!leadId) { alert(`Aucun lead trouvé en DB`); return }
     setBusy(flow.slug)
     setLogs(prev => ({ ...prev, [flow.slug]: '' }))
-    window.api.adminHL.run({ platform: flow.platform, flowFile: flow.file, leadFile, mode, keepOpen }).then(({ runKey }) => {
+    window.api.adminHL.runWithLeadId({ platform: flow.platform, flowFile: flow.file, leadId, mode, keepOpen }).then(({ runKey }) => {
       if (unsubRef.current) unsubRef.current()
       unsubRef.current = window.api.adminHL.onRunOutput(runKey, (evt) => {
         if (evt.type === 'stdout' || evt.type === 'stderr') {
@@ -70,10 +75,13 @@ export default function Admin() {
                 <div className="text-xs flex items-center gap-2 mt-1">Lead:
                   {leads.length ? (
                     <select className="border rounded px-2 py-1 text-xs bg-white dark:bg-neutral-900 border-neutral-300 dark:border-neutral-700" value={defaultLeadByFlow[f.slug]||''} onChange={(e)=> setDefaultLeadByFlow(prev=>({ ...prev, [f.slug]: e.target.value }))}>
-                      {leads.map(l => (<option key={l.file} value={l.file}>{l.name}</option>))}
+                      {leads.map(l => {
+                        const displayName = `${l.data.contact?.nom || '?'} ${l.data.contact?.prenom || '?'}`.trim() || l.id.slice(0, 8)
+                        return <option key={l.id} value={l.id}>{displayName}</option>
+                      })}
                     </select>
                   ) : (
-                    <span className="text-red-600">Aucun lead (admin/leads/)</span>
+                    <span className="text-red-600">Aucun lead en DB</span>
                   )}
                 </div>
               </div>

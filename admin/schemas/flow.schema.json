@@ -1,0 +1,511 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://mutuelles.app/schemas/flow.schema.json",
+  "title": "Flow Schema",
+  "description": "Schema for automation flow definitions (high-level steps)",
+  "type": "object",
+  "required": ["version", "platform", "slug", "name", "trace", "steps"],
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "type": "integer",
+      "const": 1,
+      "description": "Flow schema version (currently only version 1 is supported)"
+    },
+    "platform": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z][a-z0-9_]*$",
+      "description": "Platform slug (lowercase, alphanumeric + underscores)",
+      "examples": ["alptis", "swisslifeone"]
+    },
+    "slug": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z][a-z0-9_]+$",
+      "description": "Unique flow identifier (lowercase, alphanumeric + underscores)",
+      "examples": ["alptis_login_hl", "swisslifeone_slsis"]
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Human-readable flow name",
+      "examples": ["Connexion Alptis (HL)", "SwissLifeOne - SLSIS"]
+    },
+    "trace": {
+      "type": "string",
+      "enum": ["always", "retain-on-failure", "never"],
+      "description": "Trace retention policy for debugging"
+    },
+    "steps": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Array of automation steps to execute sequentially",
+      "items": {
+        "oneOf": [
+          {
+            "$ref": "#/definitions/StepGoto"
+          },
+          {
+            "$ref": "#/definitions/StepWaitForField"
+          },
+          {
+            "$ref": "#/definitions/StepFillField"
+          },
+          {
+            "$ref": "#/definitions/StepClickField"
+          },
+          {
+            "$ref": "#/definitions/StepSelectField"
+          },
+          {
+            "$ref": "#/definitions/StepToggleField"
+          },
+          {
+            "$ref": "#/definitions/StepSleep"
+          },
+          {
+            "$ref": "#/definitions/StepAcceptConsent"
+          },
+          {
+            "$ref": "#/definitions/StepWaitForNetworkIdle"
+          },
+          {
+            "$ref": "#/definitions/StepEnterFrame"
+          },
+          {
+            "$ref": "#/definitions/StepExitFrame"
+          },
+          {
+            "$ref": "#/definitions/StepScrollIntoView"
+          },
+          {
+            "$ref": "#/definitions/StepComment"
+          }
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "StepGoto": {
+      "type": "object",
+      "required": ["type", "url", "label"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "goto"
+        },
+        "url": {
+          "type": "string",
+          "minLength": 1,
+          "format": "uri",
+          "description": "URL to navigate to"
+        },
+        "label": {
+          "type": "string",
+          "description": "Human-readable label for this step"
+        },
+        "timeout_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Maximum time to wait (in milliseconds)"
+        }
+      }
+    },
+    "StepWaitForField": {
+      "type": "object",
+      "required": ["type", "label"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "waitForField"
+        },
+        "field": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Platform field key from field definitions"
+        },
+        "domainField": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[a-zA-Z][a-zA-Z0-9.\\[\\]]*$",
+          "description": "Domain field key (dot notation, e.g., 'subscriber.birthDate')"
+        },
+        "label": {
+          "type": "string"
+        },
+        "timeout_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "optional": {
+          "type": "boolean",
+          "description": "If true, step won't fail if field not found"
+        },
+        "skipIfNot": {
+          "type": "string",
+          "pattern": "^[a-zA-Z][a-zA-Z0-9.\\[\\]]*$",
+          "description": "Skip this step if the specified lead key path is falsy"
+        }
+      }
+    },
+    "StepFillField": {
+      "type": "object",
+      "required": ["type", "label"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "fillField"
+        },
+        "field": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Platform field key"
+        },
+        "domainField": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[a-zA-Z][a-zA-Z0-9.\\[\\]]*$",
+          "description": "Domain field key"
+        },
+        "value": {
+          "type": "string",
+          "description": "Static value to fill (supports template variables like {credentials.username})"
+        },
+        "leadKey": {
+          "type": "string",
+          "pattern": "^[a-zA-Z][a-zA-Z0-9.\\[\\]]*$",
+          "description": "Key path in lead data (dot notation, e.g., 'contact.nom' or 'enfants[0].dateNaissance')"
+        },
+        "label": {
+          "type": "string"
+        },
+        "method": {
+          "type": "string",
+          "enum": ["default", "jquery"],
+          "description": "Fill method: 'default' uses Playwright native, 'jquery' uses jQuery injection"
+        },
+        "triggerEvents": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Events to trigger after filling (e.g., ['change', 'input'])"
+        },
+        "timeout_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "optional": {
+          "type": "boolean"
+        },
+        "skipIfNot": {
+          "type": "string",
+          "pattern": "^[a-zA-Z][a-zA-Z0-9.\\[\\]]*$",
+          "description": "Skip this step if the specified lead key path is falsy"
+        }
+      }
+    },
+    "StepClickField": {
+      "type": "object",
+      "required": ["type", "label"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "clickField"
+        },
+        "field": {
+          "type": "string",
+          "minLength": 1
+        },
+        "domainField": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[a-zA-Z][a-zA-Z0-9.\\[\\]]*$"
+        },
+        "leadKey": {
+          "type": "string",
+          "pattern": "^[a-zA-Z][a-zA-Z0-9.\\[\\]]*$"
+        },
+        "label": {
+          "type": "string"
+        },
+        "timeout_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "optional": {
+          "type": "boolean"
+        },
+        "skipIfNot": {
+          "type": "string",
+          "pattern": "^[a-zA-Z][a-zA-Z0-9.\\[\\]]*$"
+        }
+      }
+    },
+    "StepSelectField": {
+      "type": "object",
+      "required": ["type", "label"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "selectField"
+        },
+        "field": {
+          "type": "string",
+          "minLength": 1
+        },
+        "domainField": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[a-zA-Z][a-zA-Z0-9.\\[\\]]*$"
+        },
+        "value": {
+          "type": "string"
+        },
+        "leadKey": {
+          "type": "string",
+          "pattern": "^[a-zA-Z][a-zA-Z0-9.\\[\\]]*$"
+        },
+        "label": {
+          "type": "string"
+        },
+        "method": {
+          "type": "string",
+          "enum": ["default", "jquery"]
+        },
+        "triggerEvents": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "postDelay_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "timeout_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "optional": {
+          "type": "boolean"
+        },
+        "skipIfNot": {
+          "type": "string",
+          "pattern": "^[a-zA-Z][a-zA-Z0-9.\\[\\]]*$"
+        }
+      }
+    },
+    "StepToggleField": {
+      "type": "object",
+      "required": ["type", "label", "state"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "toggleField"
+        },
+        "field": {
+          "type": "string",
+          "minLength": 1
+        },
+        "domainField": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[a-zA-Z][a-zA-Z0-9.\\[\\]]*$"
+        },
+        "state": {
+          "type": "string",
+          "enum": ["on", "off"],
+          "description": "Target state for the toggle"
+        },
+        "leadKey": {
+          "type": "string",
+          "pattern": "^[a-zA-Z][a-zA-Z0-9.\\[\\]]*$"
+        },
+        "label": {
+          "type": "string"
+        },
+        "timeout_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "optional": {
+          "type": "boolean"
+        },
+        "skipIfNot": {
+          "type": "string",
+          "pattern": "^[a-zA-Z][a-zA-Z0-9.\\[\\]]*$"
+        }
+      }
+    },
+    "StepSleep": {
+      "type": "object",
+      "required": ["type", "timeout_ms", "label"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "sleep"
+        },
+        "timeout_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Duration to sleep (in milliseconds)"
+        },
+        "label": {
+          "type": "string"
+        },
+        "optional": {
+          "type": "boolean"
+        },
+        "skipIfNot": {
+          "type": "string",
+          "pattern": "^[a-zA-Z][a-zA-Z0-9.\\[\\]]*$"
+        }
+      }
+    },
+    "StepAcceptConsent": {
+      "type": "object",
+      "required": ["type", "label", "selector"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "acceptConsent"
+        },
+        "selector": {
+          "type": "string",
+          "minLength": 1,
+          "description": "CSS selector of consent button"
+        },
+        "label": {
+          "type": "string"
+        },
+        "timeout_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "optional": {
+          "type": "boolean"
+        }
+      }
+    },
+    "StepWaitForNetworkIdle": {
+      "type": "object",
+      "required": ["type", "label"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "waitForNetworkIdle"
+        },
+        "label": {
+          "type": "string"
+        },
+        "timeout_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "optional": {
+          "type": "boolean"
+        },
+        "skipIfNot": {
+          "type": "string",
+          "pattern": "^[a-zA-Z][a-zA-Z0-9.\\[\\]]*$"
+        }
+      }
+    },
+    "StepEnterFrame": {
+      "type": "object",
+      "required": ["type", "selector", "label"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "enterFrame"
+        },
+        "selector": {
+          "type": "string",
+          "minLength": 1,
+          "description": "CSS selector of iframe to enter"
+        },
+        "label": {
+          "type": "string"
+        },
+        "timeout_ms": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "StepExitFrame": {
+      "type": "object",
+      "required": ["type", "label"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "exitFrame"
+        },
+        "label": {
+          "type": "string"
+        },
+        "timeout_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "optional": {
+          "type": "boolean"
+        },
+        "skipIfNot": {
+          "type": "string",
+          "pattern": "^[a-zA-Z][a-zA-Z0-9.\\[\\]]*$"
+        }
+      }
+    },
+    "StepScrollIntoView": {
+      "type": "object",
+      "required": ["type", "label"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "scrollIntoView"
+        },
+        "field": {
+          "type": "string",
+          "minLength": 1
+        },
+        "domainField": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[a-zA-Z][a-zA-Z0-9.\\[\\]]*$"
+        },
+        "label": {
+          "type": "string"
+        },
+        "timeout_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "optional": {
+          "type": "boolean"
+        },
+        "skipIfNot": {
+          "type": "string",
+          "pattern": "^[a-zA-Z][a-zA-Z0-9.\\[\\]]*$"
+        }
+      }
+    },
+    "StepComment": {
+      "type": "object",
+      "required": ["type", "text"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "comment"
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Comment text (for documentation purposes)"
+        }
+      }
+    }
+  }
+}

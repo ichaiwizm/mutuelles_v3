@@ -1,0 +1,275 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://mutuelles.app/schemas/lead.schema.json",
+  "title": "Lead Schema",
+  "description": "Schema for lead data (database format with normalized camelCase keys)",
+  "type": "object",
+  "required": ["id", "data", "metadata", "createdAt"],
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Unique lead identifier"
+    },
+    "data": {
+      "$ref": "#/definitions/LeadData"
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Additional metadata (source, flags, etc.)",
+      "additionalProperties": true
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 datetime when lead was created"
+    }
+  },
+  "definitions": {
+    "LeadData": {
+      "type": "object",
+      "required": ["contact", "souscripteur", "enfants", "besoins"],
+      "additionalProperties": false,
+      "properties": {
+        "contact": {
+          "$ref": "#/definitions/ContactInfo"
+        },
+        "souscripteur": {
+          "$ref": "#/definitions/SouscripteurInfo"
+        },
+        "conjoint": {
+          "oneOf": [
+            {
+              "$ref": "#/definitions/ConjointInfo"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Spouse information (optional, null or undefined if absent)"
+        },
+        "enfants": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/EnfantInfo"
+          },
+          "description": "Array of children (can be empty)"
+        },
+        "besoins": {
+          "$ref": "#/definitions/BesoinsInfo"
+        },
+        "platformData": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": true
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Platform-specific additional data (optional)"
+        }
+      }
+    },
+    "ContactInfo": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "civilite": {
+          "type": "string",
+          "enum": ["MONSIEUR", "MADAME"],
+          "description": "Civility (Mr/Mrs)"
+        },
+        "nom": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Last name"
+        },
+        "prenom": {
+          "type": "string",
+          "minLength": 1,
+          "description": "First name"
+        },
+        "telephone": {
+          "type": "string",
+          "pattern": "^0[1-9](\\d{8}|(\\.\\d{2}){4})$",
+          "description": "Phone number (French format: 06.12.34.56.78 or 0612345678)"
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "Email address"
+        },
+        "adresse": {
+          "type": "string",
+          "description": "Street address"
+        },
+        "codePostal": {
+          "type": "string",
+          "pattern": "^\\d{5}$",
+          "description": "Postal code (5 digits)"
+        },
+        "ville": {
+          "type": "string",
+          "description": "City name"
+        },
+        "departement": {
+          "type": "string",
+          "pattern": "^\\d{2}[AB]?$",
+          "description": "Department code (2 digits, optionally followed by A or B)"
+        }
+      }
+    },
+    "SouscripteurInfo": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "dateNaissance": {
+          "type": "string",
+          "pattern": "^(0[1-9]|[12][0-9]|3[01])/(0[1-9]|1[0-2])/\\d{4}$",
+          "description": "Birth date in DD/MM/YYYY format"
+        },
+        "profession": {
+          "type": "string",
+          "description": "Profession or job title"
+        },
+        "regimeSocial": {
+          "type": "string",
+          "description": "Social security regime"
+        },
+        "nombreEnfants": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of children"
+        },
+        "categorie": {
+          "type": "string",
+          "description": "Socio-professional category"
+        },
+        "statut": {
+          "type": "string",
+          "description": "Professional status (TNS, SALARIE, etc.)"
+        }
+      }
+    },
+    "ConjointInfo": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "civilite": {
+          "type": "string",
+          "enum": ["MONSIEUR", "MADAME"]
+        },
+        "prenom": {
+          "type": "string",
+          "description": "First name"
+        },
+        "nom": {
+          "type": "string",
+          "description": "Last name"
+        },
+        "dateNaissance": {
+          "type": "string",
+          "pattern": "^(0[1-9]|[12][0-9]|3[01])/(0[1-9]|1[0-2])/\\d{4}$",
+          "description": "Birth date in DD/MM/YYYY format"
+        },
+        "profession": {
+          "type": "string"
+        },
+        "regimeSocial": {
+          "type": "string"
+        },
+        "categorie": {
+          "type": "string",
+          "description": "Socio-professional category (Alptis)"
+        },
+        "statut": {
+          "type": "string",
+          "description": "Professional status (SwissLife)"
+        }
+      }
+    },
+    "EnfantInfo": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "dateNaissance": {
+          "type": "string",
+          "pattern": "^(0[1-9]|[12][0-9]|3[01])/(0[1-9]|1[0-2])/\\d{4}$",
+          "description": "Birth date in DD/MM/YYYY format"
+        },
+        "sexe": {
+          "type": "string",
+          "enum": ["M", "F", "MASCULIN", "FEMININ"],
+          "description": "Gender"
+        },
+        "regime": {
+          "type": "string",
+          "description": "Social security regime (Alptis)"
+        },
+        "ayantDroit": {
+          "type": "string",
+          "description": "Legal beneficiary (SwissLife)"
+        }
+      }
+    },
+    "BesoinsInfo": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "dateEffet": {
+          "type": "string",
+          "pattern": "^(0[1-9]|[12][0-9]|3[01])/(0[1-9]|1[0-2])/\\d{4}$",
+          "description": "Effective date in DD/MM/YYYY format"
+        },
+        "assureActuellement": {
+          "type": "boolean",
+          "description": "Currently insured?"
+        },
+        "gammes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Insurance plans/tiers"
+        },
+        "madelin": {
+          "type": "boolean",
+          "description": "Madelin law applicable?"
+        },
+        "niveaux": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "soinsMedicaux": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 5,
+              "description": "Medical care coverage level (1-5)"
+            },
+            "hospitalisation": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 5,
+              "description": "Hospitalization coverage level (1-5)"
+            },
+            "optique": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 5,
+              "description": "Optical coverage level (1-5)"
+            },
+            "dentaire": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 5,
+              "description": "Dental coverage level (1-5)"
+            }
+          }
+        }
+      }
+    }
+  }
+}
