@@ -23,47 +23,15 @@ export default function AddLeadModal({
 
   const [alptisExpanded, setAlptisExpanded] = useState(false)
   const [swisslifeExpanded, setSwisslifeExpanded] = useState(false)
-  const [loadingToastId, setLoadingToastId] = useState<string | null>(null)
 
   const leadForm = useLeadForm({
     schema,
     onSuccess: () => {
-      // Close or update the loading toast and show success
-      if (loadingToastId) {
-        toast.update(loadingToastId, {
-          type: 'success',
-          title: 'Lead créé avec succès',
-          duration: 1000
-        })
-        setLoadingToastId(null)
-      } else {
-        toast.success('Lead créé avec succès', undefined, { duration: 1000 })
-      }
+      toast.success('Lead créé avec succès', undefined, { duration: 1000 })
       onSuccess()
     },
     onError: (error) => {
-      // Close or update the loading toast and show error
-      if (loadingToastId) {
-        toast.update(loadingToastId, {
-          type: 'error',
-          title: 'Erreur lors de la création',
-          message: error,
-          duration: 3000
-        })
-        setLoadingToastId(null)
-      } else {
-        toast.error('Erreur lors de la création', error)
-      }
-    },
-    onLoadingChange: (isLoading, message) => {
-      if (isLoading && message) {
-        const id = toast.loading(message)
-        setLoadingToastId(id)
-      } else if (loadingToastId) {
-        // If loading is done but no success/error yet, just close it
-        toast.close(loadingToastId)
-        setLoadingToastId(null)
-      }
+      toast.error('Erreur lors de la création', error)
     }
   })
 
