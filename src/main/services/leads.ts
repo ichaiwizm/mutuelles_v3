@@ -254,15 +254,15 @@ export class LeadsService {
 
     const recentStmt = this.db.prepare(`
       SELECT COUNT(*) as count FROM clean_leads
-      WHERE cleaned_at >= datetime('now', '-7 days')
+      WHERE created_at >= datetime('now', '-7 days')
     `)
     const { count: recent } = recentStmt.get() as { count: number }
 
     return {
       total,
       new: recent,
-      processed: 0, // TODO: Calculate from platform_leads
-      processing: 0 // TODO: Calculate from platform_leads
+      processed: 0, // TODO: Calculate from lead_flow_assignments
+      processing: 0 // TODO: Calculate from lead_flow_assignments
     }
   }
 }

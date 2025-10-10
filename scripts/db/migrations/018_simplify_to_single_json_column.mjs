@@ -5,6 +5,9 @@ export default {
   description: 'Simplify leads structure: merge all JSON columns into single data column, remove raw_leads table',
 
   up(db) {
+    // Disable foreign key constraints temporarily
+    db.exec('PRAGMA foreign_keys = OFF;')
+
     // Create new simplified leads table
     db.exec(`
       CREATE TABLE leads_new (
@@ -114,6 +117,9 @@ export default {
 
     console.log('  ✓ Created index on created_at')
     console.log('  ℹ New structure: id, data (all JSON merged), metadata, created_at')
+
+    // Re-enable foreign key constraints
+    db.exec('PRAGMA foreign_keys = ON;')
   },
 
   down(db) {

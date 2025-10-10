@@ -29,7 +29,8 @@
       "Bash(npm run build:*)",
       "Bash(npx eslint:*)",
       "Bash(dos2unix:*)",
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "Bash(timeout 10 npm run db:reset:*)"
     ],
     "deny": [],
     "ask": []
