@@ -61,6 +61,7 @@ contextBridge.exposeInMainWorld('api', {
     listHLFlows: () => ipcRenderer.invoke('admin:listHLFlows') as Promise<Array<{ platform:string; slug:string; name:string; file:string }>>,
     listLeads: () => ipcRenderer.invoke('admin:listLeads') as Promise<Array<{ name:string; file:string }>>,
     run: (payload: { platform:string; flowFile:string; leadFile:string; mode?: 'headless'|'dev'|'dev_private'; keepOpen?: boolean }) => ipcRenderer.invoke('admin:runHLFlow', payload) as Promise<{ runKey:string; pid:number }>,
+    runWithLeadId: (payload: { platform:string; flowFile:string; leadId:string; mode?: 'headless'|'dev'|'dev_private'; keepOpen?: boolean }) => ipcRenderer.invoke('admin:runHLFlowWithLeadId', payload) as Promise<{ runKey:string; pid:number }>,
     onRunOutput: (runKey: string, cb: (e:any)=>void) => {
       const ch = `admin:runOutput:${runKey}`
       const h = (_:any, d:any)=>cb(d)
@@ -150,6 +151,7 @@ declare global {
         listHLFlows: () => Promise<Array<{ platform:string; slug:string; name:string; file:string }>>
         listLeads: (platform: string) => Promise<Array<{ platform:string; name:string; file:string }>>
         run: (payload: { platform:string; flowFile:string; leadFile:string; mode?: 'headless'|'dev'|'dev_private'; keepOpen?: boolean }) => Promise<{ runKey:string; pid:number }>
+        runWithLeadId: (payload: { platform:string; flowFile:string; leadId:string; mode?: 'headless'|'dev'|'dev_private'; keepOpen?: boolean }) => Promise<{ runKey:string; pid:number }>
         onRunOutput: (runKey: string, cb:(e:any)=>void) => (()=>void)
       }
     }
