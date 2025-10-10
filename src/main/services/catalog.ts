@@ -21,3 +21,17 @@ export function setSelected(payload: unknown) {
   stmt.run(parsed.selected ? 1 : 0, parsed.platform_id)
   return { selected: parsed.selected }
 }
+
+// Récupère les UI forms stockés en DB (platforms_catalog.ui_form_json)
+export function getUiFormsFromDb(): Array<{ slug: string; ui: any | null }> {
+  const rows = getDb().prepare(`
+    SELECT slug, ui_form_json
+    FROM platforms_catalog
+    ORDER BY slug
+  `).all() as Array<{ slug: string; ui_form_json: string | null }>
+
+  return rows.map(r => ({
+    slug: r.slug,
+    ui: r.ui_form_json ? JSON.parse(r.ui_form_json) : null
+  }))
+}

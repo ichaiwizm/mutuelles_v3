@@ -37,85 +37,127 @@ export class PlatformLeadsService {
   }
 
   /**
-   * Generate platform-specific lead data
-   * PRIORITÉ 1 : Utiliser les données platform-specific que l'utilisateur a remplies manuellement
-   * PRIORITÉ 2 : Générer automatiquement si pas de données manuelles
+   * Génère les données plateforme UNIQUEMENT depuis le formulaire manuel.
+   * Aucun fallback ni génération automatique n'est autorisé.
+   * Échec si des champs requis (y compris spécifiques plateforme) manquent.
    */
   async generatePlatformLead(options: GeneratePlatformLeadOptions): Promise<GeneratePlatformLeadResult> {
     try {
-      // Get lead
+      // 1) Lead + plateforme
       const lead = await this.leadsService.getCleanLead(options.cleanLeadId)
-      if (!lead) {
-        return { success: false, error: 'Lead not found' }
-      }
+      if (!lead) return { success: false, error: 'Lead not found' }
 
-      // Get platform info
       const platform = this.getPlatformInfo(options.platformId)
-      if (!platform) {
-        return { success: false, error: 'Platform not found' }
-      }
+      if (!platform) return { success: false, error: 'Platform not found' }
 
-      // PRIORITÉ 1 : Vérifier si l'utilisateur a rempli des données platform-specific
-      const manualPlatformData = lead.platformData?.[platform.slug]
-
-      if (manualPlatformData && Object.keys(manualPlatformData).length > 0) {
-        // L'utilisateur a rempli des données manuellement → LES UTILISER !
-        console.log(`[PlatformLeadsService] Using manual platform data for ${platform.slug}`)
-
-        const platformLeadData: PlatformLeadData = {
-          platformId: options.platformId,
-          platformSlug: platform.slug,
-          cleanLeadId: options.cleanLeadId,
-          cleanLeadVersion: lead.version || 1,
-          data: manualPlatformData,  // ← Données de l'utilisateur
-          generatedAt: new Date().toISOString(),
-          isValid: true,  // Assume valide (vient de l'utilisateur)
-          validationErrors: []
-        }
-
-        return { success: true, data: platformLeadData }
-      }
-
-      // PRIORITÉ 2 : Pas de données manuelles → Générer automatiquement
-      console.log(`[PlatformLeadsService] Generating platform data for ${platform.slug}`)
-
+      // 2) Charger field-definitions pour connaître les champs requis / mapping key ↔ domainKey
       const fieldDefinitions = this.loadFieldDefinitions(platform.fieldDefinitionsJson)
-      const valueMappings = this.loadValueMappings(platform.valueMappingsJson)
 
-      // Validate if requested
-      let validationResult
-      if (options.validate !== false) {
-        validationResult = this.validator.validate(lead, fieldDefinitions)
-        if (!validationResult.isValid && options.throwOnError) {
-          return {
-            success: false,
-            error: 'Validation failed',
-            validationResult
+      // 3) Récupérer les données manuelles depuis le lead
+      //    - Supporter 2 formats existants:
+      //      a) lead.data.platformData[slug] : objet par plateforme
+      //      b) lead.data.platformData : map { domainKey -> value } (legacy UI)
+      const pd: any = (lead as any).data?.platformData || (lead as any).platformData || {}
+      const manualBySlug = pd?.[platform.slug]
+      const manualFlat: Record<string, any> | null = manualBySlug ? null : (typeof pd === 'object' ? pd : null)
+
+      // Helper pour lire une valeur manuelle par domainKey (gère enfants[])
+      const readManual = (domainKey: string): any => {
+        if (manualBySlug && typeof manualBySlug === 'object') {
+          return manualBySlug[domainKey]
+        }
+        if (!manualFlat) return undefined
+        if (!domainKey.includes('[]')) return manualFlat[domainKey]
+        // Pattern répétable: children[].x → à traiter hors de cette fonction
+        return undefined
+      }
+
+      // 4) Valider présence des champs requis contre les données manuelles
+      const missing: string[] = []
+      const valuesForOutput: Array<{ key: string; value: any }> = []
+
+      // Compter les enfants si présent (pour développer children[].*)
+      const childrenCount = Number(readManual('children.count') ?? 0)
+
+      for (const f of fieldDefinitions.fields || []) {
+        const isRepeat = !!f.domainKey && f.domainKey.includes('children[].')
+        if (!f.domainKey) continue
+
+        if (isRepeat) {
+          // Ex: children[].birthDate → children[0].birthDate ... children[n-1].birthDate
+          const base = f.domainKey.replace('[]', '') // children.birthDate
+          for (let i = 0; i < childrenCount; i++) {
+            const dk = f.domainKey.replace('[]', `[${i}]`)
+            const v = manualBySlug ? manualBySlug[dk] : manualFlat?.[dk]
+            if (f.required && (v === undefined || v === null || v === '')) {
+              missing.push(dk)
+            } else if (v !== undefined) {
+              const outKey = f.key?.replace('{i}', String(i)) || f.key
+              valuesForOutput.push({ key: outKey, value: v })
+            }
           }
+          continue
+        }
+
+        const v = readManual(f.domainKey)
+        if (f.required && (v === undefined || v === null || v === '')) {
+          missing.push(f.domainKey)
+        } else if (v !== undefined) {
+          valuesForOutput.push({ key: f.key, value: v })
         }
       }
 
-      // Generate platform data automatically
-      const data = this.generator.generate(lead, fieldDefinitions, valueMappings)
+      if (missing.length > 0) {
+        return {
+          success: false,
+          error: 'Missing required platform fields',
+          validationResult: {
+            isValid: false,
+            errors: missing.map(m => ({ field: m, domainKey: m, message: 'Champ requis manquant', severity: 'error' } as any)),
+            warnings: [],
+            missingFields: missing,
+            incompatibleFields: []
+          } as any
+        }
+      }
+
+      // 5) Construire le payload plateforme à partir EXCLUSIVEMENT des données manuelles
+      const out: Record<string, any> = {}
+      for (const { key, value } of valuesForOutput) {
+        // Pas d’ajout de valeurs par défaut, pas de champs calculés: on pose tel quel.
+        // On formate juste en string pour compat navigateur lorsque valeur non‑string.
+        const finalValue = typeof value === 'string' ? value : (value === null || value === undefined ? value : String(value))
+        this.setNestedValue(out, key, finalValue)
+      }
 
       const platformLeadData: PlatformLeadData = {
         platformId: options.platformId,
         platformSlug: platform.slug,
         cleanLeadId: options.cleanLeadId,
-        cleanLeadVersion: lead.version || 1,
-        data,
+        cleanLeadVersion: (lead as any).version || 1,
+        data: out,
         generatedAt: new Date().toISOString(),
-        isValid: validationResult?.isValid ?? true,
-        validationErrors: validationResult?.errors || []
+        isValid: true,
+        validationErrors: []
       }
 
-      return { success: true, data: platformLeadData, validationResult }
+      return { success: true, data: platformLeadData }
     } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error'
-      }
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
     }
+  }
+
+  /** Dépose une valeur dans un objet via une clé en notation pointée */
+  private setNestedValue(obj: Record<string, any>, path: string | undefined, value: any) {
+    if (!path) return
+    const keys = String(path).split('.')
+    let cur = obj
+    for (let i = 0; i < keys.length - 1; i++) {
+      const k = keys[i]
+      if (!cur[k] || typeof cur[k] !== 'object') cur[k] = {}
+      cur = cur[k]
+    }
+    cur[keys[keys.length - 1]] = value
   }
 
   /**
