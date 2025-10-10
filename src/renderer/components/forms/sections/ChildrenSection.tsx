@@ -15,6 +15,7 @@ interface ChildrenSectionProps {
   children: any[]
   onAddChild: () => void
   onRemoveChild: (index: number) => void
+  disabled?: boolean
 }
 
 export default function ChildrenSection({
@@ -26,7 +27,8 @@ export default function ChildrenSection({
   onToggleChildren,
   children,
   onAddChild,
-  onRemoveChild
+  onRemoveChild,
+  disabled = false
 }: ChildrenSectionProps) {
   if (childrenFields.length === 0) {
     return null
@@ -43,13 +45,14 @@ export default function ChildrenSection({
       icon={Baby}
       isActive={hasChildren}
       onToggle={onToggleChildren}
-      isEditing={true}
+      isEditing={!disabled}
     >
       <RepeatableFieldSet
         title="Enfant"
         items={children}
         onAdd={onAddChild}
         onRemove={onRemoveChild}
+        disabled={disabled}
         renderItem={(item, index) => (
           <div className="space-y-4">
             {/* Common fields */}
@@ -64,6 +67,7 @@ export default function ChildrenSection({
                       value={values[childFieldKey]}
                       onChange={(value) => onChange(childFieldKey, value)}
                       error={errors[childFieldKey]}
+                      disabled={disabled}
                     />
                   )
                 })}
@@ -90,6 +94,7 @@ export default function ChildrenSection({
                             onChange={(value) => onChange(childFieldKey, value)}
                             error={errors[childFieldKey]}
                             hidePlatformBadge={true}
+                            disabled={disabled}
                           />
                         )
                       })}
@@ -114,6 +119,7 @@ export default function ChildrenSection({
                             onChange={(value) => onChange(childFieldKey, value)}
                             error={errors[childFieldKey]}
                             hidePlatformBadge={true}
+                            disabled={disabled}
                           />
                         )
                       })}

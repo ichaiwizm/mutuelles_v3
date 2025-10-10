@@ -72,6 +72,150 @@ function extractAllFormData(formData: FormData): Record<string, any> {
   return allData
 }
 
+/**
+ * Reverse mapping functions for converting display values back to domain keys
+ */
+function reverseMapRegime(displayValue: string): string {
+  const reverseMap: { [key: string]: string } = {
+    'Alsace / Moselle': 'ALSACE_MOSELLE',
+    'Amexa': 'AMEXA',
+    'Régime des salariés agricoles': 'REGIME_SALARIES_AGRICOLES',
+    'Sécurité sociale': 'SECURITE_SOCIALE',
+    'Sécurité sociale des indépendants': 'SECURITE_SOCIALE_INDEPENDANTS',
+    'Régime Local (CPAM Alsace Moselle)': 'SECURITE_SOCIALE_ALSACE_MOSELLE',
+    'Régime Général pour TNS (CPAM)': 'TNS',
+    'Autres régimes spéciaux': 'AUTRES_REGIME_SPECIAUX'
+  }
+  return reverseMap[displayValue] || displayValue
+}
+
+function reverseMapCategory(displayValue: string): string {
+  const reverseMap: { [key: string]: string } = {
+    'Agriculteurs exploitants': 'AGRICULTEURS_EXPLOITANTS',
+    'Artisans': 'ARTISANS',
+    'Cadres': 'CADRES',
+    'Cadres et employés de la fonction publique': 'CADRES_EMPLOYES_FONCTION_PUBLIQUE',
+    "Chefs d'entreprise": 'CHEFS_D_ENTREPRISE',
+    'Commerçants et assimilés': 'COMMERCANTS_ET_ASSIMILES',
+    'Employés, agents de maîtrise': 'EMPLOYES',
+    'Ouvriers': 'OUVRIERS',
+    'Personnes sans activité professionnelle': 'PERSONNES_SANS_ACTIVITE_PROFESSIONNELLE',
+    'Professions libérales et assimilés': 'PROFESSIONS_LIBERALES_ET_ASSIMILES',
+    'Retraités': 'RETRAITES'
+  }
+  return reverseMap[displayValue] || displayValue
+}
+
+/**
+ * Transform a Lead back into FormData format for editing
+ * Priority: Use platformData if available (contains original form data)
+ * Fallback: Reconstruct from normalized data structure
+ */
+export function transformFromCleanLead(lead: any): Record<string, any> {
+  // Priority 1: If platformData exists and has content, use it directly
+  if (lead.data?.platformData && Object.keys(lead.data.platformData).length > 0) {
+    return { ...lead.data.platformData }
+  }
+
+  // Priority 2: Reconstruct from normalized structure
+  const formData: Record<string, any> = {}
+
+  // Reconstruct contact
+  if (lead.data?.contact) {
+    const { civilite, nom, prenom, telephone, email, adresse, codePostal, ville } = lead.data.contact
+    if (civilite) formData['subscriber.civility'] = civilite
+    if (nom) formData['subscriber.lastName'] = nom
+    if (prenom) formData['subscriber.firstName'] = prenom
+    if (telephone) formData['subscriber.telephone'] = telephone
+    if (email) formData['subscriber.email'] = email
+    if (adresse) formData['subscriber.address'] = adresse
+    if (codePostal) formData['subscriber.postalCode'] = codePostal
+    if (ville) formData['subscriber.city'] = ville
+  }
+
+  // Reconstruct souscripteur
+  if (lead.data?.souscripteur) {
+    const { dateNaissance, profession, regimeSocial, nombreEnfants } = lead.data.souscripteur
+
+    if (dateNaissance) formData['subscriber.birthDate'] = dateNaissance
+
+    if (regimeSocial) {
+      formData['subscriber.regime'] = reverseMapRegime(regimeSocial)
+    }
+
+    if (profession) {
+      // Try to reverse map as category first
+      const categoryValue = reverseMapCategory(profession)
+      if (categoryValue !== profession) {
+        formData['subscriber.category'] = categoryValue
+      } else {
+        // If not a category, assume it's a status or profession
+        formData['subscriber.profession'] = profession
+      }
+    }
+
+    if (nombreEnfants !== undefined) formData['subscriber.childrenCount'] = nombreEnfants
+  }
+
+  // Reconstruct conjoint
+  if (lead.data?.conjoint) {
+    formData['conjoint'] = true
+
+    const { civilite, prenom, nom, dateNaissance, profession, regimeSocial } = lead.data.conjoint
+    if (civilite) formData['spouse.civility'] = civilite
+    if (prenom) formData['spouse.firstName'] = prenom
+    if (nom) formData['spouse.lastName'] = nom
+    if (dateNaissance) formData['spouse.birthDate'] = dateNaissance
+
+    if (regimeSocial) {
+      formData['spouse.regime'] = reverseMapRegime(regimeSocial)
+    }
+
+    if (profession) {
+      const categoryValue = reverseMapCategory(profession)
+      if (categoryValue !== profession) {
+        formData['spouse.category'] = categoryValue
+      } else {
+        formData['spouse.profession'] = profession
+      }
+    }
+  }
+
+  // Reconstruct enfants
+  if (lead.data?.enfants && lead.data.enfants.length > 0) {
+    formData['enfants'] = true
+    formData['children.count'] = lead.data.enfants.length
+
+    lead.data.enfants.forEach((enfant: any, i: number) => {
+      if (enfant.dateNaissance) {
+        formData[`children[${i}].birthDate`] = enfant.dateNaissance
+      }
+      if (enfant.sexe) {
+        formData[`children[${i}].gender`] = enfant.sexe
+      }
+    })
+  }
+
+  // Reconstruct besoins
+  if (lead.data?.besoins) {
+    const { dateEffet, assureActuellement, gammes, madelin, niveaux } = lead.data.besoins
+
+    if (dateEffet) formData['project.dateEffet'] = dateEffet
+    if (assureActuellement !== undefined) formData['project.currentlyInsured'] = assureActuellement
+    if (gammes) formData['project.ranges'] = gammes
+    if (madelin !== undefined) formData['project.madelin'] = madelin
+
+    if (niveaux) {
+      if (niveaux.soinsMedicaux !== undefined) formData['project.medicalCareLevel'] = niveaux.soinsMedicaux
+      if (niveaux.hospitalisation !== undefined) formData['project.hospitalizationLevel'] = niveaux.hospitalisation
+      if (niveaux.optique !== undefined) formData['project.opticsLevel'] = niveaux.optique
+      if (niveaux.dentaire !== undefined) formData['project.dentalLevel'] = niveaux.dentaire
+    }
+  }
+
+  return formData
+}
+
 export function transformToCleanLead(formData: FormData): CreateLeadData {
   const contact: ContactInfo = {}
   const souscripteur: SouscripteurInfo = {}

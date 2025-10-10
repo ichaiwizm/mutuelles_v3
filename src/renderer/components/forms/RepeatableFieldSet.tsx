@@ -8,6 +8,7 @@ interface RepeatableFieldSetProps {
   onRemove: (index: number) => void
   renderItem: (item: any, index: number) => React.ReactNode
   maxItems?: number
+  disabled?: boolean
 }
 
 export default function RepeatableFieldSet({
@@ -16,9 +17,10 @@ export default function RepeatableFieldSet({
   onAdd,
   onRemove,
   renderItem,
-  maxItems = 10
+  maxItems = 10,
+  disabled = false
 }: RepeatableFieldSetProps) {
-  const canAdd = items.length < maxItems
+  const canAdd = !disabled && items.length < maxItems
 
   return (
     <div className="space-y-3">
@@ -52,14 +54,16 @@ export default function RepeatableFieldSet({
               <span className="text-sm font-medium">
                 {title} #{index + 1}
               </span>
-              <button
-                type="button"
-                onClick={() => onRemove(index)}
-                className="p-1 rounded-full hover:bg-red-100 dark:hover:bg-red-900/30 text-neutral-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
-                title="Supprimer"
-              >
-                <X size={16} />
-              </button>
+              {!disabled && (
+                <button
+                  type="button"
+                  onClick={() => onRemove(index)}
+                  className="p-1 rounded-full hover:bg-red-100 dark:hover:bg-red-900/30 text-neutral-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                  title="Supprimer"
+                >
+                  <X size={16} />
+                </button>
+              )}
             </div>
             {renderItem(item, index)}
           </div>

@@ -7,13 +7,15 @@ interface SubscriberFieldsSectionProps {
   values: Record<string, any>
   onChange: (key: string, value: any) => void
   errors: Record<string, string>
+  disabled?: boolean
 }
 
 export default function SubscriberFieldsSection({
   subscriberFields,
   values,
   onChange,
-  errors
+  errors,
+  disabled = false
 }: SubscriberFieldsSectionProps) {
   // Filter fields based on showIf conditions
   const visibleFields = subscriberFields.filter(field => shouldShowField(field, values))
@@ -35,6 +37,7 @@ export default function SubscriberFieldsSection({
             value={values[field.domainKey]}
             onChange={(value) => onChange(field.domainKey, value)}
             error={errors[field.domainKey]}
+            disabled={disabled}
           />
         ))}
       </div>

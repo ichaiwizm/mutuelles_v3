@@ -15,6 +15,7 @@ interface DynamicFormFieldProps {
   onGenerate?: () => void
   error?: string
   hidePlatformBadge?: boolean
+  disabled?: boolean
 }
 
 export default function DynamicFormField({
@@ -23,7 +24,8 @@ export default function DynamicFormField({
   onChange,
   onGenerate,
   error,
-  hidePlatformBadge = false
+  hidePlatformBadge = false,
+  disabled = false
 }: DynamicFormFieldProps) {
   // Add platform badge to label if field is platform-specific (unless hidden)
   const labelWithBadge = field.platform && !hidePlatformBadge ? (
@@ -32,6 +34,9 @@ export default function DynamicFormField({
       <PlatformBadge platform={field.platform} />
     </span>
   ) : field.label
+
+  // Combine global disabled with field-specific disabled
+  const isDisabled = disabled || field.disabled
 
   switch (field.type) {
     case 'text':
@@ -43,7 +48,7 @@ export default function DynamicFormField({
           error={error}
           required={field.required}
           placeholder={field.placeholder}
-          disabled={field.disabled}
+          disabled={isDisabled}
           inputMode={field.inputMode}
           pattern={field.validation?.pattern}
           canGenerate={field.autoGenerate}
@@ -59,7 +64,7 @@ export default function DynamicFormField({
           onChange={onChange}
           error={error}
           required={field.required}
-          disabled={field.disabled}
+          disabled={isDisabled}
         />
       )
 
@@ -72,7 +77,7 @@ export default function DynamicFormField({
           options={field.options || []}
           error={error}
           required={field.required}
-          disabled={field.disabled}
+          disabled={isDisabled}
         />
       )
 
@@ -85,7 +90,7 @@ export default function DynamicFormField({
           options={field.options || []}
           error={error}
           required={field.required}
-          disabled={field.disabled}
+          disabled={isDisabled}
         />
       )
 
@@ -99,7 +104,7 @@ export default function DynamicFormField({
           required={field.required}
           min={field.validation?.min}
           max={field.validation?.max}
-          disabled={field.disabled}
+          disabled={isDisabled}
         />
       )
 
@@ -112,7 +117,7 @@ export default function DynamicFormField({
           onChange={onChange}
           error={error}
           required={field.required}
-          disabled={field.disabled}
+          disabled={isDisabled}
         />
       )
 

@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
 import { FormSchema } from '@renderer/utils/formSchemaGenerator'
 import { validateForm } from '@renderer/utils/formValidation'
-import { transformToCleanLead } from '@renderer/utils/formDataTransformer'
+import { transformToCleanLead, transformFromCleanLead } from '@renderer/utils/formDataTransformer'
 import { getAllDefaults, getSpouseDefaults, getChildDefaults, applyDefaultsToForm } from '@renderer/utils/defaultValueService'
 import { generateRandomTestData } from '@renderer/utils/testDataGenerator'
+import type { Lead } from '@shared/types/leads'
 
 interface FormState {
   values: Record<string, any>
@@ -37,12 +38,14 @@ export interface UseLeadFormReturn {
 
 interface UseLeadFormOptions {
   schema: FormSchema | null
+  mode: 'create' | 'edit'
+  initialLead?: Lead
   onSuccess: () => void
   onError?: (error: string) => void
   onLoadingChange?: (isLoading: boolean, message?: string) => void
 }
 
-export function useLeadForm({ schema, onSuccess, onError, onLoadingChange }: UseLeadFormOptions): UseLeadFormReturn {
+export function useLeadForm({ schema, mode, initialLead, onSuccess, onError, onLoadingChange }: UseLeadFormOptions): UseLeadFormReturn {
   const [formState, setFormState] = useState<FormState>({
     values: {},
     errors: {},
@@ -53,6 +56,39 @@ export function useLeadForm({ schema, onSuccess, onError, onLoadingChange }: Use
   const [hasSpouse, setHasSpouse] = useState(false)
   const [hasChildren, setHasChildren] = useState(false)
   const [children, setChildren] = useState<ChildItem[]>([])
+
+  // Initialize form from lead when in edit mode
+  const initializeFromLead = (lead: Lead) => {
+    const formValues = transformFromCleanLead(lead)
+
+    setFormState(prev => ({
+      ...prev,
+      values: formValues
+    }))
+
+    // Activate spouse toggle if conjoint present
+    if (formValues['conjoint'] === true) {
+      setHasSpouse(true)
+    }
+
+    // Activate children toggle and create child items
+    const childrenCount = formValues['children.count'] || 0
+    if (childrenCount > 0) {
+      setHasChildren(true)
+      const newChildren: ChildItem[] = []
+      for (let i = 0; i < childrenCount; i++) {
+        newChildren.push({ id: `child-${Date.now()}-${i}` })
+      }
+      setChildren(newChildren)
+    }
+  }
+
+  // Initialize from lead when in edit mode
+  useEffect(() => {
+    if (mode === 'edit' && initialLead) {
+      initializeFromLead(initialLead)
+    }
+  }, [mode, initialLead])
 
   const handleFieldChange = (key: string, value: any) => {
     setFormState(prev => ({
@@ -219,11 +255,22 @@ export function useLeadForm({ schema, onSuccess, onError, onLoadingChange }: Use
     }
 
     setFormState(prev => ({ ...prev, isSubmitting: true, errors: {} }))
-    onLoadingChange?.(true, 'Création du lead...')
+
+    const loadingMessage = mode === 'create' ? 'Création du lead...' : 'Mise à jour du lead...'
+    onLoadingChange?.(true, loadingMessage)
 
     try {
       const cleanLead = transformToCleanLead(formState.values)
-      const result = await window.api.leads.create(cleanLead)
+
+      let result
+      if (mode === 'create') {
+        result = await window.api.leads.create(cleanLead)
+      } else {
+        if (!initialLead?.id) {
+          throw new Error('ID du lead manquant pour la mise à jour')
+        }
+        result = await window.api.leads.update(initialLead.id, cleanLead)
+      }
 
       if (result.success) {
         onSuccess()

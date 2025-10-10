@@ -13,6 +13,7 @@ interface ProjectFieldsSectionProps {
   onChange: (key: string, value: any) => void
   onGenerate: () => void
   errors: Record<string, string>
+  disabled?: boolean
 }
 
 export default function ProjectFieldsSection({
@@ -24,7 +25,8 @@ export default function ProjectFieldsSection({
   values,
   onChange,
   onGenerate,
-  errors
+  errors,
+  disabled = false
 }: ProjectFieldsSectionProps) {
   const dateEffetField = projectFields.find(f => f.domainKey === 'project.dateEffet')
   const projectNameField = projectFields.find(f => f.domainKey === 'project.name')
@@ -55,6 +57,7 @@ export default function ProjectFieldsSection({
               value={values['subscriber.lastName']}
               onChange={(value) => onChange('subscriber.lastName', value)}
               error={errors['subscriber.lastName']}
+              disabled={disabled}
             />
           </div>
         )}
@@ -67,6 +70,7 @@ export default function ProjectFieldsSection({
               value={values['subscriber.firstName']}
               onChange={(value) => onChange('subscriber.firstName', value)}
               error={errors['subscriber.firstName']}
+              disabled={disabled}
             />
           </div>
         )}
@@ -79,6 +83,7 @@ export default function ProjectFieldsSection({
               value={values['subscriber.birthDate']}
               onChange={(value) => onChange('subscriber.birthDate', value)}
               error={errors['subscriber.birthDate']}
+              disabled={disabled}
             />
           </div>
         )}
@@ -91,6 +96,7 @@ export default function ProjectFieldsSection({
               value={values['project.dateEffet']}
               onChange={(value) => onChange('project.dateEffet', value)}
               error={errors['project.dateEffet']}
+              disabled={disabled}
             />
           </div>
         )}
@@ -104,6 +110,7 @@ export default function ProjectFieldsSection({
               onChange={(value) => onChange('project.name', value)}
               onGenerate={onGenerate}
               error={errors['project.name']}
+              disabled={disabled}
             />
           </div>
         )}
@@ -116,6 +123,7 @@ export default function ProjectFieldsSection({
               value={values[field.domainKey]}
               onChange={(value) => onChange(field.domainKey, value)}
               error={errors[field.domainKey]}
+              disabled={disabled}
             />
           </div>
         ))}

@@ -11,6 +11,7 @@ interface SpouseSectionProps {
   errors: Record<string, string>
   hasSpouse: boolean
   onToggleSpouse: (active: boolean) => void
+  disabled?: boolean
 }
 
 export default function SpouseSection({
@@ -19,7 +20,8 @@ export default function SpouseSection({
   onChange,
   errors,
   hasSpouse,
-  onToggleSpouse
+  onToggleSpouse,
+  disabled = false
 }: SpouseSectionProps) {
   if (spouseFields.length === 0) {
     return null
@@ -36,7 +38,7 @@ export default function SpouseSection({
       icon={Users}
       isActive={hasSpouse}
       onToggle={onToggleSpouse}
-      isEditing={true}
+      isEditing={!disabled}
     >
       <div className="space-y-4">
         {/* Common fields */}
@@ -49,6 +51,7 @@ export default function SpouseSection({
                 value={values[field.domainKey]}
                 onChange={(value) => onChange(field.domainKey, value)}
                 error={errors[field.domainKey]}
+                disabled={disabled}
               />
             ))}
           </div>
@@ -72,6 +75,7 @@ export default function SpouseSection({
                       onChange={(value) => onChange(field.domainKey, value)}
                       error={errors[field.domainKey]}
                       hidePlatformBadge={true}
+                      disabled={disabled}
                     />
                   ))}
                 </div>
@@ -93,6 +97,7 @@ export default function SpouseSection({
                       onChange={(value) => onChange(field.domainKey, value)}
                       error={errors[field.domainKey]}
                       hidePlatformBadge={true}
+                      disabled={disabled}
                     />
                   ))}
                 </div>

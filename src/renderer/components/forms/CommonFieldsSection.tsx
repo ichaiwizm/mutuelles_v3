@@ -20,6 +20,7 @@ interface CommonFieldsSectionProps {
   children: any[]
   onAddChild: () => void
   onRemoveChild: (index: number) => void
+  disabled?: boolean
 }
 
 export default function CommonFieldsSection({
@@ -36,7 +37,8 @@ export default function CommonFieldsSection({
   onToggleChildren,
   children,
   onAddChild,
-  onRemoveChild
+  onRemoveChild,
+  disabled = false
 }: CommonFieldsSectionProps) {
   // Memoize field categorization to avoid recomputing on every render
   const fieldCategories = useMemo(() => {
@@ -76,6 +78,7 @@ export default function CommonFieldsSection({
         onChange={onChange}
         onGenerate={onGenerate}
         errors={errors}
+        disabled={disabled}
       />
 
       <SubscriberFieldsSection
@@ -83,6 +86,7 @@ export default function CommonFieldsSection({
         values={values}
         onChange={onChange}
         errors={errors}
+        disabled={disabled}
       />
 
       <SpouseSection
@@ -92,6 +96,7 @@ export default function CommonFieldsSection({
         errors={errors}
         hasSpouse={hasSpouse}
         onToggleSpouse={onToggleSpouse}
+        disabled={disabled}
       />
 
       <ChildrenSection
@@ -104,6 +109,7 @@ export default function CommonFieldsSection({
         children={children}
         onAddChild={onAddChild}
         onRemoveChild={onRemoveChild}
+        disabled={disabled}
       />
     </div>
   )

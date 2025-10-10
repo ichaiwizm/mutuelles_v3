@@ -1,21 +1,26 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { Upload, Mail, Sparkles, FileEdit } from 'lucide-react'
 import { useToastContext } from '../contexts/ToastContext'
-import type { LeadStats, FullLead, LeadFilters } from '../../shared/types/leads'
+import type { LeadStats, Lead, LeadFilters } from '../../shared/types/leads'
 import LeadsTable from '../components/leads/LeadsTable'
 import LeadsFilters from '../components/leads/LeadsFilters'
 import ConfirmModal from '../components/ConfirmModal'
-import AddLeadModal from '@renderer/components/leads/AddLeadModal'
+import LeadModal from '@renderer/components/leads/LeadModal'
 
 export default function Leads() {
   const [stats, setStats] = useState<LeadStats | null>(null)
-  const [leads, setLeads] = useState<FullLead[]>([])
+  const [leads, setLeads] = useState<Lead[]>([])
   const [loading, setLoading] = useState({ stats: false, leads: false })
   const [filters, setFilters] = useState<LeadFilters>({})
   const [pagination, setPagination] = useState({ page: 1, limit: 20 })
-  const [confirmDelete, setConfirmDelete] = useState<FullLead | null>(null)
+  const [confirmDelete, setConfirmDelete] = useState<Lead | null>(null)
   const [deleteLoading, setDeleteLoading] = useState(false)
-  const [showAddLeadModal, setShowAddLeadModal] = useState(false)
+
+  // Lead modal state
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(null)
+  const [leadModalMode, setLeadModalMode] = useState<'create' | 'view' | 'edit'>('create')
+  const [showLeadModal, setShowLeadModal] = useState(false)
+
   const toast = useToastContext()
 
   // Charger les statistiques
@@ -63,21 +68,27 @@ export default function Leads() {
   // Handlers pour les actions de la table
   const handleAddLead = (mode: 'intelligent' | 'manual' = 'intelligent') => {
     if (mode === 'manual') {
-      setShowAddLeadModal(true)
+      setSelectedLead(null)
+      setLeadModalMode('create')
+      setShowLeadModal(true)
     } else {
       toast.info('Ajout intelligent', 'Fonctionnalité en cours de développement')
     }
   }
 
-  const handleViewLead = (lead: FullLead) => {
-    // Fonction vide
+  const handleViewLead = (lead: Lead) => {
+    setSelectedLead(lead)
+    setLeadModalMode('view')
+    setShowLeadModal(true)
   }
 
-  const handleEditLead = (lead: FullLead) => {
-    // Fonction vide
+  const handleEditLead = (lead: Lead) => {
+    setSelectedLead(lead)
+    setLeadModalMode('edit')
+    setShowLeadModal(true)
   }
 
-  const handleDeleteLead = (lead: FullLead) => {
+  const handleDeleteLead = (lead: Lead) => {
     setConfirmDelete(lead)
   }
 
@@ -210,14 +221,20 @@ export default function Leads() {
         confirmText="Supprimer"
       />
 
-      {/* Modal d'ajout de lead */}
-      <AddLeadModal
-        isOpen={showAddLeadModal}
-        onClose={() => setShowAddLeadModal(false)}
+      {/* Modal de lead (view/edit/create) */}
+      <LeadModal
+        mode={leadModalMode}
+        lead={selectedLead || undefined}
+        isOpen={showLeadModal}
+        onClose={() => {
+          setShowLeadModal(false)
+          setSelectedLead(null)
+        }}
         onSuccess={() => {
           loadLeads()
           loadStats()
-          setShowAddLeadModal(false)
+          setShowLeadModal(false)
+          setSelectedLead(null)
         }}
       />
     </section>

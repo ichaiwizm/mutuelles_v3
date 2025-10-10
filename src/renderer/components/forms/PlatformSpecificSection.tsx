@@ -11,6 +11,7 @@ interface PlatformSpecificSectionProps {
   errors: Record<string, string>
   isExpanded: boolean
   onToggle: (expanded: boolean) => void
+  disabled?: boolean
 }
 
 export default function PlatformSpecificSection({
@@ -20,7 +21,8 @@ export default function PlatformSpecificSection({
   onChange,
   errors,
   isExpanded,
-  onToggle
+  onToggle,
+  disabled = false
 }: PlatformSpecificSectionProps) {
   const fields = schema.platformSpecific[platform]
 
@@ -69,6 +71,7 @@ export default function PlatformSpecificSection({
                 value={values[field.domainKey]}
                 onChange={(value) => onChange(field.domainKey, value)}
                 error={errors[field.domainKey]}
+                disabled={disabled}
               />
             ))}
           </div>
