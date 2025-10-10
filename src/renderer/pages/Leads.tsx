@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { Upload, Mail, Sparkles, FileEdit } from 'lucide-react'
+import { FileEdit } from 'lucide-react'
 import { useToastContext } from '../contexts/ToastContext'
 import type { LeadStats, Lead, LeadFilters } from '../../shared/types/leads'
 import LeadsTable from '../components/leads/LeadsTable'
@@ -66,14 +66,10 @@ export default function Leads() {
   }, [loadLeads])
 
   // Handlers pour les actions de la table
-  const handleAddLead = (mode: 'intelligent' | 'manual' = 'intelligent') => {
-    if (mode === 'manual') {
-      setSelectedLead(null)
-      setLeadModalMode('create')
-      setShowLeadModal(true)
-    } else {
-      toast.info('Ajout intelligent', 'Fonctionnalité en cours de développement')
-    }
+  const handleAddLead = () => {
+    setSelectedLead(null)
+    setLeadModalMode('create')
+    setShowLeadModal(true)
   }
 
   const handleViewLead = (lead: Lead) => {
@@ -136,32 +132,13 @@ export default function Leads() {
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Leads</h1>
         <div className="flex gap-2">
-          <button className="flex items-center gap-2 px-3 py-2 rounded-md border border-neutral-300 dark:border-neutral-700 bg-transparent hover:bg-neutral-50 dark:hover:bg-neutral-800 text-sm">
-            <Mail size={16} />
-            Extraire Gmail
+          <button
+            onClick={handleAddLead}
+            className="flex items-center gap-2 px-3 py-2 rounded-md bg-blue-600 dark:bg-blue-500 text-white hover:bg-blue-700 dark:hover:bg-blue-600 text-sm transition-colors"
+          >
+            <FileEdit size={16} />
+            Ajouter un lead
           </button>
-          <button className="flex items-center gap-2 px-3 py-2 rounded-md border border-neutral-300 dark:border-neutral-700 bg-transparent hover:bg-neutral-50 dark:hover:bg-neutral-800 text-sm">
-            <Upload size={16} />
-            Importer
-          </button>
-          {/* Bouton split pour ajouter un lead */}
-          <div className="inline-flex rounded-md overflow-hidden border border-neutral-300 dark:border-neutral-700">
-            <button
-              onClick={() => handleAddLead('intelligent')}
-              className="flex items-center gap-2 px-3 py-2 bg-indigo-600 dark:bg-indigo-500 text-white hover:bg-indigo-700 dark:hover:bg-indigo-600 text-sm transition-colors"
-            >
-              <Sparkles size={16} />
-              Intelligent
-            </button>
-            <div className="w-px bg-neutral-300 dark:bg-neutral-700" />
-            <button
-              onClick={() => handleAddLead('manual')}
-              className="flex items-center gap-2 px-3 py-2 bg-emerald-600 dark:bg-emerald-500 text-white hover:bg-emerald-700 dark:hover:bg-emerald-600 text-sm transition-colors"
-            >
-              <FileEdit size={16} />
-              Manuel
-            </button>
-          </div>
         </div>
       </div>
 
