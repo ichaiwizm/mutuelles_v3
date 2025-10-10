@@ -206,7 +206,7 @@ export default function Leads() {
         onConfirm={handleConfirmDelete}
         loading={deleteLoading}
         title="Supprimer le lead"
-        message={`Êtes-vous sûr de vouloir supprimer le lead "${confirmDelete?.contact.prenom} ${confirmDelete?.contact.nom}" ? Cette action est irréversible.`}
+        message={`Êtes-vous sûr de vouloir supprimer le lead "${confirmDelete?.data.contact.prenom} ${confirmDelete?.data.contact.nom}" ? Cette action est irréversible.`}
         confirmText="Supprimer"
       />
 

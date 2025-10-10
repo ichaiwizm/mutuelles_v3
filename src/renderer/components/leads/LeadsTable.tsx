@@ -1,7 +1,6 @@
 import React from 'react'
 import { Users, Plus } from 'lucide-react'
 import type { FullLead } from '@shared/types/leads'
-import LeadStatusBadge from './LeadStatusBadge'
 
 interface LeadsTableProps {
   leads: FullLead[]
@@ -62,8 +61,6 @@ export default function LeadsTable({
           <tr>
             <th className="text-left px-3 py-2">Contact</th>
             <th className="text-left px-3 py-2">Souscripteur</th>
-            <th className="text-left px-3 py-2">Source</th>
-            <th className="text-left px-3 py-2">Score</th>
             <th className="text-left px-3 py-2">Date</th>
             <th className="px-3 py-2 w-[180px]"></th>
           </tr>
@@ -76,14 +73,14 @@ export default function LeadsTable({
               <td className="px-3 py-2">
                 <div>
                   <div className="font-medium">
-                    {lead.contact.prenom} {lead.contact.nom}
+                    {lead.data.contact.prenom} {lead.data.contact.nom}
                   </div>
                   <div className="text-xs text-neutral-500">
-                    {lead.contact.email}
+                    {lead.data.contact.email}
                   </div>
-                  {lead.contact.telephone && (
+                  {lead.data.contact.telephone && (
                     <div className="text-xs text-neutral-400">
-                      {lead.contact.telephone}
+                      {lead.data.contact.telephone}
                     </div>
                   )}
                 </div>
@@ -91,43 +88,28 @@ export default function LeadsTable({
               <td className="px-3 py-2">
                 <div>
                   <div className="text-xs text-neutral-500">
-                    {lead.souscripteur.profession || 'Non renseigné'}
+                    {lead.data.souscripteur.profession || 'Non renseigné'}
                   </div>
                   <div className="text-xs text-neutral-400">
-                    {lead.souscripteur.regimeSocial || 'Régime non défini'}
+                    {lead.data.souscripteur.regimeSocial || 'Régime non défini'}
                   </div>
-                  {lead.souscripteur.nombreEnfants !== undefined && (
+                  {lead.data.souscripteur.nombreEnfants !== undefined && (
                     <div className="text-xs text-neutral-400">
-                      {lead.souscripteur.nombreEnfants} enfant(s)
+                      {lead.data.souscripteur.nombreEnfants} enfant(s)
                     </div>
                   )}
                 </div>
               </td>
               <td className="px-3 py-2">
-                <LeadStatusBadge
-                  source={lead.rawLead.source}
-                  provider={lead.rawLead.provider}
-                />
-              </td>
-              <td className="px-3 py-2">
-                <div className="flex items-center gap-2">
-                  <div className={`w-2 h-2 rounded-full ${
-                    lead.qualityScore >= 8 ? 'bg-emerald-500' :
-                    lead.qualityScore >= 5 ? 'bg-amber-500' : 'bg-red-500'
-                  }`}></div>
-                  <span className="font-mono text-xs">{lead.qualityScore}/10</span>
-                </div>
-              </td>
-              <td className="px-3 py-2">
                 <div className="text-xs text-neutral-500">
-                  {new Date(lead.cleanedAt).toLocaleDateString('fr-FR', {
+                  {new Date(lead.createdAt).toLocaleDateString('fr-FR', {
                     day: '2-digit',
                     month: '2-digit',
                     year: 'numeric'
                   })}
                 </div>
                 <div className="text-xs text-neutral-400">
-                  {new Date(lead.cleanedAt).toLocaleTimeString('fr-FR', {
+                  {new Date(lead.createdAt).toLocaleTimeString('fr-FR', {
                     hour: '2-digit',
                     minute: '2-digit'
                   })}

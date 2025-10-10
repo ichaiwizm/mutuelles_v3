@@ -1,9 +1,8 @@
 import { getDb } from '../db/connection'
 import type {
-  RawLead,
+  Lead,
   CleanLead,
-  PlatformLead,
-  FullLead,
+  LeadData,
   CreateLeadData,
   UpdateLeadData,
   LeadFilters,
@@ -12,73 +11,51 @@ import type {
   LeadStats
 } from '../../shared/types/leads'
 import { randomUUID } from 'crypto'
-import { PlatformMappingService } from '../../shared/platformMapping'
 
 export class LeadsService {
   private get db() {
     return getDb()
   }
 
-  // =================== RAW LEADS ===================
+  // =================== LEADS ===================
 
-  async createRawLead(data: Omit<RawLead, 'id' | 'extractedAt'>): Promise<RawLead> {
+  async createLead(data: CreateLeadData, metadata: Record<string, any> = {}): Promise<Lead> {
     const id = randomUUID()
-    const extractedAt = new Date().toISOString()
+    const createdAt = new Date().toISOString()
+
+    // Merge all data into single JSON object
+    const leadData: LeadData = {
+      contact: data.contact,
+      souscripteur: data.souscripteur,
+      conjoint: data.conjoint,
+      enfants: data.enfants || [],
+      besoins: data.besoins || {},
+      platformData: data.platformData
+    }
 
     const stmt = this.db.prepare(`
-      INSERT INTO raw_leads (id, source, provider, raw_content, metadata, extracted_at)
-      VALUES (?, ?, ?, ?, ?, ?)
+      INSERT INTO clean_leads (id, data, metadata, created_at)
+      VALUES (?, ?, ?, ?)
     `)
 
     stmt.run(
       id,
-      data.source,
-      data.provider || null,
-      data.rawContent,
-      JSON.stringify(data.metadata),
-      extractedAt
+      JSON.stringify(leadData),
+      JSON.stringify(metadata),
+      createdAt
     )
 
-    return { id, extractedAt, ...data }
-  }
-
-  // =================== CLEAN LEADS ===================
-
-  async createCleanLead(data: Omit<CleanLead, 'id' | 'cleanedAt'>): Promise<CleanLead> {
-    const id = randomUUID()
-    const cleanedAt = new Date().toISOString()
-
-    // Stocker directement les platformData fournies par le frontend (données brutes du formulaire)
-    // Pas de génération automatique, pas de transformation
-    const platformData = data.platformData || {}
-
-    const stmt = this.db.prepare(`
-      INSERT INTO clean_leads (
-        id, raw_lead_id, contact_data, souscripteur_data,
-        conjoint_data, enfants_data, besoins_data, platform_data, quality_score, cleaned_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `)
-
-    stmt.run(
+    return {
       id,
-      data.rawLeadId,
-      JSON.stringify(data.contact),
-      JSON.stringify(data.souscripteur),
-      data.conjoint ? JSON.stringify(data.conjoint) : null,
-      JSON.stringify(data.enfants),
-      JSON.stringify(data.besoins),
-      JSON.stringify(platformData),
-      data.qualityScore,
-      cleanedAt
-    )
-
-    return { id, cleanedAt, ...data, platformData }
+      data: leadData,
+      metadata,
+      createdAt
+    }
   }
 
-  async getCleanLead(id: string): Promise<CleanLead | null> {
+  async getLead(id: string): Promise<Lead | null> {
     const row = this.db.prepare(`
-      SELECT id, raw_lead_id, contact_data, souscripteur_data,
-             conjoint_data, enfants_data, besoins_data, platform_data, quality_score, cleaned_at
+      SELECT id, data, metadata, created_at
       FROM clean_leads WHERE id = ?
     `).get(id) as any
 
@@ -86,80 +63,58 @@ export class LeadsService {
 
     return {
       id: row.id,
-      rawLeadId: row.raw_lead_id,
-      contact: JSON.parse(row.contact_data),
-      souscripteur: JSON.parse(row.souscripteur_data),
-      conjoint: row.conjoint_data ? JSON.parse(row.conjoint_data) : undefined,
-      enfants: JSON.parse(row.enfants_data),
-      besoins: JSON.parse(row.besoins_data),
-      platformData: row.platform_data ? JSON.parse(row.platform_data) : undefined,
-      qualityScore: row.quality_score,
-      cleanedAt: row.cleaned_at
+      data: JSON.parse(row.data),
+      metadata: JSON.parse(row.metadata || '{}'),
+      createdAt: row.created_at
     }
   }
 
-  async updateCleanLead(id: string, data: UpdateLeadData): Promise<boolean> {
-    const existing = await this.getCleanLead(id)
+  // Alias for compatibility
+  async getCleanLead(id: string): Promise<CleanLead | null> {
+    return this.getLead(id)
+  }
+
+  async updateLead(id: string, updates: UpdateLeadData): Promise<boolean> {
+    const existing = await this.getLead(id)
     if (!existing) return false
 
-    const updates: string[] = []
-    const values: any[] = []
-
-    if (data.contact) {
-      const merged = { ...existing.contact, ...data.contact }
-      updates.push('contact_data = ?')
-      values.push(JSON.stringify(merged))
+    // Merge updates into existing data
+    const updatedData: LeadData = {
+      contact: updates.contact ? { ...existing.data.contact, ...updates.contact } : existing.data.contact,
+      souscripteur: updates.souscripteur ? { ...existing.data.souscripteur, ...updates.souscripteur } : existing.data.souscripteur,
+      conjoint: updates.conjoint !== undefined ? updates.conjoint : existing.data.conjoint,
+      enfants: updates.enfants !== undefined ? updates.enfants : existing.data.enfants,
+      besoins: updates.besoins ? { ...existing.data.besoins, ...updates.besoins } : existing.data.besoins,
+      platformData: updates.platformData ? { ...existing.data.platformData, ...updates.platformData } : existing.data.platformData
     }
-
-    if (data.souscripteur) {
-      const merged = { ...existing.souscripteur, ...data.souscripteur }
-      updates.push('souscripteur_data = ?')
-      values.push(JSON.stringify(merged))
-    }
-
-    if (data.conjoint !== undefined) {
-      updates.push('conjoint_data = ?')
-      values.push(data.conjoint ? JSON.stringify(data.conjoint) : null)
-    }
-
-    if (data.enfants) {
-      updates.push('enfants_data = ?')
-      values.push(JSON.stringify(data.enfants))
-    }
-
-    if (data.besoins) {
-      const merged = { ...existing.besoins, ...data.besoins }
-      updates.push('besoins_data = ?')
-      values.push(JSON.stringify(merged))
-    }
-
-    if (data.platformData) {
-      const merged = { ...existing.platformData, ...data.platformData }
-      updates.push('platform_data = ?')
-      values.push(JSON.stringify(merged))
-    }
-
-    if (updates.length === 0) return true
-
-    values.push(id)
 
     const stmt = this.db.prepare(`
-      UPDATE clean_leads SET ${updates.join(', ')} WHERE id = ?
+      UPDATE clean_leads SET data = ? WHERE id = ?
     `)
 
-    const result = stmt.run(...values)
+    const result = stmt.run(JSON.stringify(updatedData), id)
     return result.changes > 0
   }
 
-  async deleteCleanLead(id: string): Promise<boolean> {
+  // Alias for compatibility
+  async updateCleanLead(id: string, data: UpdateLeadData): Promise<boolean> {
+    return this.updateLead(id, data)
+  }
+
+  async deleteLead(id: string): Promise<boolean> {
     const stmt = this.db.prepare('DELETE FROM clean_leads WHERE id = ?')
     const result = stmt.run(id)
     return result.changes > 0
   }
 
+  // Alias for compatibility
+  async deleteCleanLead(id: string): Promise<boolean> {
+    return this.deleteLead(id)
+  }
+
   // =================== LISTING & FILTERING ===================
 
-  async listCleanLeads(filters: LeadFilters = {}, pagination: PaginationParams = {}): Promise<PaginatedResult<FullLead>> {
+  async listLeads(filters: LeadFilters = {}, pagination: PaginationParams = {}): Promise<PaginatedResult<Lead>> {
     const { page = 1, limit = 20 } = pagination
     const offset = (page - 1) * limit
 
@@ -168,62 +123,39 @@ export class LeadsService {
 
     if (filters.search) {
       whereClause += ` AND (
-        JSON_EXTRACT(cl.contact_data, '$.nom') LIKE ? OR
-        JSON_EXTRACT(cl.contact_data, '$.prenom') LIKE ? OR
-        JSON_EXTRACT(cl.contact_data, '$.email') LIKE ? OR
-        JSON_EXTRACT(cl.contact_data, '$.telephone') LIKE ?
+        JSON_EXTRACT(data, '$.contact.nom') LIKE ? OR
+        JSON_EXTRACT(data, '$.contact.prenom') LIKE ? OR
+        JSON_EXTRACT(data, '$.contact.email') LIKE ? OR
+        JSON_EXTRACT(data, '$.contact.telephone') LIKE ?
       )`
       const searchTerm = `%${filters.search}%`
       params.push(searchTerm, searchTerm, searchTerm, searchTerm)
     }
 
-    if (filters.provider) {
-      whereClause += ' AND rl.provider = ?'
-      params.push(filters.provider)
-    }
-
-
     // Count total
     const countStmt = this.db.prepare(`
       SELECT COUNT(*) as total
-      FROM clean_leads cl
-      JOIN raw_leads rl ON cl.raw_lead_id = rl.id
+      FROM clean_leads
       WHERE ${whereClause}
     `)
     const { total } = countStmt.get(...params) as { total: number }
 
     // Get items
     const itemsStmt = this.db.prepare(`
-      SELECT cl.*, rl.source, rl.provider, rl.raw_content, rl.metadata, rl.extracted_at
-      FROM clean_leads cl
-      JOIN raw_leads rl ON cl.raw_lead_id = rl.id
+      SELECT id, data, metadata, created_at
+      FROM clean_leads
       WHERE ${whereClause}
-      ORDER BY cl.cleaned_at DESC
+      ORDER BY created_at DESC
       LIMIT ? OFFSET ?
     `)
 
     const rows = itemsStmt.all(...params, limit, offset) as any[]
 
-    const items: FullLead[] = rows.map(row => ({
+    const items: Lead[] = rows.map(row => ({
       id: row.id,
-      rawLeadId: row.raw_lead_id,
-      contact: JSON.parse(row.contact_data),
-      souscripteur: JSON.parse(row.souscripteur_data),
-      conjoint: row.conjoint_data ? JSON.parse(row.conjoint_data) : undefined,
-      enfants: JSON.parse(row.enfants_data),
-      besoins: JSON.parse(row.besoins_data),
-      platformData: row.platform_data ? JSON.parse(row.platform_data) : undefined,
-      qualityScore: row.quality_score,
-      cleanedAt: row.cleaned_at,
-      rawLead: {
-        id: row.raw_lead_id,
-        source: row.source,
-        provider: row.provider,
-        rawContent: row.raw_content,
-        metadata: JSON.parse(row.metadata),
-        extractedAt: row.extracted_at
-      },
-      platformLeads: [] // TODO: Load platform leads separately
+      data: JSON.parse(row.data),
+      metadata: JSON.parse(row.metadata || '{}'),
+      createdAt: row.created_at
     }))
 
     return {
@@ -233,6 +165,11 @@ export class LeadsService {
       limit,
       totalPages: Math.ceil(total / limit)
     }
+  }
+
+  // Alias for compatibility
+  async listCleanLeads(filters: LeadFilters = {}, pagination: PaginationParams = {}): Promise<PaginatedResult<Lead>> {
+    return this.listLeads(filters, pagination)
   }
 
   // =================== DUPLICATE DETECTION ===================
@@ -248,21 +185,18 @@ export class LeadsService {
     telephone?: string
   }, souscripteur?: {
     dateNaissance?: string
-  }): Promise<Array<{ lead: CleanLead; reasons: string[] }>> {
-    const duplicates: Array<{ lead: CleanLead; reasons: string[] }> = []
+  }): Promise<Array<{ lead: Lead; reasons: string[] }>> {
+    const duplicates: Array<{ lead: Lead; reasons: string[] }> = []
 
     // Récupérer tous les leads pour vérification
-    // On utilise une requête simple car le nombre de leads est généralement faible
-    const allLeadsStmt = this.db.prepare(`
-      SELECT id, contact_data, souscripteur_data
-      FROM clean_leads
-    `)
+    const allLeadsStmt = this.db.prepare('SELECT id, data FROM clean_leads')
     const rows = allLeadsStmt.all() as any[]
 
     for (const row of rows) {
       const reasons: string[] = []
-      const existingContact = JSON.parse(row.contact_data)
-      const existingSouscripteur = JSON.parse(row.souscripteur_data)
+      const leadData = JSON.parse(row.data)
+      const existingContact = leadData.contact
+      const existingSouscripteur = leadData.souscripteur
 
       // Vérifier l'email (si fourni et non vide)
       if (contact.email && contact.email.trim() !== '' &&
@@ -302,7 +236,7 @@ export class LeadsService {
 
       // Si des correspondances ont été trouvées, récupérer le lead complet
       if (reasons.length > 0) {
-        const fullLead = await this.getCleanLead(row.id)
+        const fullLead = await this.getLead(row.id)
         if (fullLead) {
           duplicates.push({ lead: fullLead, reasons })
         }
@@ -324,17 +258,11 @@ export class LeadsService {
     `)
     const { count: recent } = recentStmt.get() as { count: number }
 
-    const avgScoreStmt = this.db.prepare('SELECT AVG(quality_score) as avg FROM clean_leads')
-    const { avg: averageScore } = avgScoreStmt.get() as { avg: number }
-
     return {
       total,
       new: recent,
       processed: 0, // TODO: Calculate from platform_leads
-      processing: 0, // TODO: Calculate from platform_leads
-      bySource: { gmail: 0, file: 0, manual: 0 }, // TODO: Calculate
-      byProvider: { assurprospect: 0, assurlead: 0, generic: 0 }, // TODO: Calculate
-      averageScore: Math.round(averageScore || 0)
+      processing: 0 // TODO: Calculate from platform_leads
     }
   }
 }

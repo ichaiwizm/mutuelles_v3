@@ -60,21 +60,13 @@ const CreateLeadSchema = z.object({
       dentaire: z.number().optional()
     }).optional()
   }).optional(),
-  platformData: z.record(z.any()).optional(),
-  qualityScore: z.number().int().min(0).max(10).optional()
+  platformData: z.record(z.any()).optional()
 })
 
 const UpdateLeadSchema = CreateLeadSchema.partial()
 
 const LeadFiltersSchema = z.object({
-  search: z.string().optional(),
-  source: z.enum(['gmail', 'file', 'manual']).optional(),
-  provider: z.enum(['assurprospect', 'assurlead', 'generic']).optional(),
-  minScore: z.number().int().min(0).max(10).optional(),
-  platformId: z.number().int().positive().optional(),
-  status: z.enum(['pending', 'processing', 'completed', 'error']).optional(),
-  dateFrom: z.string().optional(),
-  dateTo: z.string().optional()
+  search: z.string().optional()
 }).optional()
 
 const PaginationSchema = z.object({
@@ -110,29 +102,13 @@ export function registerLeadsIPC() {
         }
       }
 
-      // Utiliser un score de qualité par défaut si non fourni
-      const qualityScore = validated.qualityScore ?? 5
+      // Créer le lead avec métadonnées
+      const lead = await getLeadsService().createLead(
+        validated,
+        { createdManually: true }
+      )
 
-      // Créer d'abord un raw lead pour les créations manuelles
-      const rawLead = await getLeadsService().createRawLead({
-        source: 'manual',
-        rawContent: `Lead créé manuellement: ${validated.contact.nom || ''} ${validated.contact.prenom || ''}`.trim() || 'Lead manuel',
-        metadata: { createdManually: true }
-      })
-
-      // Puis créer le clean lead avec le score calculé
-      const cleanLead = await getLeadsService().createCleanLead({
-        rawLeadId: rawLead.id,
-        contact: validated.contact,
-        souscripteur: validated.souscripteur,
-        conjoint: validated.conjoint,
-        enfants: validated.enfants || [],
-        besoins: validated.besoins || {},
-        platformData: validated.platformData,
-        qualityScore: qualityScore
-      })
-
-      return { success: true, data: cleanLead }
+      return { success: true, data: lead }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Erreur inconnue'
       return { success: false, error: message }

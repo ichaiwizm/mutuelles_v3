@@ -38,7 +38,6 @@ export default {
         enfants_data TEXT DEFAULT '[]',
         besoins_data TEXT DEFAULT '{}',
         platform_data TEXT DEFAULT NULL,
-        quality_score INTEGER DEFAULT 0,
         cleaned_at TEXT DEFAULT (datetime('now'))
       );
 
@@ -46,12 +45,12 @@ export default {
       INSERT INTO clean_leads_backup (
         id, raw_lead_id, contact_data, souscripteur_data,
         conjoint_data, enfants_data, besoins_data, platform_data,
-        quality_score, cleaned_at
+        cleaned_at
       )
       SELECT
         id, raw_lead_id, contact_data, souscripteur_data,
         conjoint_data, enfants_data, besoins_data, platform_data,
-        quality_score, cleaned_at
+        cleaned_at
       FROM clean_leads;
 
       -- Drop original table
@@ -63,8 +62,6 @@ export default {
       -- Recreate indexes
       CREATE INDEX IF NOT EXISTS idx_clean_leads_raw_lead_id
         ON clean_leads(raw_lead_id);
-      CREATE INDEX IF NOT EXISTS idx_clean_leads_quality_score
-        ON clean_leads(quality_score DESC);
     `)
 
     console.log('  ✓ Migration 012 annulée - colonnes version et updated_at supprimées')

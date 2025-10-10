@@ -18,10 +18,8 @@ export default {
       CREATE INDEX IF NOT EXISTS idx_flows_runs_flow ON flows_runs(flow_id, started_at DESC);
 
       -- Index pour les tables leads
-      CREATE INDEX IF NOT EXISTS idx_raw_leads_source ON raw_leads(source);
       CREATE INDEX IF NOT EXISTS idx_raw_leads_extracted_at ON raw_leads(extracted_at DESC);
       CREATE INDEX IF NOT EXISTS idx_clean_leads_raw_lead_id ON clean_leads(raw_lead_id);
-      CREATE INDEX IF NOT EXISTS idx_clean_leads_quality_score ON clean_leads(quality_score DESC);
       CREATE INDEX IF NOT EXISTS idx_platform_leads_clean_lead_id ON platform_leads(clean_lead_id);
       CREATE INDEX IF NOT EXISTS idx_platform_leads_platform_id ON platform_leads(platform_id);
       CREATE INDEX IF NOT EXISTS idx_platform_leads_status ON platform_leads(status);
@@ -36,10 +34,8 @@ export default {
       DROP INDEX IF EXISTS idx_flows_runs_flow;
 
       -- Index leads
-      DROP INDEX IF EXISTS idx_raw_leads_source;
       DROP INDEX IF EXISTS idx_raw_leads_extracted_at;
       DROP INDEX IF EXISTS idx_clean_leads_raw_lead_id;
-      DROP INDEX IF EXISTS idx_clean_leads_quality_score;
       DROP INDEX IF EXISTS idx_platform_leads_clean_lead_id;
       DROP INDEX IF EXISTS idx_platform_leads_platform_id;
       DROP INDEX IF EXISTS idx_platform_leads_status;

@@ -45,33 +45,29 @@ export interface BesoinsInfo {
   };
 }
 
-export type LeadSource = 'gmail' | 'file' | 'manual';
-export type LeadProvider = 'assurprospect' | 'assurlead' | 'generic';
 export type PlatformLeadStatus = 'pending' | 'processing' | 'completed' | 'error';
 
-// Lead brut (données extraites)
-export interface RawLead {
-  id: string;
-  source: LeadSource;
-  provider?: LeadProvider;
-  rawContent: string;
-  metadata: Record<string, any>;
-  extractedAt: string;
-}
-
-// Lead nettoyé (normalisé)
-export interface CleanLead {
-  id: string;
-  rawLeadId: string;
+// Données complètes d'un lead (tout en JSON)
+export interface LeadData {
   contact: ContactInfo;
   souscripteur: SouscripteurInfo;
   conjoint?: ConjointInfo;
   enfants: EnfantInfo[];
   besoins: BesoinsInfo;
-  qualityScore: number;
-  cleanedAt: string;
   platformData?: PlatformData;
 }
+
+// Lead (structure simplifiée)
+export interface Lead {
+  id: string;
+  data: LeadData;
+  metadata: Record<string, any>;
+  createdAt: string;
+}
+
+// Alias pour compatibilité
+export type CleanLead = Lead;
+export type FullLead = Lead;
 
 // Lead adapté pour une plateforme
 export interface PlatformLead {
@@ -83,12 +79,6 @@ export interface PlatformLead {
   adaptedAt: string;
   processedAt?: string;
   errorMessage?: string;
-}
-
-// Lead avec toutes les relations jointes
-export interface FullLead extends CleanLead {
-  rawLead: RawLead;
-  platformLeads: PlatformLead[];
 }
 
 // Configuration Gmail
@@ -120,31 +110,21 @@ export interface PlatformData {
   [key: string]: Record<string, any> | undefined  // Permet d'ajouter d'autres plateformes
 }
 
-// Données pour créer un lead
-export interface CreateLeadData {
+// Données pour créer un lead (même structure que LeadData)
+export interface CreateLeadData extends Partial<LeadData> {
   contact: ContactInfo;
   souscripteur: SouscripteurInfo;
-  conjoint?: ConjointInfo;
-  enfants?: EnfantInfo[];
-  besoins?: BesoinsInfo;
-  platformData?: PlatformData;
-  qualityScore?: number; // Score de qualité (0-10) - calculé automatiquement si non fourni
 }
 
 // Données pour mettre à jour un lead
-export interface UpdateLeadData {
+export interface UpdateLeadData extends Partial<LeadData> {
   contact?: Partial<ContactInfo>;
   souscripteur?: Partial<SouscripteurInfo>;
-  conjoint?: ConjointInfo | null;
-  enfants?: EnfantInfo[];
-  besoins?: Partial<BesoinsInfo>;
-  platformData?: PlatformData;
 }
 
 // Filtres pour la recherche de leads
 export interface LeadFilters {
   search?: string;
-  provider?: LeadProvider;
 }
 
 // Pagination
@@ -168,16 +148,12 @@ export interface LeadStats {
   new: number;
   processed: number;
   processing: number;
-  bySource: Record<LeadSource, number>;
-  byProvider: Record<LeadProvider, number>;
-  averageScore: number;
 }
 
 // Configuration d'extraction Gmail
 export interface GmailExtractionConfig {
   configId: number;
   daysBack?: number;
-  providers?: LeadProvider[];
   query?: string;
 }
 

@@ -9,8 +9,6 @@ export default {
       -- Tables Leads Management
       CREATE TABLE IF NOT EXISTS raw_leads (
         id TEXT PRIMARY KEY,
-        source TEXT NOT NULL CHECK (source IN ('gmail', 'file', 'manual')),
-        provider TEXT CHECK (provider IN ('assurprospect', 'assurlead', 'generic')),
         raw_content TEXT NOT NULL,
         metadata TEXT DEFAULT '{}',
         extracted_at TEXT DEFAULT (datetime('now'))
@@ -24,7 +22,6 @@ export default {
         conjoint_data TEXT DEFAULT NULL,
         enfants_data TEXT DEFAULT '[]',
         besoins_data TEXT DEFAULT '{}',
-        quality_score INTEGER DEFAULT 0,
         cleaned_at TEXT DEFAULT (datetime('now'))
       );
 
