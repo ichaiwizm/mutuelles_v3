@@ -21,6 +21,18 @@ const DEPARTMENTS = [
 ]
 
 /**
+ * Regime-Status compatibility matrix for SwissLife
+ * Ensures that generated test data respects the business rules enforced by SwissLife's form
+ */
+const REGIME_STATUS_COMPATIBILITY: Record<string, string[]> = {
+  'AMEXA': ['SALARIE_AGRICOLE', 'EXPLOITANT_AGRICOLE', 'RETRAITE_ANCIEN_EXPLOITANT'],
+  'SECURITE_SOCIALE': ['SALARIE', 'TRAVAILLEUR_TRANSFRONTALIER', 'ETUDIANT', 'RETRAITE', 'RETRAITE_ANCIEN_SALARIE', 'FONCTIONNAIRE'],
+  'TNS': ['TNS', 'SALARIE', 'TRAVAILLEUR_TRANSFRONTALIER'],
+  'SECURITE_SOCIALE_ALSACE_MOSELLE': ['SALARIE', 'TRAVAILLEUR_TRANSFRONTALIER', 'ETUDIANT', 'RETRAITE', 'RETRAITE_ANCIEN_SALARIE', 'FONCTIONNAIRE'],
+  'AUTRES_REGIME_SPECIAUX': ['FONCTIONNAIRE', 'TRAVAILLEUR_TRANSFRONTALIER', 'SALARIE', 'RETRAITE']
+}
+
+/**
  * Utility functions
  */
 function randomChoice<T>(array: T[]): T {
@@ -138,14 +150,56 @@ export function generateRandomTestData(schema: FormSchema): Record<string, any> 
     testData['subscriber.postalCode'] = randomChoice(dept.postalCodes)
   }
 
-  if (hasSwissLifeFields) {
-    // Status
-    const statusField = findField('subscriber.status')
-    if (statusField?.options) {
-      const status = randomChoice(statusField.options).value
-      testData['subscriber.status'] = status
+  // STEP 4a: Unified selection for subscriber.regime (must be done BEFORE status for SwissLife)
+  let subscriberRegime: string | undefined
+  {
+    const regimeFieldAlptis = findFieldInPlatform('subscriber.regime', 'alptis')
+    const regimeFieldSwiss = findFieldInPlatform('subscriber.regime', 'swisslifeone')
+    const alptisVals = regimeFieldAlptis?.options?.map(o => o.value)
+    const swissVals = regimeFieldSwiss?.options?.map(o => o.value)
+    let chosen: string | undefined
+    if (alptisVals && swissVals) {
+      const common = alptisVals.filter(v => swissVals.includes(v))
+      if (common.length) chosen = randomChoice(common)
+    }
+    if (!chosen) chosen = pickOptionValue(regimeFieldSwiss)
+    if (!chosen) chosen = pickOptionValue(regimeFieldAlptis)
+    if (!chosen) chosen = pickOptionValue(findField('subscriber.regime'))
+    if (chosen) {
+      testData['subscriber.regime'] = chosen
+      subscriberRegime = chosen
+    }
+  }
 
-      // Conditional: madelin (only for TNS or EXPLOITANT_AGRICOLE)
+  if (hasSwissLifeFields) {
+    // Status - MUST be compatible with the selected regime
+    const statusField = findField('subscriber.status')
+    let status: string | undefined
+
+    if (statusField?.options && subscriberRegime) {
+      // Filter status options to only those compatible with the selected regime
+      const compatibleStatuses = REGIME_STATUS_COMPATIBILITY[subscriberRegime] || []
+      const availableStatuses = statusField.options
+        .map(o => o.value)
+        .filter(s => compatibleStatuses.includes(s))
+
+      if (availableStatuses.length > 0) {
+        status = randomChoice(availableStatuses)
+        testData['subscriber.status'] = status
+      } else {
+        // Fallback: if no compatible status found, pick any status and log warning
+        console.warn(`No compatible status found for regime ${subscriberRegime}, using random status`)
+        status = randomChoice(statusField.options).value
+        testData['subscriber.status'] = status
+      }
+    } else if (statusField?.options) {
+      // No regime selected, use any status
+      status = randomChoice(statusField.options).value
+      testData['subscriber.status'] = status
+    }
+
+    // Conditional: madelin (only for TNS or EXPLOITANT_AGRICOLE)
+    if (status) {
       const madelinField = findField('project.madelin')
       if (madelinField && (status === 'TNS' || status === 'EXPLOITANT_AGRICOLE')) {
         testData['project.madelin'] = randomBoolean(0.7)
@@ -157,8 +211,6 @@ export function generateRandomTestData(schema: FormSchema): Record<string, any> 
     if (professionField?.options) {
       testData['subscriber.profession'] = randomChoice(professionField.options).value
     }
-
-    // Regime (SwissLife) — handled with Alptis in a unified step below
 
     // Department code
     const dept = randomChoice(DEPARTMENTS)
@@ -175,23 +227,6 @@ export function generateRandomTestData(schema: FormSchema): Record<string, any> 
     testData['project.ij'] = false
     testData['project.resiliation'] = randomBoolean(0.2)
     testData['project.reprise'] = randomBoolean(0.15)
-  }
-
-  // Unified selection for subscriber.regime: prefer intersection; fallback SwissLife → Alptis → any
-  {
-    const regimeFieldAlptis = findFieldInPlatform('subscriber.regime', 'alptis')
-    const regimeFieldSwiss = findFieldInPlatform('subscriber.regime', 'swisslifeone')
-    const alptisVals = regimeFieldAlptis?.options?.map(o => o.value)
-    const swissVals = regimeFieldSwiss?.options?.map(o => o.value)
-    let chosen: string | undefined
-    if (alptisVals && swissVals) {
-      const common = alptisVals.filter(v => swissVals.includes(v))
-      if (common.length) chosen = randomChoice(common)
-    }
-    if (!chosen) chosen = pickOptionValue(regimeFieldSwiss)
-    if (!chosen) chosen = pickOptionValue(regimeFieldAlptis)
-    if (!chosen) chosen = pickOptionValue(findField('subscriber.regime'))
-    if (chosen) testData['subscriber.regime'] = chosen
   }
 
   // STEP 5: Project date
@@ -232,10 +267,47 @@ export function generateRandomTestData(schema: FormSchema): Record<string, any> 
       // Spouse regime (Alptis) — handled later with SwissLife to avoid overrides
     }
 
+    // Unified selection for spouse.regime (must be done BEFORE status for SwissLife)
+    let spouseRegime: string | undefined
+    {
+      const spouseRegimeFieldAlptis = findFieldInPlatform('spouse.regime', 'alptis')
+      const spouseRegimeFieldSwiss = findFieldInPlatform('spouse.regime', 'swisslifeone')
+      const alptisVals = spouseRegimeFieldAlptis?.options?.map(o => o.value)
+      const swissVals = spouseRegimeFieldSwiss?.options?.map(o => o.value)
+      let chosen: string | undefined
+      if (alptisVals && swissVals) {
+        const common = alptisVals.filter(v => swissVals.includes(v))
+        if (common.length) chosen = randomChoice(common)
+      }
+      if (!chosen) chosen = pickOptionValue(spouseRegimeFieldSwiss)
+      if (!chosen) chosen = pickOptionValue(spouseRegimeFieldAlptis)
+      if (!chosen) chosen = pickOptionValue(findField('spouse.regime'))
+      if (chosen) {
+        testData['spouse.regime'] = chosen
+        spouseRegime = chosen
+      }
+    }
+
     if (hasSwissLifeFields) {
-      // Spouse status
+      // Spouse status - MUST be compatible with the selected regime
       const spouseStatusField = findField('spouse.status')
-      if (spouseStatusField?.options) {
+
+      if (spouseStatusField?.options && spouseRegime) {
+        // Filter status options to only those compatible with the selected regime
+        const compatibleStatuses = REGIME_STATUS_COMPATIBILITY[spouseRegime] || []
+        const availableStatuses = spouseStatusField.options
+          .map(o => o.value)
+          .filter(s => compatibleStatuses.includes(s))
+
+        if (availableStatuses.length > 0) {
+          testData['spouse.status'] = randomChoice(availableStatuses)
+        } else {
+          // Fallback: if no compatible status found, pick any status and log warning
+          console.warn(`No compatible status found for spouse regime ${spouseRegime}, using random status`)
+          testData['spouse.status'] = randomChoice(spouseStatusField.options).value
+        }
+      } else if (spouseStatusField?.options) {
+        // No regime selected, use any status
         testData['spouse.status'] = randomChoice(spouseStatusField.options).value
       }
 
@@ -244,26 +316,7 @@ export function generateRandomTestData(schema: FormSchema): Record<string, any> 
       if (spouseProfessionField?.options) {
         testData['spouse.profession'] = randomChoice(spouseProfessionField.options).value
       }
-
-      // Spouse regime (SwissLife) — handled with Alptis in a unified step below
     }
-  }
-
-  // Unified selection for spouse.regime (if spouse exists)
-  if (hasSpouse) {
-    const spouseRegimeFieldAlptis = findFieldInPlatform('spouse.regime', 'alptis')
-    const spouseRegimeFieldSwiss = findFieldInPlatform('spouse.regime', 'swisslifeone')
-    const alptisVals = spouseRegimeFieldAlptis?.options?.map(o => o.value)
-    const swissVals = spouseRegimeFieldSwiss?.options?.map(o => o.value)
-    let chosen: string | undefined
-    if (alptisVals && swissVals) {
-      const common = alptisVals.filter(v => swissVals.includes(v))
-      if (common.length) chosen = randomChoice(common)
-    }
-    if (!chosen) chosen = pickOptionValue(spouseRegimeFieldSwiss)
-    if (!chosen) chosen = pickOptionValue(spouseRegimeFieldAlptis)
-    if (!chosen) chosen = pickOptionValue(findField('spouse.regime'))
-    if (chosen) testData['spouse.regime'] = chosen
   }
 
   // STEP 7: Children (probabilities: 30%/30%/25%/15% for 0/1/2/3)
