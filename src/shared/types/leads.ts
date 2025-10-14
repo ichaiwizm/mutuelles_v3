@@ -16,6 +16,8 @@ export interface SouscripteurInfo {
   profession?: string;
   regimeSocial?: string;
   nombreEnfants?: number;
+  // Utilisé par les flows Alptis
+  categorie?: string;
 }
 
 export interface ConjointInfo {
@@ -25,11 +27,15 @@ export interface ConjointInfo {
   dateNaissance?: string;
   profession?: string;
   regimeSocial?: string;
+  // Utilisé côté Alptis
+  categorie?: string;
 }
 
 export interface EnfantInfo {
   dateNaissance?: string;
   sexe?: string;
+  // Certains flows lisent le régime de l'enfant
+  regime?: string;
 }
 
 export interface BesoinsInfo {

@@ -162,7 +162,6 @@ export default function RunHistory({ flowSlug, reloadToken }: { flowSlug?: strin
 
       <div className="flex items-center justify-between text-xs text-neutral-600">
         <div>
-          {total === 0 && <span>0</span>}
           {total > 0 && total <= pageSize && (
             <span>{total} exécution{total>1?'s':''}</span>
           )}

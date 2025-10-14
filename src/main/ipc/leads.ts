@@ -34,7 +34,9 @@ const CreateLeadSchema = z.object({
     dateNaissance: z.string().optional(),
     profession: z.string().optional(),
     regimeSocial: z.string().optional(),
-    nombreEnfants: z.number().int().min(0).optional()
+    nombreEnfants: z.number().int().min(0).optional(),
+    // Champ utilisé par les flows Alptis
+    categorie: z.string().optional()
   }),
   conjoint: z.object({
     civilite: z.string().optional(),
@@ -42,11 +44,15 @@ const CreateLeadSchema = z.object({
     nom: z.string().optional(),
     dateNaissance: z.string().optional(),
     profession: z.string().optional(),
-    regimeSocial: z.string().optional()
+    regimeSocial: z.string().optional(),
+    // Harmonisation avec le domaine (utilisé côté Alptis)
+    categorie: z.string().optional()
   }).optional(),
   enfants: z.array(z.object({
     dateNaissance: z.string().optional(),
-    sexe: z.string().optional()
+    sexe: z.string().optional(),
+    // Harmonisation: certains flows lisent enfants[].regime
+    regime: z.string().optional()
   })).optional(),
   besoins: z.object({
     dateEffet: z.string().optional(),
