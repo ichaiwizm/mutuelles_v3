@@ -99,7 +99,7 @@ export default function LeadModal({
       return 'Ajouter un lead manuellement'
     }
     if (lead) {
-      const name = `${lead.data.contact.prenom || ''} ${lead.data.contact.nom || ''}`.trim()
+      const name = `${lead.data.subscriber?.firstName || ''} ${lead.data.subscriber?.lastName || ''}`.trim()
       return currentMode === 'view' ? `Détails du lead${name ? ` - ${name}` : ''}` : `Modifier le lead${name ? ` - ${name}` : ''}`
     }
     return currentMode === 'view' ? 'Détails du lead' : 'Modifier le lead'
