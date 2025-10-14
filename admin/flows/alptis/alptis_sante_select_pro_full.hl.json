@@ -40,6 +40,8 @@
     { "type": "toggleField", "field": "conjoint_toggle", "label": "toggle-conjoint-oui", "state": "on", "skipIfNot": "spouse" },
     { "type": "sleep", "timeout_ms": 300, "label": "wait-after-toggle-conjoint", "skipIfNot": "spouse" },
     { "type": "fillField", "domainField": "spouse.birthDate", "leadKey": "spouse.birthDate", "label": "fill-naissance-conjoint", "optional": true },
+    { "type": "selectField", "domainField": "spouse.category", "leadKey": "spouse.category", "label": "select-categorie-conjoint", "optional": true },
+    { "type": "sleep", "timeout_ms": 300, "label": "wait-after-categorie-conjoint", "skipIfNot": "spouse.category" },
     { "type": "selectField", "domainField": "spouse.regime", "leadKey": "spouse.regime", "label": "select-regime-conjoint", "optional": true },
     { "type": "sleep", "timeout_ms": 300, "label": "wait-after-regime-conjoint", "skipIfNot": "spouse.regime" },
 
