@@ -23,13 +23,12 @@ export class LeadsService {
     const id = randomUUID()
     const createdAt = new Date().toISOString()
 
-    // Merge all data into single JSON object
+    // Merge all data into single JSON object using domain keys
     const leadData: LeadData = {
-      contact: data.contact,
-      souscripteur: data.souscripteur,
-      conjoint: data.conjoint,
-      enfants: data.enfants || [],
-      besoins: data.besoins || {},
+      subscriber: data.subscriber,
+      spouse: data.spouse,
+      children: data.children,
+      project: data.project,
       platformData: data.platformData
     }
 
@@ -78,13 +77,12 @@ export class LeadsService {
     const existing = await this.getLead(id)
     if (!existing) return false
 
-    // Merge updates into existing data
+    // Merge updates into existing data using domain keys
     const updatedData: LeadData = {
-      contact: updates.contact ? { ...existing.data.contact, ...updates.contact } : existing.data.contact,
-      souscripteur: updates.souscripteur ? { ...existing.data.souscripteur, ...updates.souscripteur } : existing.data.souscripteur,
-      conjoint: updates.conjoint !== undefined ? updates.conjoint : existing.data.conjoint,
-      enfants: updates.enfants !== undefined ? updates.enfants : existing.data.enfants,
-      besoins: updates.besoins ? { ...existing.data.besoins, ...updates.besoins } : existing.data.besoins,
+      subscriber: updates.subscriber ? { ...existing.data.subscriber, ...updates.subscriber } : existing.data.subscriber,
+      spouse: updates.spouse !== undefined ? updates.spouse : existing.data.spouse,
+      children: updates.children !== undefined ? updates.children : existing.data.children,
+      project: updates.project ? { ...existing.data.project, ...updates.project } : existing.data.project,
       platformData: updates.platformData ? { ...existing.data.platformData, ...updates.platformData } : existing.data.platformData
     }
 
@@ -123,10 +121,10 @@ export class LeadsService {
 
     if (filters.search) {
       whereClause += ` AND (
-        JSON_EXTRACT(data, '$.contact.nom') LIKE ? OR
-        JSON_EXTRACT(data, '$.contact.prenom') LIKE ? OR
-        JSON_EXTRACT(data, '$.contact.email') LIKE ? OR
-        JSON_EXTRACT(data, '$.contact.telephone') LIKE ?
+        JSON_EXTRACT(data, '$.subscriber.lastName') LIKE ? OR
+        JSON_EXTRACT(data, '$.subscriber.firstName') LIKE ? OR
+        JSON_EXTRACT(data, '$.subscriber.email') LIKE ? OR
+        JSON_EXTRACT(data, '$.subscriber.telephone') LIKE ?
       )`
       const searchTerm = `%${filters.search}%`
       params.push(searchTerm, searchTerm, searchTerm, searchTerm)
@@ -178,13 +176,12 @@ export class LeadsService {
    * Vérifie si un lead est un doublon potentiel
    * Retourne un tableau de leads similaires avec les raisons de la correspondance
    */
-  async checkForDuplicates(contact: {
+  async checkForDuplicates(subscriber: {
     email?: string;
-    nom?: string;
-    prenom?: string;
-    telephone?: string
-  }, souscripteur?: {
-    dateNaissance?: string
+    lastName?: string;
+    firstName?: string;
+    telephone?: string;
+    birthDate?: string;
   }): Promise<Array<{ lead: Lead; reasons: string[] }>> {
     const duplicates: Array<{ lead: Lead; reasons: string[] }> = []
 
@@ -195,41 +192,40 @@ export class LeadsService {
     for (const row of rows) {
       const reasons: string[] = []
       const leadData = JSON.parse(row.data)
-      const existingContact = leadData.contact
-      const existingSouscripteur = leadData.souscripteur
+      const existingSubscriber = leadData.subscriber
 
       // Vérifier l'email (si fourni et non vide)
-      if (contact.email && contact.email.trim() !== '' &&
-          existingContact.email && existingContact.email.trim() !== '') {
-        if (contact.email.toLowerCase() === existingContact.email.toLowerCase()) {
+      if (subscriber.email && subscriber.email.trim() !== '' &&
+          existingSubscriber?.email && existingSubscriber.email.trim() !== '') {
+        if (subscriber.email.toLowerCase() === existingSubscriber.email.toLowerCase()) {
           reasons.push('Email identique')
         }
       }
 
       // Vérifier le téléphone (si fourni et non vide)
-      if (contact.telephone && contact.telephone.trim() !== '' &&
-          existingContact.telephone && existingContact.telephone.trim() !== '') {
+      if (subscriber.telephone && subscriber.telephone.trim() !== '' &&
+          existingSubscriber?.telephone && existingSubscriber.telephone.trim() !== '') {
         // Normaliser les téléphones en retirant les espaces, points, tirets
-        const normalizedTel1 = contact.telephone.replace(/[\s\.\-]/g, '')
-        const normalizedTel2 = existingContact.telephone.replace(/[\s\.\-]/g, '')
+        const normalizedTel1 = subscriber.telephone.replace(/[\s\.\-]/g, '')
+        const normalizedTel2 = existingSubscriber.telephone.replace(/[\s\.\-]/g, '')
         if (normalizedTel1 === normalizedTel2) {
           reasons.push('Téléphone identique')
         }
       }
 
       // Vérifier nom + prénom + date de naissance (si tous sont fournis)
-      if (contact.nom && contact.nom.trim() !== '' &&
-          contact.prenom && contact.prenom.trim() !== '' &&
-          souscripteur?.dateNaissance && souscripteur.dateNaissance.trim() !== '' &&
-          existingContact.nom && existingContact.nom.trim() !== '' &&
-          existingContact.prenom && existingContact.prenom.trim() !== '' &&
-          existingSouscripteur.dateNaissance && existingSouscripteur.dateNaissance.trim() !== '') {
+      if (subscriber.lastName && subscriber.lastName.trim() !== '' &&
+          subscriber.firstName && subscriber.firstName.trim() !== '' &&
+          subscriber.birthDate && subscriber.birthDate.trim() !== '' &&
+          existingSubscriber?.lastName && existingSubscriber.lastName.trim() !== '' &&
+          existingSubscriber?.firstName && existingSubscriber.firstName.trim() !== '' &&
+          existingSubscriber?.birthDate && existingSubscriber.birthDate.trim() !== '') {
 
-        const sameNom = contact.nom.toLowerCase() === existingContact.nom.toLowerCase()
-        const samePrenom = contact.prenom.toLowerCase() === existingContact.prenom.toLowerCase()
-        const sameDob = souscripteur.dateNaissance === existingSouscripteur.dateNaissance
+        const sameLast = subscriber.lastName.toLowerCase() === existingSubscriber.lastName.toLowerCase()
+        const sameFirst = subscriber.firstName.toLowerCase() === existingSubscriber.firstName.toLowerCase()
+        const sameDob = subscriber.birthDate === existingSubscriber.birthDate
 
-        if (sameNom && samePrenom && sameDob) {
+        if (sameLast && sameFirst && sameDob) {
           reasons.push('Nom, prénom et date de naissance identiques')
         }
       }

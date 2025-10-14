@@ -611,7 +611,29 @@ function parseValueTemplates(value, ctx) {
   return result
 }
 
-function getByPath(obj, pth) { try { return pth.split('.').reduce((o,k)=>o?.[k], obj) } catch { return undefined } }
+/**
+ * Get value from object using path notation
+ * Supports both dot notation (a.b.c) and array notation (a[0].b, a.0.b)
+ * Examples:
+ *   getByPath(obj, 'subscriber.lastName') → obj.subscriber.lastName
+ *   getByPath(obj, 'children[0].birthDate') → obj.children[0].birthDate
+ *   getByPath(obj, 'children.0.birthDate') → obj.children[0].birthDate
+ */
+function getByPath(obj, pth) {
+  try {
+    if (!pth || !obj) return undefined
+    // Convert bracket notation to dot notation: children[0].birthDate → children.0.birthDate
+    const normalizedPath = pth.replace(/\[(\w+)\]/g, '.$1')
+    // Split and reduce
+    return normalizedPath.split('.').reduce((acc, key) => {
+      if (acc === null || acc === undefined) return undefined
+      return acc[key]
+    }, obj)
+  } catch {
+    return undefined
+  }
+}
+
 function pickLead(lead, keys) { for (const k of keys) { const v = getByPath(lead, k); if (v !== undefined) return v } return null }
 
 // ---------------- utilities (shared style) ----------------

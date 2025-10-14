@@ -18,54 +18,73 @@ function getLeadsService() {
   return leadsService
 }
 
-// Validation schemas
+// Validation schemas using domain keys (aligned with base.domain.json)
 const CreateLeadSchema = z.object({
-  contact: z.object({
-    civilite: z.string().optional(),
-    nom: z.string().optional(),
-    prenom: z.string().optional(),
+  subscriber: z.object({
+    // Identity
+    civility: z.string().optional(),
+    lastName: z.string().optional(),
+    firstName: z.string().optional(),
+    birthDate: z.string().optional(),
+
+    // Contact
     telephone: z.string().optional(),
     email: z.string().email().optional(),
-    adresse: z.string().optional(),
-    codePostal: z.string().optional(),
-    ville: z.string().optional()
-  }),
-  souscripteur: z.object({
-    dateNaissance: z.string().optional(),
+    address: z.string().optional(),
+    postalCode: z.string().optional(),
+    city: z.string().optional(),
+    departmentCode: z.string().optional(),
+
+    // Professional
+    regime: z.string().optional(),
+    category: z.string().optional(),
+    status: z.string().optional(),
     profession: z.string().optional(),
-    regimeSocial: z.string().optional(),
-    nombreEnfants: z.number().int().min(0).optional(),
-    // Champ utilisé par les flows Alptis
-    categorie: z.string().optional()
+    workFramework: z.string().optional(),
+
+    // Children
+    childrenCount: z.number().int().min(0).optional()
   }),
-  conjoint: z.object({
-    civilite: z.string().optional(),
-    prenom: z.string().optional(),
-    nom: z.string().optional(),
-    dateNaissance: z.string().optional(),
+
+  spouse: z.object({
+    civility: z.string().optional(),
+    firstName: z.string().optional(),
+    lastName: z.string().optional(),
+    birthDate: z.string().optional(),
+    regime: z.string().optional(),
+    category: z.string().optional(),
+    status: z.string().optional(),
     profession: z.string().optional(),
-    regimeSocial: z.string().optional(),
-    // Harmonisation avec le domaine (utilisé côté Alptis)
-    categorie: z.string().optional()
+    workFramework: z.string().optional()
   }).optional(),
-  enfants: z.array(z.object({
-    dateNaissance: z.string().optional(),
-    sexe: z.string().optional(),
-    // Harmonisation: certains flows lisent enfants[].regime
-    regime: z.string().optional()
+
+  children: z.array(z.object({
+    birthDate: z.string().optional(),
+    gender: z.string().optional(),
+    regime: z.string().optional(),
+    ayantDroit: z.string().optional()
   })).optional(),
-  besoins: z.object({
+
+  project: z.object({
+    name: z.string().optional(),
     dateEffet: z.string().optional(),
-    assureActuellement: z.boolean().optional(),
-    gammes: z.array(z.string()).optional(),
+    plan: z.string().optional(),
+    couverture: z.boolean().optional(),
+    ij: z.boolean().optional(),
+    simulationType: z.string().optional(),
     madelin: z.boolean().optional(),
-    niveaux: z.object({
-      soinsMedicaux: z.number().optional(),
-      hospitalisation: z.number().optional(),
-      optique: z.number().optional(),
-      dentaire: z.number().optional()
+    resiliation: z.boolean().optional(),
+    reprise: z.boolean().optional(),
+    currentlyInsured: z.boolean().optional(),
+    ranges: z.array(z.string()).optional(),
+    levels: z.object({
+      medicalCare: z.number().optional(),
+      hospitalization: z.number().optional(),
+      optics: z.number().optional(),
+      dental: z.number().optional()
     }).optional()
-  }).optional(),
+  }),
+
   platformData: z.record(z.any()).optional()
 })
 
@@ -86,10 +105,9 @@ export function registerLeadsIPC() {
     try {
       const validated = CreateLeadSchema.parse(data)
 
-      // VÉRIFICATION DES DOUBLONS
+      // VÉRIFICATION DES DOUBLONS (using domain keys)
       const duplicates = await getLeadsService().checkForDuplicates(
-        validated.contact,
-        validated.souscripteur
+        validated.subscriber
       )
 
       if (duplicates.length > 0) {
@@ -101,7 +119,7 @@ export function registerLeadsIPC() {
             isDuplicate: true,
             duplicates: duplicates.map(d => ({
               id: d.lead.id,
-              contact: d.lead.contact,
+              subscriber: d.lead.data.subscriber,
               reasons: d.reasons
             }))
           }

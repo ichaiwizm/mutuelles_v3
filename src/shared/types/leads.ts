@@ -1,65 +1,107 @@
 // Types partagés pour le système de leads
+// Structure alignée sur base.domain.json - Source de vérité unique
 
-export interface ContactInfo {
-  civilite?: string;
-  nom?: string;
-  prenom?: string;
+/**
+ * Subscriber (Main Insured Person)
+ * Combines contact and subscriber information
+ */
+export interface SubscriberInfo {
+  // Identity
+  civility?: string;
+  lastName?: string;
+  firstName?: string;
+  birthDate?: string;  // DD/MM/YYYY
+
+  // Contact
   telephone?: string;
   email?: string;
-  adresse?: string;
-  codePostal?: string;
-  ville?: string;
+  address?: string;
+  postalCode?: string;
+  city?: string;
+  departmentCode?: string;
+
+  // Professional Status
+  regime?: string;           // Social security regime
+  category?: string;         // Alptis: Socio-professional category
+  status?: string;           // SwissLife: Employment status
+  profession?: string;       // SwissLife: Profession
+  workFramework?: string;    // Employee vs Independent
+
+  // Children
+  childrenCount?: number;
 }
 
-export interface SouscripteurInfo {
-  dateNaissance?: string;
-  profession?: string;
-  regimeSocial?: string;
-  nombreEnfants?: number;
-  // Utilisé par les flows Alptis
-  categorie?: string;
-}
+/**
+ * Spouse Information
+ */
+export interface SpouseInfo {
+  // Identity
+  civility?: string;
+  firstName?: string;
+  lastName?: string;
+  birthDate?: string;  // DD/MM/YYYY
 
-export interface ConjointInfo {
-  civilite?: string;
-  prenom?: string;
-  nom?: string;
-  dateNaissance?: string;
-  profession?: string;
-  regimeSocial?: string;
-  // Utilisé côté Alptis
-  categorie?: string;
-}
-
-export interface EnfantInfo {
-  dateNaissance?: string;
-  sexe?: string;
-  // Certains flows lisent le régime de l'enfant
+  // Professional Status
   regime?: string;
+  category?: string;         // Alptis
+  status?: string;           // SwissLife
+  profession?: string;       // SwissLife
+  workFramework?: string;
 }
 
-export interface BesoinsInfo {
-  dateEffet?: string;
-  assureActuellement?: boolean;
-  gammes?: string[];
-  madelin?: boolean;
-  niveaux?: {
-    soinsMedicaux?: number;
-    hospitalisation?: number;
-    optique?: number;
-    dentaire?: number;
+/**
+ * Child Information
+ */
+export interface ChildInfo {
+  birthDate?: string;  // DD/MM/YYYY
+  gender?: string;
+  regime?: string;          // Alptis: Social regime
+  ayantDroit?: string;      // SwissLife: Beneficiary parent (1 or 2)
+}
+
+/**
+ * Project/Insurance Needs
+ */
+export interface ProjectInfo {
+  // Project identification
+  name?: string;
+  dateEffet?: string;  // DD/MM/YYYY - Effective date
+
+  // Product selection (SwissLife)
+  plan?: string;               // Gamme (Basic, Confort, etc.)
+  couverture?: boolean;        // Individual coverage
+  ij?: boolean;                // Daily allowances (Indemnités Journalières)
+  simulationType?: string;     // "individual" | "couple"
+
+  // Legal/Fiscal
+  madelin?: boolean;           // Madelin law applicable
+  resiliation?: boolean;       // Contract termination
+  reprise?: boolean;           // Competitor takeover
+
+  // Current situation
+  currentlyInsured?: boolean;
+  ranges?: string[];           // Gammes
+
+  // Coverage levels (1-5 scale)
+  levels?: {
+    medicalCare?: number;      // Soins médicaux
+    hospitalization?: number;  // Hospitalisation
+    optics?: number;           // Optique
+    dental?: number;           // Dentaire
   };
 }
 
 export type PlatformLeadStatus = 'pending' | 'processing' | 'completed' | 'error';
 
-// Données complètes d'un lead (tout en JSON)
+/**
+ * Complete Lead Data Structure
+ * Aligned with base.domain.json - Single source of truth
+ */
 export interface LeadData {
-  contact: ContactInfo;
-  souscripteur: SouscripteurInfo;
-  conjoint?: ConjointInfo;
-  enfants: EnfantInfo[];
-  besoins: BesoinsInfo;
+  subscriber: SubscriberInfo;
+  spouse?: SpouseInfo;
+  children?: ChildInfo[];
+  project: ProjectInfo;
   platformData?: PlatformData;
 }
 
@@ -118,14 +160,14 @@ export interface PlatformData {
 
 // Données pour créer un lead (même structure que LeadData)
 export interface CreateLeadData extends Partial<LeadData> {
-  contact: ContactInfo;
-  souscripteur: SouscripteurInfo;
+  subscriber: SubscriberInfo;
+  project: ProjectInfo;
 }
 
 // Données pour mettre à jour un lead
 export interface UpdateLeadData extends Partial<LeadData> {
-  contact?: Partial<ContactInfo>;
-  souscripteur?: Partial<SouscripteurInfo>;
+  subscriber?: Partial<SubscriberInfo>;
+  project?: Partial<ProjectInfo>;
 }
 
 // Filtres pour la recherche de leads
@@ -192,7 +234,7 @@ export interface OperationProgress {
 // Informations sur un doublon détecté
 export interface DuplicateInfo {
   leadId: string;
-  contact: ContactInfo;
+  subscriber: SubscriberInfo;
   reasons: string[]; // Ex: ["Email identique", "Téléphone identique"]
 }
 

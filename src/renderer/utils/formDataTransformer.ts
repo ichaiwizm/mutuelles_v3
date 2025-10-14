@@ -1,4 +1,4 @@
-import { CreateLeadData, ContactInfo, SouscripteurInfo, ConjointInfo, EnfantInfo, BesoinsInfo } from '@shared/types/leads'
+import { CreateLeadData, SubscriberInfo, SpouseInfo, ChildInfo, ProjectInfo } from '@shared/types/leads'
 
 interface FormData {
   [domainKey: string]: any
@@ -21,38 +21,8 @@ function parseDateToDDMMYYYY(value: any): string | undefined {
   return value
 }
 
-function mapCategory(category: string): string {
-  const categoryMap: { [key: string]: string } = {
-    'AGRICULTEURS_EXPLOITANTS': 'Agriculteurs exploitants',
-    'ARTISANS': 'Artisans',
-    'CADRES': 'Cadres',
-    'CADRES_EMPLOYES_FONCTION_PUBLIQUE': 'Cadres et employés de la fonction publique',
-    'CHEFS_D_ENTREPRISE': "Chefs d'entreprise",
-    'COMMERCANTS_ET_ASSIMILES': 'Commerçants et assimilés',
-    'EMPLOYES': 'Employés, agents de maîtrise',
-    'OUVRIERS': 'Ouvriers',
-    'PERSONNES_SANS_ACTIVITE_PROFESSIONNELLE': 'Personnes sans activité professionnelle',
-    'PROFESSIONS_LIBERALES_ET_ASSIMILES': 'Professions libérales et assimilés',
-    'RETRAITES': 'Retraités'
-  }
-
-  return categoryMap[category] || category
-}
-
-function mapRegime(regime: string): string {
-  const regimeMap: { [key: string]: string } = {
-    'ALSACE_MOSELLE': 'Alsace / Moselle',
-    'AMEXA': 'Amexa',
-    'REGIME_SALARIES_AGRICOLES': 'Régime des salariés agricoles',
-    'SECURITE_SOCIALE': 'Sécurité sociale',
-    'SECURITE_SOCIALE_INDEPENDANTS': 'Sécurité sociale des indépendants',
-    'SECURITE_SOCIALE_ALSACE_MOSELLE': 'Régime Local (CPAM Alsace Moselle)',
-    'TNS': 'Régime Général pour TNS (CPAM)',
-    'AUTRES_REGIME_SPECIAUX': 'Autres régimes spéciaux'
-  }
-
-  return regimeMap[regime] || regime
-}
+// Note: We no longer map values here. Values are stored as-is from the form.
+// This aligns with base.domain.json philosophy: single source of truth with raw domain values.
 
 /**
  * Extrait toutes les données du formulaire pour les stocker brutes
@@ -72,39 +42,7 @@ function extractAllFormData(formData: FormData): Record<string, any> {
   return allData
 }
 
-/**
- * Reverse mapping functions for converting display values back to domain keys
- */
-function reverseMapRegime(displayValue: string): string {
-  const reverseMap: { [key: string]: string } = {
-    'Alsace / Moselle': 'ALSACE_MOSELLE',
-    'Amexa': 'AMEXA',
-    'Régime des salariés agricoles': 'REGIME_SALARIES_AGRICOLES',
-    'Sécurité sociale': 'SECURITE_SOCIALE',
-    'Sécurité sociale des indépendants': 'SECURITE_SOCIALE_INDEPENDANTS',
-    'Régime Local (CPAM Alsace Moselle)': 'SECURITE_SOCIALE_ALSACE_MOSELLE',
-    'Régime Général pour TNS (CPAM)': 'TNS',
-    'Autres régimes spéciaux': 'AUTRES_REGIME_SPECIAUX'
-  }
-  return reverseMap[displayValue] || displayValue
-}
-
-function reverseMapCategory(displayValue: string): string {
-  const reverseMap: { [key: string]: string } = {
-    'Agriculteurs exploitants': 'AGRICULTEURS_EXPLOITANTS',
-    'Artisans': 'ARTISANS',
-    'Cadres': 'CADRES',
-    'Cadres et employés de la fonction publique': 'CADRES_EMPLOYES_FONCTION_PUBLIQUE',
-    "Chefs d'entreprise": 'CHEFS_D_ENTREPRISE',
-    'Commerçants et assimilés': 'COMMERCANTS_ET_ASSIMILES',
-    'Employés, agents de maîtrise': 'EMPLOYES',
-    'Ouvriers': 'OUVRIERS',
-    'Personnes sans activité professionnelle': 'PERSONNES_SANS_ACTIVITE_PROFESSIONNELLE',
-    'Professions libérales et assimilés': 'PROFESSIONS_LIBERALES_ET_ASSIMILES',
-    'Retraités': 'RETRAITES'
-  }
-  return reverseMap[displayValue] || displayValue
-}
+// Reverse mapping functions removed - no longer needed as we store raw domain values
 
 /**
  * Transform a Lead back into FormData format for editing
@@ -117,197 +55,194 @@ export function transformFromCleanLead(lead: any): Record<string, any> {
     return { ...lead.data.platformData }
   }
 
-  // Priority 2: Reconstruct from normalized structure
+  // Priority 2: Reconstruct from normalized structure (now using domain keys)
   const formData: Record<string, any> = {}
 
-  // Reconstruct contact
-  if (lead.data?.contact) {
-    const { civilite, nom, prenom, telephone, email, adresse, codePostal, ville } = lead.data.contact
-    if (civilite) formData['subscriber.civility'] = civilite
-    if (nom) formData['subscriber.lastName'] = nom
-    if (prenom) formData['subscriber.firstName'] = prenom
-    if (telephone) formData['subscriber.telephone'] = telephone
-    if (email) formData['subscriber.email'] = email
-    if (adresse) formData['subscriber.address'] = adresse
-    if (codePostal) formData['subscriber.postalCode'] = codePostal
-    if (ville) formData['subscriber.city'] = ville
+  // Reconstruct subscriber
+  if (lead.data?.subscriber) {
+    const subscriber = lead.data.subscriber
+
+    // Identity
+    if (subscriber.civility) formData['subscriber.civility'] = subscriber.civility
+    if (subscriber.lastName) formData['subscriber.lastName'] = subscriber.lastName
+    if (subscriber.firstName) formData['subscriber.firstName'] = subscriber.firstName
+    if (subscriber.birthDate) formData['subscriber.birthDate'] = subscriber.birthDate
+
+    // Contact
+    if (subscriber.telephone) formData['subscriber.telephone'] = subscriber.telephone
+    if (subscriber.email) formData['subscriber.email'] = subscriber.email
+    if (subscriber.address) formData['subscriber.address'] = subscriber.address
+    if (subscriber.postalCode) formData['subscriber.postalCode'] = subscriber.postalCode
+    if (subscriber.city) formData['subscriber.city'] = subscriber.city
+    if (subscriber.departmentCode) formData['subscriber.departmentCode'] = subscriber.departmentCode
+
+    // Professional
+    if (subscriber.regime) formData['subscriber.regime'] = subscriber.regime
+    if (subscriber.category) formData['subscriber.category'] = subscriber.category
+    if (subscriber.status) formData['subscriber.status'] = subscriber.status
+    if (subscriber.profession) formData['subscriber.profession'] = subscriber.profession
+    if (subscriber.workFramework) formData['subscriber.workFramework'] = subscriber.workFramework
+
+    // Children
+    if (subscriber.childrenCount !== undefined) formData['children.count'] = subscriber.childrenCount
   }
 
-  // Reconstruct souscripteur
-  if (lead.data?.souscripteur) {
-    const { dateNaissance, profession, regimeSocial, nombreEnfants } = lead.data.souscripteur
-
-    if (dateNaissance) formData['subscriber.birthDate'] = dateNaissance
-
-    if (regimeSocial) {
-      formData['subscriber.regime'] = reverseMapRegime(regimeSocial)
-    }
-
-    if (profession) {
-      // Try to reverse map as category first
-      const categoryValue = reverseMapCategory(profession)
-      if (categoryValue !== profession) {
-        formData['subscriber.category'] = categoryValue
-      } else {
-        // If not a category, assume it's a status or profession
-        formData['subscriber.profession'] = profession
-      }
-    }
-
-    if (nombreEnfants !== undefined) formData['subscriber.childrenCount'] = nombreEnfants
-  }
-
-  // Reconstruct conjoint
-  if (lead.data?.conjoint) {
+  // Reconstruct spouse
+  if (lead.data?.spouse) {
     formData['conjoint'] = true
+    const spouse = lead.data.spouse
 
-    const { civilite, prenom, nom, dateNaissance, profession, regimeSocial } = lead.data.conjoint
-    if (civilite) formData['spouse.civility'] = civilite
-    if (prenom) formData['spouse.firstName'] = prenom
-    if (nom) formData['spouse.lastName'] = nom
-    if (dateNaissance) formData['spouse.birthDate'] = dateNaissance
-
-    if (regimeSocial) {
-      formData['spouse.regime'] = reverseMapRegime(regimeSocial)
-    }
-
-    if (profession) {
-      const categoryValue = reverseMapCategory(profession)
-      if (categoryValue !== profession) {
-        formData['spouse.category'] = categoryValue
-      } else {
-        formData['spouse.profession'] = profession
-      }
-    }
+    if (spouse.civility) formData['spouse.civility'] = spouse.civility
+    if (spouse.firstName) formData['spouse.firstName'] = spouse.firstName
+    if (spouse.lastName) formData['spouse.lastName'] = spouse.lastName
+    if (spouse.birthDate) formData['spouse.birthDate'] = spouse.birthDate
+    if (spouse.regime) formData['spouse.regime'] = spouse.regime
+    if (spouse.category) formData['spouse.category'] = spouse.category
+    if (spouse.status) formData['spouse.status'] = spouse.status
+    if (spouse.profession) formData['spouse.profession'] = spouse.profession
+    if (spouse.workFramework) formData['spouse.workFramework'] = spouse.workFramework
   }
 
-  // Reconstruct enfants
-  if (lead.data?.enfants && lead.data.enfants.length > 0) {
+  // Reconstruct children
+  if (lead.data?.children && lead.data.children.length > 0) {
     formData['enfants'] = true
-    formData['children.count'] = lead.data.enfants.length
+    formData['children.count'] = lead.data.children.length
 
-    lead.data.enfants.forEach((enfant: any, i: number) => {
-      if (enfant.dateNaissance) {
-        formData[`children[${i}].birthDate`] = enfant.dateNaissance
-      }
-      if (enfant.sexe) {
-        formData[`children[${i}].gender`] = enfant.sexe
-      }
+    lead.data.children.forEach((child: any, i: number) => {
+      if (child.birthDate) formData[`children[${i}].birthDate`] = child.birthDate
+      if (child.gender) formData[`children[${i}].gender`] = child.gender
+      if (child.regime) formData[`children[${i}].regime`] = child.regime
+      if (child.ayantDroit) formData[`children[${i}].ayantDroit`] = child.ayantDroit
     })
   }
 
-  // Reconstruct besoins
-  if (lead.data?.besoins) {
-    const { dateEffet, assureActuellement, gammes, madelin, niveaux } = lead.data.besoins
+  // Reconstruct project
+  if (lead.data?.project) {
+    const project = lead.data.project
 
-    if (dateEffet) formData['project.dateEffet'] = dateEffet
-    if (assureActuellement !== undefined) formData['project.currentlyInsured'] = assureActuellement
-    if (gammes) formData['project.ranges'] = gammes
-    if (madelin !== undefined) formData['project.madelin'] = madelin
+    if (project.name) formData['project.name'] = project.name
+    if (project.dateEffet) formData['project.dateEffet'] = project.dateEffet
+    if (project.plan) formData['project.plan'] = project.plan
+    if (project.couverture !== undefined) formData['project.couverture'] = project.couverture
+    if (project.ij !== undefined) formData['project.ij'] = project.ij
+    if (project.simulationType) formData['project.simulationType'] = project.simulationType
+    if (project.madelin !== undefined) formData['project.madelin'] = project.madelin
+    if (project.resiliation !== undefined) formData['project.resiliation'] = project.resiliation
+    if (project.reprise !== undefined) formData['project.reprise'] = project.reprise
+    if (project.currentlyInsured !== undefined) formData['project.currentlyInsured'] = project.currentlyInsured
+    if (project.ranges) formData['project.ranges'] = project.ranges
 
-    if (niveaux) {
-      if (niveaux.soinsMedicaux !== undefined) formData['project.medicalCareLevel'] = niveaux.soinsMedicaux
-      if (niveaux.hospitalisation !== undefined) formData['project.hospitalizationLevel'] = niveaux.hospitalisation
-      if (niveaux.optique !== undefined) formData['project.opticsLevel'] = niveaux.optique
-      if (niveaux.dentaire !== undefined) formData['project.dentalLevel'] = niveaux.dentaire
+    if (project.levels) {
+      if (project.levels.medicalCare !== undefined) formData['project.medicalCareLevel'] = project.levels.medicalCare
+      if (project.levels.hospitalization !== undefined) formData['project.hospitalizationLevel'] = project.levels.hospitalization
+      if (project.levels.optics !== undefined) formData['project.opticsLevel'] = project.levels.optics
+      if (project.levels.dental !== undefined) formData['project.dentalLevel'] = project.levels.dental
     }
   }
 
   return formData
 }
 
+/**
+ * Transform FormData to Clean Lead structure
+ * Now using domain keys directly - aligned with base.domain.json
+ */
 export function transformToCleanLead(formData: FormData): CreateLeadData {
-  const contact: ContactInfo = {}
-  const souscripteur: SouscripteurInfo = {}
-  const conjoint: ConjointInfo | undefined = formData['conjoint'] ? {} : undefined
-  const enfants: EnfantInfo[] = []
-  const besoins: BesoinsInfo = {}
+  // Build subscriber info (combines identity, contact, and professional info)
+  const subscriber: SubscriberInfo = {}
 
-  // ========= Extraction des champs génériques (comme avant) =========
+  // Identity
+  if (formData['subscriber.civility']) subscriber.civility = formData['subscriber.civility']
+  if (formData['subscriber.lastName']) subscriber.lastName = formData['subscriber.lastName']
+  if (formData['subscriber.firstName']) subscriber.firstName = formData['subscriber.firstName']
+  if (formData['subscriber.birthDate']) subscriber.birthDate = parseDateToDDMMYYYY(formData['subscriber.birthDate'])
 
-  if (formData['subscriber.civility']) {
-    contact.civilite = formData['subscriber.civility']
+  // Contact
+  if (formData['subscriber.telephone']) subscriber.telephone = formData['subscriber.telephone']
+  if (formData['subscriber.email']) subscriber.email = formData['subscriber.email']
+  if (formData['subscriber.address']) subscriber.address = formData['subscriber.address']
+  if (formData['subscriber.postalCode']) subscriber.postalCode = String(formData['subscriber.postalCode'])
+  if (formData['subscriber.city']) subscriber.city = formData['subscriber.city']
+  if (formData['subscriber.departmentCode']) subscriber.departmentCode = formData['subscriber.departmentCode']
+
+  // Professional - NO MAPPING, store raw values
+  if (formData['subscriber.regime']) subscriber.regime = formData['subscriber.regime']
+  if (formData['subscriber.category']) subscriber.category = formData['subscriber.category']
+  if (formData['subscriber.status']) subscriber.status = formData['subscriber.status']
+  if (formData['subscriber.profession']) subscriber.profession = formData['subscriber.profession']
+  if (formData['subscriber.workFramework']) subscriber.workFramework = formData['subscriber.workFramework']
+
+  // Children count
+  if (formData['children.count'] !== undefined) subscriber.childrenCount = formData['children.count']
+
+  // Build spouse info
+  let spouse: SpouseInfo | undefined = undefined
+  if (formData['conjoint']) {
+    spouse = {}
+
+    if (formData['spouse.civility']) spouse.civility = formData['spouse.civility']
+    if (formData['spouse.firstName']) spouse.firstName = formData['spouse.firstName']
+    if (formData['spouse.lastName']) spouse.lastName = formData['spouse.lastName']
+    if (formData['spouse.birthDate']) spouse.birthDate = parseDateToDDMMYYYY(formData['spouse.birthDate'])
+
+    if (formData['spouse.regime']) spouse.regime = formData['spouse.regime']
+    if (formData['spouse.category']) spouse.category = formData['spouse.category']
+    if (formData['spouse.status']) spouse.status = formData['spouse.status']
+    if (formData['spouse.profession']) spouse.profession = formData['spouse.profession']
+    if (formData['spouse.workFramework']) spouse.workFramework = formData['spouse.workFramework']
   }
 
-  if (formData['subscriber.lastName']) {
-    contact.nom = formData['subscriber.lastName']
-  }
-
-  if (formData['subscriber.firstName']) {
-    contact.prenom = formData['subscriber.firstName']
-  }
-
-  if (formData['subscriber.postalCode']) {
-    contact.codePostal = String(formData['subscriber.postalCode'])
-  }
-
-  if (formData['subscriber.birthDate']) {
-    souscripteur.dateNaissance = parseDateToDDMMYYYY(formData['subscriber.birthDate'])
-  }
-
-  if (formData['subscriber.regime']) {
-    souscripteur.regimeSocial = mapRegime(formData['subscriber.regime'])
-  }
-
-  // Profession mapping with priority logic (highest to lowest):
-  // 1. profession (SwissLife specific field - most specific)
-  // 2. status (SwissLife "Statut" field)
-  // 3. category (Alptis "Catégorie socioprofessionnelle" - needs mapping)
-  // Note: Only one should be set per platform, but we use priority in case multiple are present
-  if (formData['subscriber.profession']) {
-    souscripteur.profession = formData['subscriber.profession']
-  } else if (formData['subscriber.status']) {
-    souscripteur.profession = formData['subscriber.status']
-  } else if (formData['subscriber.category']) {
-    souscripteur.profession = mapCategory(formData['subscriber.category'])
-  }
-
-  if (conjoint && formData['conjoint']) {
-    if (formData['spouse.birthDate']) {
-      conjoint.dateNaissance = parseDateToDDMMYYYY(formData['spouse.birthDate'])
-    }
-
-    if (formData['spouse.regime']) {
-      conjoint.regimeSocial = mapRegime(formData['spouse.regime'])
-    }
-
-    // Profession mapping with priority logic (highest to lowest):
-    // 1. profession (SwissLife specific field - most specific)
-    // 2. status (SwissLife "Statut" field)
-    // 3. category (Alptis "Catégorie socioprofessionnelle" - needs mapping)
-    // Note: Only one should be set per platform, but we use priority in case multiple are present
-    if (formData['spouse.profession']) {
-      conjoint.profession = formData['spouse.profession']
-    } else if (formData['spouse.status']) {
-      conjoint.profession = formData['spouse.status']
-    } else if (formData['spouse.category']) {
-      conjoint.profession = mapCategory(formData['spouse.category'])
-    }
-  }
-
+  // Build children array
+  const children: ChildInfo[] = []
   const childrenCount = formData['children.count'] || 0
   for (let i = 0; i < childrenCount; i++) {
+    const child: ChildInfo = {}
+
     const birthDateKey = `children[${i}].birthDate`
-    if (formData[birthDateKey]) {
-      enfants.push({
-        dateNaissance: parseDateToDDMMYYYY(formData[birthDateKey])
-      })
-    }
+    const genderKey = `children[${i}].gender`
+    const regimeKey = `children[${i}].regime`
+    const ayantDroitKey = `children[${i}].ayantDroit`
+
+    if (formData[birthDateKey]) child.birthDate = parseDateToDDMMYYYY(formData[birthDateKey])
+    if (formData[genderKey]) child.gender = formData[genderKey]
+    if (formData[regimeKey]) child.regime = formData[regimeKey]
+    if (formData[ayantDroitKey]) child.ayantDroit = formData[ayantDroitKey]
+
+    children.push(child)
   }
 
-  if (formData['project.dateEffet']) {
-    besoins.dateEffet = parseDateToDDMMYYYY(formData['project.dateEffet'])
-  }
+  // Build project info
+  const project: ProjectInfo = {}
 
-  // ========= NOUVEAU: Stocker TOUTES les données du formulaire brutes =========
+  if (formData['project.name']) project.name = formData['project.name']
+  if (formData['project.dateEffet']) project.dateEffet = parseDateToDDMMYYYY(formData['project.dateEffet'])
+  if (formData['project.plan']) project.plan = formData['project.plan']
+  if (formData['project.couverture'] !== undefined) project.couverture = formData['project.couverture']
+  if (formData['project.ij'] !== undefined) project.ij = formData['project.ij']
+  if (formData['project.simulationType']) project.simulationType = formData['project.simulationType']
+  if (formData['project.madelin'] !== undefined) project.madelin = formData['project.madelin']
+  if (formData['project.resiliation'] !== undefined) project.resiliation = formData['project.resiliation']
+  if (formData['project.reprise'] !== undefined) project.reprise = formData['project.reprise']
+  if (formData['project.currentlyInsured'] !== undefined) project.currentlyInsured = formData['project.currentlyInsured']
+  if (formData['project.ranges']) project.ranges = formData['project.ranges']
+
+  // Coverage levels
+  const levels: any = {}
+  if (formData['project.medicalCareLevel'] !== undefined) levels.medicalCare = formData['project.medicalCareLevel']
+  if (formData['project.hospitalizationLevel'] !== undefined) levels.hospitalization = formData['project.hospitalizationLevel']
+  if (formData['project.opticsLevel'] !== undefined) levels.optics = formData['project.opticsLevel']
+  if (formData['project.dentalLevel'] !== undefined) levels.dental = formData['project.dentalLevel']
+
+  if (Object.keys(levels).length > 0) project.levels = levels
+
+  // Store ALL raw form data in platformData (unchanged)
   const platformData = extractAllFormData(formData)
 
   return {
-    contact,
-    souscripteur,
-    conjoint: formData['conjoint'] ? conjoint : undefined,
-    enfants,
-    besoins,
-    platformData  // Toutes les données brutes du formulaire
+    subscriber,
+    spouse,
+    children: children.length > 0 ? children : undefined,
+    project,
+    platformData
   }
 }
