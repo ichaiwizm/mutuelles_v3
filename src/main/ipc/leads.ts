@@ -33,7 +33,8 @@ const CreateLeadSchema = z.object({
     address: z.string().optional(),
     postalCode: z.string().optional(),
     city: z.string().optional(),
-    departmentCode: z.string().optional(),
+    // Accepte number ou string pour rester aligné avec le champ UI (number)
+    departmentCode: z.union([z.string(), z.number()]).optional(),
 
     // Professional
     regime: z.string().optional(),

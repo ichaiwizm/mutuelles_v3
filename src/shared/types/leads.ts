@@ -18,7 +18,7 @@ export interface SubscriberInfo {
   address?: string;
   postalCode?: string;
   city?: string;
-  departmentCode?: string;
+  departmentCode?: string | number;
 
   // Professional Status
   regime?: string;           // Social security regime

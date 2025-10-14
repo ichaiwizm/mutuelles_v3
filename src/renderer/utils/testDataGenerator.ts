@@ -64,6 +64,20 @@ function generateFirstOfNextMonth(): string {
 export function generateRandomTestData(schema: FormSchema): Record<string, any> {
   const testData: Record<string, any> = {}
 
+  // Helper: find the platform-specific variant of a field
+  const findFieldInPlatform = (
+    domainKey: string,
+    platform: 'alptis' | 'swisslifeone'
+  ): FormFieldDefinition | undefined => {
+    return schema.platformSpecific[platform].find(f => f.domainKey === domainKey)
+  }
+
+  // Helper: pick a random option value from a field definition
+  const pickOptionValue = (field?: FormFieldDefinition): string | undefined => {
+    if (!field || !field.options || field.options.length === 0) return undefined
+    return randomChoice(field.options).value
+  }
+
   // STEP 1: Basic identity
   const civility = randomChoice(['MONSIEUR', 'MADAME'])
   const firstName = civility === 'MONSIEUR'
@@ -117,13 +131,7 @@ export function generateRandomTestData(schema: FormSchema): Record<string, any> 
       }
     }
 
-    // Regime (Alptis)
-    const regimeField = findField('subscriber.regime')
-    if (regimeField?.carrierOptions?.alptis) {
-      testData['subscriber.regime'] = randomChoice(regimeField.carrierOptions.alptis).value
-    } else if (regimeField?.options) {
-      testData['subscriber.regime'] = randomChoice(regimeField.options).value
-    }
+    // Regime (Alptis) — handled later with SwissLife to avoid overrides
 
     // Postal code
     const dept = randomChoice(DEPARTMENTS)
@@ -150,13 +158,7 @@ export function generateRandomTestData(schema: FormSchema): Record<string, any> 
       testData['subscriber.profession'] = randomChoice(professionField.options).value
     }
 
-    // Regime (SwissLife)
-    const regimeField = findField('subscriber.regime')
-    if (regimeField?.carrierOptions?.swisslifeone) {
-      testData['subscriber.regime'] = randomChoice(regimeField.carrierOptions.swisslifeone).value
-    } else if (regimeField?.options) {
-      testData['subscriber.regime'] = randomChoice(regimeField.options).value
-    }
+    // Regime (SwissLife) — handled with Alptis in a unified step below
 
     // Department code
     const dept = randomChoice(DEPARTMENTS)
@@ -173,6 +175,23 @@ export function generateRandomTestData(schema: FormSchema): Record<string, any> 
     testData['project.ij'] = false
     testData['project.resiliation'] = randomBoolean(0.2)
     testData['project.reprise'] = randomBoolean(0.15)
+  }
+
+  // Unified selection for subscriber.regime: prefer intersection; fallback SwissLife → Alptis → any
+  {
+    const regimeFieldAlptis = findFieldInPlatform('subscriber.regime', 'alptis')
+    const regimeFieldSwiss = findFieldInPlatform('subscriber.regime', 'swisslifeone')
+    const alptisVals = regimeFieldAlptis?.options?.map(o => o.value)
+    const swissVals = regimeFieldSwiss?.options?.map(o => o.value)
+    let chosen: string | undefined
+    if (alptisVals && swissVals) {
+      const common = alptisVals.filter(v => swissVals.includes(v))
+      if (common.length) chosen = randomChoice(common)
+    }
+    if (!chosen) chosen = pickOptionValue(regimeFieldSwiss)
+    if (!chosen) chosen = pickOptionValue(regimeFieldAlptis)
+    if (!chosen) chosen = pickOptionValue(findField('subscriber.regime'))
+    if (chosen) testData['subscriber.regime'] = chosen
   }
 
   // STEP 5: Project date
@@ -210,13 +229,7 @@ export function generateRandomTestData(schema: FormSchema): Record<string, any> 
         }
       }
 
-      // Spouse regime (Alptis)
-      const spouseRegimeField = findField('spouse.regime')
-      if (spouseRegimeField?.carrierOptions?.alptis) {
-        testData['spouse.regime'] = randomChoice(spouseRegimeField.carrierOptions.alptis).value
-      } else if (spouseRegimeField?.options) {
-        testData['spouse.regime'] = randomChoice(spouseRegimeField.options).value
-      }
+      // Spouse regime (Alptis) — handled later with SwissLife to avoid overrides
     }
 
     if (hasSwissLifeFields) {
@@ -232,14 +245,25 @@ export function generateRandomTestData(schema: FormSchema): Record<string, any> 
         testData['spouse.profession'] = randomChoice(spouseProfessionField.options).value
       }
 
-      // Spouse regime (SwissLife)
-      const spouseRegimeField = findField('spouse.regime')
-      if (spouseRegimeField?.carrierOptions?.swisslifeone) {
-        testData['spouse.regime'] = randomChoice(spouseRegimeField.carrierOptions.swisslifeone).value
-      } else if (spouseRegimeField?.options) {
-        testData['spouse.regime'] = randomChoice(spouseRegimeField.options).value
-      }
+      // Spouse regime (SwissLife) — handled with Alptis in a unified step below
     }
+  }
+
+  // Unified selection for spouse.regime (if spouse exists)
+  if (hasSpouse) {
+    const spouseRegimeFieldAlptis = findFieldInPlatform('spouse.regime', 'alptis')
+    const spouseRegimeFieldSwiss = findFieldInPlatform('spouse.regime', 'swisslifeone')
+    const alptisVals = spouseRegimeFieldAlptis?.options?.map(o => o.value)
+    const swissVals = spouseRegimeFieldSwiss?.options?.map(o => o.value)
+    let chosen: string | undefined
+    if (alptisVals && swissVals) {
+      const common = alptisVals.filter(v => swissVals.includes(v))
+      if (common.length) chosen = randomChoice(common)
+    }
+    if (!chosen) chosen = pickOptionValue(spouseRegimeFieldSwiss)
+    if (!chosen) chosen = pickOptionValue(spouseRegimeFieldAlptis)
+    if (!chosen) chosen = pickOptionValue(findField('spouse.regime'))
+    if (chosen) testData['spouse.regime'] = chosen
   }
 
   // STEP 7: Children (probabilities: 30%/30%/25%/15% for 0/1/2/3)
@@ -264,12 +288,11 @@ export function generateRandomTestData(schema: FormSchema): Record<string, any> 
       testData[`children[${i}].birthDate`] = generateBirthDate(0, 25)
 
       if (hasAlptisFields) {
-        // Children regime (Alptis)
-        const childRegimeField = findField('children[].regime')
-        if (childRegimeField?.carrierOptions?.alptis) {
-          testData[`children[${i}].regime`] = randomChoice(childRegimeField.carrierOptions.alptis).value
-        } else if (childRegimeField?.options) {
-          testData[`children[${i}].regime`] = randomChoice(childRegimeField.options).value
+        // Children regime (Alptis) — choose from Alptis-specific variant
+        const childRegimeFieldAlptis = findFieldInPlatform('children[].regime', 'alptis')
+        const chosenChildRegimeAlptis = pickOptionValue(childRegimeFieldAlptis) || pickOptionValue(findField('children[].regime'))
+        if (chosenChildRegimeAlptis) {
+          testData[`children[${i}].regime`] = chosenChildRegimeAlptis
         }
       }
 
