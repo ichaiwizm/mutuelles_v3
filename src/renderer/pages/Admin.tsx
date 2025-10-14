@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 
 type FlowItem = { platform: string; slug: string; name: string; file: string }
-type LeadDB = { id: string; data: { contact: any; souscripteur: any } }
+type LeadDB = { id: string; data: { subscriber?: any; contact?: any; souscripteur?: any } }
 
 export default function Admin() {
   const [items, setItems] = useState<FlowItem[]>([])
@@ -76,7 +76,9 @@ export default function Admin() {
                   {leads.length ? (
                     <select className="border rounded px-2 py-1 text-xs bg-white dark:bg-neutral-900 border-neutral-300 dark:border-neutral-700" value={defaultLeadByFlow[f.slug]||''} onChange={(e)=> setDefaultLeadByFlow(prev=>({ ...prev, [f.slug]: e.target.value }))}>
                       {leads.map(l => {
-                        const displayName = `${l.data.contact?.nom || '?'} ${l.data.contact?.prenom || '?'}`.trim() || l.id.slice(0, 8)
+                        const first = l.data.subscriber?.firstName || ''
+                        const last = l.data.subscriber?.lastName || ''
+                        const displayName = `${first} ${last}`.trim() || l.id.slice(0, 8)
                         return <option key={l.id} value={l.id}>{displayName}</option>
                       })}
                     </select>
