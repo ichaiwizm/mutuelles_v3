@@ -59,7 +59,8 @@ async function main() {
   })
 
   const [flowSlug] = args._
-  const { leadId, headless, help } = args
+  const { headless, help } = args
+  const leadId = args['lead-id']
 
   if (help) {
     usage()
