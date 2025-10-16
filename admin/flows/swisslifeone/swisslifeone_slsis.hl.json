@@ -103,8 +103,8 @@
     { "type": "waitForNetworkIdle", "label": "network-after-date-effet", "timeout_ms": 5000 },
 
     { "type": "comment", "text": "=== ÉTAPE 9: OPTIONS (MADELIN, RÉSILIATION, REPRISE) ===" },
-    { "type": "scrollIntoView", "field": "slsis_madelin", "label": "scroll-madelin" },
-    { "type": "clickField", "field": "slsis_madelin", "label": "click-madelin" },
+    { "type": "scrollIntoView", "field": "slsis_madelin", "label": "scroll-madelin", "skipIf": { "field": "subscriber.status", "notEquals": "TNS" }, "optional": true },
+    { "type": "clickField", "field": "slsis_madelin", "label": "click-madelin", "skipIf": { "field": "subscriber.status", "notEquals": "TNS" }, "optional": true },
     { "type": "waitForField", "field": "slsis_resiliation_non", "label": "wait-resiliation-non", "optional": true },
     { "type": "clickField", "field": "slsis_resiliation_non", "label": "click-resiliation-non", "optional": true },
     { "type": "waitForField", "field": "slsis_reprise_non", "label": "wait-reprise-non", "optional": true },

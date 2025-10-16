@@ -34,7 +34,8 @@
       "Bash(ajv validate:*)",
       "Bash(git config:*)",
       "Bash(jq:*)",
-      "Bash(do echo \"=== $f ===\")"
+      "Bash(do echo \"=== $f ===\")",
+      "Bash(sed:*)"
     ],
     "deny": [],
     "ask": []
