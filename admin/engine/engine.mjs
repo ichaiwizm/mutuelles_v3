@@ -5,10 +5,10 @@ import path from 'node:path'
 import os from 'node:os'
 import { chromium } from 'playwright-core'
 
-export async function runHighLevelFlow({ fieldsFile, flowFile, leadFile, username, password, outRoot='admin/runs-cli', mode='dev_private', chrome=null, video=false, dom='errors', a11y=false, keepOpen=true, redact='(password|token|authorization|cookie)=([^;\\s]+)' }) {
+export async function runHighLevelFlow({ fieldsFile, flowFile, leadFile, leadData, username, password, outRoot='admin/runs-cli', mode='dev_private', chrome=null, video=false, dom='errors', a11y=false, keepOpen=true, redact='(password|token|authorization|cookie)=([^;\\s]+)' }) {
   const fields = JSON.parse(fs.readFileSync(fieldsFile, 'utf-8'))
   const flow = JSON.parse(fs.readFileSync(flowFile, 'utf-8'))
-  const lead = leadFile ? JSON.parse(fs.readFileSync(leadFile, 'utf-8')) : {}
+  const lead = leadData || (leadFile ? JSON.parse(fs.readFileSync(leadFile, 'utf-8')) : {})
 
   const platform = fields.platform || flow.platform
   const slug = flow.slug || path.basename(flowFile).replace(/\.json$/,'')

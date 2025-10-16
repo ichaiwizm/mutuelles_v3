@@ -8,18 +8,6 @@ import { spawn } from 'node:child_process'
 
 type FlowFile = { platform: string; slug: string; name: string; file: string }
 
-function findProjectRoot(startDir: string): string {
-  let dir = startDir
-  for (let i = 0; i < 10; i++) {
-    const p = path.join(dir, 'package.json')
-    if (fs.existsSync(p)) return dir
-    const parent = path.dirname(dir)
-    if (parent === dir) break
-    dir = parent
-  }
-  return process.cwd()
-}
-
 function listFlowFiles(rootDir: string): FlowFile[] {
   const flowsDir = path.join(rootDir, 'admin', 'flows')
   const out: FlowFile[] = []
@@ -44,7 +32,7 @@ function listFlowFiles(rootDir: string): FlowFile[] {
 }
 
 export function registerAdminCliIpc() {
-  const root = findProjectRoot(__dirname)
+  const root = process.cwd()
 
   ipcMain.handle('admin:listFileFlows', async () => listFlowFiles(root))
 
@@ -134,98 +122,38 @@ export function registerAdminCliIpc() {
     return out
   })
 
-  ipcMain.handle('admin:listLeads', async () => {
-    const leadsDir = path.join(root, 'admin', 'leads')
-    const out: Array<{ name:string; file:string }> = []
-    try {
-      const files = fs.readdirSync(leadsDir).filter(f => f.endsWith('.json'))
-      for (const f of files) out.push({ name: f.replace(/\.json$/,''), file: path.join(leadsDir,f) })
-    } catch {}
-    return out
-  })
-
-  ipcMain.handle('admin:runHLFlow', async (e, payload: any) => {
-    const wnd = BrowserWindow.fromWebContents(e.sender)
-    if (!wnd) throw new Error('Fenêtre introuvable')
-    const { flowFile, leadFile, platform, mode, keepOpen } = payload || {}
-    if (!flowFile || !leadFile) throw new Error('flowFile et leadFile requis')
-    const fieldsFile = path.join(root, 'admin', 'field-definitions', `${platform}.json`)
-    if (!fs.existsSync(fieldsFile)) throw new Error('field-definitions introuvable pour '+platform)
-    const electronBin = process.execPath
-    const script = path.join(root, 'admin', 'cli', 'run.mjs')
-    // New CLI syntax: run.mjs <platform> <flowSlugOrPath> [--lead <name>] [--headless]
-    const args = [ script, platform, flowFile, '--lead', path.basename(leadFile, '.json') ]
-    // New run.mjs: default is visible with window kept open, --headless for invisible auto-close
-    if (mode === 'headless') { args.push('--headless') }
-    // keepOpen is now the default behavior unless --headless is used
-
-    // Resolve credentials in the main process via DB+safeStorage, then pass via env to child (transport only)
-    const db = getDb()
-    const row = db.prepare('SELECT id FROM platforms_catalog WHERE slug = ?').get(platform) as { id?: number } | undefined
-    if (!row?.id) throw new Error('Plateforme introuvable: ' + platform)
-    const usernameRow = db.prepare('SELECT username FROM platform_credentials WHERE platform_id = ?').get(row.id) as { username?: string } | undefined
-    const username = usernameRow?.username || ''
-    const password = revealPassword(row.id)
-    // Write creds to a temp file to avoid env propagation issues
-    const tmpDir = path.join(root, 'admin')
-    try { fs.mkdirSync(tmpDir, { recursive: true }) } catch {}
-    const credFile = path.join(tmpDir, `creds-${Date.now()}-${Math.random().toString(36).slice(2,8)}.json`)
-    fs.writeFileSync(credFile, JSON.stringify({ username, password }), 'utf-8')
-    const env = { ...process.env, ELECTRON_RUN_AS_NODE: '1', ADMIN_CRED_FILE: credFile }
-    const child = spawn(electronBin, args, { cwd: root, env })
-    const runKey = `${path.basename(flowFile)}-${Date.now()}-${child.pid}`
-    const channel = `admin:runOutput:${runKey}`
-    child.stdout.on('data', (b)=>{ try { wnd.webContents.send(channel, { type:'stdout', data: b.toString() }) } catch {} })
-    child.stderr.on('data', (b)=>{ try { wnd.webContents.send(channel, { type:'stderr', data: b.toString() }) } catch {} })
-    child.on('close', (code)=>{ try { fs.existsSync(credFile) && fs.unlinkSync(credFile) } catch {}; try { wnd.webContents.send(channel, { type:'exit', code }) } catch {} })
-    return { runKey, pid: child.pid }
-  })
 
   ipcMain.handle('admin:runHLFlowWithLeadId', async (e, payload: any) => {
     const wnd = BrowserWindow.fromWebContents(e.sender)
     if (!wnd) throw new Error('Fenêtre introuvable')
-    const { flowFile, leadId, platform, mode, keepOpen } = payload || {}
-    if (!flowFile || !leadId) throw new Error('flowFile et leadId requis')
+    const { flowFile, leadId, platform, mode } = payload || {}
+    if (!flowFile || !leadId || !platform) throw new Error('flowFile, leadId et platform requis')
 
-    // 1. Charger le lead depuis la DB
-    const leadsService = new LeadsService()
-    const lead = await leadsService.getCleanLead(leadId)
-    if (!lead) throw new Error(`Lead introuvable: ${leadId}`)
-
-    // 2. Créer un fichier temporaire avec les données du lead
-    const tmpDir = path.join(root, 'admin', 'tmp')
-    try { fs.mkdirSync(tmpDir, { recursive: true }) } catch {}
-    const tmpLeadFile = path.join(tmpDir, `lead-${Date.now()}-${Math.random().toString(36).slice(2,8)}.json`)
-    fs.writeFileSync(tmpLeadFile, JSON.stringify(lead.data, null, 2), 'utf-8')
-
-    // 3. Vérifier field-definitions
-    const fieldsFile = path.join(root, 'admin', 'field-definitions', `${platform}.json`)
-    if (!fs.existsSync(fieldsFile)) {
-      try { fs.unlinkSync(tmpLeadFile) } catch {}
-      throw new Error('field-definitions introuvable pour '+platform)
-    }
-
-    // 4. Lancer le CLI avec le fichier temporaire
-    const electronBin = process.execPath
-    const script = path.join(root, 'admin', 'cli', 'run.mjs')
-    const args = [ script, platform, flowFile, '--lead', tmpLeadFile ]
-    if (mode === 'headless') { args.push('--headless') }
-
-    // 5. Résoudre credentials
+    // Résoudre credentials depuis la DB
     const db = getDb()
     const row = db.prepare('SELECT id FROM platforms_catalog WHERE slug = ?').get(platform) as { id?: number } | undefined
     if (!row?.id) {
-      try { fs.unlinkSync(tmpLeadFile) } catch {}
       throw new Error('Plateforme introuvable: ' + platform)
     }
     const usernameRow = db.prepare('SELECT username FROM platform_credentials WHERE platform_id = ?').get(row.id) as { username?: string } | undefined
     const username = usernameRow?.username || ''
     const password = revealPassword(row.id)
 
-    const credFile = path.join(tmpDir, `creds-${Date.now()}-${Math.random().toString(36).slice(2,8)}.json`)
-    fs.writeFileSync(credFile, JSON.stringify({ username, password }), 'utf-8')
+    // Lancer le CLI avec credentials via env vars (pas de fichier temporaire)
+    const electronBin = process.execPath
+    const script = path.join(root, 'admin', 'cli', 'run.mjs')
+    const args = [ script, flowFile, '--lead-id', leadId ]
+    if (mode === 'headless') { args.push('--headless') }
 
-    const env = { ...process.env, ELECTRON_RUN_AS_NODE: '1', ADMIN_CRED_FILE: credFile }
+    // Passer credentials via variables d'environnement (PLATFORM_USERNAME/PASSWORD)
+    const platformUpper = platform.toUpperCase().replace(/[^A-Z0-9]/g, '_')
+    const env = {
+      ...process.env,
+      ELECTRON_RUN_AS_NODE: '1',
+      [`${platformUpper}_USERNAME`]: username,
+      [`${platformUpper}_PASSWORD`]: password
+    }
+
     const child = spawn(electronBin, args, { cwd: root, env })
     const runKey = `${path.basename(flowFile)}-${Date.now()}-${child.pid}`
     const channel = `admin:runOutput:${runKey}`
@@ -233,9 +161,6 @@ export function registerAdminCliIpc() {
     child.stdout.on('data', (b)=>{ try { wnd.webContents.send(channel, { type:'stdout', data: b.toString() }) } catch {} })
     child.stderr.on('data', (b)=>{ try { wnd.webContents.send(channel, { type:'stderr', data: b.toString() }) } catch {} })
     child.on('close', (code)=>{
-      // Nettoyer les fichiers temporaires
-      try { fs.existsSync(tmpLeadFile) && fs.unlinkSync(tmpLeadFile) } catch {}
-      try { fs.existsSync(credFile) && fs.unlinkSync(credFile) } catch {}
       try { wnd.webContents.send(channel, { type:'exit', code }) } catch {}
     })
 
