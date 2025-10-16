@@ -53,6 +53,9 @@ export class PlatformLeadsService {
       // 2) Charger field-definitions pour connaître les champs requis / mapping key ↔ domainKey
       const fieldDefinitions = this.loadFieldDefinitions(platform.fieldDefinitionsJson)
 
+      // 3) Charger value mappings pour transformation plateforme
+      const valueMappings = this.loadValueMappings(platform.valueMappingsJson)
+
       // 3) Récupérer les données manuelles depuis le lead
       //    - Supporter 2 formats existants:
       //      a) lead.data.platformData[slug] : objet par plateforme
@@ -124,9 +127,17 @@ export class PlatformLeadsService {
       // 5) Construire le payload plateforme à partir EXCLUSIVEMENT des données manuelles
       const out: Record<string, any> = {}
       for (const { key, value } of valuesForOutput) {
-        // Pas d’ajout de valeurs par défaut, pas de champs calculés: on pose tel quel.
+        // Appliquer value mapping si configuré pour ce champ
+        let mappedValue = value
+        if (valueMappings && valueMappings[key]) {
+          const mapping = valueMappings[key]
+          const stringValue = String(value)
+          mappedValue = mapping[stringValue] ?? value
+        }
+
+        // Pas d'ajout de valeurs par défaut, pas de champs calculés: on pose tel quel.
         // On formate juste en string pour compat navigateur lorsque valeur non‑string.
-        const finalValue = typeof value === 'string' ? value : (value === null || value === undefined ? value : String(value))
+        const finalValue = typeof mappedValue === 'string' ? mappedValue : (mappedValue === null || mappedValue === undefined ? mappedValue : String(mappedValue))
         this.setNestedValue(out, key, finalValue)
       }
 

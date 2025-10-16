@@ -5,7 +5,7 @@ import path from 'node:path'
 import os from 'node:os'
 import { chromium } from 'playwright-core'
 
-export async function runHighLevelFlow({ fieldsFile, flowFile, leadFile, username, password, outRoot='admin/runs-cli', mode='dev_private', chrome=null, report='html', consoleLog=false, networkLog=false, har=false, video=false, dom='errors', jsinfo='errors', a11y=false, keepOpen=true, redact='(password|token|authorization|cookie)=([^;\\s]+)' }) {
+export async function runHighLevelFlow({ fieldsFile, flowFile, leadFile, username, password, outRoot='admin/runs-cli', mode='dev_private', chrome=null, video=false, dom='errors', a11y=false, keepOpen=true }) {
   const fields = JSON.parse(fs.readFileSync(fieldsFile, 'utf-8'))
   const flow = JSON.parse(fs.readFileSync(flowFile, 'utf-8'))
   const lead = leadFile ? JSON.parse(fs.readFileSync(leadFile, 'utf-8')) : {}
@@ -21,11 +21,9 @@ export async function runHighLevelFlow({ fieldsFile, flowFile, leadFile, usernam
   const progressFile = path.join(runDir, 'progress.ndjson')
   const screenshotsDir = path.join(runDir, 'screenshots')
   const domDir = path.join(runDir, 'dom')
-  const jsDir = path.join(runDir, 'js')
-  const networkDir = path.join(runDir, 'network')
   const traceDir = path.join(runDir, 'trace')
   const videoDir = path.join(runDir, 'video')
-  ensureDir(screenshotsDir); ensureDir(networkDir); ensureDir(domDir); ensureDir(jsDir)
+  ensureDir(screenshotsDir); ensureDir(domDir)
 
   const emit = (evt) => { const rec = { ts:new Date().toISOString(), ...evt }; appendText(progressFile, JSON.stringify(rec)+'\n'); console.log('[run]', evt.type, evt.status||'', evt.message||'') }
 
@@ -40,20 +38,19 @@ export async function runHighLevelFlow({ fieldsFile, flowFile, leadFile, usernam
   // Credentials provided by caller (.env or CLI flags)
   if (!username || !password) throw new Error('Identifiants manquants - utilisez .env (PLATFORM_USERNAME/PASSWORD ou FLOW_USERNAME/PASSWORD) ou --username/--password')
 
-  const meta = { run:{ id:runId, slug, platform, startedAt:new Date().toISOString(), mode, chrome: chromePath, profileDir:null }, env:{ os:`${os.platform()} ${os.release()}`, node: process.versions.node }, options: { outRoot, mode, report } }
+  const meta = { run:{ id:runId, slug, platform, startedAt:new Date().toISOString(), mode, chrome: chromePath, profileDir:null }, env:{ os:`${os.platform()} ${os.release()}`, node: process.versions.node }, options: { outRoot, mode } }
 
-  const ctx = { redact, platform, fields, lead, username, password }
+  const ctx = { platform, fields, lead, username, password }
 
   const headless = !(mode === 'dev' || mode === 'dev_private')
   let browser = null, context = null, page = null, tracingStarted = false
   try {
     if (mode === 'dev' || mode === 'dev_private') {
-      const launchOpts = { headless: false }
+      const launchOpts = { headless: false, args: ['--incognito'] }
       if (chromePath) launchOpts.executablePath = chromePath
       if (useChannel) launchOpts.channel = useChannel
       browser = await chromium.launch(launchOpts)
       const ctxOpts = {}
-      if (har) ctxOpts.recordHar = { path: path.join(networkDir,'har.har'), content:'embed' }
       if (video) ctxOpts.recordVideo = { dir: videoDir }
       context = await browser.newContext(ctxOpts)
     } else {
@@ -62,7 +59,6 @@ export async function runHighLevelFlow({ fieldsFile, flowFile, leadFile, usernam
       if (useChannel) launchOpts.channel = useChannel
       browser = await chromium.launch(launchOpts)
       const ctxOpts = {}
-      if (har) ctxOpts.recordHar = { path: path.join(networkDir,'har.har'), content:'embed' }
       if (video) ctxOpts.recordVideo = { dir: videoDir }
       context = await browser.newContext(ctxOpts)
     }
@@ -77,16 +73,6 @@ export async function runHighLevelFlow({ fieldsFile, flowFile, leadFile, usernam
     // Support iframes: stack de contextes (page principale, puis frames)
     const contextStack = [page]
     const getCurrentContext = () => contextStack[contextStack.length - 1]
-
-    if (consoleLog) {
-      page.on('console', (msg) => { appendText(path.join(networkDir,'console.jsonl'), JSON.stringify({ type:'console', level: msg.type(), text: redactText(msg.text(), redact) })+'\n') })
-      page.on('pageerror', (err) => { appendText(path.join(networkDir,'console.jsonl'), JSON.stringify({ type:'pageerror', message: String(err?.message||err) })+'\n') })
-    }
-    if (networkLog) {
-      page.on('request', (r) => appendText(path.join(networkDir,'requests.jsonl'), JSON.stringify({ type:'request', method:r.method(), url:r.url(), postData:r.postData()?.slice(0,2048)||null, resourceType:r.resourceType() })+'\n'))
-      page.on('response', async (res) => { try { const ct = res.headers()['content-type']||''; let body=null; if (/json|text|javascript|xml/.test(ct) && res.request().method()!=='OPTIONS'){ const t = await res.text(); body = t.length>50000 ? t.slice(0,50000)+'\n/* truncated */' : t } appendText(path.join(networkDir,'responses.jsonl'), JSON.stringify({ type:'response', url:res.url(), status:res.status(), contentType:ct, body })+'\n') } catch {} })
-      page.on('requestfailed', (r) => appendText(path.join(networkDir,'requests.jsonl'), JSON.stringify({ type:'requestfailed', url:r.url(), method:r.method(), failure:r.failure()?.errorText||null })+'\n'))
-    }
 
     if (flow.trace === 'on' || flow.trace === 'retain-on-failure') { await context.tracing.start({ screenshots:true, snapshots:true, sources:true }); tracingStarted = true }
 
@@ -107,6 +93,16 @@ export async function runHighLevelFlow({ fieldsFile, flowFile, leadFile, usernam
         }
       }
 
+      // Support pour skipIf: sauter le step si la condition complexe est vraie
+      if (s.skipIf) {
+        const shouldSkip = evaluateSkipIfCondition(s.skipIf, ctx)
+        if (shouldSkip) {
+          console.log('[hl] step %d SKIPPED (skipIf condition matched)', i)
+          stepsSummary.push({ index:i, type:s.type, ok:true, skipped:true, reason:'skipIf', ms: 0 })
+          continue
+        }
+      }
+
       emit({ type:s.type, status:'start', stepIndex:i, message: describeHL(s) })
       const t0 = Date.now()
       const shotName = `step-${String(i+1).padStart(2,'0')}-${slugify(label)}.png`
@@ -115,7 +111,7 @@ export async function runHighLevelFlow({ fieldsFile, flowFile, leadFile, usernam
         await ensurePage();
         await execHLStep(page, s, ctx, contextStack, getCurrentContext)
         await safeScreenshot(page, shotPath)
-        await maybeCollect(stepCollectors(page, getCurrentContext(), i, s, { domDir, jsDir, a11y, domMode: dom, jsMode: jsinfo, ctx }))
+        await maybeCollectDom(getCurrentContext(), i, s, domDir, dom, a11y, false)
         emit({ type:s.type, status:'success', stepIndex:i, screenshotPath: path.relative(runDir, shotPath) })
         stepsSummary.push({ index:i, type:s.type, ok:true, ms: Date.now()-t0, screenshot:`screenshots/${shotName}` })
       } catch (err) {
@@ -123,7 +119,7 @@ export async function runHighLevelFlow({ fieldsFile, flowFile, leadFile, usernam
         const errName = `error-${String(i+1).padStart(2,'0')}.png`
         const errPath = path.join(screenshotsDir, errName)
         try { await ensurePage(); await safeScreenshot(page, errPath) } catch {}
-        await maybeCollect(stepCollectors(page, getCurrentContext(), i, s, { domDir, jsDir, a11y, domMode: dom, jsMode: jsinfo, onError: true, ctx }))
+        await maybeCollectDom(getCurrentContext(), i, s, domDir, dom, a11y, true)
         emit({ type:s.type, status:'error', stepIndex:i, message: msg, screenshotPath: path.relative(runDir, errPath) })
         stepsSummary.push({ index:i, type:s.type, ok:false, error: msg, screenshot:`screenshots/${errName}` })
         break
@@ -131,9 +127,8 @@ export async function runHighLevelFlow({ fieldsFile, flowFile, leadFile, usernam
     }
 
     meta.run.finishedAt = new Date().toISOString()
-    const manifest = { ...meta, steps: stepsSummary, artifacts: { screenshotsDir:'screenshots', trace: tracingStarted ? 'trace/trace.zip' : null, har: har ? 'network/har.har' : null, video: video ? 'video' : null, progress:'progress.ndjson' } }
+    const manifest = { ...meta, steps: stepsSummary, artifacts: { screenshotsDir:'screenshots', trace: tracingStarted ? 'trace/trace.zip' : null, video: video ? 'video' : null, progress:'progress.ndjson' } }
     writeJson(path.join(runDir,'index.json'), manifest)
-    writeText(path.join(runDir,'report.html'), renderReportHtml(manifest))
     if (tracingStarted) { ensureDir(traceDir); await context.tracing.stop({ path: path.join(traceDir,'trace.zip') }) }
     if (!keepOpen) {
       try { await context?.close() } catch {}
@@ -587,6 +582,65 @@ function resolveValue(step, ctx) {
   return undefined
 }
 
+/**
+ * Evaluate skipIf condition to determine if a step should be skipped
+ * Supports: or, and, isEmpty, oneOf, equals, notEquals, greaterThan, lessThan
+ * @param {Object} condition - The skipIf condition object
+ * @param {Object} ctx - Context containing lead data
+ * @returns {boolean} - true if step should be skipped
+ */
+function evaluateSkipIfCondition(condition, ctx) {
+  if (!condition || typeof condition !== 'object') return false
+
+  // Handle logical operators: or / and
+  if (condition.or && Array.isArray(condition.or)) {
+    return condition.or.some(subCondition => evaluateSkipIfCondition(subCondition, ctx))
+  }
+
+  if (condition.and && Array.isArray(condition.and)) {
+    return condition.and.every(subCondition => evaluateSkipIfCondition(subCondition, ctx))
+  }
+
+  // Handle field-based conditions
+  if (condition.field) {
+    const fieldValue = getByPath(ctx.lead, condition.field)
+
+    // isEmpty check
+    if ('isEmpty' in condition) {
+      const isEmpty = fieldValue === undefined || fieldValue === null || fieldValue === '' ||
+                     (Array.isArray(fieldValue) && fieldValue.length === 0)
+      return condition.isEmpty === true ? isEmpty : !isEmpty
+    }
+
+    // oneOf check (value in array)
+    if (condition.oneOf && Array.isArray(condition.oneOf)) {
+      return condition.oneOf.includes(fieldValue)
+    }
+
+    // equals check
+    if ('equals' in condition) {
+      return fieldValue === condition.equals
+    }
+
+    // notEquals check
+    if ('notEquals' in condition) {
+      return fieldValue !== condition.notEquals
+    }
+
+    // greaterThan check
+    if ('greaterThan' in condition) {
+      return typeof fieldValue === 'number' && fieldValue > condition.greaterThan
+    }
+
+    // lessThan check
+    if ('lessThan' in condition) {
+      return typeof fieldValue === 'number' && fieldValue < condition.lessThan
+    }
+  }
+
+  return false
+}
+
 function parseValueTemplates(value, ctx) {
   if (!value || typeof value !== 'string') return value
 
@@ -692,7 +746,6 @@ function withDynamicIndex(fieldDef, i){
 
   return clone
 }
-function redactText(s, r){ try { return s.replace(new RegExp(r,'gi'), '$1=***') } catch { return s } }
 function buildOptionSelectorFromTemplate(template, value){
   const strValue = String(value)
   return template
@@ -731,55 +784,16 @@ function detectChromePathCandidates(){
 function detectChromePathFallback(){ for (const p of detectChromePathCandidates()) { try { if (fs.existsSync(p)) return p } catch {} } return undefined }
 function slugify(s){ return String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'') }
 
-async function maybeCollect(p){
-  if (!p) return
+async function maybeCollectDom(activeContext, index, step, domDir, domMode, a11y, onError) {
+  const should = (v) => { if (!v || v==='none') return false; if (v==='all') return true; if (v==='steps' && !onError) return true; if (v==='errors' && onError) return true; return false }
+  if (!should(domMode)) return
   try {
-    await p
+    await collectDom(activeContext, index, step, domDir)
+    if (a11y) await collectA11y(activeContext, index, domDir)
   } catch (err) {
-    console.error('[maybeCollect] Erreur lors de la capture:', err.message)
+    console.error('[maybeCollectDom] Erreur lors de la capture:', err.message)
   }
 }
-function wants(_mode, onError){ return v => { if (!v || v==='none') return false; if (v==='all') return true; if (v==='steps' && !onError) return true; if (v==='errors' && onError) return true; return false } }
-function stepCollectors(page, activeContext, index, step, { domDir, jsDir, a11y, domMode, jsMode, onError=false, ctx }){
-  const should = wants(null, onError)
-  const tasks = []
-  if (should(domMode)) tasks.push(collectDom(activeContext, index, step, domDir))
-  if (a11y && should(domMode)) tasks.push(collectA11y(activeContext, index, domDir))
-
-  // Résoudre le selector depuis field-definitions si nécessaire
-  let selectorForJS = step.selector
-  if (!selectorForJS && step.field && ctx?.fields) {
-    try {
-      let field = getField(ctx.fields, step.field)
-
-      // Gérer les dynamic fields avec {i}
-      const dynamicIdx = extractDynamicIndex(step)
-      if (dynamicIdx != null && field?.metadata?.dynamicIndex) {
-        field = withDynamicIndex(field, dynamicIdx)
-        console.log(`[stepCollectors] Dynamic field '${step.field}' résolu avec index ${dynamicIdx}`)
-      }
-
-      selectorForJS = field?.selector
-      if (!selectorForJS) {
-        console.warn(`[stepCollectors] Pas de selector pour field '${step.field}' au step ${index+1}`)
-      }
-    } catch (err) {
-      console.warn(`[stepCollectors] Erreur résolution field '${step.field}':`, err.message)
-    }
-  }
-
-  if (should(jsMode) && selectorForJS) {
-    tasks.push(collectJsListeners(page, activeContext, index, step, selectorForJS, jsDir))
-  }
-
-  return Promise.allSettled(tasks)
-}
-
-function renderReportHtml(manifest){
-  const data = JSON.stringify(manifest)
-  return "<!doctype html>"+"<html lang=\"fr\"><head>"+"<meta charset=\"utf-8\"/>"+"<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"/>"+"<title>Run "+escapeHtml(manifest.run?.id||'')+"</title>"+"<style>body{font-family:system-ui,Segoe UI,Arial,sans-serif;margin:20px;background:#0b0c10;color:#e6e6e6}.h{display:flex;gap:12px;align-items:center}.tag{padding:2px 6px;border-radius:4px;background:#1f2833;color:#66fcf1;font-size:12px}table{border-collapse:collapse;width:100%;margin-top:16px}th,td{border-bottom:1px solid #2b2f36;padding:8px;text-align:left;font-size:14px}tr:hover{background:#13161c}img{max-width:320px;border:1px solid #2b2f36;border-radius:4px}.ok{color:#7CFC00}.err{color:#ff6b6b}.small{opacity:.7;font-size:12px}.mono{font-family:ui-monospace,Consolas,monospace}</style></head><body>"+"<div class=\"h\">"+"<h1 style=\"margin:0\">Flow: "+escapeHtml(manifest.run?.slug||'')+"</h1>"+"<span class=\"tag\">"+escapeHtml(manifest.run?.mode||'')+"</span>"+"<span class=\"small\">Chrome: <span class=\"mono\">"+escapeHtml(manifest.run?.chrome||'')+"</span></span>"+"<span class=\"small\">Début: "+escapeHtml(manifest.run?.startedAt||'')+"</span>"+"<span class=\"small\">Fin: "+escapeHtml(manifest.run?.finishedAt||'')+"</span>"+"<a class=\"small\" href=\"index.json\" target=\"_blank\">index.json</a>"+(manifest.artifacts?.trace?"<a class=\"small\" href=\"trace/trace.zip\">trace.zip</a>":"")+(manifest.artifacts?.har?"<a class=\"small\" href=\"network/har.har\">har.har</a>":"")+"</div>"+"<table><thead><tr><th>#</th><th>Type</th><th>Statut</th><th>Durée</th><th>Capture</th><th>Liens</th></tr></thead>"+"<tbody id=\"rows\"></tbody></table>"+"<script>\nconst data = "+data+";\nconst tbody = document.getElementById('rows');\nfor (const s of (data.steps||[])) {\n  const tr = document.createElement('tr');\n  tr.innerHTML = '<td>'+ (s.index+1) +'</td>' + '<td>'+ s.type +'</td>' + '<td class=\\\"' + (s.ok?'ok':'err') + '\\\">' + (s.ok?'OK':'ERREUR') + '</td>' + '<td>'+ (s.ms||'') +' ms</td>' + '<td>' + (s.screenshot?'<img src=\\\"'+s.screenshot+'\\\"/>':'') + '</td>' + '<td class=\\\"small\\\">' + linkIf('DOM','dom/step-'+pad(s.index+1)+'.html') + ' ' + linkIf('FOCUS','dom/step-'+pad(s.index+1)+'.focus.html') + ' ' + linkIf('LISTENERS','js/step-'+pad(s.index+1)+'.listeners.json') + '</td>';\n  tbody.appendChild(tr);\n}\nfunction pad(n){return String(n).padStart(2,'0')}\nfunction linkIf(label, href){return '<a href=\\\"'+href+'\\\" target=\\\"_blank\\\">'+label+'</a>'}\n</script>"+"</body></html>"
-}
-function escapeHtml(s){ return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c])) }
 
 async function collectDom(activeContext, index, step, domDir){
   try {
@@ -809,142 +823,6 @@ async function collectA11y(activeContext, index, domDir){
     const snap = await activeContext.accessibility.snapshot({ interestingOnly:false })
     writeJson(path.join(domDir, `step-${String(index+1).padStart(2,'0')}.a11y.json`), snap)
   } catch {}
-}
-
-async function collectJsListeners(page, activeContext, index, step, selector, jsDir){
-  try {
-    console.log(`[collectJsListeners] Step ${index+1}: Début capture pour selector: "${selector}"`)
-
-    // Fallback lisible pour les frames (pas de CDP)
-    if (!activeContext.context) {
-      try {
-        // Certaines syntaxes Playwright (text=, :has-text()) ne sont pas supportées par querySelector.
-        if (/(:has-text\(|^text=|>>)/.test(selector)) {
-          const filePath = path.join(jsDir, `step-${String(index+1).padStart(2,'0')}.listeners.json`)
-          const output = { metadata: { stepIndex:index, stepType: step.type, stepLabel: step.label||null, stepField: step.field||null, selector, timestamp:new Date().toISOString(), frameContext:true, skipped:'unsupported-selector-for-frame-fallback' }, listeners:{} }
-          writeJson(filePath, output)
-          console.log(`[collectJsListeners] Step ${index+1}: Fallback (frame) ignoré – sélecteur non supporté par querySelector`)
-          return
-        }
-        const data = await activeContext.evaluate((sel) => {
-          const el = document.querySelector(sel)
-          if (!el) return { found:false }
-          const evts = ['click','change','input','blur','focus','submit','keydown','keyup','keypress']
-          const handlers = {}
-          for (const e of evts) {
-            const h = el[`on${e}`]
-            handlers[e] = h ? (typeof h === 'function' ? 'function' : typeof h) : null
-          }
-          return {
-            found: true,
-            tag: el.tagName,
-            id: el.id || null,
-            class: el.className || null,
-            hasInlineHandlers: Object.values(handlers).some(Boolean),
-            handlers
-          }
-        }, selector)
-        const output = {
-          metadata: {
-            stepIndex: index,
-            stepType: step.type,
-            stepLabel: step.label || null,
-            stepField: step.field || null,
-            selector,
-            timestamp: new Date().toISOString(),
-            frameContext: true
-          },
-          listeners: data?.found ? data.handlers : {}
-        }
-        const filePath = path.join(jsDir, `step-${String(index+1).padStart(2,'0')}.listeners.json`)
-        writeJson(filePath, output)
-        console.log(`[collectJsListeners] Step ${index+1}: Fallback (frame) écrit: ${filePath}`)
-      } catch (e) {
-        console.warn(`[collectJsListeners] Step ${index+1}: Fallback frame KO:`, e?.message || e)
-      }
-      return
-    }
-
-    const client = await page.context().newCDPSession(page)
-    console.log(`[collectJsListeners] Step ${index+1}: CDP session créée`)
-
-    await client.send('DOM.enable')
-    await client.send('Debugger.enable')
-
-    const evalRes = await client.send('Runtime.evaluate', {
-      expression: `document.querySelector(${JSON.stringify(selector)})`,
-      includeCommandLineAPI:true,
-      returnByValue:false
-    })
-
-    const objId = evalRes.result.objectId
-    if (!objId) {
-      console.warn(`[collectJsListeners] Step ${index+1}: Élément non trouvé pour selector "${selector}"`)
-      return
-    }
-
-    console.log(`[collectJsListeners] Step ${index+1}: Élément trouvé, objId=${objId}`)
-
-    const evts = await client.send('DOMDebugger.getEventListeners', {
-      objectId: objId,
-      depth:-1,
-      pierce:true
-    })
-
-    const listeners = evts.listeners||[]
-    console.log(`[collectJsListeners] Step ${index+1}: ${listeners.length} listener(s) trouvé(s)`)
-
-    const listenersData = []
-    for (const l of listeners){
-      const info = {
-        type:l.type,
-        useCapture:l.useCapture,
-        passive:l.passive,
-        once:l.once,
-        scriptId:l.scriptId,
-        lineNumber:l.lineNumber,
-        columnNumber:l.columnNumber
-      }
-
-      try {
-        if (l.scriptId){
-          const src = await client.send('Debugger.getScriptSource', { scriptId:l.scriptId })
-          const dir = path.join(jsDir,'scripts')
-          const name = `script-${l.scriptId}.js`
-          writeText(path.join(dir,name), src.scriptSource||'')
-          info.scriptFile = `js/scripts/${name}`
-        }
-      } catch (scriptErr) {
-        console.warn(`[collectJsListeners] Step ${index+1}: Erreur récupération script ${l.scriptId}:`, scriptErr.message)
-      }
-
-      listenersData.push(info)
-    }
-
-    // Créer objet avec metadata + listeners
-    const output = {
-      metadata: {
-        stepIndex: index,
-        stepType: step.type,
-        stepLabel: step.label || null,
-        stepField: step.field || null,
-        selector: selector,
-        timestamp: new Date().toISOString(),
-        objectId: objId,
-        listenersCount: listeners.length
-      },
-      listeners: listenersData
-    }
-
-    const filePath = path.join(jsDir, `step-${String(index+1).padStart(2,'0')}.listeners.json`)
-    writeJson(filePath, output)
-    console.log(`[collectJsListeners] Step ${index+1}: Fichier écrit: ${filePath}`)
-
-  } catch (err) {
-    console.error(`[collectJsListeners] Step ${index+1} ERREUR:`, err.message)
-    console.error(`[collectJsListeners] Selector était: "${selector}"`)
-    if (err.stack) console.error(err.stack)
-  }
 }
 
 export function describeHL(s){

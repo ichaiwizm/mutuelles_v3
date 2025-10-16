@@ -31,7 +31,10 @@
       "Bash(dos2unix:*)",
       "Bash(npm run:*)",
       "Bash(timeout 10 npm run db:reset:*)",
-      "Bash(ajv validate:*)"
+      "Bash(ajv validate:*)",
+      "Bash(git config:*)",
+      "Bash(jq:*)",
+      "Bash(do echo \"=== $f ===\")"
     ],
     "deny": [],
     "ask": []

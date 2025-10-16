@@ -66,7 +66,7 @@ export async function runFlow(flowSlug: string, onProgress: (e: ProgressEvent) =
     const keepOpen = (opts?.mode === 'dev' || opts?.mode === 'dev_private')
     if (opts?.mode === 'dev_private') {
       // Navigation privée: contexte non persistant (aucun cache/cookies conservés)
-      browser = await chromium.launch({ headless, executablePath: chrome })
+      browser = await chromium.launch({ headless, executablePath: chrome, args: ['--incognito'] })
       context = await browser.newContext()
     } else {
       // Modes par défaut: profil persistant (dev) ou headless avec le même profil pour garder l'environnement

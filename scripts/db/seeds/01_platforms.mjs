@@ -84,6 +84,28 @@ export default {
             }
           }
 
+          // Prepare value mappings for platform
+          let valueMappingsJson = null
+          if (platform.slug === 'swisslifeone') {
+            // SwissLife specific value mappings
+            const valueMappings = {
+              // Map ayantDroit field values from domain (1/2) to platform (CLIENT/CONJOINT)
+              'slsis_enfant_0_ayant_droit': { '1': 'CLIENT', '2': 'CONJOINT' },
+              'slsis_enfant_1_ayant_droit': { '1': 'CLIENT', '2': 'CONJOINT' },
+              'slsis_enfant_2_ayant_droit': { '1': 'CLIENT', '2': 'CONJOINT' },
+              'slsis_enfant_3_ayant_droit': { '1': 'CLIENT', '2': 'CONJOINT' },
+              'slsis_enfant_4_ayant_droit': { '1': 'CLIENT', '2': 'CONJOINT' },
+              'slsis_enfant_5_ayant_droit': { '1': 'CLIENT', '2': 'CONJOINT' },
+              'slsis_enfant_6_ayant_droit': { '1': 'CLIENT', '2': 'CONJOINT' },
+              'slsis_enfant_7_ayant_droit': { '1': 'CLIENT', '2': 'CONJOINT' },
+              'slsis_enfant_8_ayant_droit': { '1': 'CLIENT', '2': 'CONJOINT' },
+              'slsis_enfant_9_ayant_droit': { '1': 'CLIENT', '2': 'CONJOINT' },
+              'slsis_enfant_10_ayant_droit': { '1': 'CLIENT', '2': 'CONJOINT' }
+            }
+            valueMappingsJson = JSON.stringify(valueMappings)
+            console.log(`       Added value mappings for ${platform.slug}`)
+          }
+
           // Insert platform with selected=1 (selected by default)
           insertPlatform.run(
             platform.slug,
@@ -94,7 +116,7 @@ export default {
             1, // selected = true
             fieldDefinitionsJson,
             uiFormJson,
-            null // value_mappings_json (not used yet)
+            valueMappingsJson
           )
 
           totalInserted++

@@ -481,7 +481,13 @@
           "options": [
             { "value": "1", "label": "Assuré principal" },
             { "value": "2", "label": "Conjoint" }
-          ]
+          ],
+          "valueMappings": {
+            "swisslifeone": {
+              "1": "CLIENT",
+              "2": "CONJOINT"
+            }
+          }
         }
       }
     }

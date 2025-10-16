@@ -59,7 +59,7 @@
     { "type": "selectField", "domainField": "subscriber.departmentCode", "value": "{lead.subscriber.departmentCode}", "label": "select-departement", "method": "jquery", "triggerEvents": ["change"] },
     { "type": "selectField", "domainField": "subscriber.regime", "value": "{lead.subscriber.regime}", "label": "select-regime", "method": "jquery", "triggerEvents": ["change"] },
     { "type": "selectField", "domainField": "subscriber.status", "value": "{lead.subscriber.status}", "label": "select-statut", "method": "jquery", "triggerEvents": ["change"], "postDelay_ms": 300 },
-    { "type": "selectField", "domainField": "subscriber.profession", "value": "{lead.subscriber.profession}", "label": "select-profession", "method": "jquery", "triggerEvents": ["change"], "skipIfNot": "subscriber.profession", "optional": true },
+    { "type": "selectField", "domainField": "subscriber.profession", "value": "{lead.subscriber.profession}", "label": "select-profession", "method": "jquery", "triggerEvents": ["change"], "skipIf": { "or": [{ "field": "subscriber.profession", "isEmpty": true }, { "field": "subscriber.status", "oneOf": ["SALARIE_AGRICOLE", "EXPLOITANT_AGRICOLE", "RETRAITE", "RETRAITE_ANCIEN_SALARIE", "RETRAITE_ANCIEN_EXPLOITANT"] }] }, "optional": true },
     { "type": "waitForNetworkIdle", "label": "network-after-identite", "timeout_ms": 5000 },
 
     { "type": "comment", "text": "=== ÉTAPE 6: DONNÉES CONJOINT (si présent) ===" },
@@ -70,7 +70,7 @@
     { "type": "fillField", "domainField": "spouse.birthDate", "value": "{lead.spouse.birthDate}", "label": "fill-conjoint-date-naissance", "method": "jquery", "triggerEvents": ["change"], "skipIfNot": "spouse", "optional": true },
     { "type": "selectField", "domainField": "spouse.regime", "value": "{lead.spouse.regime}", "label": "select-conjoint-regime", "method": "jquery", "triggerEvents": ["change"], "skipIfNot": "spouse", "optional": true },
     { "type": "selectField", "domainField": "spouse.status", "value": "{lead.spouse.status}", "label": "select-conjoint-statut", "method": "jquery", "triggerEvents": ["change"], "skipIfNot": "spouse.status", "optional": true },
-    { "type": "selectField", "domainField": "spouse.profession", "value": "{lead.spouse.profession}", "label": "select-conjoint-profession", "method": "jquery", "triggerEvents": ["change"], "skipIfNot": "spouse.profession", "optional": true },
+    { "type": "selectField", "domainField": "spouse.profession", "value": "{lead.spouse.profession}", "label": "select-conjoint-profession", "method": "jquery", "triggerEvents": ["change"], "skipIf": { "or": [{ "field": "spouse.profession", "isEmpty": true }, { "field": "spouse.status", "oneOf": ["SALARIE_AGRICOLE", "EXPLOITANT_AGRICOLE", "RETRAITE", "RETRAITE_ANCIEN_SALARIE", "RETRAITE_ANCIEN_EXPLOITANT"] }] }, "optional": true },
     { "type": "waitForNetworkIdle", "label": "network-after-conjoint", "skipIfNot": "spouse", "optional": true, "timeout_ms": 5000 },
 
     { "type": "comment", "text": "=== ÉTAPE 7: ENFANTS ===" },
