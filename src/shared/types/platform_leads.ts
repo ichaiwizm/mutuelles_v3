@@ -116,6 +116,11 @@ export interface FieldDefinition {
   defaultValue?: any
   validation?: FieldValidation
   metadata?: Record<string, any>
+  valueMappings?: {
+    [platformSlug: string]: {
+      [domainValue: string]: string
+    }
+  } // Mappings de valeurs par plateforme (ex: {"swisslifeone": {"1": "CLIENT"}})
 }
 
 // Validation d'un champ

@@ -33,7 +33,7 @@ export class PlatformLeadGenerator {
     const platformData: Record<string, any> = {}
 
     for (const fieldDef of fieldDefinitions.fields) {
-      const value = this.generateFieldValue(lead, fieldDef, valueMappings)
+      const value = this.generateFieldValue(lead, fieldDef, valueMappings, fieldDefinitions.platform)
 
       // Only include non-empty values
       if (!isEmpty(value)) {
@@ -53,12 +53,21 @@ export class PlatformLeadGenerator {
   private generateFieldValue(
     lead: CleanLead,
     fieldDef: FieldDefinition,
-    valueMappings?: PlatformValueMappings
+    valueMappings?: PlatformValueMappings,
+    platformSlug?: string
   ): any {
     // Get raw value from lead
     let value = getLeadValue(lead, fieldDef.domainKey)
 
-    // Apply value mapping if exists
+    // Apply domain-level value mappings first (from base.domain.json)
+    if (platformSlug && fieldDef.valueMappings?.[platformSlug]) {
+      const domainMapping = fieldDef.valueMappings[platformSlug]
+      if (domainMapping[String(value)] !== undefined) {
+        value = domainMapping[String(value)]
+      }
+    }
+
+    // Apply external value mapping if exists (backward compatibility)
     if (valueMappings && valueMappings[fieldDef.key]) {
       value = mapValue(value, valueMappings[fieldDef.key])
     }

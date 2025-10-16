@@ -5,7 +5,7 @@ import path from 'node:path'
 import os from 'node:os'
 import { chromium } from 'playwright-core'
 
-export async function runHighLevelFlow({ fieldsFile, flowFile, leadFile, username, password, outRoot='admin/runs-cli', mode='dev_private', chrome=null, video=false, dom='errors', a11y=false, keepOpen=true }) {
+export async function runHighLevelFlow({ fieldsFile, flowFile, leadFile, username, password, outRoot='admin/runs-cli', mode='dev_private', chrome=null, video=false, dom='errors', a11y=false, keepOpen=true, redact='(password|token|authorization|cookie)=([^;\\s]+)' }) {
   const fields = JSON.parse(fs.readFileSync(fieldsFile, 'utf-8'))
   const flow = JSON.parse(fs.readFileSync(flowFile, 'utf-8'))
   const lead = leadFile ? JSON.parse(fs.readFileSync(leadFile, 'utf-8')) : {}
@@ -40,7 +40,7 @@ export async function runHighLevelFlow({ fieldsFile, flowFile, leadFile, usernam
 
   const meta = { run:{ id:runId, slug, platform, startedAt:new Date().toISOString(), mode, chrome: chromePath, profileDir:null }, env:{ os:`${os.platform()} ${os.release()}`, node: process.versions.node }, options: { outRoot, mode } }
 
-  const ctx = { platform, fields, lead, username, password }
+  const ctx = { redact, platform, fields, lead, username, password }
 
   const headless = !(mode === 'dev' || mode === 'dev_private')
   let browser = null, context = null, page = null, tracingStarted = false
@@ -432,10 +432,10 @@ async function execHLStep(page, s, ctx, contextStack, getCurrentContext) {
       let f = resolveFieldDef(ctx, s)
       const idx = extractDynamicIndex(s)
       if (idx != null && f?.metadata?.dynamicIndex) f = withDynamicIndex(f, idx)
-      let value = resolveValue(s, ctx)
-      if (typeof value === 'string') {
-        value = parseValueTemplates(value, ctx)
-      }
+
+      // Use resolveValueWithMappings to apply field-level value mappings
+      let value = resolveValueWithMappings(s, ctx)
+
       // Support pour optional: si la valeur est manquante, skip silencieusement
       if (value === undefined || value === null) {
         if (s.optional === true) {
@@ -580,6 +580,37 @@ function resolveValue(step, ctx) {
   if (step.value !== undefined) return step.value
   if (typeof step.leadKey === 'string') return getByPath(ctx.lead, step.leadKey)
   return undefined
+}
+
+/**
+ * Resolve value with field-level value mappings applied
+ * Looks up the field definition and applies valueMappings if configured
+ */
+function resolveValueWithMappings(step, ctx) {
+  // Get the raw value first
+  let value = resolveValue(step, ctx)
+
+  // Parse templates in value if it's a string (for {lead.xxx} patterns)
+  if (typeof value === 'string') {
+    value = parseValueTemplates(value, ctx)
+  }
+
+  // Try to get field definition to check for valueMappings
+  try {
+    const fieldDef = resolveFieldDef(ctx, step)
+    if (fieldDef?.valueMappings && ctx.platform) {
+      const platformMappings = fieldDef.valueMappings[ctx.platform]
+      if (platformMappings && platformMappings[String(value)] !== undefined) {
+        const mappedValue = platformMappings[String(value)]
+        console.log('[hl] valueMapping applied: %s -> %s', value, mappedValue)
+        return mappedValue
+      }
+    }
+  } catch (err) {
+    // Field def not found or error resolving, continue with unmapped value
+  }
+
+  return value
 }
 
 /**
@@ -746,6 +777,7 @@ function withDynamicIndex(fieldDef, i){
 
   return clone
 }
+function redactText(s, r){ try { return s.replace(new RegExp(r,'gi'), '$1=***') } catch { return s } }
 function buildOptionSelectorFromTemplate(template, value){
   const strValue = String(value)
   return template
@@ -823,6 +855,142 @@ async function collectA11y(activeContext, index, domDir){
     const snap = await activeContext.accessibility.snapshot({ interestingOnly:false })
     writeJson(path.join(domDir, `step-${String(index+1).padStart(2,'0')}.a11y.json`), snap)
   } catch {}
+}
+
+async function collectJsListeners(page, activeContext, index, step, selector, jsDir){
+  try {
+    console.log(`[collectJsListeners] Step ${index+1}: Début capture pour selector: "${selector}"`)
+
+    // Fallback lisible pour les frames (pas de CDP)
+    if (!activeContext.context) {
+      try {
+        // Certaines syntaxes Playwright (text=, :has-text()) ne sont pas supportées par querySelector.
+        if (/(:has-text\(|^text=|>>)/.test(selector)) {
+          const filePath = path.join(jsDir, `step-${String(index+1).padStart(2,'0')}.listeners.json`)
+          const output = { metadata: { stepIndex:index, stepType: step.type, stepLabel: step.label||null, stepField: step.field||null, selector, timestamp:new Date().toISOString(), frameContext:true, skipped:'unsupported-selector-for-frame-fallback' }, listeners:{} }
+          writeJson(filePath, output)
+          console.log(`[collectJsListeners] Step ${index+1}: Fallback (frame) ignoré – sélecteur non supporté par querySelector`)
+          return
+        }
+        const data = await activeContext.evaluate((sel) => {
+          const el = document.querySelector(sel)
+          if (!el) return { found:false }
+          const evts = ['click','change','input','blur','focus','submit','keydown','keyup','keypress']
+          const handlers = {}
+          for (const e of evts) {
+            const h = el[`on${e}`]
+            handlers[e] = h ? (typeof h === 'function' ? 'function' : typeof h) : null
+          }
+          return {
+            found: true,
+            tag: el.tagName,
+            id: el.id || null,
+            class: el.className || null,
+            hasInlineHandlers: Object.values(handlers).some(Boolean),
+            handlers
+          }
+        }, selector)
+        const output = {
+          metadata: {
+            stepIndex: index,
+            stepType: step.type,
+            stepLabel: step.label || null,
+            stepField: step.field || null,
+            selector,
+            timestamp: new Date().toISOString(),
+            frameContext: true
+          },
+          listeners: data?.found ? data.handlers : {}
+        }
+        const filePath = path.join(jsDir, `step-${String(index+1).padStart(2,'0')}.listeners.json`)
+        writeJson(filePath, output)
+        console.log(`[collectJsListeners] Step ${index+1}: Fallback (frame) écrit: ${filePath}`)
+      } catch (e) {
+        console.warn(`[collectJsListeners] Step ${index+1}: Fallback frame KO:`, e?.message || e)
+      }
+      return
+    }
+
+    const client = await page.context().newCDPSession(page)
+    console.log(`[collectJsListeners] Step ${index+1}: CDP session créée`)
+
+    await client.send('DOM.enable')
+    await client.send('Debugger.enable')
+
+    const evalRes = await client.send('Runtime.evaluate', {
+      expression: `document.querySelector(${JSON.stringify(selector)})`,
+      includeCommandLineAPI:true,
+      returnByValue:false
+    })
+
+    const objId = evalRes.result.objectId
+    if (!objId) {
+      console.warn(`[collectJsListeners] Step ${index+1}: Élément non trouvé pour selector "${selector}"`)
+      return
+    }
+
+    console.log(`[collectJsListeners] Step ${index+1}: Élément trouvé, objId=${objId}`)
+
+    const evts = await client.send('DOMDebugger.getEventListeners', {
+      objectId: objId,
+      depth:-1,
+      pierce:true
+    })
+
+    const listeners = evts.listeners||[]
+    console.log(`[collectJsListeners] Step ${index+1}: ${listeners.length} listener(s) trouvé(s)`)
+
+    const listenersData = []
+    for (const l of listeners){
+      const info = {
+        type:l.type,
+        useCapture:l.useCapture,
+        passive:l.passive,
+        once:l.once,
+        scriptId:l.scriptId,
+        lineNumber:l.lineNumber,
+        columnNumber:l.columnNumber
+      }
+
+      try {
+        if (l.scriptId){
+          const src = await client.send('Debugger.getScriptSource', { scriptId:l.scriptId })
+          const dir = path.join(jsDir,'scripts')
+          const name = `script-${l.scriptId}.js`
+          writeText(path.join(dir,name), src.scriptSource||'')
+          info.scriptFile = `js/scripts/${name}`
+        }
+      } catch (scriptErr) {
+        console.warn(`[collectJsListeners] Step ${index+1}: Erreur récupération script ${l.scriptId}:`, scriptErr.message)
+      }
+
+      listenersData.push(info)
+    }
+
+    // Créer objet avec metadata + listeners
+    const output = {
+      metadata: {
+        stepIndex: index,
+        stepType: step.type,
+        stepLabel: step.label || null,
+        stepField: step.field || null,
+        selector: selector,
+        timestamp: new Date().toISOString(),
+        objectId: objId,
+        listenersCount: listeners.length
+      },
+      listeners: listenersData
+    }
+
+    const filePath = path.join(jsDir, `step-${String(index+1).padStart(2,'0')}.listeners.json`)
+    writeJson(filePath, output)
+    console.log(`[collectJsListeners] Step ${index+1}: Fichier écrit: ${filePath}`)
+
+  } catch (err) {
+    console.error(`[collectJsListeners] Step ${index+1} ERREUR:`, err.message)
+    console.error(`[collectJsListeners] Selector était: "${selector}"`)
+    if (err.stack) console.error(err.stack)
+  }
 }
 
 export function describeHL(s){

@@ -268,7 +268,13 @@
       "domainKey": "children[].ayantDroit",
       "type": "select",
       "label": "Ayant droit enfant 0",
-      "selector": "#enfants-0-idAyantDroit"
+      "selector": "#enfants-0-idAyantDroit",
+      "valueMappings": {
+        "swisslifeone": {
+          "1": "CLIENT",
+          "2": "CONJOINT"
+        }
+      }
     },
     {
       "key": "slsis_enfant_1_date_naissance",
@@ -282,7 +288,13 @@
       "domainKey": "children[].ayantDroit",
       "type": "select",
       "label": "Ayant droit enfant 1",
-      "selector": "#enfants-1-idAyantDroit"
+      "selector": "#enfants-1-idAyantDroit",
+      "valueMappings": {
+        "swisslifeone": {
+          "1": "CLIENT",
+          "2": "CONJOINT"
+        }
+      }
     },
     {
       "key": "slsis_enfant_2_date_naissance",
@@ -296,7 +308,13 @@
       "domainKey": "children[].ayantDroit",
       "type": "select",
       "label": "Ayant droit enfant 2",
-      "selector": "#enfants-2-idAyantDroit"
+      "selector": "#enfants-2-idAyantDroit",
+      "valueMappings": {
+        "swisslifeone": {
+          "1": "CLIENT",
+          "2": "CONJOINT"
+        }
+      }
     },
     {
       "key": "slsis_enfant_3_date_naissance",
@@ -310,7 +328,13 @@
       "domainKey": "children[].ayantDroit",
       "type": "select",
       "label": "Ayant droit enfant 3",
-      "selector": "#enfants-3-idAyantDroit"
+      "selector": "#enfants-3-idAyantDroit",
+      "valueMappings": {
+        "swisslifeone": {
+          "1": "CLIENT",
+          "2": "CONJOINT"
+        }
+      }
     },
     {
       "key": "slsis_enfant_4_date_naissance",
@@ -324,7 +348,13 @@
       "domainKey": "children[].ayantDroit",
       "type": "select",
       "label": "Ayant droit enfant 4",
-      "selector": "#enfants-4-idAyantDroit"
+      "selector": "#enfants-4-idAyantDroit",
+      "valueMappings": {
+        "swisslifeone": {
+          "1": "CLIENT",
+          "2": "CONJOINT"
+        }
+      }
     },
     {
       "key": "slsis_enfant_5_date_naissance",
@@ -338,7 +368,13 @@
       "domainKey": "children[].ayantDroit",
       "type": "select",
       "label": "Ayant droit enfant 5",
-      "selector": "#enfants-5-idAyantDroit"
+      "selector": "#enfants-5-idAyantDroit",
+      "valueMappings": {
+        "swisslifeone": {
+          "1": "CLIENT",
+          "2": "CONJOINT"
+        }
+      }
     },
     {
       "key": "slsis_enfant_6_date_naissance",
@@ -352,7 +388,13 @@
       "domainKey": "children[].ayantDroit",
       "type": "select",
       "label": "Ayant droit enfant 6",
-      "selector": "#enfants-6-idAyantDroit"
+      "selector": "#enfants-6-idAyantDroit",
+      "valueMappings": {
+        "swisslifeone": {
+          "1": "CLIENT",
+          "2": "CONJOINT"
+        }
+      }
     },
     {
       "key": "slsis_enfant_7_date_naissance",
@@ -366,7 +408,13 @@
       "domainKey": "children[].ayantDroit",
       "type": "select",
       "label": "Ayant droit enfant 7",
-      "selector": "#enfants-7-idAyantDroit"
+      "selector": "#enfants-7-idAyantDroit",
+      "valueMappings": {
+        "swisslifeone": {
+          "1": "CLIENT",
+          "2": "CONJOINT"
+        }
+      }
     },
     {
       "key": "slsis_enfant_8_date_naissance",
@@ -380,7 +428,13 @@
       "domainKey": "children[].ayantDroit",
       "type": "select",
       "label": "Ayant droit enfant 8",
-      "selector": "#enfants-8-idAyantDroit"
+      "selector": "#enfants-8-idAyantDroit",
+      "valueMappings": {
+        "swisslifeone": {
+          "1": "CLIENT",
+          "2": "CONJOINT"
+        }
+      }
     },
     {
       "key": "slsis_enfant_9_date_naissance",
@@ -394,7 +448,13 @@
       "domainKey": "children[].ayantDroit",
       "type": "select",
       "label": "Ayant droit enfant 9",
-      "selector": "#enfants-9-idAyantDroit"
+      "selector": "#enfants-9-idAyantDroit",
+      "valueMappings": {
+        "swisslifeone": {
+          "1": "CLIENT",
+          "2": "CONJOINT"
+        }
+      }
     },
     {
       "key": "slsis_enfant_10_date_naissance",
@@ -408,7 +468,13 @@
       "domainKey": "children[].ayantDroit",
       "type": "select",
       "label": "Ayant droit enfant 10",
-      "selector": "#enfants-10-idAyantDroit"
+      "selector": "#enfants-10-idAyantDroit",
+      "valueMappings": {
+        "swisslifeone": {
+          "1": "CLIENT",
+          "2": "CONJOINT"
+        }
+      }
     }
   ]
 }
