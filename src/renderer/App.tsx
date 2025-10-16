@@ -9,7 +9,7 @@ const nav = [
   { to: '/dashboard', label: 'Tableau de bord', icon: Home },
   { to: '/config', label: 'Configuration', icon: Settings },
   { to: '/leads', label: 'Leads', icon: Users },
-  { to: '/flows', label: 'Flux (Dev)', icon: KeyRound },
+  { to: '/flows', label: 'Automatisations', icon: KeyRound },
   { to: '/admin', label: 'Admin (JSON Flows)', icon: KeyRound },
 ]
 

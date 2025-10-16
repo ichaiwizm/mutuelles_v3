@@ -87,6 +87,19 @@ contextBridge.exposeInMainWorld('api', {
     search: (query: string) => ipcRenderer.invoke('leads:search', query) as Promise<{ success: boolean; data?: any; error?: string }>,
     deleteMany: (ids: string[]) => ipcRenderer.invoke('leads:deleteMany', ids) as Promise<{ success: boolean; data?: any; error?: string }>
   }
+  ,
+  scenarios: {
+    run: (payload: { scenarioId?: string; platformSlugs?: string[]; leadIds: string[]; options?: { mode?: 'headless'|'dev'|'dev_private'; concurrency?: number } }) =>
+      ipcRenderer.invoke('scenarios:run', payload) as Promise<{ runId: string }> ,
+    onProgress: (runId: string, cb: (e:any)=>void) => {
+      const ch = `scenarios:progress:${runId}`
+      const h = (_: any, data: any) => cb(data)
+      ipcRenderer.on(ch, h)
+      return () => ipcRenderer.removeListener(ch, h)
+    },
+    openPath: (p: string) => ipcRenderer.invoke('scenarios:openPath', p) as Promise<string>,
+    exists: (p: string) => ipcRenderer.invoke('scenarios:exists', p) as Promise<boolean>
+  }
 })
 
 declare global {

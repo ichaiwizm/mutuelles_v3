@@ -1,105 +1,138 @@
 import React from 'react'
 import Button from '../components/Button'
 import { useToastContext } from '../contexts/ToastContext'
-import RunHistory from '../components/RunHistory'
 
-type Flow = { id:number; slug:string; name:string; platform_id:number; platform:string; active:boolean }
-type Progress = { runId:string; stepIndex?:number; type:string; status:'start'|'success'|'error'|'info'; message?:string; screenshotPath?:string }
+type CatalogRow = { id:number; slug:string; name:string; selected:boolean; has_creds:boolean }
+type Lead = { id:string; data: { subscriber?: any } }
+type ItemEvt = { type:'run-start'|'item-start'|'item-success'|'item-error'|'run-done'; runId:string; itemId?:string; leadId?:string; platform?:string; message?:string; runDir?:string }
 
-export default function Flows() {
-  const [flows, setFlows] = React.useState<Flow[]>([])
-  const [running, setRunning] = React.useState<Record<string, { runId:string; logs:Progress[]; dir?:string }>>({})
-  const [historyTick, setHistoryTick] = React.useState(0)
+export default function Automations() {
   const toast = useToastContext()
+  const [platforms, setPlatforms] = React.useState<CatalogRow[]>([])
+  const [leads, setLeads] = React.useState<Lead[]>([])
+  const [selected, setSelected] = React.useState<Record<string, boolean>>({})
+  const [mode, setMode] = React.useState<'headless'|'dev'|'dev_private'>('headless')
+  const [concurrency, setConcurrency] = React.useState(2)
+  const [runId, setRunId] = React.useState<string>('')
+  const [events, setEvents] = React.useState<ItemEvt[]>([])
+  const [items, setItems] = React.useState<Record<string, { leadId:string; platform:string; status:'pending'|'running'|'success'|'error'; runDir?:string; msg?:string }>>({})
 
-  const load = React.useCallback(async () => {
-    try { setFlows(await window.api.automation.listFlows()) } catch (e) { console.error(e) }
-  }, [])
-  React.useEffect(() => { load() }, [load])
+  React.useEffect(() => { (async () => {
+    const plats = await window.api.catalog.list()
+    setPlatforms(plats.filter(p=>p.selected))
+    const res = await window.api.leads.list({}, { limit: 50 })
+    if (res.success) setLeads(res.data.items)
+  })() }, [])
 
-  async function start(flow: Flow) { return startWithMode(flow, 'headless') }
+  const selectedIds = React.useMemo(()=> Object.keys(selected).filter(k=>selected[k]), [selected])
 
-  async function startWithMode(flow: Flow, mode: 'headless'|'dev'|'dev_private') {
-    const tid = toast.loading(`Démarrage du flux ${flow.name}…`)
+  function toggleLead(id: string) { setSelected(prev => ({ ...prev, [id]: !prev[id] })) }
+
+  async function startRun() {
+    if (selectedIds.length === 0) { toast.error('Sélection requise', 'Choisissez au moins un lead'); return }
+    const tid = toast.loading('Démarrage du scénario…')
     try {
-      const { runId, screenshotsDir } = await window.api.automation.run({ flowSlug: flow.slug, mode })
-      const title = mode==='dev' ? 'Flux (Dev) en cours' : (mode==='dev_private' ? 'Flux (Dev Privé) en cours' : 'Flux en cours')
-      toast.update(tid, { type:'success', title, message: flow.name, duration: 2000 })
-      setRunning(prev => ({ ...prev, [flow.slug]: { runId, logs: [], dir: screenshotsDir } }))
-      const off = window.api.automation.onProgress(runId, (evt: Progress) => {
-        // Log de debug en mode Dev
-        if (evt.type === 'info') {
-          // eslint-disable-next-line no-console
-          console.debug('[automation]', evt.status, evt.message)
+      const payload = { leadIds: selectedIds, options: { mode, concurrency } }
+      const { runId } = await window.api.scenarios.run(payload)
+      setRunId(runId); setEvents([]); setItems({})
+      toast.update(tid, { type:'success', title:'Lancement en cours', duration: 1500 })
+      const off = window.api.scenarios.onProgress(runId, (e: ItemEvt) => {
+        setEvents(prev => [...prev, e])
+        if (e.type === 'item-start' && e.itemId && e.leadId && e.platform) {
+          setItems(prev => ({ ...prev, [e.itemId]: { leadId: e.leadId, platform: e.platform, status:'running' } }))
         }
-        setRunning(prev => ({ ...prev, [flow.slug]: { runId, logs: [...(prev[flow.slug]?.logs||[]), evt], dir: screenshotsDir } }))
-        if (evt.type === 'run' && (evt.status === 'success' || evt.status === 'error')) {
-          setHistoryTick(Date.now())
+        if (e.type === 'item-success' && e.itemId) {
+          setItems(prev => ({ ...prev, [e.itemId]: { ...(prev[e.itemId]!), status:'success', runDir: e.runDir } }))
         }
+        if (e.type === 'item-error' && e.itemId) {
+          setItems(prev => ({ ...prev, [e.itemId]: { ...(prev[e.itemId]||{ leadId:e.leadId!, platform:e.platform! }), status:'error', msg:e.message } }))
+        }
+        if (e.type === 'run-done') off()
       })
-      const stopWhenDone = setInterval(() => {
-        const logs = running[flow.slug]?.logs || []
-        const done = logs.some(l => l.type==='run' && (l.status==='success' || l.status==='error'))
-        if (done) { off(); clearInterval(stopWhenDone) }
-      }, 1000)
     } catch (e) {
-      toast.update(tid, { type:'error', title:'Échec du démarrage', message:String(e), duration: 5000 })
+      toast.update(tid, { type:'error', title:'Échec du lancement', message:String(e) })
     }
-  }
-
-  function openDir(flow: Flow) {
-    const dir = running[flow.slug]?.dir
-    if (dir) window.api.automation.openRunDir(dir).catch(()=>toast.error('Erreur','Impossible d\'ouvrir le dossier'))
   }
 
   return (
     <section className="space-y-4">
-      <h1 className="text-xl font-semibold">Flux (Dev)</h1>
-      <p className="text-sm text-neutral-500">Flux techniques à usage interne. Les flux de connexion servent au debug.</p>
-      <div className="rounded-md border border-neutral-200 dark:border-neutral-800 overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-neutral-100 dark:bg-neutral-800/60">
-            <tr>
-              <th className="text-left px-3 py-2">Flux</th>
-              <th className="text-left px-3 py-2">Plateforme</th>
-              <th className="px-3 py-2 w-[400px]"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {flows.length === 0 ? (
-              <tr><td colSpan={3} className="px-3 py-6 text-center text-neutral-500">Aucun flux</td></tr>
-            ) : flows.map((f, index) => (
-              <React.Fragment key={f.id}>
-                <tr className={`border-t border-neutral-200 dark:border-neutral-800 ${index % 2 === 0 ? 'bg-white dark:bg-neutral-900' : 'bg-neutral-50/30 dark:bg-neutral-800/20'}`}>
-                  <td className="px-3 py-2">
-                    <div className="font-medium">{f.name}</div>
-                    <div className="text-xs text-neutral-500">{f.slug}</div>
-                  </td>
-                  <td className="px-3 py-2">{f.platform}</td>
-                  <td className="px-3 py-2 text-right space-x-2">
-                    <Button onClick={()=>startWithMode(f,'headless')} variant="primary" size="sm">Lancer</Button>
-                    <Button onClick={()=>startWithMode(f,'dev')} size="sm">Lancer (Dev)</Button>
-                    <Button onClick={()=>startWithMode(f,'dev_private')} size="sm">Lancer (Dev Privé)</Button>
-                  </td>
-                </tr>
-                
-              </React.Fragment>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <header className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-semibold">Automatisations</h1>
+          <p className="text-sm text-neutral-500">Créez et lancez un scénario sur plusieurs plateformes, en un clic.</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <select value={mode} onChange={e=>setMode(e.target.value as any)} className="border rounded px-2 py-1 text-sm bg-white dark:bg-neutral-900">
+            <option value="headless">Mode discret</option>
+            <option value="dev">Visible</option>
+            <option value="dev_private">Privée</option>
+          </select>
+          <input type="number" min={1} max={3} value={concurrency} onChange={e=>setConcurrency(Math.max(1, Math.min(3, Number(e.target.value)||1)))} className="w-16 border rounded px-2 py-1 text-sm bg-white dark:bg-neutral-900"/>
+          <Button onClick={startRun} variant="primary">Lancer</Button>
+        </div>
+      </header>
 
-      <RunHistory reloadToken={historyTick} />
+      <section className="rounded-md border border-neutral-200 dark:border-neutral-800 p-3">
+        <div className="font-medium mb-2">Plateformes du scénario</div>
+        <div className="flex flex-wrap gap-2">
+          {platforms.length===0 ? <span className="text-sm text-neutral-500">Aucune plateforme sélectionnée (voir Configuration)</span> : platforms.map(p=> (
+            <span key={p.slug} className={`text-xs px-2 py-1 rounded border ${p.has_creds? 'bg-emerald-50 border-emerald-200 text-emerald-800':'bg-amber-50 border-amber-200 text-amber-800'}`}>
+              {p.name}{!p.has_creds && ' · identifiants manquants'}
+            </span>
+          ))}
+        </div>
+      </section>
+
+      <section className="rounded-md border border-neutral-200 dark:border-neutral-800 p-3">
+        <div className="flex items-center justify-between mb-2">
+          <div className="font-medium">Leads</div>
+          <div className="text-xs text-neutral-500">{selectedIds.length} sélectionné(s)</div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-64 overflow-auto">
+          {leads.map(l => {
+            const n = `${l.data?.subscriber?.firstName||''} ${l.data?.subscriber?.lastName||''}`.trim() || l.id.slice(0,8)
+            return (
+              <label key={l.id} className="flex items-center gap-2 text-sm">
+                <input type="checkbox" checked={!!selected[l.id]} onChange={()=>toggleLead(l.id)} />
+                <span>{n}</span>
+              </label>
+            )
+          })}
+        </div>
+      </section>
+
+      {runId && (
+        <section className="rounded-md border border-neutral-200 dark:border-neutral-800 p-3">
+          <div className="font-medium mb-2">Suivi du lancement</div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            {Object.entries(items).length === 0 ? (
+              <div className="text-sm text-neutral-500">Préparation…</div>
+            ) : (
+              Object.entries(items).map(([id,it]) => (
+                <div key={id} className="flex items-center justify-between border rounded px-2 py-1 text-sm">
+                  <div>
+                    <div className="font-medium">{it.platform}</div>
+                    <div className="text-xs text-neutral-500">Lead {it.leadId?.slice(0,8)}</div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className={`text-xs px-2 py-0.5 rounded ${badgeClass(it.status)}`}>{it.status}</span>
+                    {it.runDir && (
+                      <button onClick={()=>window.api.scenarios.openPath(it.runDir!)} className="text-xs underline">Ouvrir</button>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </section>
+      )}
     </section>
   )
 }
 
-function badge(status: string) {
-  const map: Record<string,string> = {
-    start: 'bg-blue-100 text-blue-800',
-    success: 'bg-emerald-100 text-emerald-800',
-    error: 'bg-red-100 text-red-800',
-    info: 'bg-neutral-100 text-neutral-800'
-  }
-  return map[status] || map.info
+function badgeClass(s: 'pending'|'running'|'success'|'error') {
+  if (s==='running') return 'bg-blue-100 text-blue-800'
+  if (s==='success') return 'bg-emerald-100 text-emerald-800'
+  if (s==='error') return 'bg-red-100 text-red-800'
+  return 'bg-neutral-100 text-neutral-800'
 }
