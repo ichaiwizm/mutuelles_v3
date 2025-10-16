@@ -28,6 +28,12 @@ export default function Automations() {
 
   function toggleLead(id: string) { setSelected(prev => ({ ...prev, [id]: !prev[id] })) }
 
+  function getLeadName(leadId: string): string {
+    const lead = leads.find(l => l.id === leadId)
+    if (!lead) return leadId.slice(0, 8)
+    return `${lead.data?.subscriber?.firstName||''} ${lead.data?.subscriber?.lastName||''}`.trim() || leadId.slice(0,8)
+  }
+
   async function startRun() {
     if (selectedIds.length === 0) { toast.error('Sélection requise', 'Choisissez au moins un lead'); return }
     const tid = toast.loading('Démarrage du scénario…')
@@ -112,7 +118,7 @@ export default function Automations() {
                 <div key={id} className="flex items-center justify-between border rounded px-2 py-1 text-sm">
                   <div>
                     <div className="font-medium">{it.platform}</div>
-                    <div className="text-xs text-neutral-500">Lead {it.leadId?.slice(0,8)}</div>
+                    <div className="text-xs text-neutral-500">{getLeadName(it.leadId)}</div>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className={`text-xs px-2 py-0.5 rounded ${badgeClass(it.status)}`}>{it.status}</span>

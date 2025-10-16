@@ -35,7 +35,8 @@
       "Bash(git config:*)",
       "Bash(jq:*)",
       "Bash(do echo \"=== $f ===\")",
-      "Bash(sed:*)"
+      "Bash(sed:*)",
+      "Bash(git show:*)"
     ],
     "deny": [],
     "ask": []
