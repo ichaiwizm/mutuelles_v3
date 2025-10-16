@@ -14,9 +14,16 @@ export interface FormFieldDefinition {
     max?: number
   }
   showIf?: {
-    field: string
+    field?: string
     equals?: any
     oneOf?: any[]
+    notOneOf?: any[]
+    and?: Array<{
+      field: string
+      equals?: any
+      oneOf?: any[]
+      notOneOf?: any[]
+    }>
   }
   repeat?: {
     countField: string
@@ -64,9 +71,16 @@ interface DomainConfig {
   placeholder?: string
   format?: string
   showIf?: {
-    field: string
+    field?: string
     equals?: any
     oneOf?: any[]
+    notOneOf?: any[]
+    and?: Array<{
+      field: string
+      equals?: any
+      oneOf?: any[]
+      notOneOf?: any[]
+    }>
   }
   repeat?: {
     countField: string
@@ -309,7 +323,35 @@ export function shouldShowField(
     return true
   }
 
-  const fieldValue = values[field.showIf.field]
+  // Support for 'and' condition (multiple conditions)
+  if (field.showIf.and !== undefined) {
+    return field.showIf.and.every(condition => {
+      const fieldValue = values[condition.field]
+
+      if (condition.equals !== undefined) {
+        return fieldValue === condition.equals
+      }
+
+      if (condition.oneOf !== undefined) {
+        if (fieldValue === undefined || fieldValue === null || fieldValue === '') {
+          return false
+        }
+        return condition.oneOf.includes(fieldValue)
+      }
+
+      if (condition.notOneOf !== undefined) {
+        if (fieldValue === undefined || fieldValue === null || fieldValue === '') {
+          return true // Show by default if no value
+        }
+        return !condition.notOneOf.includes(fieldValue)
+      }
+
+      return true
+    })
+  }
+
+  // Single condition logic
+  const fieldValue = values[field.showIf.field!]
 
   // Support for 'equals' condition
   if (field.showIf.equals !== undefined) {
@@ -323,6 +365,15 @@ export function shouldShowField(
       return false
     }
     return field.showIf.oneOf.includes(fieldValue)
+  }
+
+  // Support for 'notOneOf' condition
+  if (field.showIf.notOneOf !== undefined) {
+    // Show by default if no value, hide if value is in notOneOf array
+    if (fieldValue === undefined || fieldValue === null || fieldValue === '') {
+      return true
+    }
+    return !field.showIf.notOneOf.includes(fieldValue)
   }
 
   return true

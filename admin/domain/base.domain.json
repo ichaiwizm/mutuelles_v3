@@ -214,8 +214,12 @@
         "required": false,
         "default": "AUTRE",
         "carriers": ["swisslifeone"],
-        "notes": "Options chargées dynamiquement par SwissLife selon le statut sélectionné. Professions médicales bénéficient d'une réduction tarifaire de 10%.",
+        "notes": "Options chargées dynamiquement par SwissLife selon le statut sélectionné. Professions médicales bénéficient d'une réduction tarifaire de 10%. Non applicable pour les statuts agricoles.",
         "dependsOn": ["status"],
+        "showIf": {
+          "field": "subscriber.status",
+          "notOneOf": ["SALARIE_AGRICOLE", "EXPLOITANT_AGRICOLE", "RETRAITE_ANCIEN_EXPLOITANT"]
+        },
         "options": [
           { "value": "MEDECIN", "label": "Médecin" },
           { "value": "CHIRURGIEN", "label": "Chirurgien" },
@@ -330,11 +334,19 @@
         "required": false,
         "default": "AUTRE",
         "showIf": {
-          "field": "conjoint",
-          "equals": true
+          "and": [
+            {
+              "field": "conjoint",
+              "equals": true
+            },
+            {
+              "field": "spouse.status",
+              "notOneOf": ["SALARIE_AGRICOLE", "EXPLOITANT_AGRICOLE", "RETRAITE_ANCIEN_EXPLOITANT"]
+            }
+          ]
         },
         "carriers": ["swisslifeone"],
-        "notes": "Options chargées dynamiquement par SwissLife selon le statut sélectionné. Professions médicales bénéficient d'une réduction tarifaire de 10%.",
+        "notes": "Options chargées dynamiquement par SwissLife selon le statut sélectionné. Professions médicales bénéficient d'une réduction tarifaire de 10%. Non applicable pour les statuts agricoles.",
         "dependsOn": ["status"],
         "options": [
           { "value": "MEDECIN", "label": "Médecin" },

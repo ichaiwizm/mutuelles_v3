@@ -206,10 +206,16 @@ export function generateRandomTestData(schema: FormSchema): Record<string, any> 
       }
     }
 
-    // Profession
+    // Profession - skip for agricultural workers
     const professionField = findField('subscriber.profession')
     if (professionField?.options) {
-      testData['subscriber.profession'] = randomChoice(professionField.options).value
+      // Agricultural workers don't have medical professions
+      const agriculturalStatuses = ['SALARIE_AGRICOLE', 'EXPLOITANT_AGRICOLE', 'RETRAITE_ANCIEN_EXPLOITANT']
+      if (status && agriculturalStatuses.includes(status)) {
+        // Skip profession for agricultural workers (field will be hidden in UI)
+      } else {
+        testData['subscriber.profession'] = randomChoice(professionField.options).value
+      }
     }
 
     // Department code
@@ -311,10 +317,17 @@ export function generateRandomTestData(schema: FormSchema): Record<string, any> 
         testData['spouse.status'] = randomChoice(spouseStatusField.options).value
       }
 
-      // Spouse profession
+      // Spouse profession - skip for agricultural workers
       const spouseProfessionField = findField('spouse.profession')
       if (spouseProfessionField?.options) {
-        testData['spouse.profession'] = randomChoice(spouseProfessionField.options).value
+        // Agricultural workers don't have medical professions
+        const agriculturalStatuses = ['SALARIE_AGRICOLE', 'EXPLOITANT_AGRICOLE', 'RETRAITE_ANCIEN_EXPLOITANT']
+        const spouseStatus = testData['spouse.status']
+        if (spouseStatus && agriculturalStatuses.includes(spouseStatus)) {
+          // Skip profession for agricultural workers (field will be hidden in UI)
+        } else {
+          testData['spouse.profession'] = randomChoice(spouseProfessionField.options).value
+        }
       }
     }
   }
