@@ -33,6 +33,17 @@ const REGIME_STATUS_COMPATIBILITY: Record<string, string[]> = {
 }
 
 /**
+ * Age-Status compatibility rules
+ * Ensures that statuses requiring specific age ranges are validated
+ */
+const AGE_STATUS_RULES: Record<string, { minAge?: number; maxAge?: number }> = {
+  'RETRAITE': { minAge: 60 },
+  'RETRAITE_ANCIEN_SALARIE': { minAge: 60 },
+  'RETRAITE_ANCIEN_EXPLOITANT': { minAge: 60 },
+  'ETUDIANT': { maxAge: 30 }
+}
+
+/**
  * Utility functions
  */
 function randomChoice<T>(array: T[]): T {
@@ -61,6 +72,19 @@ function generateBirthDate(minAge: number, maxAge: number): string {
   birthDate.setMonth(randomInt(0, 11))
   birthDate.setDate(randomInt(1, 28)) // Safe day for all months
   return formatDate(birthDate)
+}
+
+function calculateAgeFromBirthDate(birthDateStr: string): number {
+  // Parse date in DD/MM/YYYY format
+  const [day, month, year] = birthDateStr.split('/').map(Number)
+  const birthDate = new Date(year, month - 1, day)
+  const today = new Date()
+  let age = today.getFullYear() - birthDate.getFullYear()
+  const monthDiff = today.getMonth() - birthDate.getMonth()
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+    age--
+  }
+  return age
 }
 
 function generateFirstOfNextMonth(): string {
@@ -172,30 +196,61 @@ export function generateRandomTestData(schema: FormSchema): Record<string, any> 
   }
 
   if (hasSwissLifeFields) {
-    // Status - MUST be compatible with the selected regime
+    // Status - MUST be compatible with the selected regime AND age
     const statusField = findField('subscriber.status')
     let status: string | undefined
 
     if (statusField?.options && subscriberRegime) {
+      // Calculate subscriber's age from birth date
+      const subscriberAge = calculateAgeFromBirthDate(testData['subscriber.birthDate'])
+
       // Filter status options to only those compatible with the selected regime
       const compatibleStatuses = REGIME_STATUS_COMPATIBILITY[subscriberRegime] || []
       const availableStatuses = statusField.options
         .map(o => o.value)
-        .filter(s => compatibleStatuses.includes(s))
+        .filter(s => {
+          // Check regime compatibility
+          const isRegimeCompatible = compatibleStatuses.includes(s)
+
+          // Check age compatibility
+          const ageRule = AGE_STATUS_RULES[s]
+          const isAgeCompatible = !ageRule ||
+            ((!ageRule.minAge || subscriberAge >= ageRule.minAge) &&
+             (!ageRule.maxAge || subscriberAge <= ageRule.maxAge))
+
+          return isRegimeCompatible && isAgeCompatible
+        })
 
       if (availableStatuses.length > 0) {
         status = randomChoice(availableStatuses)
         testData['subscriber.status'] = status
       } else {
-        // Fallback: if no compatible status found, pick any status and log warning
-        console.warn(`No compatible status found for regime ${subscriberRegime}, using random status`)
-        status = randomChoice(statusField.options).value
-        testData['subscriber.status'] = status
+        // Error: no compatible status found - this indicates a configuration issue
+        throw new Error(
+          `Impossible de générer des données de test valides:\n` +
+          `- Régime: "${subscriberRegime}"\n` +
+          `- Âge: ${subscriberAge} ans\n` +
+          `- Statuts compatibles avec le régime: ${compatibleStatuses.join(', ')}\n` +
+          `- Aucun statut ne satisfait à la fois le régime ET l'âge.\n` +
+          `Vérifiez REGIME_STATUS_COMPATIBILITY et AGE_STATUS_RULES dans testDataGenerator.ts`
+        )
       }
     } else if (statusField?.options) {
-      // No regime selected, use any status
-      status = randomChoice(statusField.options).value
-      testData['subscriber.status'] = status
+      // No regime selected, use any age-compatible status
+      const subscriberAge = calculateAgeFromBirthDate(testData['subscriber.birthDate'])
+      const ageCompatibleStatuses = statusField.options
+        .map(o => o.value)
+        .filter(s => {
+          const ageRule = AGE_STATUS_RULES[s]
+          return !ageRule ||
+            ((!ageRule.minAge || subscriberAge >= ageRule.minAge) &&
+             (!ageRule.maxAge || subscriberAge <= ageRule.maxAge))
+        })
+
+      if (ageCompatibleStatuses.length > 0) {
+        status = randomChoice(ageCompatibleStatuses)
+        testData['subscriber.status'] = status
+      }
     }
 
     // Conditional: madelin (only for TNS or EXPLOITANT_AGRICOLE)
@@ -295,26 +350,58 @@ export function generateRandomTestData(schema: FormSchema): Record<string, any> 
     }
 
     if (hasSwissLifeFields) {
-      // Spouse status - MUST be compatible with the selected regime
+      // Spouse status - MUST be compatible with the selected regime AND age
       const spouseStatusField = findField('spouse.status')
 
       if (spouseStatusField?.options && spouseRegime) {
+        // Calculate spouse's age from birth date
+        const spouseAge = calculateAgeFromBirthDate(testData['spouse.birthDate'])
+
         // Filter status options to only those compatible with the selected regime
         const compatibleStatuses = REGIME_STATUS_COMPATIBILITY[spouseRegime] || []
         const availableStatuses = spouseStatusField.options
           .map(o => o.value)
-          .filter(s => compatibleStatuses.includes(s))
+          .filter(s => {
+            // Check regime compatibility
+            const isRegimeCompatible = compatibleStatuses.includes(s)
+
+            // Check age compatibility
+            const ageRule = AGE_STATUS_RULES[s]
+            const isAgeCompatible = !ageRule ||
+              ((!ageRule.minAge || spouseAge >= ageRule.minAge) &&
+               (!ageRule.maxAge || spouseAge <= ageRule.maxAge))
+
+            return isRegimeCompatible && isAgeCompatible
+          })
 
         if (availableStatuses.length > 0) {
           testData['spouse.status'] = randomChoice(availableStatuses)
         } else {
-          // Fallback: if no compatible status found, pick any status and log warning
-          console.warn(`No compatible status found for spouse regime ${spouseRegime}, using random status`)
-          testData['spouse.status'] = randomChoice(spouseStatusField.options).value
+          // Error: no compatible status found - this indicates a configuration issue
+          throw new Error(
+            `Impossible de générer des données de test valides pour le conjoint:\n` +
+            `- Régime: "${spouseRegime}"\n` +
+            `- Âge: ${spouseAge} ans\n` +
+            `- Statuts compatibles avec le régime: ${compatibleStatuses.join(', ')}\n` +
+            `- Aucun statut ne satisfait à la fois le régime ET l'âge.\n` +
+            `Vérifiez REGIME_STATUS_COMPATIBILITY et AGE_STATUS_RULES dans testDataGenerator.ts`
+          )
         }
       } else if (spouseStatusField?.options) {
-        // No regime selected, use any status
-        testData['spouse.status'] = randomChoice(spouseStatusField.options).value
+        // No regime selected, use any age-compatible status
+        const spouseAge = calculateAgeFromBirthDate(testData['spouse.birthDate'])
+        const ageCompatibleStatuses = spouseStatusField.options
+          .map(o => o.value)
+          .filter(s => {
+            const ageRule = AGE_STATUS_RULES[s]
+            return !ageRule ||
+              ((!ageRule.minAge || spouseAge >= ageRule.minAge) &&
+               (!ageRule.maxAge || spouseAge <= ageRule.maxAge))
+          })
+
+        if (ageCompatibleStatuses.length > 0) {
+          testData['spouse.status'] = randomChoice(ageCompatibleStatuses)
+        }
       }
 
       // Spouse profession - skip for agricultural workers
