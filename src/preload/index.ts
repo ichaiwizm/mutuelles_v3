@@ -27,25 +27,6 @@ contextBridge.exposeInMainWorld('api', {
     setChromePath: (p: string) => ipcRenderer.invoke('browsers:setChromePath', p) as Promise<boolean>,
     pickChrome: () => ipcRenderer.invoke('browsers:pickChrome') as Promise<string|null>
   },
-  automation: {
-    listFlows: () => ipcRenderer.invoke('automation:listFlows') as Promise<Array<{ id:number; slug:string; name:string; platform_id:number; platform:string; active:boolean }>>,
-    run: (payload: { flowSlug: string; mode?: 'headless'|'dev'|'dev_private' }) => ipcRenderer.invoke('automation:run', payload) as Promise<{ runId:string; screenshotsDir:string }>,
-    onProgress: (runId: string, cb: (e: any) => void) => {
-      const channel = `automation:progress:${runId}`
-      const handler = (_: any, data: any) => cb(data)
-      ipcRenderer.on(channel, handler)
-      return () => ipcRenderer.removeListener(channel, handler)
-    },
-    openRunDir: (dir: string) => ipcRenderer.invoke('automation:openRunDir', dir) as Promise<string>,
-    listRuns: (params?: { flowSlug?: string; limit?: number; offset?: number }) => ipcRenderer.invoke('automation:listRuns', params ?? {}) as Promise<{ items: Array<{ runId:string; flowSlug:string; startedAt:string; finishedAt?:string|null; status:string; screenshotsDir?:string|null; jsonPath?:string|null; stepsTotal?:number|null; okSteps?:number|null; error?:string|null }>; total: number }>,
-    getRun: (runId: string) => ipcRenderer.invoke('automation:getRun', runId) as Promise<{ jsonPath:string; json:any }>,
-    listScreenshots: (runId: string) => ipcRenderer.invoke('automation:listScreenshots', runId) as Promise<string[]>,
-    getScreenshot: (runId: string, filename: string) => ipcRenderer.invoke('automation:getScreenshot', { runId, filename }) as Promise<string>,
-    exportRunJson: (runId: string) => ipcRenderer.invoke('automation:exportRunJson', runId) as Promise<string|null>,
-    deleteRun: (runId: string) => ipcRenderer.invoke('automation:deleteRun', runId) as Promise<boolean>,
-    deleteAllRuns: () => ipcRenderer.invoke('automation:deleteAllRuns') as Promise<{ deleted: number }>,
-    listFlowSteps: (flowSlug: string) => ipcRenderer.invoke('automation:listFlowSteps', flowSlug) as Promise<any[]>
-  },
   admin: {
     listFileFlows: () => ipcRenderer.invoke('admin:listFileFlows') as Promise<Array<{ platform:string; slug:string; name:string; file:string }>>,
     getLatestRunDir: (slug: string) => ipcRenderer.invoke('admin:getLatestRunDir', slug) as Promise<{ dir:string; report:string|null } | null>,
@@ -147,19 +128,11 @@ declare global {
         search: (query: string) => Promise<{ success: boolean; data?: any; error?: string }>
         deleteMany: (ids: string[]) => Promise<{ success: boolean; data?: any; error?: string }>
       }
-      automation: {
-        listFlows: () => Promise<Array<{ id:number; slug:string; name:string; platform_id:number; platform:string; active:boolean }>>
-        run: (payload: { flowSlug: string; mode?: 'headless'|'dev'|'dev_private' }) => Promise<{ runId:string; screenshotsDir:string }>
+      scenarios: {
+        run: (payload: { scenarioId?: string; platformSlugs?: string[]; leadIds: string[]; options?: { mode?: 'headless'|'dev'|'dev_private'; concurrency?: number } }) => Promise<{ runId: string }>
         onProgress: (runId: string, cb: (e:any)=>void) => (()=>void)
-        openRunDir: (dir: string) => Promise<string>
-        listRuns: (params?: { flowSlug?: string; limit?: number; offset?: number }) => Promise<{ items: Array<{ runId:string; flowSlug:string; startedAt:string; finishedAt?:string|null; status:string; screenshotsDir?:string|null; jsonPath?:string|null; stepsTotal?:number|null; okSteps?:number|null; error?:string|null }>; total: number }>
-        getRun: (runId: string) => Promise<{ jsonPath:string; json:any }>
-        listScreenshots: (runId: string) => Promise<string[]>
-        getScreenshot: (runId: string, filename: string) => Promise<string>
-        exportRunJson: (runId: string) => Promise<string|null>
-        deleteRun: (runId: string) => Promise<boolean>
-        deleteAllRuns: () => Promise<{ deleted: number }>
-        listFlowSteps: (flowSlug: string) => Promise<any[]>
+        openPath: (p: string) => Promise<string>
+        exists: (p: string) => Promise<boolean>
       }
       adminHL: {
         listHLFlows: () => Promise<Array<{ platform:string; slug:string; name:string; file:string }>>

@@ -7,10 +7,8 @@ import { registerProfilesIpc } from './ipc/profiles'
 import { registerCatalogIpc } from './ipc/catalog'
 import { registerPlatformCredsIpc } from './ipc/platform_credentials'
 import { registerBrowsersIpc } from './ipc/browsers'
-import { registerAutomationIpc } from './ipc/automation'
 import { registerAdminCliIpc } from './ipc/admin_cli'
 import { registerLeadsIPC } from './ipc/leads'
-import { registerPlatformLeadsIpc } from './ipc/platform_leads'
 import { registerScenariosIpc } from './ipc/scenarios'
 
 let mainWindow: BrowserWindow | null = null
@@ -52,10 +50,8 @@ app.whenReady().then(() => {
   registerCatalogIpc()
   registerPlatformCredsIpc()
   registerBrowsersIpc()
-  registerAutomationIpc()
   registerAdminCliIpc()
   registerLeadsIPC()
-  registerPlatformLeadsIpc()
   registerScenariosIpc()
   createMainWindow()
 

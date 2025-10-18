@@ -795,21 +795,30 @@ async function safeScreenshot(page, file){
     try { await page.screenshot({ path:file }) } catch (e2) { console.warn('[safeScreenshot] 2nd attempt failed:', String(e2?.message||'')) }
   }
 }
+// NOTE: This Chrome detection is duplicated from src/main/services/chrome.ts
+// We keep it here because engine.mjs runs as a standalone CLI script
+// and doesn't have access to Electron main process services
 function detectChromePathCandidates(){
   const local = process.env.LOCALAPPDATA || ''
   const list = [
-    // Windows
+    // Windows - Chrome
     'C:/Program Files/Google/Chrome/Application/chrome.exe',
     'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe',
     `${local}/Google/Chrome/Application/chrome.exe`,
+    // Windows - Edge
     'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',
     'C:/Program Files/Microsoft/Edge/Application/msedge.exe',
-    // Linux (WSL/CI runners)
+    // Linux/WSL - Chrome
     '/usr/bin/google-chrome',
     '/usr/bin/google-chrome-stable',
+    // Linux/WSL - Chromium
     '/usr/bin/chromium-browser',
     '/usr/bin/chromium',
-    '/snap/bin/chromium'
+    '/snap/bin/chromium',
+    // macOS - Chrome
+    '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+    // macOS - Chromium
+    '/Applications/Chromium.app/Contents/MacOS/Chromium'
   ]
   return list.filter(Boolean).map(p=>path.normalize(p))
 }
