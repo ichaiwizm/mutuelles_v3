@@ -1,4 +1,5 @@
-import React, { useId } from 'react'
+import React from 'react'
+import FieldWrapper, { getFieldClassName, getFieldAriaAttributes } from './FieldWrapper'
 
 interface DateFieldProps {
   label: React.ReactNode
@@ -17,9 +18,6 @@ export default function DateField({
   required = false,
   disabled = false
 }: DateFieldProps) {
-  const fieldId = useId()
-  const errorId = `${fieldId}-error`
-
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const input = e.target.value.replace(/\D/g, '')
     let formatted = ''
@@ -38,35 +36,20 @@ export default function DateField({
   }
 
   return (
-    <div className="space-y-1">
-      <label htmlFor={fieldId} className="block text-sm font-medium">
-        {label}
-      </label>
-      <input
-        id={fieldId}
-        type="text"
-        value={value}
-        onChange={handleChange}
-        placeholder="JJ/MM/AAAA"
-        disabled={disabled}
-        maxLength={10}
-        aria-invalid={!!error}
-        aria-describedby={error ? errorId : undefined}
-        aria-required={required}
-        className={`w-full px-3 py-2 border rounded-md text-sm transition-colors
-          ${error
-            ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
-            : 'border-neutral-300 dark:border-neutral-700 focus:border-blue-500 focus:ring-blue-500'
-          }
-          ${disabled ? 'bg-neutral-100 dark:bg-neutral-800 cursor-not-allowed' : 'bg-white dark:bg-neutral-900'}
-          focus:outline-none focus:ring-1
-        `}
-      />
-      {error && (
-        <p id={errorId} className="text-xs text-red-500" role="alert">
-          {error}
-        </p>
+    <FieldWrapper label={label} error={error} required={required} disabled={disabled}>
+      {(props) => (
+        <input
+          id={props.fieldId}
+          type="text"
+          value={value}
+          onChange={handleChange}
+          placeholder="JJ/MM/AAAA"
+          disabled={props.isDisabled}
+          maxLength={10}
+          className={getFieldClassName(props.isInvalid, props.isDisabled)}
+          {...getFieldAriaAttributes(props)}
+        />
       )}
-    </div>
+    </FieldWrapper>
   )
 }

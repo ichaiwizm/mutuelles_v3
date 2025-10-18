@@ -1,4 +1,5 @@
-import React, { useId } from 'react'
+import React from 'react'
+import { useFieldIds, FieldError } from './FieldWrapper'
 
 interface ToggleFieldProps {
   label: React.ReactNode
@@ -17,13 +18,12 @@ export default function ToggleField({
   required = false,
   disabled = false
 }: ToggleFieldProps) {
-  const id = useId()
-  const errorId = `${id}-error`
+  const { fieldId, errorId } = useFieldIds()
 
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between gap-3">
-        <label htmlFor={id} className="block text-sm font-medium flex-1">
+        <label htmlFor={fieldId} className="block text-sm font-medium flex-1">
           {label}
           {required && <span className="text-red-500 ml-1">*</span>}
         </label>
@@ -32,7 +32,7 @@ export default function ToggleField({
             {value ? 'Oui' : 'Non'}
           </span>
           <button
-            id={id}
+            id={fieldId}
             type="button"
             role="switch"
             aria-checked={value}
@@ -57,11 +57,7 @@ export default function ToggleField({
           </button>
         </div>
       </div>
-      {error && (
-        <p id={errorId} className="text-xs text-red-500" role="alert">
-          {error}
-        </p>
-      )}
+      {error && <FieldError errorId={errorId} error={error} />}
     </div>
   )
 }

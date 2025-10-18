@@ -1,4 +1,5 @@
-import React, { useId } from 'react'
+import React from 'react'
+import FieldWrapper, { getFieldClassName, getFieldAriaAttributes } from './FieldWrapper'
 
 interface SelectFieldProps {
   label: React.ReactNode
@@ -19,43 +20,25 @@ export default function SelectField({
   required = false,
   disabled = false
 }: SelectFieldProps) {
-  const fieldId = useId()
-  const errorId = `${fieldId}-error`
-
   return (
-    <div className="space-y-1">
-      <label htmlFor={fieldId} className="block text-sm font-medium">
-        {label}
-      </label>
-      <select
-        id={fieldId}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        disabled={disabled}
-        aria-invalid={!!error}
-        aria-describedby={error ? errorId : undefined}
-        aria-required={required}
-        className={`w-full px-3 py-2 border rounded-md text-sm transition-colors
-          ${error
-            ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
-            : 'border-neutral-300 dark:border-neutral-700 focus:border-blue-500 focus:ring-blue-500'
-          }
-          ${disabled ? 'bg-neutral-100 dark:bg-neutral-800 cursor-not-allowed' : 'bg-white dark:bg-neutral-900'}
-          focus:outline-none focus:ring-1
-        `}
-      >
-        <option value="">Sélectionnez...</option>
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
-      {error && (
-        <p id={errorId} className="text-xs text-red-500" role="alert">
-          {error}
-        </p>
+    <FieldWrapper label={label} error={error} required={required} disabled={disabled}>
+      {(props) => (
+        <select
+          id={props.fieldId}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          disabled={props.isDisabled}
+          className={getFieldClassName(props.isInvalid, props.isDisabled)}
+          {...getFieldAriaAttributes(props)}
+        >
+          <option value="">Sélectionnez...</option>
+          {options.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
       )}
-    </div>
+    </FieldWrapper>
   )
 }

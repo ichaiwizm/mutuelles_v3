@@ -1,4 +1,5 @@
-import React, { useId } from 'react'
+import React from 'react'
+import { useFieldIds, FieldError } from './FieldWrapper'
 
 interface RadioFieldProps {
   label: React.ReactNode
@@ -19,8 +20,7 @@ export default function RadioField({
   required = false,
   disabled = false
 }: RadioFieldProps) {
-  const groupId = useId()
-  const errorId = `${groupId}-error`
+  const { fieldId: groupId, errorId } = useFieldIds()
 
   return (
     <div className="space-y-2">
@@ -52,11 +52,7 @@ export default function RadioField({
           </label>
         ))}
       </div>
-      {error && (
-        <p id={errorId} className="text-xs text-red-500" role="alert">
-          {error}
-        </p>
-      )}
+      {error && <FieldError errorId={errorId} error={error} />}
     </div>
   )
 }
