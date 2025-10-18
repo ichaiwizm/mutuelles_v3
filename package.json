@@ -51,7 +51,8 @@
     "lead:verify": "cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/verify_lead_data.mjs",
     "leads:verify-all": "cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/verify_all_leads.mjs",
     "cleanup:runs": "node scripts/cleanup/clean_old_runs.mjs",
-    "cleanup:runs:dry": "node scripts/cleanup/clean_old_runs.mjs --dry-run"
+    "cleanup:runs:dry": "node scripts/cleanup/clean_old_runs.mjs --dry-run",
+    "verify:sync": "cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/verify_sync.mjs"
   },
   "dependencies": {
     "better-sqlite3": "^12.4.1",
