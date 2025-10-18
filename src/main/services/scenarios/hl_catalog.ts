@@ -4,7 +4,7 @@ import path from 'node:path'
 export type HLFlow = { platform: string; slug: string; name: string; file: string }
 
 export function listHLFlows(projectRoot: string): HLFlow[] {
-  const flowsDir = path.join(projectRoot, 'admin', 'flows')
+  const flowsDir = path.join(projectRoot, 'data', 'flows')
   const out: HLFlow[] = []
   const walk = (d: string) => {
     if (!fs.existsSync(d)) return

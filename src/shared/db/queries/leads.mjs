@@ -1,21 +1,21 @@
-#!/usr/bin/env node
-// Leads access functions for CLI scripts (ESM)
-// Equivalent to src/main/services/leads.ts but for Node.js scripts
-
-import { getDb } from './connection.mjs'
+/**
+ * Lead database queries (JavaScript/ESM version)
+ * Used by: CLI scripts and automation tools
+ */
 
 /**
  * Get a lead by ID from the database
- * @param {string} id - Lead UUID
- * @returns {Object|null} Lead object with { id, data, metadata, createdAt } or null if not found
  */
-export function getLeadById(id) {
-  const db = getDb()
-  const row = db.prepare(`
+export function getLeadById(db, id) {
+  const row = db
+    .prepare(
+      `
     SELECT id, data, metadata, created_at
     FROM clean_leads
     WHERE id = ?
-  `).get(id)
+  `
+    )
+    .get(id)
 
   if (!row) return null
 
@@ -29,13 +29,9 @@ export function getLeadById(id) {
 
 /**
  * List leads from the database with optional filtering
- * @param {Object} options - Options for listing
- * @param {number} options.limit - Maximum number of leads to return (default: 100)
- * @param {string} options.search - Search term for filtering by name, email, or phone
- * @returns {Array} Array of lead objects
  */
-export function listLeads({ limit = 100, search = '' } = {}) {
-  const db = getDb()
+export function listLeads(db, options = {}) {
+  const { limit = 100, search = '' } = options
 
   let query = 'SELECT id, data, metadata, created_at FROM clean_leads'
   const params = []
@@ -55,7 +51,7 @@ export function listLeads({ limit = 100, search = '' } = {}) {
 
   const rows = db.prepare(query).all(...params)
 
-  return rows.map(row => ({
+  return rows.map((row) => ({
     id: row.id,
     data: JSON.parse(row.data),
     metadata: JSON.parse(row.metadata || '{}'),
@@ -65,8 +61,6 @@ export function listLeads({ limit = 100, search = '' } = {}) {
 
 /**
  * Get a human-readable display name for a lead
- * @param {Object} lead - Lead object from getLeadById() or listLeads()
- * @returns {string} Display name (firstName lastName or ID prefix)
  */
 export function getLeadDisplayName(lead) {
   const subscriber = lead.data?.subscriber || {}
@@ -78,10 +72,8 @@ export function getLeadDisplayName(lead) {
 
 /**
  * Count total number of leads in the database
- * @returns {number} Total number of leads
  */
-export function countLeads() {
-  const db = getDb()
+export function countLeads(db) {
   const row = db.prepare('SELECT COUNT(*) as count FROM clean_leads').get()
   return row.count
 }

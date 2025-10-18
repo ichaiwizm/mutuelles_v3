@@ -60,7 +60,7 @@ export class ScenariosRunner {
           if (!platformId) { earlyErrors.push({ type:'item-error', runId, itemId, leadId, platform: slug, message:'Plateforme non sélectionnée' }); continue }
           const flow = pickDefaultFlowForPlatform(hl, slug)
           if (!flow) { earlyErrors.push({ type:'item-error', runId, itemId, leadId, platform: slug, message:'Aucun flow HL trouvé' }); continue }
-          const fieldsFile = path.join(this.projectRoot, 'admin', 'field-definitions', `${slug}.json`)
+          const fieldsFile = path.join(this.projectRoot, 'data', 'field-definitions', `${slug}.json`)
           if (!fs.existsSync(fieldsFile)) { earlyErrors.push({ type:'item-error', runId, itemId, leadId, platform: slug, message:'Field-definitions introuvables' }); continue }
           if (!fs.existsSync(flow.file)) { earlyErrors.push({ type:'item-error', runId, itemId, leadId, platform: slug, message:'Flow HL introuvable' }); continue }
           const credsRow = db.prepare('SELECT username FROM platform_credentials WHERE platform_id = ?').get(platformId) as {username?:string}|undefined
@@ -96,7 +96,7 @@ export class ScenariosRunner {
 
   private async execHL(args: { flowFile:string; fieldsFile:string; leadData:any; username:string; password:string; mode: Mode }): Promise<{ runDir: string }>{
     const { pathToFileURL } = await import('node:url')
-    const enginePath = path.join(process.cwd(), 'admin', 'engine', 'engine.mjs')
+    const enginePath = path.join(process.cwd(), 'automation', 'engine', 'engine.mjs')
     const mod = await import(pathToFileURL(enginePath).href)
     const fn = mod.runHighLevelFlow as (p:any)=>Promise<{runDir:string}>
     return fn({
@@ -107,7 +107,7 @@ export class ScenariosRunner {
       password: args.password,
       mode: args.mode,
       keepOpen: args.mode !== 'headless',
-      outRoot: path.join(process.cwd(), 'admin', 'runs-cli'),
+      outRoot: path.join(process.cwd(), 'data', 'runs'),
       dom: 'steps'
     })
   }

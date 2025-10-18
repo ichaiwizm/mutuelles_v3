@@ -25,7 +25,7 @@ function usage() {
 Options:
   --platform <slug>  Exporter les field definitions d'une plateforme
   --all              Exporter toutes les plateformes
-  --out <dir>        Répertoire de sortie (défaut: admin/field-definitions)
+  --out <dir>        Répertoire de sortie (défaut: data/field-definitions)
 
 Exemples:
   # Exporter une plateforme
@@ -40,7 +40,7 @@ Exemples:
 }
 
 function getFieldDefinitionsDir() {
-  return path.join(getProjectRoot(), 'admin', 'field-definitions')
+  return path.join(getProjectRoot(), 'data', 'field-definitions')
 }
 
 function exportPlatformFields(db, platformSlug, outDir) {

@@ -2,7 +2,7 @@
  * Migration 019: Drop legacy automation tables
  *
  * Removes database tables that were used by the old automation system:
- * - flows_catalog: Flow definitions (replaced by JSON files in admin/flows/)
+ * - flows_catalog: Flow definitions (replaced by JSON files in data/flows/)
  * - flow_steps: Step-by-step automation actions (replaced by JSON flow definitions)
  * - flows_runs: Execution history (superseded by scenarios system)
  * - lead_flow_assignments: Lead-to-flow assignments (never used in UI)

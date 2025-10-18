@@ -10,7 +10,7 @@ function usage() {
 Import UI form definition from JSON file to platforms_catalog.ui_form_json
 
 Example:
-  node scripts/platforms/import_ui_form.mjs admin/forms/swisslifeone.form.json
+  node scripts/platforms/import_ui_form.mjs data/carriers/swisslifeone.ui.json
 `)
 }
 

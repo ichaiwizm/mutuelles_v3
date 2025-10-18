@@ -10,7 +10,7 @@ function usage() {
 Import field definitions from JSON file to platforms_catalog.field_definitions_json
 
 Exemple:
-  node scripts/platforms/import_field_definitions.mjs admin/field-definitions/alptis.json
+  node scripts/platforms/import_field_definitions.mjs data/field-definitions/alptis.json
 `)
 }
 

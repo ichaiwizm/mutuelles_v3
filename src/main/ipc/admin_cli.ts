@@ -9,7 +9,7 @@ import { spawn } from 'node:child_process'
 type FlowFile = { platform: string; slug: string; name: string; file: string }
 
 function listFlowFiles(rootDir: string): FlowFile[] {
-  const flowsDir = path.join(rootDir, 'admin', 'flows')
+  const flowsDir = path.join(rootDir, 'data', 'flows')
   const out: FlowFile[] = []
   const walk = (d: string) => {
     if (!fs.existsSync(d)) return
@@ -38,7 +38,7 @@ export function registerAdminCliIpc() {
 
   ipcMain.handle('admin:getLatestRunDir', async (_e, slug: unknown) => {
     if (typeof slug !== 'string' || !slug) throw new Error('slug invalide')
-    const runsDir = path.join(root, 'admin', 'runs-cli', slug)
+    const runsDir = path.join(root, 'data', 'runs', slug)
     try {
       const entries = fs.readdirSync(runsDir).filter(n => {
         try { return fs.statSync(path.join(runsDir, n)).isDirectory() } catch { return false }
@@ -88,7 +88,7 @@ export function registerAdminCliIpc() {
     })
     child.on('close', (code) => {
       // Try to find the latest run dir for this slug
-      const runsDir = path.join(root, 'admin', 'runs-cli', item.slug)
+      const runsDir = path.join(root, 'data', 'runs', item.slug)
       let latest: string | null = null
       try {
         const entries = fs.readdirSync(runsDir)
@@ -106,7 +106,7 @@ export function registerAdminCliIpc() {
   })
 
   ipcMain.handle('admin:listHLFlows', async () => {
-    const flowsDir = path.join(root, 'admin', 'flows')
+    const flowsDir = path.join(root, 'data', 'flows')
     const out: Array<{ platform:string; slug:string; name:string; file:string }> = []
     const walk = (d:string) => {
       if (!fs.existsSync(d)) return
@@ -141,7 +141,7 @@ export function registerAdminCliIpc() {
 
     // Lancer le CLI avec credentials via env vars (pas de fichier temporaire)
     const electronBin = process.execPath
-    const script = path.join(root, 'admin', 'cli', 'run.mjs')
+    const script = path.join(root, 'automation', 'cli', 'run.mjs')
     const args = [ script, flowFile, '--lead-id', leadId ]
     if (mode === 'headless') { args.push('--headless') }
 

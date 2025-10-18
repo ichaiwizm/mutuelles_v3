@@ -34,8 +34,8 @@ export default {
         status: 'ready',
         base_url: 'https://pro.alptis.org/',
         website_url: 'https://www.alptis.org/',
-        field_definitions_file: 'admin/field-definitions/alptis.json',
-        ui_form_file: 'admin/carriers/alptis.ui.json'
+        field_definitions_file: 'data/field-definitions/alptis.json',
+        ui_form_file: 'data/carriers/alptis.ui.json'
       },
       {
         slug: 'swisslifeone',
@@ -43,8 +43,8 @@ export default {
         status: 'ready',
         base_url: null,
         website_url: 'https://www.swisslife.fr/',
-        field_definitions_file: 'admin/field-definitions/swisslifeone.json',
-        ui_form_file: 'admin/carriers/swisslifeone.ui.json'
+        field_definitions_file: 'data/field-definitions/swisslifeone.json',
+        ui_form_file: 'data/carriers/swisslifeone.ui.json'
       }
     ]
 

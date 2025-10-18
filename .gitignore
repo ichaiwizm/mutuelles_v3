@@ -64,11 +64,11 @@ dev-data/
 tmp/
 temp/
 runs-cli/
-admin/runs-cli/
-admin/.tmp/
+data/runs/
+automation/.tmp/
 
 # Temporary credentials (NEVER commit)
-admin/.tmp/*.json
+automation/.tmp/*.json
 
 # TypeScript
 *.tsbuildinfo

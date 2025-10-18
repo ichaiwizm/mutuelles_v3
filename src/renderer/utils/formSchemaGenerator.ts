@@ -1,4 +1,4 @@
-import baseDomainJson from '../../../admin/domain/base.domain.json'
+import baseDomainJson from '../../../data/domain/base.domain.json'
 
 export interface FormFieldDefinition {
   domainKey: string

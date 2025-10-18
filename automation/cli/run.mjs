@@ -7,14 +7,15 @@ import path from 'node:path'
 import { config as loadDotEnv } from 'dotenv'
 import minimist from 'minimist'
 import { runHighLevelFlow } from '../engine/engine.mjs'
-import { getLeadById, getLeadDisplayName } from '../db/leads.mjs'
+import { getDb } from '../../src/shared/db/connection.mjs'
+import { getLeadById, getLeadDisplayName } from '../../src/shared/db/queries/leads.mjs'
 
 // Load .env file
 loadDotEnv()
 
 function usage() {
   console.log(`Usage:
-  admin/cli/run.mjs <flowSlug> --lead-id <uuid> [options]
+  automation/cli/run.mjs <flowSlug> --lead-id <uuid> [options]
 
 Arguments:
   flowSlug              Flow slug (ex: alptis_login, swisslifeone_slsis)
@@ -26,10 +27,10 @@ Options:
 
 Examples:
   # Basic usage (platform auto-detected, credentials from .env, visible mode)
-  admin/cli/run.mjs alptis_login --lead-id abc-123-def-456
+  npm run flows:run alptis_login -- --lead-id abc-123-def-456
 
   # Headless mode (invisible, auto-close)
-  admin/cli/run.mjs swisslifeone_slsis --lead-id abc-123 --headless
+  npm run flows:run swisslifeone_slsis -- --lead-id abc-123 --headless
 
   # List available leads in database
   npm run db:status
@@ -88,8 +89,8 @@ async function main() {
     // Full path provided
     flowFile = path.resolve(flowSlug)
   } else {
-    // Slug provided - scan admin/flows for matching slug
-    const flowsDir = path.join(rootDir, 'admin', 'flows')
+    // Slug provided - scan data/flows for matching slug
+    const flowsDir = path.join(rootDir, 'data', 'flows')
     const found = findFlowFileBySlug(flowsDir, flowSlug)
     if (!found) {
       console.error(`Error: Flow not found with slug: ${flowSlug}`)
@@ -113,14 +114,15 @@ async function main() {
   }
 
   // Resolve field-definitions
-  const fieldsFile = path.join(rootDir, 'admin', 'field-definitions', `${platform}.json`)
+  const fieldsFile = path.join(rootDir, 'data', 'field-definitions', `${platform}.json`)
   if (!fs.existsSync(fieldsFile)) {
     console.error(`Error: Field definitions not found: ${fieldsFile}`)
     process.exit(1)
   }
 
   // Load lead from database
-  const lead = getLeadById(leadId)
+  const db = getDb()
+  const lead = getLeadById(db, leadId)
   if (!lead) {
     console.error(`Error: Lead not found with ID: ${leadId}`)
     console.error('Use "npm run db:status" to see available leads')
@@ -167,7 +169,7 @@ async function main() {
       password,
       mode,
       keepOpen,
-      outRoot: 'admin/runs-cli',
+      outRoot: 'data/runs',
       dom: 'all'
     })
 
