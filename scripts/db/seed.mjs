@@ -63,16 +63,14 @@ Options:
 Examples:
   npm run db:seed                    # Run all seeders
   npm run db:seed --dry-run          # Show what would be seeded
-  npm run db:seed --only platforms,flows
-                                    # Seed only platforms and flows
+  npm run db:seed --only platforms,credentials
+                                    # Seed only platforms and credentials
   npm run db:seed --skip credentials # Skip credentials seeder
   npm run db:seed --force            # Force re-seed all data
   npm run db:seed --list             # List available seeders
 
 Seeders:
   platforms    Seed basic platforms (Alptis, Swisslife)
-  flows        Import flows from JSON files
-  leads        Seed test leads data
   credentials  Seed credentials from environment variables
   profiles     Seed Chrome profiles for testing
 
