@@ -211,6 +211,20 @@ export async function runHighLevelFlow({ fieldsFile, flowFile, leadFile, leadDat
       await waitForBrowserClose(browser, context)
     }
     return { runDir }
+  } catch (err) {
+    // Handle unexpected errors
+    console.error('[Engine] Fatal error:', err)
+    emit({ type:'run', status:'error', message: err.message || String(err) })
+
+    // Try to close browser on error
+    try {
+      await context?.close()
+      await browser?.close()
+    } catch (closeErr) {
+      console.warn('[Browser] Failed to close browser after error:', closeErr.message)
+    }
+
+    throw err
   }
 }
 
