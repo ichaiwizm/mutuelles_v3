@@ -35,23 +35,23 @@
     { "type": "comment", "text": "=== ÉTAPE 2: DATES ASSURÉ PRINCIPAL ===" },
     { "type": "waitForField", "domainField": "subscriber.birthDate", "label": "wait-date-naissance" },
     { "type": "fillField", "domainField": "subscriber.birthDate", "value": "{lead.subscriber.birthDate}", "label": "fill-date-naissance", "method": "jquery", "triggerEvents": ["change"] },
-    { "type": "waitForNetworkIdle", "label": "network-after-date-naissance", "timeout_ms": 5000 },
+    { "type": "waitForNetworkIdle", "label": "network-after-date-naissance", "timeout_ms": 10000 },
 
     { "type": "comment", "text": "=== ÉTAPE 3: COUVERTURE & IJ (ACTIVE LE FORMULAIRE) ===" },
     { "type": "waitForField", "field": "slsis_couverture_oui", "label": "wait-couverture-oui" },
     { "type": "scrollIntoView", "field": "slsis_couverture_oui", "label": "scroll-couverture" },
     { "type": "clickField", "field": "slsis_couverture_oui", "label": "click-couverture-oui" },
-    { "type": "waitForNetworkIdle", "label": "network-after-couverture", "timeout_ms": 5000 },
+    { "type": "waitForNetworkIdle", "label": "network-after-couverture", "timeout_ms": 10000 },
 
     { "type": "waitForField", "field": "slsis_ij_non", "label": "wait-ij-non", "optional": true },
     { "type": "clickField", "field": "slsis_ij_non", "label": "click-ij-non", "optional": true },
-    { "type": "waitForNetworkIdle", "label": "network-after-ij", "timeout_ms": 3000 },
+    { "type": "waitForNetworkIdle", "label": "network-after-ij", "timeout_ms": 10000 },
 
     { "type": "comment", "text": "=== ÉTAPE 4: TYPE SIMULATION (CHARGE LES OPTIONS) ===" },
     { "type": "waitForField", "field": "slsis_simulation_individuelle", "label": "wait-simulation-individuelle" },
     { "type": "clickField", "field": "slsis_simulation_individuelle", "label": "click-simulation-individuelle" },
     { "type": "clickField", "field": "slsis_simulation_couple", "label": "click-simulation-couple", "skipIfNot": "spouse" },
-    { "type": "waitForNetworkIdle", "label": "network-after-simulation", "timeout_ms": 5000 },
+    { "type": "waitForNetworkIdle", "label": "network-after-simulation", "timeout_ms": 10000 },
 
 
     { "type": "comment", "text": "=== ÉTAPE 5: DONNÉES ASSURÉ PRINCIPAL ===" },
@@ -60,7 +60,7 @@
     { "type": "selectField", "domainField": "subscriber.regime", "value": "{lead.subscriber.regime}", "label": "select-regime", "method": "jquery", "triggerEvents": ["change"] },
     { "type": "selectField", "domainField": "subscriber.status", "value": "{lead.subscriber.status}", "label": "select-statut", "method": "jquery", "triggerEvents": ["change"], "postDelay_ms": 300 },
     { "type": "selectField", "domainField": "subscriber.profession", "value": "{lead.subscriber.profession}", "label": "select-profession", "method": "jquery", "triggerEvents": ["change"], "skipIf": { "or": [{ "field": "subscriber.profession", "isEmpty": true }, { "field": "subscriber.status", "oneOf": ["SALARIE_AGRICOLE", "EXPLOITANT_AGRICOLE", "RETRAITE", "RETRAITE_ANCIEN_SALARIE", "RETRAITE_ANCIEN_EXPLOITANT"] }] }, "optional": true },
-    { "type": "waitForNetworkIdle", "label": "network-after-identite", "timeout_ms": 5000 },
+    { "type": "waitForNetworkIdle", "label": "network-after-identite", "timeout_ms": 10000 },
 
     { "type": "comment", "text": "=== ÉTAPE 6: DONNÉES CONJOINT (si présent) ===" },
     { "type": "waitForField", "field": "slsis_onglet_conjoint", "label": "wait-onglet-conjoint", "skipIfNot": "spouse", "optional": true },
@@ -71,12 +71,12 @@
     { "type": "selectField", "domainField": "spouse.regime", "value": "{lead.spouse.regime}", "label": "select-conjoint-regime", "method": "jquery", "triggerEvents": ["change"], "skipIfNot": "spouse", "optional": true },
     { "type": "selectField", "domainField": "spouse.status", "value": "{lead.spouse.status}", "label": "select-conjoint-statut", "method": "jquery", "triggerEvents": ["change"], "skipIfNot": "spouse.status", "optional": true },
     { "type": "selectField", "domainField": "spouse.profession", "value": "{lead.spouse.profession}", "label": "select-conjoint-profession", "method": "jquery", "triggerEvents": ["change"], "skipIf": { "or": [{ "field": "spouse.profession", "isEmpty": true }, { "field": "spouse.status", "oneOf": ["SALARIE_AGRICOLE", "EXPLOITANT_AGRICOLE", "RETRAITE", "RETRAITE_ANCIEN_SALARIE", "RETRAITE_ANCIEN_EXPLOITANT"] }] }, "optional": true },
-    { "type": "waitForNetworkIdle", "label": "network-after-conjoint", "skipIfNot": "spouse", "optional": true, "timeout_ms": 5000 },
+    { "type": "waitForNetworkIdle", "label": "network-after-conjoint", "skipIfNot": "spouse", "optional": true, "timeout_ms": 10000 },
 
     { "type": "comment", "text": "=== ÉTAPE 7: ENFANTS ===" },
     { "type": "waitForField", "domainField": "children.count", "label": "wait-nb-enfants" },
     { "type": "selectField", "domainField": "children.count", "value": "{lead.subscriber.childrenCount}", "label": "select-nb-enfants", "method": "jquery", "triggerEvents": ["change"] },
-    { "type": "waitForNetworkIdle", "label": "network-after-nb-enfants", "timeout_ms": 5000 },
+    { "type": "waitForNetworkIdle", "label": "network-after-nb-enfants", "timeout_ms": 10000 },
 
     { "type": "comment", "text": "=== Enfant 0 ===" },
     { "type": "waitForField", "field": "slsis_enfant_0_date_naissance", "label": "wait-enfant-0-date", "skipIfNot": "children[0].birthDate", "optional": true },
@@ -96,11 +96,11 @@
     { "type": "comment", "text": "=== ÉTAPE 8: SÉLECTION GAMME (MAINTENANT DISPONIBLE) ===" },
     { "type": "waitForField", "domainField": "project.plan", "label": "wait-gamme" },
     { "type": "selectField", "domainField": "project.plan", "value": "SwissLife Santé", "label": "select-gamme", "method": "jquery", "triggerEvents": ["change"] },
-    { "type": "waitForNetworkIdle", "label": "network-after-gamme", "timeout_ms": 5000 },
+    { "type": "waitForNetworkIdle", "label": "network-after-gamme", "timeout_ms": 10000 },
 
     { "type": "waitForField", "domainField": "project.dateEffet", "label": "wait-date-effet" },
     { "type": "fillField", "domainField": "project.dateEffet", "value": "{lead.project.dateEffet}", "label": "fill-date-effet", "method": "jquery", "triggerEvents": ["change"] },
-    { "type": "waitForNetworkIdle", "label": "network-after-date-effet", "timeout_ms": 5000 },
+    { "type": "waitForNetworkIdle", "label": "network-after-date-effet", "timeout_ms": 10000 },
 
     { "type": "comment", "text": "=== ÉTAPE 9: OPTIONS (MADELIN, RÉSILIATION, REPRISE) ===" },
     { "type": "scrollIntoView", "field": "slsis_madelin", "label": "scroll-madelin", "skipIf": { "field": "subscriber.status", "notEquals": "TNS" }, "optional": true },

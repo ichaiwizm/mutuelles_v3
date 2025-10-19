@@ -52,7 +52,11 @@
       "mcp__playwright__browser_console_messages",
       "mcp__playwright__browser_press_key",
       "Bash(npm audit --audit-level=moderate)",
-      "Bash(xargs cat)"
+      "Bash(xargs cat)",
+      "Bash(do if [ -f \"$dir/index.json\" ])",
+      "Bash(then echo \"=== $dir ===\")",
+      "Bash(fi)",
+      "Bash(/dev/null)"
     ],
     "deny": [],
     "ask": []

@@ -41,7 +41,7 @@ export class ScenariosRunner {
     const db = getDb()
     const leadsSvc = new LeadsService()
     const mode: Mode = payload.options?.mode || 'headless'
-    const concurrency = Math.max(1, Math.min(3, payload.options?.concurrency ?? 2))
+    const concurrency = Math.max(1, Math.min(15, payload.options?.concurrency ?? 2))
 
     // Plateformes ciblées: scenario explicite ou plateformes sélectionnées
     const platformsSelected = db.prepare(`SELECT slug, id FROM platforms_catalog WHERE selected = 1 ORDER BY name`).all() as Array<{slug:string; id:number}>

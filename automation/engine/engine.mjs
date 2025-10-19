@@ -196,6 +196,25 @@ export async function runHighLevelFlow({ fieldsFile, flowFile, leadFile, leadDat
     const manifest = { ...meta, steps: stepsSummary, artifacts: { screenshotsDir:'screenshots', trace: tracingStarted ? 'trace/trace.zip' : null, video: video ? 'video' : null, progress:'progress.ndjson' } }
     writeJson(path.join(runDir,'index.json'), manifest)
     if (tracingStarted) { ensureDir(traceDir); await context.tracing.stop({ path: path.join(traceDir,'trace.zip') }) }
+
+    // Check for failed steps and propagate error to runner
+    const failedSteps = stepsSummary.filter(s => s.ok === false && !s.skipped)
+    if (failedSteps.length > 0) {
+      const firstFailed = failedSteps[0]
+      const errorMsg = `Step ${firstFailed.index + 1} (${firstFailed.type}) failed: ${firstFailed.error}`
+
+      // Close browser gracefully on failure
+      try { await context?.close() } catch (err) {
+        console.debug('[Browser] Context close failed:', err.message)
+      }
+      try { await browser?.close() } catch (err) {
+        console.debug('[Browser] Browser close failed:', err.message)
+      }
+
+      emit({ type:'run', status:'error', message: errorMsg })
+      throw new Error(errorMsg)
+    }
+
     if (!keepOpen) {
       try { await context?.close() } catch (err) {
         console.debug('[Browser] Context close failed:', err.message)

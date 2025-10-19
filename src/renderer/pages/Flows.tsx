@@ -73,7 +73,7 @@ export default function Automations() {
             <option value="dev">Visible</option>
             <option value="dev_private">Privée</option>
           </select>
-          <input type="number" min={1} max={3} value={concurrency} onChange={e=>setConcurrency(Math.max(1, Math.min(3, Number(e.target.value)||1)))} className="w-16 border rounded px-2 py-1 text-sm bg-white dark:bg-neutral-900"/>
+          <input type="number" min={1} max={15} value={concurrency} onChange={e=>setConcurrency(Math.max(1, Math.min(15, Number(e.target.value)||1)))} className="w-16 border rounded px-2 py-1 text-sm bg-white dark:bg-neutral-900"/>
           <Button onClick={startRun} variant="primary">Lancer</Button>
         </div>
       </header>
