@@ -1,9 +1,7 @@
 {
   "permissions": {
-    "allow": [
-      "Bash(xargs -n1 basename)",
-      "Bash(do /tmp/analyze_imports.sh \"$file\")"
-    ],
+    "defaultMode": "bypassPermissions",
+    "allow": [],
     "deny": [],
     "ask": []
   }
