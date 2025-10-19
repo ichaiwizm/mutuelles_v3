@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Settings, Save, RotateCcw, Eye, EyeOff } from 'lucide-react'
+import { Settings, Save, RotateCcw, Eye, EyeOff, Minus, Plus, ChevronDown, ChevronRight } from 'lucide-react'
 import Modal from '../../Modal'
 import type { AdvancedSettings, Platform, Flow } from '../../../hooks/useAutomation'
 
@@ -23,6 +23,7 @@ export default function SettingsModal({
   flows
 }: SettingsModalProps) {
   const [localSettings, setLocalSettings] = useState<AdvancedSettings>(settings)
+  const [collapsedPlatforms, setCollapsedPlatforms] = useState<Set<string>>(new Set())
 
   // Sync with parent settings when modal opens
   React.useEffect(() => {
@@ -38,7 +39,6 @@ export default function SettingsModal({
 
   const handleReset = () => {
     onReset()
-    onClose()
   }
 
   const updateSetting = <K extends keyof AdvancedSettings>(
@@ -48,11 +48,55 @@ export default function SettingsModal({
     setLocalSettings(prev => ({ ...prev, [key]: value }))
   }
 
+  const togglePlatformCollapse = (platformSlug: string) => {
+    setCollapsedPlatforms(prev => {
+      const next = new Set(prev)
+      if (next.has(platformSlug)) {
+        next.delete(platformSlug)
+      } else {
+        next.add(platformSlug)
+      }
+      return next
+    })
+  }
+
+  const getPlatformFlows = (platformSlug: string) => {
+    return flows.filter(f => f.platform === platformSlug)
+  }
+
+  const isPlatformHidden = (platformSlug: string) => {
+    const platformFlows = getPlatformFlows(platformSlug)
+    const hiddenCount = platformFlows.filter(f => localSettings.hiddenFlows.includes(f.slug)).length
+    return hiddenCount === platformFlows.length
+  }
+
+  const isPlatformIndeterminate = (platformSlug: string) => {
+    const platformFlows = getPlatformFlows(platformSlug)
+    const hiddenCount = platformFlows.filter(f => localSettings.hiddenFlows.includes(f.slug)).length
+    return hiddenCount > 0 && hiddenCount < platformFlows.length
+  }
+
   const togglePlatformVisibility = (platformSlug: string) => {
-    const newHiddenPlatforms = localSettings.hiddenPlatforms.includes(platformSlug)
-      ? localSettings.hiddenPlatforms.filter(slug => slug !== platformSlug)
-      : [...localSettings.hiddenPlatforms, platformSlug]
-    updateSetting('hiddenPlatforms', newHiddenPlatforms)
+    const platformFlows = getPlatformFlows(platformSlug)
+    const isHidden = isPlatformHidden(platformSlug)
+
+    const newHiddenFlows = [...localSettings.hiddenFlows]
+    platformFlows.forEach(flow => {
+      const index = newHiddenFlows.indexOf(flow.slug)
+      if (isHidden) {
+        // Show all flows
+        if (index !== -1) {
+          newHiddenFlows.splice(index, 1)
+        }
+      } else {
+        // Hide all flows
+        if (index === -1) {
+          newHiddenFlows.push(flow.slug)
+        }
+      }
+    })
+
+    updateSetting('hiddenFlows', newHiddenFlows)
   }
 
   const toggleFlowVisibility = (flowSlug: string) => {
@@ -60,6 +104,14 @@ export default function SettingsModal({
       ? localSettings.hiddenFlows.filter(slug => slug !== flowSlug)
       : [...localSettings.hiddenFlows, flowSlug]
     updateSetting('hiddenFlows', newHiddenFlows)
+  }
+
+  const hideAll = () => {
+    updateSetting('hiddenFlows', flows.map(f => f.slug))
+  }
+
+  const showAll = () => {
+    updateSetting('hiddenFlows', [])
   }
 
   return (
@@ -102,13 +154,13 @@ export default function SettingsModal({
               <input
                 type="number"
                 min={1}
-                max={15}
+                max={20}
                 value={localSettings.concurrency}
-                onChange={(e) => updateSetting('concurrency', Math.max(1, Math.min(15, parseInt(e.target.value) || 2)))}
+                onChange={(e) => updateSetting('concurrency', Math.max(1, Math.min(20, parseInt(e.target.value) || 6)))}
                 className="w-full px-3 py-2 text-sm border border-neutral-200 dark:border-neutral-700 rounded-md bg-white dark:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <p className="text-xs text-neutral-500 mt-1">
-                Exécutions simultanées (1-15)
+                Exécutions simultanées (1-20)
               </p>
             </div>
           </div>
@@ -151,114 +203,169 @@ export default function SettingsModal({
             </div>
 
             <div className="space-y-3">
-              <label className="flex items-start gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={localSettings.retryFailed}
-                  onChange={(e) => updateSetting('retryFailed', e.target.checked)}
-                  className="w-4 h-4 mt-0.5 rounded border-neutral-300 text-blue-600 focus:ring-blue-500"
-                />
-                <div className="flex-1">
-                  <div className="text-sm font-medium">Réessayer en cas d'erreur</div>
-                  <div className="text-xs text-neutral-500">
-                    Relancer automatiquement
+              <div>
+                <label className="flex items-start gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={localSettings.retryFailed}
+                    onChange={(e) => updateSetting('retryFailed', e.target.checked)}
+                    className="w-4 h-4 mt-0.5 rounded border-neutral-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <div className="flex-1">
+                    <div className="text-sm font-medium">Réessayer en cas d'erreur</div>
+                    <div className="text-xs text-neutral-500">
+                      Relancer automatiquement
+                    </div>
+                  </div>
+                </label>
+
+                <div className="ml-6 mt-2 flex items-center gap-2">
+                  <span className="text-xs text-neutral-600 dark:text-neutral-400">Tentatives:</span>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => updateSetting('maxRetries', Math.max(1, localSettings.maxRetries - 1))}
+                      disabled={localSettings.maxRetries <= 1}
+                      className="w-6 h-6 flex items-center justify-center rounded border border-neutral-300 dark:border-neutral-600 hover:bg-neutral-100 dark:hover:bg-neutral-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <Minus size={12} />
+                    </button>
+                    <span className="w-8 text-center text-sm font-medium">{localSettings.maxRetries}</span>
+                    <button
+                      type="button"
+                      onClick={() => updateSetting('maxRetries', Math.min(5, localSettings.maxRetries + 1))}
+                      disabled={localSettings.maxRetries >= 5}
+                      className="w-6 h-6 flex items-center justify-center rounded border border-neutral-300 dark:border-neutral-600 hover:bg-neutral-100 dark:hover:bg-neutral-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <Plus size={12} />
+                    </button>
                   </div>
                 </div>
-              </label>
-
-              {localSettings.retryFailed && (
-                <div className="ml-6">
-                  <select
-                    value={localSettings.maxRetries}
-                    onChange={(e) => updateSetting('maxRetries', parseInt(e.target.value) as 1 | 2 | 3)}
-                    className="w-full px-2 py-1.5 text-sm border border-neutral-200 dark:border-neutral-700 rounded-md bg-white dark:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value={1}>1 tentative</option>
-                    <option value={2}>2 tentatives</option>
-                    <option value={3}>3 tentatives</option>
-                  </select>
-                </div>
-              )}
+              </div>
             </div>
           </div>
         </div>
 
         {/* Visibility Settings */}
         <div className="pt-4 border-t border-neutral-200 dark:border-neutral-800">
-          <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
-            <Eye size={16} />
-            Visibilité
-          </h3>
-          <p className="text-xs text-neutral-500 mb-3">
-            Masquer des plateformes ou flows pour simplifier l'interface
-          </p>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold flex items-center gap-2">
+              <Eye size={16} />
+              Filtrage de visibilité
+            </h3>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <span className="text-xs text-neutral-600 dark:text-neutral-400">Activer</span>
+              <input
+                type="checkbox"
+                checked={localSettings.enableVisibilityFiltering}
+                onChange={(e) => updateSetting('enableVisibilityFiltering', e.target.checked)}
+                className="w-4 h-4 rounded border-neutral-300 text-blue-600 focus:ring-blue-500"
+              />
+            </label>
+          </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            {/* Platform visibility */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Plateformes</label>
-              <div className="max-h-48 overflow-y-auto space-y-1 border border-neutral-200 dark:border-neutral-700 rounded-md p-2 bg-neutral-50/50 dark:bg-neutral-900/50">
+          {localSettings.enableVisibilityFiltering && (
+            <>
+              <p className="text-xs text-neutral-500 mb-3">
+                Masquer des flows pour simplifier l'interface du sélecteur
+              </p>
+
+              <div className="flex items-center gap-2 mb-2">
+                <button
+                  type="button"
+                  onClick={hideAll}
+                  className="px-2 py-1 text-xs border border-neutral-300 dark:border-neutral-600 rounded hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
+                >
+                  Tout masquer
+                </button>
+                <button
+                  type="button"
+                  onClick={showAll}
+                  className="px-2 py-1 text-xs border border-neutral-300 dark:border-neutral-600 rounded hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
+                >
+                  Tout afficher
+                </button>
+              </div>
+
+              <div className="max-h-64 overflow-y-auto space-y-1 border border-neutral-200 dark:border-neutral-700 rounded-md p-2 bg-neutral-50/50 dark:bg-neutral-900/50">
                 {platforms.length === 0 ? (
                   <div className="text-xs text-neutral-500 text-center py-2">
                     Aucune plateforme
                   </div>
                 ) : (
                   platforms.map((platform) => {
-                    const isHidden = localSettings.hiddenPlatforms.includes(platform.slug)
-                    return (
-                      <label
-                        key={platform.slug}
-                        className="flex items-center gap-2 p-1.5 hover:bg-white dark:hover:bg-neutral-800 rounded cursor-pointer transition-colors"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={isHidden}
-                          onChange={() => togglePlatformVisibility(platform.slug)}
-                          className="w-3.5 h-3.5 rounded border-neutral-300 text-blue-600 focus:ring-blue-500"
-                        />
-                        {isHidden ? <EyeOff size={13} className="text-neutral-400 flex-shrink-0" /> : <Eye size={13} className="text-neutral-600 flex-shrink-0" />}
-                        <span className="text-xs flex-1 truncate">{platform.name}</span>
-                      </label>
-                    )
-                  })
-                )}
-              </div>
-            </div>
+                    const platformFlows = getPlatformFlows(platform.slug)
+                    const isCollapsed = collapsedPlatforms.has(platform.slug)
+                    const isHidden = isPlatformHidden(platform.slug)
+                    const isIndeterminate = isPlatformIndeterminate(platform.slug)
 
-            {/* Flow visibility */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Flows</label>
-              <div className="max-h-48 overflow-y-auto space-y-1 border border-neutral-200 dark:border-neutral-700 rounded-md p-2 bg-neutral-50/50 dark:bg-neutral-900/50">
-                {flows.length === 0 ? (
-                  <div className="text-xs text-neutral-500 text-center py-2">
-                    Aucun flow
-                  </div>
-                ) : (
-                  flows.map((flow) => {
-                    const isHidden = localSettings.hiddenFlows.includes(flow.slug)
                     return (
-                      <label
-                        key={flow.slug}
-                        className="flex items-center gap-2 p-1.5 hover:bg-white dark:hover:bg-neutral-800 rounded cursor-pointer transition-colors"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={isHidden}
-                          onChange={() => toggleFlowVisibility(flow.slug)}
-                          className="w-3.5 h-3.5 rounded border-neutral-300 text-blue-600 focus:ring-blue-500"
-                        />
-                        {isHidden ? <EyeOff size={13} className="text-neutral-400 flex-shrink-0" /> : <Eye size={13} className="text-neutral-600 flex-shrink-0" />}
-                        <div className="flex-1 min-w-0">
-                          <div className="text-xs font-medium truncate">{flow.name}</div>
-                          <div className="text-[10px] text-neutral-500 truncate leading-tight">{flow.platform}</div>
+                      <div key={platform.slug} className="space-y-1">
+                        {/* Platform header */}
+                        <div className="flex items-center gap-1.5 p-1.5 hover:bg-white dark:hover:bg-neutral-800 rounded transition-colors">
+                          <button
+                            type="button"
+                            onClick={() => togglePlatformCollapse(platform.slug)}
+                            className="p-0.5 hover:bg-neutral-200 dark:hover:bg-neutral-700 rounded"
+                          >
+                            {isCollapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
+                          </button>
+                          <label className="flex items-center gap-2 flex-1 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={isHidden}
+                              ref={(el) => {
+                                if (el) el.indeterminate = isIndeterminate
+                              }}
+                              onChange={() => togglePlatformVisibility(platform.slug)}
+                              className="w-3.5 h-3.5 rounded border-neutral-300 text-blue-600 focus:ring-blue-500"
+                            />
+                            {isHidden ? (
+                              <EyeOff size={13} className="text-neutral-400 flex-shrink-0" />
+                            ) : (
+                              <Eye size={13} className="text-neutral-600 flex-shrink-0" />
+                            )}
+                            <span className="text-xs font-medium flex-1 truncate">{platform.name}</span>
+                            <span className="text-[10px] text-neutral-400">
+                              {platformFlows.length} flow{platformFlows.length > 1 ? 's' : ''}
+                            </span>
+                          </label>
                         </div>
-                      </label>
+
+                        {/* Platform flows */}
+                        {!isCollapsed && platformFlows.length > 0 && (
+                          <div className="ml-6 space-y-0.5">
+                            {platformFlows.map((flow) => {
+                              const isFlowHidden = localSettings.hiddenFlows.includes(flow.slug)
+                              return (
+                                <label
+                                  key={flow.slug}
+                                  className="flex items-center gap-2 p-1.5 hover:bg-white dark:hover:bg-neutral-800 rounded cursor-pointer transition-colors"
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={isFlowHidden}
+                                    onChange={() => toggleFlowVisibility(flow.slug)}
+                                    className="w-3 h-3 rounded border-neutral-300 text-blue-600 focus:ring-blue-500"
+                                  />
+                                  {isFlowHidden ? (
+                                    <EyeOff size={12} className="text-neutral-400 flex-shrink-0" />
+                                  ) : (
+                                    <Eye size={12} className="text-neutral-600 flex-shrink-0" />
+                                  )}
+                                  <span className="text-xs flex-1 truncate">{flow.name}</span>
+                                </label>
+                              )
+                            })}
+                          </div>
+                        )}
+                      </div>
                     )
                   })
                 )}
               </div>
-            </div>
-          </div>
+            </>
+          )}
         </div>
 
         {/* Actions */}

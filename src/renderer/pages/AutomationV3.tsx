@@ -45,7 +45,6 @@ export default function AutomationV3() {
 
   const handleResetSettings = () => {
     automation.resetSettings()
-    toast.info('Paramètres réinitialisés', 'Les paramètres par défaut ont été restaurés')
   }
 
   const handleStopAll = () => {

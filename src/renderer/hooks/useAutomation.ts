@@ -58,9 +58,10 @@ export type AdvancedSettings = {
 
   // RETRY
   retryFailed: boolean
-  maxRetries: 1 | 2 | 3
+  maxRetries: number
 
   // VISIBILITY
+  enableVisibilityFiltering: boolean
   hiddenPlatforms: string[]
   hiddenFlows: string[]
 }
@@ -68,12 +69,14 @@ export type AdvancedSettings = {
 const DEFAULT_SETTINGS: AdvancedSettings = {
   mode: 'headless',
   keepBrowserOpen: false,
-  concurrency: 2,
+  concurrency: 6,
   showPreviewBeforeRun: true,
-  retryFailed: false,
+  retryFailed: true,
   maxRetries: 2,
+  enableVisibilityFiltering: true,
   hiddenPlatforms: [],
-  hiddenFlows: []
+  // Par défaut, seuls alptis_sante_select_pro_full et swisslifeone_slsis sont visibles
+  hiddenFlows: ['alptis_login_hl', 'swisslifeone_login', 'swisslifeone_slsis_inspect']
 }
 
 export function useAutomation() {
@@ -96,7 +99,17 @@ export function useAutomation() {
     const stored = localStorage.getItem('automation-settings')
     if (stored) {
       try {
-        return { ...DEFAULT_SETTINGS, ...JSON.parse(stored) }
+        const parsed = JSON.parse(stored)
+        // Merge avec les defaults pour ajouter les nouvelles clés
+        const merged = { ...DEFAULT_SETTINGS, ...parsed }
+
+        // Migration : si enableVisibilityFiltering n'existe pas, utiliser les nouveaux defaults
+        if (parsed.enableVisibilityFiltering === undefined) {
+          merged.enableVisibilityFiltering = DEFAULT_SETTINGS.enableVisibilityFiltering
+          merged.hiddenFlows = DEFAULT_SETTINGS.hiddenFlows
+        }
+
+        return merged
       } catch {
         return DEFAULT_SETTINGS
       }
