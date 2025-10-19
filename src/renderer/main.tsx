@@ -4,9 +4,9 @@ import { createBrowserRouter, RouterProvider } from 'react-router-dom'
 import App from './App'
 import Dashboard from './pages/Dashboard'
 import Config from './pages/Config'
-import Flows from './pages/Flows'
 import Leads from './pages/Leads'
 import Admin from './pages/Admin'
+import AutomationV3 from './pages/AutomationV3'
 import './styles.css'
 
 const router = createBrowserRouter([
@@ -17,9 +17,9 @@ const router = createBrowserRouter([
       { index: true, element: <Dashboard /> },
       { path: 'dashboard', element: <Dashboard /> },
       { path: 'config', element: <Config /> },
-      { path: 'flows', element: <Flows /> },
       { path: 'leads', element: <Leads /> },
-      { path: 'admin', element: <Admin /> }
+      { path: 'admin', element: <Admin /> },
+      { path: 'automation', element: <AutomationV3 /> }
     ]
   }
 ])

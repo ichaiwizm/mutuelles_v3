@@ -122,6 +122,16 @@ export function registerAdminCliIpc() {
     return out
   })
 
+  ipcMain.handle('admin:readFlowFile', async (_e, filePath: unknown) => {
+    if (typeof filePath !== 'string' || !filePath) throw new Error('File path required')
+    try {
+      const raw = fs.readFileSync(filePath, 'utf-8')
+      return JSON.parse(raw)
+    } catch (err) {
+      throw new Error('Failed to read flow file: ' + (err instanceof Error ? err.message : String(err)))
+    }
+  })
+
 
   ipcMain.handle('admin:runHLFlowWithLeadId', async (e, payload: any) => {
     const wnd = BrowserWindow.fromWebContents(e.sender)

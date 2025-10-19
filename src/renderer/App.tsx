@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
-import { Home, KeyRound, Users, Settings } from 'lucide-react'
+import { Home, KeyRound, Users, Settings, Zap } from 'lucide-react'
 import ThemeToggle from './components/ThemeToggle'
 import ErrorBoundary from './components/ErrorBoundary'
 import { ToastProvider } from './contexts/ToastContext'
@@ -9,8 +9,8 @@ const nav = [
   { to: '/dashboard', label: 'Tableau de bord', icon: Home },
   { to: '/config', label: 'Configuration', icon: Settings },
   { to: '/leads', label: 'Leads', icon: Users },
-  { to: '/flows', label: 'Automatisations', icon: KeyRound },
-  { to: '/admin', label: 'Admin (JSON Flows)', icon: KeyRound },
+  { to: '/automation', label: 'Automatisations', icon: KeyRound },
+  { to: '/admin', label: 'Admin (JSON Flows)', icon: Zap },
 ]
 
 export default function App() {
@@ -33,20 +33,23 @@ export default function App() {
         </header>
         <aside className="row-[2] border-r border-neutral-200 dark:border-neutral-800 p-2">
           <nav className="space-y-1">
-            {nav.map(({ to, label, icon: Icon }) => (
-              <NavLink
-                key={to}
-                to={to}
-                className={({ isActive }) =>
-                  `flex items-center gap-2 px-3 py-2 rounded-md text-sm hover:bg-neutral-200/70 dark:hover:bg-neutral-800/70 ${
-                    isActive ? 'bg-neutral-200 dark:bg-neutral-800' : ''
-                  }`
-                }
-              >
-                <Icon size={16} />
-                <span>{label}</span>
-              </NavLink>
-            ))}
+            {nav.map((item) => {
+              const Icon = item.icon
+              return (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  className={({ isActive }) =>
+                    `flex items-center gap-2 px-3 py-2 rounded-md text-sm hover:bg-neutral-200/70 dark:hover:bg-neutral-800/70 ${
+                      isActive ? 'bg-neutral-200 dark:bg-neutral-800' : ''
+                    }`
+                  }
+                >
+                  <Icon size={16} />
+                  <span>{item.label}</span>
+                </NavLink>
+              )
+            })}
           </nav>
         </aside>
         <main className="row-[2] p-4 overflow-auto">

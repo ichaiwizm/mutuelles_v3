@@ -44,6 +44,7 @@ contextBridge.exposeInMainWorld('api', {
     listLeads: () => ipcRenderer.invoke('admin:listLeads') as Promise<Array<{ name:string; file:string }>>,
     run: (payload: { platform:string; flowFile:string; leadFile:string; mode?: 'headless'|'dev'|'dev_private'; keepOpen?: boolean }) => ipcRenderer.invoke('admin:runHLFlow', payload) as Promise<{ runKey:string; pid:number }>,
     runWithLeadId: (payload: { platform:string; flowFile:string; leadId:string; mode?: 'headless'|'dev'|'dev_private'; keepOpen?: boolean }) => ipcRenderer.invoke('admin:runHLFlowWithLeadId', payload) as Promise<{ runKey:string; pid:number }>,
+    readFlowFile: (filePath: string) => ipcRenderer.invoke('admin:readFlowFile', filePath) as Promise<any>,
     onRunOutput: (runKey: string, cb: (e:any)=>void) => {
       const ch = `admin:runOutput:${runKey}`
       const h = (_:any, d:any)=>cb(d)
@@ -79,7 +80,51 @@ contextBridge.exposeInMainWorld('api', {
       return () => ipcRenderer.removeListener(ch, h)
     },
     openPath: (p: string) => ipcRenderer.invoke('scenarios:openPath', p) as Promise<string>,
-    exists: (p: string) => ipcRenderer.invoke('scenarios:exists', p) as Promise<boolean>
+    exists: (p: string) => ipcRenderer.invoke('scenarios:exists', p) as Promise<boolean>,
+    listFlows: () => ipcRenderer.invoke('scenarios:listFlows') as Promise<{
+      success: boolean
+      data?: Array<{
+        platform: string
+        platformName: string
+        flows: Array<{ slug: string; name: string; file: string; stepsCount: number }>
+      }>
+      error?: string
+    }>,
+    getHistory: () => ipcRenderer.invoke('scenarios:getHistory') as Promise<{
+      success: boolean
+      data?: Array<{
+        id: string
+        slug: string
+        platform: string
+        leadId?: string
+        leadName?: string
+        status: 'success' | 'error' | 'running' | 'stopped'
+        startedAt: string
+        finishedAt?: string
+        durationMs?: number
+        runDir: string
+        error?: string
+        mode: 'headless' | 'dev' | 'dev_private'
+        stepsTotal?: number
+        stepsCompleted?: number
+      }>
+      error?: string
+    }>,
+    getRunDetails: (runDir: string) => ipcRenderer.invoke('scenarios:getRunDetails', runDir) as Promise<{
+      success: boolean
+      data?: any
+      error?: string
+    }>,
+    stop: () => ipcRenderer.invoke('scenarios:stop') as Promise<{
+      success: boolean
+      message?: string
+      error?: string
+    }>,
+    makeVisible: () => ipcRenderer.invoke('scenarios:makeVisible') as Promise<{
+      success: boolean
+      message: string
+      error?: string
+    }>
   }
 })
 
@@ -133,12 +178,57 @@ declare global {
         onProgress: (runId: string, cb: (e:any)=>void) => (()=>void)
         openPath: (p: string) => Promise<string>
         exists: (p: string) => Promise<boolean>
+        listFlows: () => Promise<{
+          success: boolean
+          data?: Array<{
+            platform: string
+            platformName: string
+            flows: Array<{ slug: string; name: string; file: string; stepsCount: number }>
+          }>
+          error?: string
+        }>
+        getHistory: () => Promise<{
+          success: boolean
+          data?: Array<{
+            id: string
+            slug: string
+            platform: string
+            leadId?: string
+            leadName?: string
+            status: 'success' | 'error' | 'running' | 'stopped'
+            startedAt: string
+            finishedAt?: string
+            durationMs?: number
+            runDir: string
+            error?: string
+            mode: 'headless' | 'dev' | 'dev_private'
+            stepsTotal?: number
+            stepsCompleted?: number
+          }>
+          error?: string
+        }>
+        getRunDetails: (runDir: string) => Promise<{
+          success: boolean
+          data?: any
+          error?: string
+        }>
+        stop: () => Promise<{
+          success: boolean
+          message?: string
+          error?: string
+        }>
+        makeVisible: () => Promise<{
+          success: boolean
+          message: string
+          error?: string
+        }>
       }
       adminHL: {
         listHLFlows: () => Promise<Array<{ platform:string; slug:string; name:string; file:string }>>
         listLeads: (platform: string) => Promise<Array<{ platform:string; name:string; file:string }>>
         run: (payload: { platform:string; flowFile:string; leadFile:string; mode?: 'headless'|'dev'|'dev_private'; keepOpen?: boolean }) => Promise<{ runKey:string; pid:number }>
         runWithLeadId: (payload: { platform:string; flowFile:string; leadId:string; mode?: 'headless'|'dev'|'dev_private'; keepOpen?: boolean }) => Promise<{ runKey:string; pid:number }>
+        readFlowFile: (filePath: string) => Promise<any>
         onRunOutput: (runKey: string, cb:(e:any)=>void) => (()=>void)
       }
     }
