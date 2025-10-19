@@ -6,7 +6,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { config as loadDotEnv } from 'dotenv'
 import minimist from 'minimist'
-import { runHighLevelFlow } from '../engine/engine.mjs'
+import { runHighLevelFlow } from '../engine/index.mjs'
 import { getDb } from '../../src/shared/db/connection.mjs'
 import { getLeadById, getLeadDisplayName } from '../../src/shared/db/queries/leads.mjs'
 
