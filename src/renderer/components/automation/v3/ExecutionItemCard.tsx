@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react'
+import React, { useMemo } from 'react'
 import { FolderOpen, CheckCircle, XCircle, Loader2, Clock } from 'lucide-react'
 import type { ExecutionItem } from '../../../hooks/useAutomation'
+import { useNow } from '../../../hooks/useNow'
 
 interface ExecutionItemCardProps {
   item: ExecutionItem
@@ -11,22 +12,15 @@ export default function ExecutionItemCard({
   item,
   onOpenFolder
 }: ExecutionItemCardProps) {
-  // Force update every 200ms for running items to show real-time duration
-  const [, forceUpdate] = useState(0)
+  // Use useNow hook to update timestamp every second (instead of forcing re-render every 200ms)
+  const now = useNow(
+    item.status === 'running' || item.status === 'pending',
+    1000 // Update every 1 second instead of 200ms = 80% reduction in re-renders
+  )
 
-  useEffect(() => {
-    if (item.status === 'running' || item.status === 'pending') {
-      const interval = setInterval(() => {
-        forceUpdate(n => n + 1)
-      }, 200)
-
-      return () => clearInterval(interval)
-    }
-  }, [item.status])
-
-  const getDuration = () => {
+  const duration = useMemo(() => {
     if (!item.startedAt) return null
-    const endTime = item.completedAt ? new Date(item.completedAt).getTime() : Date.now()
+    const endTime = item.completedAt ? new Date(item.completedAt).getTime() : now
     const startTime = new Date(item.startedAt).getTime()
     const durationMs = endTime - startTime
     const seconds = Math.floor(durationMs / 1000)
@@ -37,9 +31,9 @@ export default function ExecutionItemCard({
       return `${minutes}m ${remainingSeconds}s`
     }
     return `${seconds}s`
-  }
+  }, [item.startedAt, item.completedAt, now])
 
-  const getStatusConfig = () => {
+  const config = useMemo(() => {
     switch (item.status) {
       case 'pending':
         return {
@@ -76,18 +70,21 @@ export default function ExecutionItemCard({
           label: 'Échoué'
         }
     }
-  }
+  }, [item.status])
 
-  const config = getStatusConfig()
   const StatusIcon = config.icon
-  const duration = getDuration()
-  const progress = item.currentStep && item.totalSteps
-    ? Math.round((item.currentStep / item.totalSteps) * 100)
-    : 0
+
+  const progress = useMemo(
+    () =>
+      item.currentStep && item.totalSteps
+        ? Math.round((item.currentStep / item.totalSteps) * 100)
+        : 0,
+    [item.currentStep, item.totalSteps]
+  )
 
   return (
     <div
-      className={`rounded-lg border ${config.borderColor} ${config.bgColor} p-4 transition-all`}
+      className={`rounded-lg border ${config.borderColor} ${config.bgColor} p-3 transition-all`}
     >
       {/* Header */}
       <div className="flex items-start justify-between gap-3 mb-3">

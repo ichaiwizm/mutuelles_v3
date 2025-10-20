@@ -1,4 +1,12 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useSettings } from './automation/useSettings'
+import { useHistory } from './automation/useHistory'
+import { useSelection } from './automation/useSelection'
+import { useExecution, type ExecutionItem } from './automation/useExecution'
+
+// Re-export types for backwards compatibility
+export type { AdvancedSettings } from './automation/useSettings'
+export type { ExecutionItem } from './automation/useExecution'
 
 export type Lead = {
   id: string
@@ -30,146 +38,38 @@ export type Flow = {
   file: string
 }
 
-export type ExecutionItem = {
-  id: string
-  leadId: string
-  leadName: string
-  platform: string
-  platformName: string
-  flowSlug?: string
-  flowName?: string
-  status: 'pending' | 'running' | 'success' | 'error'
-  runDir?: string
-  message?: string
-  startedAt?: Date
-  completedAt?: Date
-  currentStep?: number
-  totalSteps?: number
-}
-
-export type AdvancedSettings = {
-  // EXECUTION
-  mode: 'headless' | 'headless-minimized' | 'visible'
-  keepBrowserOpen: boolean
-  concurrency: number
-
-  // PREVIEW
-  showPreviewBeforeRun: boolean
-
-  // RETRY
-  retryFailed: boolean
-  maxRetries: number
-
-  // VISIBILITY
-  enableVisibilityFiltering: boolean
-  hiddenPlatforms: string[]
-  hiddenFlows: string[]
-}
-
-const DEFAULT_SETTINGS: AdvancedSettings = {
-  mode: 'headless',
-  keepBrowserOpen: false,
-  concurrency: 6,
-  showPreviewBeforeRun: true,
-  retryFailed: true,
-  maxRetries: 2,
-  enableVisibilityFiltering: true,
-  hiddenPlatforms: [],
-  // Par défaut, seuls alptis_sante_select_pro_full et swisslifeone_slsis sont visibles
-  hiddenFlows: ['alptis_login_hl', 'swisslifeone_login', 'swisslifeone_slsis_inspect']
-}
-
+/**
+ * Main orchestrator hook for automation system
+ *
+ * Responsibilities:
+ * - Load initial data (leads, platforms, flows)
+ * - Coordinate between sub-hooks (settings, history, selection, execution)
+ * - Provide unified API for consumers
+ * - Handle settings updates with side effects
+ *
+ * Architecture:
+ * - useSettings: Manage automation settings
+ * - useHistory: Manage run history persistence
+ * - useSelection: Manage lead and flow selection
+ * - useExecution: Manage execution state and progress
+ *
+ * @returns Unified automation API
+ */
 export function useAutomation() {
-  // Data
+  // ============================================================
+  // DATA LOADING
+  // ============================================================
+
   const [leads, setLeads] = useState<Lead[]>([])
   const [platforms, setPlatforms] = useState<Platform[]>([])
   const [flows, setFlows] = useState<Flow[]>([])
 
-  // Selection
-  const [selectedLeadIds, setSelectedLeadIds] = useState<Set<string>>(new Set())
-  const [selectedFlowIds, setSelectedFlowIds] = useState<Set<string>>(new Set())
-
-  // Execution
-  const [executionItems, setExecutionItems] = useState<Map<string, ExecutionItem>>(new Map())
-  const [runId, setRunId] = useState<string>('')
-  const [isRunning, setIsRunning] = useState(false)
-
-  // Ref to store the unsubscribe function for cleanup
-  const unsubscribeRef = useRef<(() => void) | null>(null)
-
-  // Settings
-  const [settings, setSettings] = useState<AdvancedSettings>(() => {
-    const stored = localStorage.getItem('automation-settings')
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored)
-        // Merge avec les defaults pour ajouter les nouvelles clés
-        const merged = { ...DEFAULT_SETTINGS, ...parsed }
-
-        // Migration : si enableVisibilityFiltering n'existe pas, utiliser les nouveaux defaults
-        if (parsed.enableVisibilityFiltering === undefined) {
-          merged.enableVisibilityFiltering = DEFAULT_SETTINGS.enableVisibilityFiltering
-          merged.hiddenFlows = DEFAULT_SETTINGS.hiddenFlows
-        }
-
-        return merged
-      } catch {
-        return DEFAULT_SETTINGS
-      }
-    }
-    return DEFAULT_SETTINGS
-  })
-
-  // Load initial data
-  useEffect(() => {
-    loadData()
-  }, [])
-
-  // Persist settings
-  useEffect(() => {
-    localStorage.setItem('automation-settings', JSON.stringify(settings))
-  }, [settings])
-
-  // Cleanup listener on unmount
-  useEffect(() => {
-    return () => {
-      if (unsubscribeRef.current) {
-        console.log('[useAutomation] 🧹 Cleaning up IPC listener on unmount')
-        unsubscribeRef.current()
-        unsubscribeRef.current = null
-      }
-    }
-  }, [])
-
-  // Auto-deselect hidden flows when visibility filtering is enabled
-  useEffect(() => {
-    if (!settings.enableVisibilityFiltering) return
-    if (!settings.hiddenFlows || settings.hiddenFlows.length === 0) return
-
-    // Deselect all hidden flows automatically
-    setSelectedFlowIds(prev => {
-      const next = new Set(prev)
-      let changed = false
-
-      settings.hiddenFlows.forEach(hiddenSlug => {
-        if (next.has(hiddenSlug)) {
-          next.delete(hiddenSlug)
-          changed = true
-        }
-      })
-
-      if (changed) {
-        const deselectedCount = settings.hiddenFlows.filter(s => prev.has(s)).length
-        console.log('[useAutomation] 🔄 Auto-deselected', deselectedCount, 'hidden flows')
-      }
-
-      return changed ? next : prev
-    })
-  }, [settings.hiddenFlows, settings.enableVisibilityFiltering])
-
-  async function loadData() {
+  /**
+   * Load initial data from IPC APIs
+   */
+  const loadData = useCallback(async () => {
     try {
-      // Load platforms
+      // Load platforms (only selected ones)
       const platformsList = await window.api.catalog.list()
       setPlatforms(platformsList.filter(p => p.selected))
 
@@ -183,99 +83,85 @@ export function useAutomation() {
       const flowsList = await window.api.adminHL.listHLFlows()
       setFlows(flowsList)
     } catch (error) {
-      console.error('Failed to load automation data:', error)
+      console.error('[useAutomation] Failed to load data:', error)
     }
-  }
-
-  // Selection helpers
-  const toggleLead = useCallback((leadId: string) => {
-    setSelectedLeadIds(prev => {
-      const next = new Set(prev)
-      if (next.has(leadId)) {
-        next.delete(leadId)
-      } else {
-        next.add(leadId)
-      }
-      return next
-    })
   }, [])
 
-  const toggleFlow = useCallback((flowId: string) => {
-    setSelectedFlowIds(prev => {
-      const next = new Set(prev)
-      if (next.has(flowId)) {
-        next.delete(flowId)
-      } else {
-        next.add(flowId)
-      }
-      return next
-    })
-  }, [])
+  // Load data on mount
+  useEffect(() => {
+    loadData()
+  }, [loadData])
 
-  const togglePlatform = useCallback((platformSlug: string) => {
-    // Filter platform flows
-    let platformFlows = flows.filter(f => f.platform === platformSlug)
+  // ============================================================
+  // SUB-HOOKS (SPECIALIZED RESPONSIBILITIES)
+  // ============================================================
 
-    // Exclude hidden flows if visibility filtering is enabled
-    if (settings.enableVisibilityFiltering && settings.hiddenFlows && settings.hiddenFlows.length > 0) {
-      platformFlows = platformFlows.filter(f => !settings.hiddenFlows.includes(f.slug))
+  // Settings management
+  const { settings, updateSettings: updateSettingsBase, resetSettings } = useSettings()
+
+  // Selection management
+  const selection = useSelection({
+    leads,
+    flows,
+    settings
+  })
+
+  // History management
+  const history = useHistory()
+
+  // Execution management (with callback to save to history when run completes)
+  const execution = useExecution(
+    leads,
+    flows,
+    platforms,
+    settings,
+    (executionItems, runId) => {
+      // Save to history when run completes or is cancelled
+      history.saveRunToHistory(runId, executionItems, settings)
     }
-
-    const platformFlowIds = platformFlows.map(f => f.slug)
-
-    setSelectedFlowIds(prev => {
-      const next = new Set(prev)
-      const allSelected = platformFlowIds.every(id => next.has(id))
-
-      if (allSelected) {
-        // Deselect all flows of this platform
-        platformFlowIds.forEach(id => next.delete(id))
-      } else {
-        // Select all flows of this platform (excluding hidden ones)
-        platformFlowIds.forEach(id => next.add(id))
-      }
-      return next
-    })
-  }, [flows, settings.enableVisibilityFiltering, settings.hiddenFlows])
-
-  const selectAllLeads = useCallback(() => {
-    setSelectedLeadIds(new Set(leads.map(l => l.id)))
-  }, [leads])
-
-  const clearLeadSelection = useCallback(() => {
-    setSelectedLeadIds(new Set())
-  }, [])
-
-  const selectAllFlows = useCallback(() => {
-    // Filter hidden flows if necessary
-    let flowsToSelect = flows
-    if (settings.enableVisibilityFiltering && settings.hiddenFlows && settings.hiddenFlows.length > 0) {
-      flowsToSelect = flows.filter(f => !settings.hiddenFlows.includes(f.slug))
-    }
-    setSelectedFlowIds(new Set(flowsToSelect.map(f => f.slug)))
-  }, [flows, settings.enableVisibilityFiltering, settings.hiddenFlows])
-
-  const clearFlowSelection = useCallback(() => {
-    setSelectedFlowIds(new Set())
-  }, [])
-
-  // Computed values
-  const selectedLeads = useMemo(
-    () => leads.filter(l => selectedLeadIds.has(l.id)),
-    [leads, selectedLeadIds]
   )
 
-  const selectedFlows = useMemo(
-    () => flows.filter(f => selectedFlowIds.has(f.slug)),
-    [flows, selectedFlowIds]
-  )
+  // Load history on mount
+  useEffect(() => {
+    history.loadHistory()
+  }, [history])
 
-  const totalExecutions = useMemo(
-    () => selectedLeadIds.size * selectedFlowIds.size,
-    [selectedLeadIds, selectedFlowIds]
-  )
+  // ============================================================
+  // COORDINATED ACTIONS
+  // ============================================================
 
-  // Get lead name helper
+  /**
+   * Start automation run
+   * Delegates to execution hook with selected items
+   */
+  const startRun = useCallback(async (mode: 'headless' | 'dev' | 'dev_private' = 'headless') => {
+    return execution.startRun(
+      selection.selectedLeadIds,
+      selection.selectedFlows,
+      mode
+    )
+  }, [execution, selection.selectedLeadIds, selection.selectedFlows])
+
+  /**
+   * Update settings with side effects
+   * Deselects newly hidden flows
+   */
+  const updateSettings = useCallback((
+    partial: Partial<import('./automation/useSettings').AdvancedSettings>,
+    newlyHiddenFlows?: string[]
+  ) => {
+    updateSettingsBase(partial)
+
+    // Clean selection: deselect newly hidden flows
+    if (newlyHiddenFlows && newlyHiddenFlows.length > 0) {
+      console.log('[useAutomation] Deselecting newly hidden flows:', newlyHiddenFlows)
+      selection.deselectFlows(newlyHiddenFlows)
+    }
+  }, [updateSettingsBase, selection])
+
+  /**
+   * Helper to get formatted lead name
+   */
   const getLeadName = useCallback((leadId: string): string => {
     const lead = leads.find(l => l.id === leadId)
     if (!lead) return leadId.slice(0, 8)
@@ -284,245 +170,54 @@ export function useAutomation() {
     return `${firstName} ${lastName}`.trim() || leadId.slice(0, 8)
   }, [leads])
 
-  // Run automation
-  const startRun = useCallback(async (mode: 'headless' | 'dev' | 'dev_private' = 'headless') => {
-    if (selectedLeadIds.size === 0 || selectedFlowIds.size === 0) {
-      throw new Error('Vous devez sélectionner au moins un lead et un flow')
+  /**
+   * Rerun a historical run
+   * Updates selections and starts new run
+   */
+  const rerunHistoryRun = useCallback(async (historyRunId: string) => {
+    const historyRun = history.runHistory.find(r => r.runId === historyRunId)
+    if (!historyRun) {
+      throw new Error(`Run ${historyRunId} not found in history`)
     }
 
-    setIsRunning(true)
-    setExecutionItems(new Map())  // Clear previous execution items
-    console.log('[useAutomation] 🔄 Cleared execution items, starting new run')
+    // Extract unique lead IDs and flow slugs
+    const leadIds = [...new Set(historyRun.items.map(i => i.leadId))]
+    const flowSlugs = [...new Set(historyRun.items.map(i => i.flowSlug))]
 
-    try {
-      // Filter out hidden flows (safety net)
-      let flowsToExecute = selectedFlows
-      if (settings.enableVisibilityFiltering && settings.hiddenFlows.length > 0) {
-        const beforeCount = flowsToExecute.length
-        flowsToExecute = flowsToExecute.filter(f => !settings.hiddenFlows.includes(f.slug))
-        const filteredCount = beforeCount - flowsToExecute.length
+    // Update selections
+    selection.updateLeadSelection(new Set(leadIds))
+    selection.updateFlowSelection(new Set(flowSlugs))
 
-        if (filteredCount > 0) {
-          console.warn('[useAutomation] ⚠️  Filtered out', filteredCount, 'hidden flows from execution')
-        }
+    // Start run with same mode
+    const mode = historyRun.settings.mode
+    await startRun(mode)
 
-        if (flowsToExecute.length === 0) {
-          throw new Error('Aucun flow visible sélectionné. Veuillez afficher des flows ou désactiver le filtrage.')
-        }
-      }
+    console.log(`[useAutomation] Rerunning history run ${historyRunId.slice(0, 8)}`)
+  }, [history.runHistory, selection, startRun])
 
-      // Build flowOverrides mapping platform -> flowSlug
-      const flowOverrides: Record<string, string> = {}
-      const platformCounts: Record<string, number> = {}
+  /**
+   * Rerun a single execution item
+   */
+  const rerunSingleItem = useCallback(async (item: import('../../shared/types/automation').ExecutionHistoryItem) => {
+    // Set selections for this single item
+    selection.updateLeadSelection(new Set([item.leadId]))
+    selection.updateFlowSelection(new Set([item.flowSlug]))
 
-      flowsToExecute.forEach(flow => {
-        platformCounts[flow.platform] = (platformCounts[flow.platform] || 0) + 1
-        flowOverrides[flow.platform] = flow.slug
-      })
+    // Convert settings.mode to execution mode
+    const mode: 'headless' | 'dev' | 'dev_private' =
+      settings.mode === 'visible' ? 'dev' :
+      settings.mode === 'headless-minimized' ? 'headless' :
+      'headless'
 
-      // Check for multiple flows per platform
-      const multiFlowPlatforms = Object.entries(platformCounts)
-        .filter(([_, count]) => count > 1)
-        .map(([platform]) => platform)
+    // Start run with current settings
+    await startRun(mode)
 
-      if (multiFlowPlatforms.length > 0) {
-        throw new Error(
-          `Plusieurs flows sélectionnés pour: ${multiFlowPlatforms.join(', ')}. ` +
-          'Veuillez ne sélectionner qu\'un seul flow par plateforme.'
-        )
-      }
+    console.log(`[useAutomation] Rerunning single item: ${item.leadName} × ${item.flowName}`)
+  }, [selection, settings.mode, startRun])
 
-      const payload = {
-        leadIds: Array.from(selectedLeadIds),
-        flowOverrides,
-        options: {
-          mode,
-          concurrency: settings.concurrency,
-          keepBrowserOpen: settings.keepBrowserOpen,
-          retryFailed: settings.retryFailed,
-          maxRetries: settings.maxRetries
-        }
-      }
-
-      const { runId: newRunId } = await window.api.scenarios.run(payload)
-      setRunId(newRunId)
-
-      // Clean up previous listener if exists
-      if (unsubscribeRef.current) {
-        console.log('[useAutomation] 🧹 Cleaning up previous listener before starting new run')
-        unsubscribeRef.current()
-      }
-
-      // Listen for progress events
-      const unsubscribe = window.api.scenarios.onProgress(newRunId, (event: any) => {
-        console.log('[useAutomation] 📨 Received event:', event.type, event.itemId?.slice(0, 8) || '', event.currentStep !== undefined ? `step ${event.currentStep}/${event.totalSteps}` : '')
-
-        if (event.type === 'items-queued' && event.items) {
-          setExecutionItems(prev => {
-            const next = new Map(prev)
-            // Create all items in 'pending' status
-            for (const queuedItem of event.items) {
-              const lead = leads.find(l => l.id === queuedItem.leadId)
-              const flow = flows.find(f => f.slug === queuedItem.flowSlug)
-              const platform = platforms.find(p => p.slug === flow?.platform || queuedItem.platform)
-              const leadName = lead ? `${lead.data?.subscriber?.firstName || ''} ${lead.data?.subscriber?.lastName || ''}`.trim() || queuedItem.leadId.slice(0, 8) : queuedItem.leadId.slice(0, 8)
-
-              next.set(queuedItem.itemId, {
-                id: queuedItem.itemId,
-                leadId: queuedItem.leadId,
-                leadName: leadName,
-                platform: flow?.platform || queuedItem.platform,
-                platformName: platform?.name || queuedItem.platform,
-                flowSlug: queuedItem.flowSlug,
-                flowName: flow?.name || queuedItem.flowSlug,
-                status: 'pending'
-              })
-            }
-            return next
-          })
-        }
-
-        if (event.type === 'item-start' && event.itemId) {
-          setExecutionItems(prev => {
-            const next = new Map(prev)
-            const existingItem = next.get(event.itemId)
-
-            if (existingItem) {
-              // Update existing pending item to running
-              next.set(event.itemId, {
-                ...existingItem,
-                status: 'running',
-                startedAt: new Date()
-              })
-            } else {
-              // Fallback: create new item if not in pending (shouldn't happen normally)
-              const lead = leads.find(l => l.id === event.leadId)
-              const flow = flows.find(f => f.slug === event.flowSlug)
-              const platform = platforms.find(p => p.slug === flow?.platform || event.platform)
-              const leadName = lead ? `${lead.data?.subscriber?.firstName || ''} ${lead.data?.subscriber?.lastName || ''}`.trim() || event.leadId.slice(0, 8) : event.leadId.slice(0, 8)
-              next.set(event.itemId, {
-                id: event.itemId,
-                leadId: event.leadId,
-                leadName: leadName,
-                platform: flow?.platform || event.platform,
-                platformName: platform?.name || event.platform,
-                flowSlug: event.flowSlug,
-                flowName: flow?.name || event.flowSlug,
-                status: 'running',
-                startedAt: new Date()
-              })
-            }
-            return next
-          })
-        }
-
-        if (event.type === 'item-progress' && event.itemId) {
-          setExecutionItems(prev => {
-            const next = new Map(prev)
-            const item = next.get(event.itemId)
-            if (item) {
-              next.set(event.itemId, {
-                ...item,
-                currentStep: event.currentStep,
-                totalSteps: event.totalSteps
-              })
-            }
-            return next
-          })
-        }
-
-        if (event.type === 'item-success' && event.itemId) {
-          setExecutionItems(prev => {
-            const next = new Map(prev)
-            const item = next.get(event.itemId)
-            if (item) {
-              next.set(event.itemId, {
-                ...item,
-                status: 'success',
-                runDir: event.runDir,
-                completedAt: new Date(),
-                // Ensure final progress is 100%
-                currentStep: item.totalSteps || item.currentStep
-              })
-            }
-            return next
-          })
-
-          // Force re-render after a small delay to ensure state is applied
-          setTimeout(() => {
-            setExecutionItems(prev => new Map(prev))
-          }, 100)
-        }
-
-        if (event.type === 'item-error' && event.itemId) {
-          setExecutionItems(prev => {
-            const next = new Map(prev)
-            const item = next.get(event.itemId)
-            if (item) {
-              next.set(event.itemId, {
-                ...item,
-                status: 'error',
-                message: event.message,
-                completedAt: new Date()
-              })
-            }
-            return next
-          })
-        }
-
-        if (event.type === 'run-done') {
-          setIsRunning(false)
-          unsubscribe()
-          unsubscribeRef.current = null
-        }
-
-        if (event.type === 'run-cancelled') {
-          setIsRunning(false)
-          unsubscribe()
-          unsubscribeRef.current = null
-        }
-      })
-
-      // Store unsubscribe for cleanup
-      unsubscribeRef.current = unsubscribe
-
-      return newRunId
-    } catch (error) {
-      setIsRunning(false)
-      throw error
-    }
-  }, [selectedLeadIds, selectedFlowIds, selectedFlows, settings, leads, flows, platforms])
-
-  // Update settings
-  const updateSettings = useCallback((partial: Partial<AdvancedSettings>, newlyHiddenFlows?: string[]) => {
-    setSettings(prev => ({ ...prev, ...partial }))
-
-    // Clean selection: deselect newly hidden flows
-    if (newlyHiddenFlows && newlyHiddenFlows.length > 0) {
-      console.log('[useAutomation] 🧹 Deselecting newly hidden flows:', newlyHiddenFlows)
-      setSelectedFlowIds(prev => {
-        const next = new Set(prev)
-        let changed = false
-
-        newlyHiddenFlows.forEach(slug => {
-          if (next.has(slug)) {
-            next.delete(slug)
-            changed = true
-          }
-        })
-
-        if (changed) {
-          console.log('[useAutomation] ✅ Deselected', newlyHiddenFlows.filter(s => prev.has(s)).length, 'hidden flows')
-        }
-
-        return changed ? next : prev
-      })
-    }
-  }, [])
-
-  const resetSettings = useCallback(() => {
-    setSettings(DEFAULT_SETTINGS)
-  }, [])
+  // ============================================================
+  // UNIFIED API (BACKWARD COMPATIBLE)
+  // ============================================================
 
   return {
     // Data
@@ -530,32 +225,40 @@ export function useAutomation() {
     platforms,
     flows,
 
-    // Selection
-    selectedLeadIds,
-    selectedFlowIds,
-    selectedLeads,
-    selectedFlows,
-    toggleLead,
-    toggleFlow,
-    togglePlatform,
-    selectAllLeads,
-    clearLeadSelection,
-    selectAllFlows,
-    clearFlowSelection,
+    // Selection (from useSelection)
+    selectedLeadIds: selection.selectedLeadIds,
+    selectedFlowIds: selection.selectedFlowIds,
+    selectedLeads: selection.selectedLeads,
+    selectedFlows: selection.selectedFlows,
+    toggleLead: selection.toggleLead,
+    toggleFlow: selection.toggleFlow,
+    togglePlatform: selection.togglePlatform,
+    selectAllLeads: selection.selectAllLeads,
+    clearLeadSelection: selection.clearLeadSelection,
+    selectAllFlows: selection.selectAllFlows,
+    clearFlowSelection: selection.clearFlowSelection,
 
-    // Execution
-    executionItems,
-    runId,
-    isRunning,
-    totalExecutions,
+    // Execution (from useExecution)
+    executionItems: execution.executionItems,
+    runId: execution.runId,
+    isRunning: execution.isRunning,
+    totalExecutions: selection.totalExecutions,
     startRun,
 
     // Helpers
     getLeadName,
 
-    // Settings
+    // Settings (from useSettings)
     settings,
     updateSettings,
-    resetSettings
+    resetSettings,
+
+    // History (from useHistory)
+    runHistory: history.runHistory,
+    rerunHistoryRun,
+    rerunSingleItem,
+    deleteHistoryRun: history.deleteHistoryRun,
+    clearAllHistory: history.clearAllHistory,
+    loadHistory: history.loadHistory
   }
 }

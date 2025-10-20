@@ -7,6 +7,7 @@ import FlowsBrowserPanel from './FlowsBrowserPanel'
 import FlowTestModal from './FlowTestModal'
 import FlowDetailsModal from './FlowDetailsModal'
 import type { Lead, Platform, Flow, ExecutionItem, AdvancedSettings } from '../../../hooks/useAutomation'
+import type { RunHistoryItem, ExecutionHistoryItem } from '../../../../shared/types/automation'
 
 interface AdvancedModeTabProps {
   // Data
@@ -32,6 +33,13 @@ interface AdvancedModeTabProps {
   totalExecutions: number
   onStartRun: (mode: 'headless' | 'dev' | 'dev_private') => Promise<string | void>
   onStopExecution?: () => void
+
+  // History
+  runHistory: RunHistoryItem[]
+  onRerunHistory: (runId: string) => void
+  onRerunHistoryItem: (item: ExecutionHistoryItem) => void
+  onDeleteHistory: (runId: string) => void
+  onClearAllHistory: () => void
 
   // Settings
   settings: AdvancedSettings
@@ -60,6 +68,11 @@ export default function AdvancedModeTab({
   totalExecutions,
   onStartRun,
   onStopExecution,
+  runHistory,
+  onRerunHistory,
+  onRerunHistoryItem,
+  onDeleteHistory,
+  onClearAllHistory,
   settings,
   onUpdateSettings,
   getLeadName
@@ -166,14 +179,18 @@ export default function AdvancedModeTab({
         </>
       )}
 
-      {/* Execution Dashboard */}
-      {isRunning && runId && (
-        <ExecutionDashboard
-          runId={runId}
-          executionItems={executionItems}
-          onStopExecution={onStopExecution}
-        />
-      )}
+      {/* Execution Dashboard (always show) */}
+      <ExecutionDashboard
+        runId={runId || ''}
+        executionItems={executionItems}
+        runHistory={runHistory}
+        isRunning={isRunning}
+        onStopExecution={onStopExecution}
+        onRerunHistory={onRerunHistory}
+        onRerunHistoryItem={onRerunHistoryItem}
+        onDeleteHistory={onDeleteHistory}
+        onClearAllHistory={onClearAllHistory}
+      />
 
       {/* Modals */}
       <AutoPreviewModal

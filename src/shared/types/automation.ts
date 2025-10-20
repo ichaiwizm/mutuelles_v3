@@ -223,6 +223,42 @@ export interface RunStepResult {
 }
 
 // ============================================================================
+// Run History (localStorage persistence)
+// ============================================================================
+
+export type RunHistoryStatus = 'completed' | 'partial' | 'failed' | 'stopped'
+
+export interface ExecutionHistoryItem {
+  id: string
+  leadId: string
+  leadName: string
+  platform: string
+  platformName: string
+  flowSlug: string
+  flowName: string
+  status: 'success' | 'error' | 'pending'
+  runDir?: string
+  error?: string
+  startedAt: string
+  completedAt?: string
+  durationMs?: number
+}
+
+export interface RunHistoryItem {
+  runId: string
+  startedAt: string
+  completedAt: string
+  durationMs: number
+  totalItems: number
+  successItems: number
+  errorItems: number
+  pendingItems: number
+  status: RunHistoryStatus
+  settings: ExecutionSettings
+  items: ExecutionHistoryItem[]
+}
+
+// ============================================================================
 // Validation & Compatibility
 // ============================================================================
 

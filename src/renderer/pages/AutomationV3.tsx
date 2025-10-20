@@ -140,6 +140,11 @@ export default function AutomationV3() {
         totalExecutions={automation.totalExecutions}
         onStartRun={handleStartExecution}
         onStopExecution={handleStopAll}
+        runHistory={automation.runHistory}
+        onRerunHistory={automation.rerunHistoryRun}
+        onRerunHistoryItem={automation.rerunSingleItem}
+        onDeleteHistory={automation.deleteHistoryRun}
+        onClearAllHistory={automation.clearAllHistory}
         settings={automation.settings}
         onUpdateSettings={automation.updateSettings}
         getLeadName={automation.getLeadName}
