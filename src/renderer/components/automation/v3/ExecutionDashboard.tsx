@@ -29,8 +29,6 @@ export default function ExecutionDashboard({
     return (saved === 'flow' || saved === 'platform' || saved === 'status') ? saved : 'flow'
   })
 
-  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'running' | 'completed' | 'error'>('all')
-
   // Persist view mode
   useEffect(() => {
     localStorage.setItem('executionViewMode', viewMode)
@@ -47,15 +45,6 @@ export default function ExecutionDashboard({
       setViewMode('folders')
     }
   }, [items.length])
-
-  // Filter items based on status filter
-  const filteredItems = useMemo(() => {
-    if (statusFilter === 'all') return items
-    if (statusFilter === 'completed') {
-      return items.filter(i => i.status === 'success' || i.status === 'error')
-    }
-    return items.filter(i => i.status === statusFilter)
-  }, [items, statusFilter])
 
   const stats = useMemo(() => {
     const total = items.length
@@ -193,66 +182,10 @@ export default function ExecutionDashboard({
         </div>
       </div>
 
-      {/* Status Filter Tabs */}
-      {items.length > 0 && (
-        <div className="flex items-center gap-2 overflow-x-auto pb-2">
-          <button
-            onClick={() => setStatusFilter('all')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${
-              statusFilter === 'all'
-                ? 'bg-blue-600 text-white shadow-sm'
-                : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700'
-            }`}
-          >
-            Tous <span className="ml-1.5 opacity-75">({stats.total})</span>
-          </button>
-          <button
-            onClick={() => setStatusFilter('pending')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${
-              statusFilter === 'pending'
-                ? 'bg-amber-600 text-white shadow-sm'
-                : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700'
-            }`}
-          >
-            En attente <span className="ml-1.5 opacity-75">({stats.pending})</span>
-          </button>
-          <button
-            onClick={() => setStatusFilter('running')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${
-              statusFilter === 'running'
-                ? 'bg-blue-600 text-white shadow-sm'
-                : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700'
-            }`}
-          >
-            En cours <span className="ml-1.5 opacity-75">({stats.running})</span>
-          </button>
-          <button
-            onClick={() => setStatusFilter('completed')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${
-              statusFilter === 'completed'
-                ? 'bg-emerald-600 text-white shadow-sm'
-                : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700'
-            }`}
-          >
-            Terminés <span className="ml-1.5 opacity-75">({stats.completed})</span>
-          </button>
-          <button
-            onClick={() => setStatusFilter('error')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${
-              statusFilter === 'error'
-                ? 'bg-red-600 text-white shadow-sm'
-                : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700'
-            }`}
-          >
-            Erreurs <span className="ml-1.5 opacity-75">({stats.error})</span>
-          </button>
-        </div>
-      )}
-
       {/* Execution Items - Grid or Folders View */}
       {viewMode === 'grid' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredItems.map((item) => (
+          {items.map((item) => (
             <ExecutionItemCard
               key={item.id}
               item={item}
@@ -262,7 +195,7 @@ export default function ExecutionDashboard({
         </div>
       ) : (
         <ExecutionFoldersView
-          items={filteredItems}
+          items={items}
           groupingMode={groupingMode}
           onGroupingModeChange={setGroupingMode}
           onOpenFolder={handleOpenFolder}
