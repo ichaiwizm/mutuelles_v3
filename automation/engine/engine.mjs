@@ -40,7 +40,7 @@ import { ScreenshotManager } from './artifacts/ScreenshotManager.mjs'
 import { DomCollector } from './artifacts/DomCollector.mjs'
 import { describeHL } from './utils/stepDescriber.mjs'
 
-export async function runHighLevelFlow({ fieldsFile, flowFile, leadFile, leadData, username, password, outRoot='data/runs', mode='dev_private', chrome=null, video=false, dom='errors', a11y=false, keepOpen=true, redact='(password|token|authorization|cookie)=([^;\\s]+)' }) {
+export async function runHighLevelFlow({ fieldsFile, flowFile, leadFile, leadData, username, password, outRoot='data/runs', mode='dev_private', chrome=null, video=false, dom='errors', a11y=false, keepOpen=true, redact='(password|token|authorization|cookie)=([^;\\s]+)', onProgress=null }) {
   const fields = JSON.parse(fs.readFileSync(fieldsFile, 'utf-8'))
   const flow = JSON.parse(fs.readFileSync(flowFile, 'utf-8'))
   const lead = leadData || (leadFile ? JSON.parse(fs.readFileSync(leadFile, 'utf-8')) : {})
@@ -150,6 +150,17 @@ export async function runHighLevelFlow({ fieldsFile, flowFile, leadFile, leadDat
         if (condValue === undefined || condValue === null || condValue === false || condValue === '' || (Array.isArray(condValue) && condValue.length === 0)) {
           console.log('[hl] step %d SKIPPED (skipIfNot: %s is falsy)', i, step.skipIfNot)
           stepsSummary.push({ index:i, type:step.type, ok:true, skipped:true, reason:'skipIfNot', ms: 0 })
+
+          // Call onProgress callback for skipped step
+          if (onProgress) {
+            onProgress({
+              stepIndex: i,
+              totalSteps: flow.steps.length,
+              stepMessage: describeHL(step),
+              status: 'skipped'
+            })
+          }
+
           continue
         }
       }
@@ -160,6 +171,17 @@ export async function runHighLevelFlow({ fieldsFile, flowFile, leadFile, leadDat
         if (shouldSkip) {
           console.log('[hl] step %d SKIPPED (skipIf condition matched)', i)
           stepsSummary.push({ index:i, type:step.type, ok:true, skipped:true, reason:'skipIf', ms: 0 })
+
+          // Call onProgress callback for skipped step
+          if (onProgress) {
+            onProgress({
+              stepIndex: i,
+              totalSteps: flow.steps.length,
+              stepMessage: describeHL(step),
+              status: 'skipped'
+            })
+          }
+
           continue
         }
       }
@@ -176,6 +198,16 @@ export async function runHighLevelFlow({ fieldsFile, flowFile, leadFile, leadDat
         await domCollector.maybeCollect(getCurrentContext(), i, step, domDir, dom, a11y, false)
         emit({ type:step.type, status:'success', stepIndex:i, screenshotPath: path.relative(runDir, shotPath) })
         stepsSummary.push({ index:i, type:step.type, ok:true, ms: Date.now()-t0, screenshot:`screenshots/${shotName}` })
+
+        // Call onProgress callback for successful step
+        if (onProgress) {
+          onProgress({
+            stepIndex: i,
+            totalSteps: flow.steps.length,
+            stepMessage: describeHL(step),
+            status: 'ok'
+          })
+        }
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err)
         const errName = `error-${String(i+1).padStart(2,'0')}.png`

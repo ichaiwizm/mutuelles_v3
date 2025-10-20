@@ -7,7 +7,7 @@ interface SettingsModalProps {
   isOpen: boolean
   onClose: () => void
   settings: AdvancedSettings
-  onSave: (settings: AdvancedSettings) => void
+  onSave: (settings: AdvancedSettings, newlyHiddenFlows?: string[]) => void
   onReset: () => void
   platforms: Platform[]
   flows: Flow[]
@@ -33,7 +33,14 @@ export default function SettingsModal({
   }, [isOpen, settings])
 
   const handleSave = () => {
-    onSave(localSettings)
+    // Calculate newly hidden flows (flows that were visible before but are now hidden)
+    const newlyHiddenFlows = localSettings.hiddenFlows.filter(
+      slug => !settings.hiddenFlows.includes(slug)
+    )
+
+    console.log('[SettingsModal] Newly hidden flows:', newlyHiddenFlows)
+
+    onSave(localSettings, newlyHiddenFlows)
     onClose()
   }
 

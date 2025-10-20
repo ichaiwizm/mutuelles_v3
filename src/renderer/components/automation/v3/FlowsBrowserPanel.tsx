@@ -72,6 +72,24 @@ export default function FlowsBrowserPanel({
     return groups
   }, [filteredFlows])
 
+  // Detect hidden but selected flows (safety check)
+  const hiddenButSelectedFlows = useMemo(() => {
+    if (!settings?.enableVisibilityFiltering) return []
+    if (!settings?.hiddenFlows || settings.hiddenFlows.length === 0) return []
+
+    const hiddenSelected: Flow[] = []
+    selectedFlowIds.forEach(slug => {
+      if (settings.hiddenFlows.includes(slug)) {
+        const flow = flows.find(f => f.slug === slug)
+        if (flow) {
+          hiddenSelected.push(flow)
+        }
+      }
+    })
+
+    return hiddenSelected
+  }, [selectedFlowIds, settings?.hiddenFlows, settings?.enableVisibilityFiltering, flows])
+
   // Get default (best) flow for a platform using intelligent scoring
   const getDefaultFlow = (platformFlows: Flow[]): Flow | undefined => {
     if (platformFlows.length === 0) return undefined
@@ -141,6 +159,34 @@ export default function FlowsBrowserPanel({
           className="w-full pl-9 pr-3 py-2 text-sm border border-neutral-200 dark:border-neutral-700 rounded-md bg-white dark:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
       </div>
+
+      {/* Warning: Hidden but selected flows */}
+      {hiddenButSelectedFlows.length > 0 && (
+        <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-md">
+          <div className="flex items-start gap-3">
+            <div className="flex-1">
+              <div className="text-sm font-medium text-amber-900 dark:text-amber-100 mb-1">
+                ⚠️ Flows cachés sélectionnés
+              </div>
+              <div className="text-xs text-amber-700 dark:text-amber-300">
+                {hiddenButSelectedFlows.length} flow{hiddenButSelectedFlows.length > 1 ? 's' : ''} caché{hiddenButSelectedFlows.length > 1 ? 's' : ''} {hiddenButSelectedFlows.length > 1 ? 'sont encore sélectionnés' : 'est encore sélectionné'} :
+                {' '}
+                <span className="font-medium">
+                  {hiddenButSelectedFlows.map(f => f.name).join(', ')}
+                </span>
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                hiddenButSelectedFlows.forEach(flow => onToggleFlow(flow.slug))
+              }}
+              className="px-3 py-1.5 text-xs font-medium bg-amber-200 dark:bg-amber-900 text-amber-900 dark:text-amber-100 rounded hover:bg-amber-300 dark:hover:bg-amber-800 transition-colors flex-shrink-0"
+            >
+              Désélectionner
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Platform list */}
       <div className="space-y-2 max-h-96 overflow-y-auto">

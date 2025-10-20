@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 
 export type Lead = {
   id: string
@@ -94,6 +94,9 @@ export function useAutomation() {
   const [runId, setRunId] = useState<string>('')
   const [isRunning, setIsRunning] = useState(false)
 
+  // Ref to store the unsubscribe function for cleanup
+  const unsubscribeRef = useRef<(() => void) | null>(null)
+
   // Settings
   const [settings, setSettings] = useState<AdvancedSettings>(() => {
     const stored = localStorage.getItem('automation-settings')
@@ -126,6 +129,43 @@ export function useAutomation() {
   useEffect(() => {
     localStorage.setItem('automation-settings', JSON.stringify(settings))
   }, [settings])
+
+  // Cleanup listener on unmount
+  useEffect(() => {
+    return () => {
+      if (unsubscribeRef.current) {
+        console.log('[useAutomation] 🧹 Cleaning up IPC listener on unmount')
+        unsubscribeRef.current()
+        unsubscribeRef.current = null
+      }
+    }
+  }, [])
+
+  // Auto-deselect hidden flows when visibility filtering is enabled
+  useEffect(() => {
+    if (!settings.enableVisibilityFiltering) return
+    if (!settings.hiddenFlows || settings.hiddenFlows.length === 0) return
+
+    // Deselect all hidden flows automatically
+    setSelectedFlowIds(prev => {
+      const next = new Set(prev)
+      let changed = false
+
+      settings.hiddenFlows.forEach(hiddenSlug => {
+        if (next.has(hiddenSlug)) {
+          next.delete(hiddenSlug)
+          changed = true
+        }
+      })
+
+      if (changed) {
+        const deselectedCount = settings.hiddenFlows.filter(s => prev.has(s)).length
+        console.log('[useAutomation] 🔄 Auto-deselected', deselectedCount, 'hidden flows')
+      }
+
+      return changed ? next : prev
+    })
+  }, [settings.hiddenFlows, settings.enableVisibilityFiltering])
 
   async function loadData() {
     try {
@@ -231,14 +271,31 @@ export function useAutomation() {
     }
 
     setIsRunning(true)
-    setExecutionItems(new Map())
+    setExecutionItems(new Map())  // Clear previous execution items
+    console.log('[useAutomation] 🔄 Cleared execution items, starting new run')
 
     try {
+      // Filter out hidden flows (safety net)
+      let flowsToExecute = selectedFlows
+      if (settings.enableVisibilityFiltering && settings.hiddenFlows.length > 0) {
+        const beforeCount = flowsToExecute.length
+        flowsToExecute = flowsToExecute.filter(f => !settings.hiddenFlows.includes(f.slug))
+        const filteredCount = beforeCount - flowsToExecute.length
+
+        if (filteredCount > 0) {
+          console.warn('[useAutomation] ⚠️  Filtered out', filteredCount, 'hidden flows from execution')
+        }
+
+        if (flowsToExecute.length === 0) {
+          throw new Error('Aucun flow visible sélectionné. Veuillez afficher des flows ou désactiver le filtrage.')
+        }
+      }
+
       // Build flowOverrides mapping platform -> flowSlug
       const flowOverrides: Record<string, string> = {}
       const platformCounts: Record<string, number> = {}
 
-      selectedFlows.forEach(flow => {
+      flowsToExecute.forEach(flow => {
         platformCounts[flow.platform] = (platformCounts[flow.platform] || 0) + 1
         flowOverrides[flow.platform] = flow.slug
       })
@@ -270,8 +327,16 @@ export function useAutomation() {
       const { runId: newRunId } = await window.api.scenarios.run(payload)
       setRunId(newRunId)
 
+      // Clean up previous listener if exists
+      if (unsubscribeRef.current) {
+        console.log('[useAutomation] 🧹 Cleaning up previous listener before starting new run')
+        unsubscribeRef.current()
+      }
+
       // Listen for progress events
       const unsubscribe = window.api.scenarios.onProgress(newRunId, (event: any) => {
+        console.log('[useAutomation] 📨 Received event:', event.type, event.itemId?.slice(0, 8) || '', event.currentStep !== undefined ? `step ${event.currentStep}/${event.totalSteps}` : '')
+
         if (event.type === 'item-start' && event.itemId) {
           setExecutionItems(prev => {
             const next = new Map(prev)
@@ -318,11 +383,18 @@ export function useAutomation() {
                 ...item,
                 status: 'success',
                 runDir: event.runDir,
-                completedAt: new Date()
+                completedAt: new Date(),
+                // Ensure final progress is 100%
+                currentStep: item.totalSteps || item.currentStep
               })
             }
             return next
           })
+
+          // Force re-render after a small delay to ensure state is applied
+          setTimeout(() => {
+            setExecutionItems(prev => new Map(prev))
+          }, 100)
         }
 
         if (event.type === 'item-error' && event.itemId) {
@@ -344,24 +416,51 @@ export function useAutomation() {
         if (event.type === 'run-done') {
           setIsRunning(false)
           unsubscribe()
+          unsubscribeRef.current = null
         }
 
         if (event.type === 'run-cancelled') {
           setIsRunning(false)
           unsubscribe()
+          unsubscribeRef.current = null
         }
       })
+
+      // Store unsubscribe for cleanup
+      unsubscribeRef.current = unsubscribe
 
       return newRunId
     } catch (error) {
       setIsRunning(false)
       throw error
     }
-  }, [selectedLeadIds, selectedFlowIds, settings.concurrency, leads, flows, platforms])
+  }, [selectedLeadIds, selectedFlowIds, selectedFlows, settings, leads, flows, platforms])
 
   // Update settings
-  const updateSettings = useCallback((partial: Partial<AdvancedSettings>) => {
+  const updateSettings = useCallback((partial: Partial<AdvancedSettings>, newlyHiddenFlows?: string[]) => {
     setSettings(prev => ({ ...prev, ...partial }))
+
+    // Clean selection: deselect newly hidden flows
+    if (newlyHiddenFlows && newlyHiddenFlows.length > 0) {
+      console.log('[useAutomation] 🧹 Deselecting newly hidden flows:', newlyHiddenFlows)
+      setSelectedFlowIds(prev => {
+        const next = new Set(prev)
+        let changed = false
+
+        newlyHiddenFlows.forEach(slug => {
+          if (next.has(slug)) {
+            next.delete(slug)
+            changed = true
+          }
+        })
+
+        if (changed) {
+          console.log('[useAutomation] ✅ Deselected', newlyHiddenFlows.filter(s => prev.has(s)).length, 'hidden flows')
+        }
+
+        return changed ? next : prev
+      })
+    }
   }, [])
 
   const resetSettings = useCallback(() => {

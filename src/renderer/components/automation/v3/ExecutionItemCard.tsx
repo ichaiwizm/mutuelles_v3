@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { FolderOpen, CheckCircle, XCircle, Loader2, Clock } from 'lucide-react'
 import type { ExecutionItem } from '../../../hooks/useAutomation'
 
@@ -11,6 +11,19 @@ export default function ExecutionItemCard({
   item,
   onOpenFolder
 }: ExecutionItemCardProps) {
+  // Force update every 200ms for running items to show real-time duration
+  const [, forceUpdate] = useState(0)
+
+  useEffect(() => {
+    if (item.status === 'running' || item.status === 'pending') {
+      const interval = setInterval(() => {
+        forceUpdate(n => n + 1)
+      }, 200)
+
+      return () => clearInterval(interval)
+    }
+  }, [item.status])
+
   const getDuration = () => {
     if (!item.startedAt) return null
     const endTime = item.completedAt ? new Date(item.completedAt).getTime() : Date.now()

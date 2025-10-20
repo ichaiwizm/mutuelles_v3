@@ -52,8 +52,16 @@ export class ScenariosRunner {
   async run(payload: RunRequest, sender?: BrowserWindow) {
     const runId = makeId('scn')
     const send = (evt: RunProgressEvent) => {
-      if (!sender) return
-      try { sender.webContents.send(`scenarios:progress:${runId}`, evt) } catch {}
+      if (!sender) {
+        console.warn('[Runner] ⚠️  No sender for event:', evt.type, evt.itemId || '')
+        return
+      }
+      try {
+        sender.webContents.send(`scenarios:progress:${runId}`, evt)
+        console.log(`[Runner] ✅ Sent ${evt.type}${evt.itemId ? ' for ' + evt.itemId.slice(0, 8) : ''}${evt.currentStep !== undefined ? ` (step ${evt.currentStep}/${evt.totalSteps})` : ''}`)
+      } catch (err) {
+        console.error('[Runner] ❌ IPC send failed:', err, 'Event:', evt.type)
+      }
     }
 
     const db = getDb()
@@ -142,7 +150,23 @@ export class ScenariosRunner {
         try {
           const lead = await leadsSvc.getLead(def.leadId)
           if (!lead) throw new Error('Lead introuvable')
-          const { runDir } = await this.execHL({ ...def, mode, leadData: lead.data, keepOpen })
+
+          // Create progress callback for real-time step updates
+          const progressCallback = (progress: any) => {
+            send({
+              type: 'item-progress',
+              runId,
+              itemId: def.itemId,
+              leadId: def.leadId,
+              platform: def.platform,
+              flowSlug: def.flowSlug,
+              currentStep: progress.stepIndex + 1,  // stepIndex is 0-based
+              totalSteps: progress.totalSteps,
+              stepMessage: progress.stepMessage
+            })
+          }
+
+          const { runDir } = await this.execHL({ ...def, mode, leadData: lead.data, keepOpen, onProgress: progressCallback })
 
           // Emit final progress before success
           if (totalSteps > 0) {
@@ -222,6 +246,7 @@ export class ScenariosRunner {
     password: string
     mode: Mode
     keepOpen?: boolean
+    onProgress?: (progress: any) => void
   }): Promise<{ runDir: string }>{
     const { pathToFileURL } = await import('node:url')
     const enginePath = path.join(process.cwd(), 'automation', 'engine', 'engine.mjs')
@@ -236,7 +261,8 @@ export class ScenariosRunner {
       mode: args.mode,
       keepOpen: args.keepOpen ?? (args.mode !== 'headless'),
       outRoot: path.join(process.cwd(), 'data', 'runs'),
-      dom: 'steps'
+      dom: 'steps',
+      onProgress: args.onProgress  // Pass the progress callback to the engine
     })
   }
 }

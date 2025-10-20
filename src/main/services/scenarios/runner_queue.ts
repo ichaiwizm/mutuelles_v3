@@ -2,11 +2,15 @@ export type TaskFn<T=any> = () => Promise<T>
 
 export class RunnerQueue {
   private concurrency: number
+  private maxQueueSize: number
   private running = 0
   private queue: Array<{ fn: TaskFn; resolve: (v:any)=>void; reject: (e:any)=>void }> = []
   private stopped = false
 
-  constructor(concurrency = 2) { this.concurrency = Math.max(1, concurrency) }
+  constructor(concurrency = 2, maxQueueSize = 1000) {
+    this.concurrency = Math.max(1, concurrency)
+    this.maxQueueSize = maxQueueSize
+  }
 
   setConcurrency(n: number) { this.concurrency = Math.max(1, n) }
 
@@ -16,6 +20,13 @@ export class RunnerQueue {
         reject(new Error('Queue has been stopped'))
         return
       }
+
+      // Check queue size limit
+      if (this.queue.length >= this.maxQueueSize) {
+        reject(new Error(`Queue full (max: ${this.maxQueueSize})`))
+        return
+      }
+
       this.queue.push({ fn, resolve, reject })
       this.tick()
     })
