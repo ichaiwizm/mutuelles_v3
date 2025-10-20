@@ -1,19 +1,15 @@
 import React from 'react'
-import { Eye, Square, FolderOpen, CheckCircle, XCircle, Loader2, Clock } from 'lucide-react'
+import { FolderOpen, CheckCircle, XCircle, Loader2, Clock } from 'lucide-react'
 import type { ExecutionItem } from '../../../hooks/useAutomation'
 
 interface ExecutionItemCardProps {
   item: ExecutionItem
   onOpenFolder?: () => void
-  onStop?: () => void
-  onMakeVisible?: () => void
 }
 
 export default function ExecutionItemCard({
   item,
-  onOpenFolder,
-  onStop,
-  onMakeVisible
+  onOpenFolder
 }: ExecutionItemCardProps) {
   const getDuration = () => {
     if (!item.startedAt) return null
@@ -105,24 +101,6 @@ export default function ExecutionItemCard({
 
         {/* Actions */}
         <div className="flex items-center gap-1 flex-shrink-0">
-          {item.status === 'running' && onMakeVisible && (
-            <button
-              onClick={onMakeVisible}
-              title="Rendre visible"
-              className="p-1.5 rounded hover:bg-white dark:hover:bg-neutral-800 transition-colors"
-            >
-              <Eye size={16} className="text-neutral-600 dark:text-neutral-400" />
-            </button>
-          )}
-          {item.status === 'running' && onStop && (
-            <button
-              onClick={onStop}
-              title="Arrêter"
-              className="p-1.5 rounded hover:bg-white dark:hover:bg-neutral-800 transition-colors"
-            >
-              <Square size={16} className="text-neutral-600 dark:text-neutral-400" />
-            </button>
-          )}
           {(item.status === 'success' || item.status === 'error') && item.runDir && onOpenFolder && (
             <button
               onClick={onOpenFolder}

@@ -171,44 +171,25 @@ export function registerScenariosIpc() {
   })
 
   // Stop a running execution (gracefully)
-  // NOTE: This requires modification to runner.ts to support cancellation
-  // For now, this returns a message indicating the limitation
-  ipcMain.handle('scenarios:stop', async () => {
+  ipcMain.handle('scenarios:stop', async (_e, runId: string) => {
     try {
-      // TODO: Implement runner.stop() method in runner.ts
-      // The current runner implementation doesn't support stopping in-flight executions
-      // This would require:
-      // 1. Adding a stop flag to ScenariosRunner
-      // 2. Checking the flag in the queue processing loop
-      // 3. Aborting pending tasks and allowing running ones to complete
-
-      return {
-        success: false,
-        message: 'Stop functionality not yet implemented. Close the application to stop running executions.'
+      if (!runId) {
+        return {
+          success: false,
+          message: 'Run ID manquant'
+        }
       }
+
+      const result = runner.stop(runId)
+      return result
     } catch (error) {
       console.error('Error stopping execution:', error)
-      return { success: false, error: error instanceof Error ? error.message : 'Failed to stop execution' }
-    }
-  })
-
-  // Make a headless execution visible
-  // NOTE: This is not possible with Playwright's architecture
-  // Once a browser context is created as headless, it cannot be made visible
-  ipcMain.handle('scenarios:makeVisible', async () => {
-    try {
-      // This is a technical limitation of Playwright
-      // Headless and headed modes use different browser contexts
-      // To make an execution visible, it must be started in 'dev' or 'dev_private' mode
-
       return {
         success: false,
-        message: 'Cannot make headless execution visible. Please start execution in "dev" mode to see the browser.'
+        message: error instanceof Error ? error.message : 'Failed to stop execution'
       }
-    } catch (error) {
-      console.error('Error making execution visible:', error)
-      return { success: false, error: error instanceof Error ? error.message : 'Operation not supported' }
     }
   })
+
 }
 

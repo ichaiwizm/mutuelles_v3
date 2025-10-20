@@ -129,8 +129,6 @@ export default function ExecutionDashboard({
             key={item.id}
             item={item}
             onOpenFolder={item.runDir ? () => handleOpenFolder(item.runDir!) : undefined}
-            onStop={item.status === 'running' ? () => console.log('Stop:', item.id) : undefined}
-            onMakeVisible={item.status === 'running' ? () => console.log('Make visible:', item.id) : undefined}
           />
         ))}
       </div>

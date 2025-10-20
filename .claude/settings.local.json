@@ -1,8 +1,10 @@
 {
   "permissions": {
-    "defaultMode": "bypassPermissions",
-    "allow": [],
+    "allow": [
+      "Read(//mnt/c/Users/**)"
+    ],
     "deny": [],
-    "ask": []
+    "ask": [],
+    "defaultMode": "bypassPermissions"
   }
 }

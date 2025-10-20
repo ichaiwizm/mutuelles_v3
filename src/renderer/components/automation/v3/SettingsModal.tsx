@@ -154,13 +154,13 @@ export default function SettingsModal({
               <input
                 type="number"
                 min={1}
-                max={20}
+                max={15}
                 value={localSettings.concurrency}
-                onChange={(e) => updateSetting('concurrency', Math.max(1, Math.min(20, parseInt(e.target.value) || 6)))}
+                onChange={(e) => updateSetting('concurrency', Math.max(1, Math.min(15, parseInt(e.target.value) || 6)))}
                 className="w-full px-3 py-2 text-sm border border-neutral-200 dark:border-neutral-700 rounded-md bg-white dark:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <p className="text-xs text-neutral-500 mt-1">
-                Exécutions simultanées (1-20)
+                Exécutions simultanées (1-15, recommandé: 6)
               </p>
             </div>
           </div>

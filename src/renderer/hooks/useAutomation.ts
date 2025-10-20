@@ -234,12 +234,36 @@ export function useAutomation() {
     setExecutionItems(new Map())
 
     try {
+      // Build flowOverrides mapping platform -> flowSlug
+      const flowOverrides: Record<string, string> = {}
+      const platformCounts: Record<string, number> = {}
+
+      selectedFlows.forEach(flow => {
+        platformCounts[flow.platform] = (platformCounts[flow.platform] || 0) + 1
+        flowOverrides[flow.platform] = flow.slug
+      })
+
+      // Check for multiple flows per platform
+      const multiFlowPlatforms = Object.entries(platformCounts)
+        .filter(([_, count]) => count > 1)
+        .map(([platform]) => platform)
+
+      if (multiFlowPlatforms.length > 0) {
+        throw new Error(
+          `Plusieurs flows sélectionnés pour: ${multiFlowPlatforms.join(', ')}. ` +
+          'Veuillez ne sélectionner qu\'un seul flow par plateforme.'
+        )
+      }
+
       const payload = {
         leadIds: Array.from(selectedLeadIds),
-        flowIds: Array.from(selectedFlowIds),
+        flowOverrides,
         options: {
           mode,
-          concurrency: settings.concurrency
+          concurrency: settings.concurrency,
+          keepBrowserOpen: settings.keepBrowserOpen,
+          retryFailed: settings.retryFailed,
+          maxRetries: settings.maxRetries
         }
       }
 
@@ -318,6 +342,11 @@ export function useAutomation() {
         }
 
         if (event.type === 'run-done') {
+          setIsRunning(false)
+          unsubscribe()
+        }
+
+        if (event.type === 'run-cancelled') {
           setIsRunning(false)
           unsubscribe()
         }

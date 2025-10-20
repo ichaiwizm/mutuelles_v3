@@ -26,14 +26,28 @@ export default function FlowsBrowserPanel({
 
   // Apply visibility filters
   const visiblePlatforms = useMemo(() => {
-    if (!settings?.hiddenPlatforms) return platforms
+    if (!settings?.enableVisibilityFiltering) return platforms
+    if (!settings?.hiddenPlatforms || settings.hiddenPlatforms.length === 0) return platforms
     return platforms.filter(p => !settings.hiddenPlatforms.includes(p.slug))
-  }, [platforms, settings?.hiddenPlatforms])
+  }, [platforms, settings?.hiddenPlatforms, settings?.enableVisibilityFiltering])
 
   const visibleFlows = useMemo(() => {
-    if (!settings?.hiddenFlows) return flows
-    return flows.filter(f => !settings.hiddenFlows.includes(f.slug))
-  }, [flows, settings?.hiddenFlows])
+    if (!settings?.enableVisibilityFiltering) return flows
+
+    let filtered = flows
+
+    // Filter by hidden platforms (hide flows belonging to hidden platforms)
+    if (settings?.hiddenPlatforms && settings.hiddenPlatforms.length > 0) {
+      filtered = filtered.filter(f => !settings.hiddenPlatforms.includes(f.platform))
+    }
+
+    // Filter by hidden flows
+    if (settings?.hiddenFlows && settings.hiddenFlows.length > 0) {
+      filtered = filtered.filter(f => !settings.hiddenFlows.includes(f.slug))
+    }
+
+    return filtered
+  }, [flows, settings?.hiddenFlows, settings?.hiddenPlatforms, settings?.enableVisibilityFiltering])
 
   // Filter flows by search query
   const filteredFlows = useMemo(() => {

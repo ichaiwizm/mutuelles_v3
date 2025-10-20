@@ -115,15 +115,11 @@ contextBridge.exposeInMainWorld('api', {
       data?: any
       error?: string
     }>,
-    stop: () => ipcRenderer.invoke('scenarios:stop') as Promise<{
+    stop: (runId: string) => ipcRenderer.invoke('scenarios:stop', runId) as Promise<{
       success: boolean
       message?: string
       error?: string
-    }>,
-    makeVisible: () => ipcRenderer.invoke('scenarios:makeVisible') as Promise<{
-      success: boolean
-      message: string
-      error?: string
+      cancelledCount?: number
     }>
   }
 })
@@ -212,15 +208,11 @@ declare global {
           data?: any
           error?: string
         }>
-        stop: () => Promise<{
+        stop: (runId: string) => Promise<{
           success: boolean
           message?: string
           error?: string
-        }>
-        makeVisible: () => Promise<{
-          success: boolean
-          message: string
-          error?: string
+          cancelledCount?: number
         }>
       }
       adminHL: {

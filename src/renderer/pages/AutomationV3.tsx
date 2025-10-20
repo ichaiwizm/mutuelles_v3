@@ -12,15 +12,33 @@ export default function AutomationV3() {
   const automation = useAutomation()
   const toast = useToastContext()
 
+  // Additional state for runs history
+  const [totalRuns, setTotalRuns] = React.useState(0)
+
+  // Load total runs on mount
+  React.useEffect(() => {
+    const loadTotalRuns = async () => {
+      try {
+        const history = await window.api.scenarios.getHistory()
+        if (history.success && Array.isArray(history.data)) {
+          setTotalRuns(history.data.length)
+        }
+      } catch (error) {
+        console.error('Failed to load runs history:', error)
+      }
+    }
+    loadTotalRuns()
+  }, [])
+
   // Stats computation
   const stats = useMemo(() => {
     return {
       totalLeads: automation.leads.length,
       totalPlatforms: automation.platforms.length,
       totalFlows: automation.flows.length,
-      totalRuns: 0 // TODO: Track this from database or localStorage
+      totalRuns
     }
-  }, [automation.leads, automation.platforms, automation.flows])
+  }, [automation.leads, automation.platforms, automation.flows, totalRuns])
 
   // Handlers
   const handleStartExecution = async (mode: 'headless' | 'dev' | 'dev_private') => {
@@ -47,9 +65,24 @@ export default function AutomationV3() {
     automation.resetSettings()
   }
 
-  const handleStopAll = () => {
-    // TODO: Implement stop all functionality
-    toast.info('Arrêt demandé', 'Les exécutions en cours vont être interrompues')
+  const handleStopAll = async () => {
+    const currentRunId = automation.runId
+    if (!currentRunId) {
+      toast.warning('Aucune exécution', 'Aucune exécution en cours')
+      return
+    }
+
+    try {
+      const result = await window.api.scenarios.stop(currentRunId)
+      if (result.success) {
+        toast.success('Arrêté', result.message || 'Exécution arrêtée')
+      } else {
+        toast.error('Erreur', result.message || 'Impossible d\'arrêter l\'exécution')
+      }
+    } catch (error) {
+      console.error('Failed to stop execution:', error)
+      toast.error('Erreur', error instanceof Error ? error.message : 'Impossible d\'arrêter l\'exécution')
+    }
   }
 
   return (

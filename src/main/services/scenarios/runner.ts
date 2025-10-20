@@ -13,23 +13,41 @@ export type RunRequest = {
   scenarioId?: string
   platformSlugs?: string[]
   leadIds: string[]
-  options?: { mode?: Mode; concurrency?: number }
+  flowOverrides?: Record<string, string> // platformSlug -> flowSlug mapping
+  options?: {
+    mode?: Mode
+    concurrency?: number
+    keepBrowserOpen?: boolean
+    retryFailed?: boolean
+    maxRetries?: number
+  }
 }
 
 export type RunProgressEvent = {
-  type: 'run-start'|'item-start'|'item-success'|'item-error'|'run-done'
+  type: 'run-start'|'item-start'|'item-progress'|'item-success'|'item-error'|'run-done'|'run-cancelled'
   runId: string
   itemId?: string
   leadId?: string
   platform?: string
+  flowSlug?: string
   message?: string
   runDir?: string
+  currentStep?: number
+  totalSteps?: number
+  stepMessage?: string
+}
+
+type RunContext = {
+  queue: RunnerQueue
+  startedAt: Date
+  sender?: BrowserWindow
 }
 
 function makeId(prefix: string) { return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2,7)}` }
 
 export class ScenariosRunner {
   private projectRoot = process.cwd()
+  private activeRuns = new Map<string, RunContext>()
 
   async run(payload: RunRequest, sender?: BrowserWindow) {
     const runId = makeId('scn')
@@ -42,6 +60,9 @@ export class ScenariosRunner {
     const leadsSvc = new LeadsService()
     const mode: Mode = payload.options?.mode || 'headless'
     const concurrency = Math.max(1, Math.min(15, payload.options?.concurrency ?? 2))
+    const keepOpen = payload.options?.keepBrowserOpen ?? false
+    const retryFailed = payload.options?.retryFailed ?? false
+    const maxRetries = Math.max(0, Math.min(5, payload.options?.maxRetries ?? 1))
 
     // Plateformes ciblées: scenario explicite ou plateformes sélectionnées
     const platformsSelected = db.prepare(`SELECT slug, id FROM platforms_catalog WHERE selected = 1 ORDER BY name`).all() as Array<{slug:string; id:number}>
@@ -50,7 +71,7 @@ export class ScenariosRunner {
 
     setTimeout(() => {
       const hl = listHLFlows(this.projectRoot)
-      const taskDefs: Array<{ itemId:string; leadId:string; platform:string; flowFile:string; fieldsFile:string; username:string; password:string }>= []
+      const taskDefs: Array<{ itemId:string; leadId:string; platform:string; flowFile:string; flowSlug:string; fieldsFile:string; username:string; password:string }>= []
       const earlyErrors: RunProgressEvent[] = []
 
       for (const leadId of payload.leadIds) {
@@ -58,8 +79,17 @@ export class ScenariosRunner {
           const itemId = makeId('itm')
           const platformId = platformIdBySlug[slug]
           if (!platformId) { earlyErrors.push({ type:'item-error', runId, itemId, leadId, platform: slug, message:'Plateforme non sélectionnée' }); continue }
-          const flow = pickDefaultFlowForPlatform(hl, slug)
-          if (!flow) { earlyErrors.push({ type:'item-error', runId, itemId, leadId, platform: slug, message:'Aucun flow HL trouvé' }); continue }
+
+          // Use explicit flow override if provided, otherwise use default heuristic
+          let flow = null
+          if (payload.flowOverrides?.[slug]) {
+            flow = hl.find(f => f.slug === payload.flowOverrides![slug])
+            if (!flow) { earlyErrors.push({ type:'item-error', runId, itemId, leadId, platform: slug, message:`Flow override '${payload.flowOverrides[slug]}' introuvable` }); continue }
+          } else {
+            flow = pickDefaultFlowForPlatform(hl, slug)
+            if (!flow) { earlyErrors.push({ type:'item-error', runId, itemId, leadId, platform: slug, message:'Aucun flow HL trouvé' }); continue }
+          }
+
           const fieldsFile = path.join(this.projectRoot, 'data', 'field-definitions', `${slug}.json`)
           if (!fs.existsSync(fieldsFile)) { earlyErrors.push({ type:'item-error', runId, itemId, leadId, platform: slug, message:'Field-definitions introuvables' }); continue }
           if (!fs.existsSync(flow.file)) { earlyErrors.push({ type:'item-error', runId, itemId, leadId, platform: slug, message:'Flow HL introuvable' }); continue }
@@ -67,7 +97,7 @@ export class ScenariosRunner {
           if (!credsRow?.username) { earlyErrors.push({ type:'item-error', runId, itemId, leadId, platform: slug, message:'Identifiants manquants' }); continue }
           let password = ''
           try { password = revealPassword(platformId) } catch (e) { earlyErrors.push({ type:'item-error', runId, itemId, leadId, platform: slug, message: String(e) }); continue }
-          taskDefs.push({ itemId, leadId, platform: slug, flowFile: flow.file, fieldsFile, username: credsRow.username, password })
+          taskDefs.push({ itemId, leadId, platform: slug, flowFile: flow.file, flowSlug: flow.slug, fieldsFile, username: credsRow.username, password })
         }
       }
 
@@ -75,26 +105,124 @@ export class ScenariosRunner {
       for (const evt of earlyErrors) send(evt)
 
       const queue = new RunnerQueue(concurrency)
+
+      // Store the run context for stop() functionality
+      this.activeRuns.set(runId, {
+        queue,
+        startedAt: new Date(),
+        sender
+      })
+
       const scheduled: Promise<any>[] = []
-      for (const def of taskDefs) {
-        scheduled.push(queue.add(async () => {
-          send({ type:'item-start', runId, itemId: def.itemId, leadId: def.leadId, platform: def.platform })
-          try {
-            const lead = await leadsSvc.getLead(def.leadId)
-            if (!lead) throw new Error('Lead introuvable')
-            const { runDir } = await this.execHL({ ...def, mode, leadData: lead.data })
-            send({ type:'item-success', runId, itemId: def.itemId, leadId: def.leadId, platform: def.platform, runDir })
-          } catch (e) {
-            send({ type:'item-error', runId, itemId: def.itemId, leadId: def.leadId, platform: def.platform, message: e instanceof Error ? e.message : String(e) })
+
+      // Helper function to execute with retry logic
+      const executeWithRetry = async (def: typeof taskDefs[0], attempt: number = 0): Promise<void> => {
+        const isRetry = attempt > 0
+        if (isRetry) {
+          send({ type:'item-start', runId, itemId: def.itemId, leadId: def.leadId, platform: def.platform, flowSlug: def.flowSlug, message: `Tentative ${attempt + 1}/${maxRetries + 1}` })
+        } else {
+          send({ type:'item-start', runId, itemId: def.itemId, leadId: def.leadId, platform: def.platform, flowSlug: def.flowSlug })
+        }
+
+        // Get flow step count for progress tracking
+        let totalSteps = 0
+        try {
+          const flowContent = fs.readFileSync(def.flowFile, 'utf-8')
+          const flowData = JSON.parse(flowContent)
+          totalSteps = flowData.steps?.length || 0
+        } catch (e) {
+          // If we can't read flow, just continue without progress
+        }
+
+        // Emit initial progress
+        if (totalSteps > 0) {
+          send({ type:'item-progress', runId, itemId: def.itemId, leadId: def.leadId, platform: def.platform, flowSlug: def.flowSlug, currentStep: 0, totalSteps })
+        }
+
+        try {
+          const lead = await leadsSvc.getLead(def.leadId)
+          if (!lead) throw new Error('Lead introuvable')
+          const { runDir } = await this.execHL({ ...def, mode, leadData: lead.data, keepOpen })
+
+          // Emit final progress before success
+          if (totalSteps > 0) {
+            send({ type:'item-progress', runId, itemId: def.itemId, leadId: def.leadId, platform: def.platform, flowSlug: def.flowSlug, currentStep: totalSteps, totalSteps })
           }
-        }))
+
+          send({ type:'item-success', runId, itemId: def.itemId, leadId: def.leadId, platform: def.platform, flowSlug: def.flowSlug, runDir })
+        } catch (e) {
+          const errorMsg = e instanceof Error ? e.message : String(e)
+
+          // Check if we should retry
+          if (retryFailed && attempt < maxRetries) {
+            // Wait with exponential backoff: 2s, 5s, 10s
+            const delay = attempt === 0 ? 2000 : attempt === 1 ? 5000 : 10000
+            await new Promise(resolve => setTimeout(resolve, delay))
+            // Retry
+            return executeWithRetry(def, attempt + 1)
+          } else {
+            // Final error (no retry or max retries reached)
+            const finalMsg = attempt > 0 ? `${errorMsg} (après ${attempt + 1} tentative(s))` : errorMsg
+            send({ type:'item-error', runId, itemId: def.itemId, leadId: def.leadId, platform: def.platform, flowSlug: def.flowSlug, message: finalMsg })
+          }
+        }
       }
-      ;(async () => { try { await Promise.allSettled(scheduled) } finally { send({ type:'run-done', runId, message:'Terminé' }) } })()
+
+      for (const def of taskDefs) {
+        scheduled.push(queue.add(() => executeWithRetry(def)))
+      }
+
+      // Async completion handler
+      ;(async () => {
+        try {
+          await Promise.allSettled(scheduled)
+        } finally {
+          // Cleanup active run
+          this.activeRuns.delete(runId)
+          send({ type:'run-done', runId, message:'Terminé' })
+        }
+      })()
     }, 0)
     return { runId }
   }
 
-  private async execHL(args: { flowFile:string; fieldsFile:string; leadData:any; username:string; password:string; mode: Mode }): Promise<{ runDir: string }>{
+  stop(runId: string): { success: boolean; message: string; cancelledCount?: number } {
+    const runContext = this.activeRuns.get(runId)
+    if (!runContext) {
+      return { success: false, message: 'Run introuvable ou déjà terminé' }
+    }
+
+    const cancelledCount = runContext.queue.stop()
+
+    // Send cancellation event
+    if (runContext.sender) {
+      try {
+        runContext.sender.webContents.send(`scenarios:progress:${runId}`, {
+          type: 'run-cancelled',
+          runId,
+          message: `Arrêté (${cancelledCount} tâches annulées)`
+        } as RunProgressEvent)
+      } catch (err) {
+        console.error('Failed to send cancellation event:', err)
+      }
+    }
+
+    return {
+      success: true,
+      message: `Run arrêté avec succès (${cancelledCount} tâches annulées)`,
+      cancelledCount
+    }
+  }
+
+  private async execHL(args: {
+    flowFile: string
+    fieldsFile: string
+    leadData: any
+    username: string
+    password: string
+    mode: Mode
+    keepOpen?: boolean
+  }): Promise<{ runDir: string }>{
     const { pathToFileURL } = await import('node:url')
     const enginePath = path.join(process.cwd(), 'automation', 'engine', 'engine.mjs')
     const mod = await import(pathToFileURL(enginePath).href)
@@ -106,7 +234,7 @@ export class ScenariosRunner {
       username: args.username,
       password: args.password,
       mode: args.mode,
-      keepOpen: args.mode !== 'headless',
+      keepOpen: args.keepOpen ?? (args.mode !== 'headless'),
       outRoot: path.join(process.cwd(), 'data', 'runs'),
       dom: 'steps'
     })
