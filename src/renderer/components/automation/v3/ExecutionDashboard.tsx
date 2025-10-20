@@ -1,7 +1,9 @@
-import React, { useMemo } from 'react'
-import { Play, Square, Activity } from 'lucide-react'
+import React, { useMemo, useState, useEffect } from 'react'
+import { Play, Square, Activity, Grid3x3, FolderKanban } from 'lucide-react'
 import ExecutionItemCard from './ExecutionItemCard'
+import ExecutionFoldersView from './ExecutionFoldersView'
 import type { ExecutionItem } from '../../../hooks/useAutomation'
+import type { GroupingMode } from '../../../utils/executionGrouping'
 
 interface ExecutionDashboardProps {
   runId: string
@@ -15,6 +17,45 @@ export default function ExecutionDashboard({
   onStopExecution
 }: ExecutionDashboardProps) {
   const items = useMemo(() => Array.from(executionItems.values()), [executionItems])
+
+  // View mode: grid or folders (with localStorage persistence)
+  const [viewMode, setViewMode] = useState<'grid' | 'folders'>(() => {
+    const saved = localStorage.getItem('executionViewMode')
+    return (saved === 'grid' || saved === 'folders') ? saved : 'grid'
+  })
+
+  const [groupingMode, setGroupingMode] = useState<GroupingMode>(() => {
+    const saved = localStorage.getItem('executionGroupingMode')
+    return (saved === 'flow' || saved === 'platform' || saved === 'status') ? saved : 'flow'
+  })
+
+  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'running' | 'completed' | 'error'>('all')
+
+  // Persist view mode
+  useEffect(() => {
+    localStorage.setItem('executionViewMode', viewMode)
+  }, [viewMode])
+
+  // Persist grouping mode
+  useEffect(() => {
+    localStorage.setItem('executionGroupingMode', groupingMode)
+  }, [groupingMode])
+
+  // Auto-switch to folders view when items >= 6
+  useEffect(() => {
+    if (items.length >= 6 && viewMode === 'grid') {
+      setViewMode('folders')
+    }
+  }, [items.length])
+
+  // Filter items based on status filter
+  const filteredItems = useMemo(() => {
+    if (statusFilter === 'all') return items
+    if (statusFilter === 'completed') {
+      return items.filter(i => i.status === 'success' || i.status === 'error')
+    }
+    return items.filter(i => i.status === statusFilter)
+  }, [items, statusFilter])
 
   const stats = useMemo(() => {
     const total = items.length
@@ -60,15 +101,45 @@ export default function ExecutionDashboard({
             </div>
           </div>
 
-          {stats.running > 0 && onStopExecution && (
-            <button
-              onClick={onStopExecution}
-              className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-red-600 dark:text-red-400 border border-red-300 dark:border-red-700 rounded-md hover:bg-red-50 dark:hover:bg-red-950 transition-colors"
-            >
-              <Square size={16} />
-              Arrêter tout
-            </button>
-          )}
+          <div className="flex items-center gap-2">
+            {/* View Toggle */}
+            {items.length > 0 && (
+              <div className="flex items-center gap-1 bg-neutral-100 dark:bg-neutral-800 rounded-md p-1">
+                <button
+                  onClick={() => setViewMode('grid')}
+                  className={`p-1.5 rounded transition-all ${
+                    viewMode === 'grid'
+                      ? 'bg-white dark:bg-neutral-700 text-blue-600 dark:text-blue-400 shadow-sm'
+                      : 'text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300'
+                  }`}
+                  title="Vue grille"
+                >
+                  <Grid3x3 size={16} />
+                </button>
+                <button
+                  onClick={() => setViewMode('folders')}
+                  className={`p-1.5 rounded transition-all ${
+                    viewMode === 'folders'
+                      ? 'bg-white dark:bg-neutral-700 text-blue-600 dark:text-blue-400 shadow-sm'
+                      : 'text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300'
+                  }`}
+                  title="Vue dossiers"
+                >
+                  <FolderKanban size={16} />
+                </button>
+              </div>
+            )}
+
+            {stats.running > 0 && onStopExecution && (
+              <button
+                onClick={onStopExecution}
+                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-red-600 dark:text-red-400 border border-red-300 dark:border-red-700 rounded-md hover:bg-red-50 dark:hover:bg-red-950 transition-colors"
+              >
+                <Square size={16} />
+                Arrêter tout
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Global Progress */}
@@ -122,16 +193,81 @@ export default function ExecutionDashboard({
         </div>
       </div>
 
-      {/* Execution Items Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {items.map((item) => (
-          <ExecutionItemCard
-            key={item.id}
-            item={item}
-            onOpenFolder={item.runDir ? () => handleOpenFolder(item.runDir!) : undefined}
-          />
-        ))}
-      </div>
+      {/* Status Filter Tabs */}
+      {items.length > 0 && (
+        <div className="flex items-center gap-2 overflow-x-auto pb-2">
+          <button
+            onClick={() => setStatusFilter('all')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${
+              statusFilter === 'all'
+                ? 'bg-blue-600 text-white shadow-sm'
+                : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700'
+            }`}
+          >
+            Tous <span className="ml-1.5 opacity-75">({stats.total})</span>
+          </button>
+          <button
+            onClick={() => setStatusFilter('pending')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${
+              statusFilter === 'pending'
+                ? 'bg-amber-600 text-white shadow-sm'
+                : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700'
+            }`}
+          >
+            En attente <span className="ml-1.5 opacity-75">({stats.pending})</span>
+          </button>
+          <button
+            onClick={() => setStatusFilter('running')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${
+              statusFilter === 'running'
+                ? 'bg-blue-600 text-white shadow-sm'
+                : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700'
+            }`}
+          >
+            En cours <span className="ml-1.5 opacity-75">({stats.running})</span>
+          </button>
+          <button
+            onClick={() => setStatusFilter('completed')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${
+              statusFilter === 'completed'
+                ? 'bg-emerald-600 text-white shadow-sm'
+                : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700'
+            }`}
+          >
+            Terminés <span className="ml-1.5 opacity-75">({stats.completed})</span>
+          </button>
+          <button
+            onClick={() => setStatusFilter('error')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${
+              statusFilter === 'error'
+                ? 'bg-red-600 text-white shadow-sm'
+                : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700'
+            }`}
+          >
+            Erreurs <span className="ml-1.5 opacity-75">({stats.error})</span>
+          </button>
+        </div>
+      )}
+
+      {/* Execution Items - Grid or Folders View */}
+      {viewMode === 'grid' ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredItems.map((item) => (
+            <ExecutionItemCard
+              key={item.id}
+              item={item}
+              onOpenFolder={item.runDir ? () => handleOpenFolder(item.runDir!) : undefined}
+            />
+          ))}
+        </div>
+      ) : (
+        <ExecutionFoldersView
+          items={filteredItems}
+          groupingMode={groupingMode}
+          onGroupingModeChange={setGroupingMode}
+          onOpenFolder={handleOpenFolder}
+        />
+      )}
 
       {/* Empty State */}
       {items.length === 0 && (

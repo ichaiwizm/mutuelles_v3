@@ -22,6 +22,8 @@ interface AdvancedModeTabProps {
   onTogglePlatform: (slug: string) => void
   onSelectAllLeads: () => void
   onClearLeadSelection: () => void
+  onSelectAllFlows: () => void
+  onClearFlowSelection: () => void
 
   // Execution
   isRunning: boolean
@@ -50,6 +52,8 @@ export default function AdvancedModeTab({
   onTogglePlatform,
   onSelectAllLeads,
   onClearLeadSelection,
+  onSelectAllFlows,
+  onClearFlowSelection,
   isRunning,
   runId,
   executionItems,
@@ -127,6 +131,8 @@ export default function AdvancedModeTab({
               selectedFlowIds={selectedFlowIds}
               onToggleFlow={onToggleFlow}
               onTogglePlatform={onTogglePlatform}
+              onSelectAllFlows={onSelectAllFlows}
+              onClearFlowSelection={onClearFlowSelection}
               onViewFlow={(flow) => setSelectedDetailsFlow(flow)}
               settings={settings}
             />

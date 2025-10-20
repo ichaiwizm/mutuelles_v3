@@ -132,6 +132,8 @@ export default function AutomationV3() {
         onTogglePlatform={automation.togglePlatform}
         onSelectAllLeads={automation.selectAllLeads}
         onClearLeadSelection={automation.clearLeadSelection}
+        onSelectAllFlows={automation.selectAllFlows}
+        onClearFlowSelection={automation.clearFlowSelection}
         isRunning={automation.isRunning}
         runId={automation.runId}
         executionItems={automation.executionItems}

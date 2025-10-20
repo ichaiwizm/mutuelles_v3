@@ -107,6 +107,7 @@ export interface ExecutionRun {
 
 export type ProgressEventType =
   | 'run-start'
+  | 'items-queued'
   | 'item-start'
   | 'item-progress'
   | 'item-success'
@@ -122,10 +123,17 @@ export interface ProgressEvent {
   itemId?: string
   leadId?: string
   platform?: string
+  flowSlug?: string
   message?: string
   runDir?: string
   error?: string
   progress?: ExecutionItemProgress
+  items?: Array<{
+    itemId: string
+    leadId: string
+    platform: string
+    flowSlug: string
+  }>
 }
 
 // ============================================================================

@@ -44,10 +44,11 @@ export default function ExecutionItemCard({
       case 'pending':
         return {
           icon: Clock,
-          color: 'text-neutral-500',
-          bgColor: 'bg-neutral-100 dark:bg-neutral-800',
-          borderColor: 'border-neutral-200 dark:border-neutral-700',
-          label: 'En attente'
+          color: 'text-amber-600 dark:text-amber-400',
+          bgColor: 'bg-amber-50 dark:bg-amber-950',
+          borderColor: 'border-amber-200 dark:border-amber-800',
+          label: 'En file d\'attente',
+          pulse: true
         }
       case 'running':
         return {
@@ -94,7 +95,7 @@ export default function ExecutionItemCard({
           <div className="flex items-center gap-2 mb-1">
             <StatusIcon
               size={16}
-              className={`${config.color} ${config.spin ? 'animate-spin' : ''}`}
+              className={`${config.color} ${config.spin ? 'animate-spin' : ''} ${config.pulse ? 'animate-pulse' : ''}`}
             />
             <span className={`text-xs font-medium ${config.color}`}>
               {config.label}
@@ -144,12 +145,16 @@ export default function ExecutionItemCard({
         </div>
       )}
 
-      {/* Duration */}
-      {duration && (
+      {/* Duration or Status Message */}
+      {item.status === 'pending' ? (
+        <div className="text-xs text-amber-600 dark:text-amber-400 font-medium">
+          En attente de démarrage...
+        </div>
+      ) : duration ? (
         <div className="text-xs text-neutral-500">
           Durée: {duration}
         </div>
-      )}
+      ) : null}
 
       {/* Error Message */}
       {item.status === 'error' && item.message && (

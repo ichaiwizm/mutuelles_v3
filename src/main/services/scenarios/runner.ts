@@ -24,7 +24,7 @@ export type RunRequest = {
 }
 
 export type RunProgressEvent = {
-  type: 'run-start'|'item-start'|'item-progress'|'item-success'|'item-error'|'run-done'|'run-cancelled'
+  type: 'run-start'|'items-queued'|'item-start'|'item-progress'|'item-success'|'item-error'|'run-done'|'run-cancelled'
   runId: string
   itemId?: string
   leadId?: string
@@ -35,6 +35,12 @@ export type RunProgressEvent = {
   currentStep?: number
   totalSteps?: number
   stepMessage?: string
+  items?: Array<{
+    itemId: string
+    leadId: string
+    platform: string
+    flowSlug: string
+  }>
 }
 
 type RunContext = {
@@ -110,6 +116,19 @@ export class ScenariosRunner {
       }
 
       send({ type:'run-start', runId, message: `Démarrage (${taskDefs.length} items)` })
+
+      // Emit items-queued event with all scheduled items
+      send({
+        type:'items-queued',
+        runId,
+        items: taskDefs.map(def => ({
+          itemId: def.itemId,
+          leadId: def.leadId,
+          platform: def.platform,
+          flowSlug: def.flowSlug
+        }))
+      })
+
       for (const evt of earlyErrors) send(evt)
 
       const queue = new RunnerQueue(concurrency)

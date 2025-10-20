@@ -8,6 +8,8 @@ interface FlowsBrowserPanelProps {
   selectedFlowIds: Set<string>
   onToggleFlow: (flowId: string) => void
   onTogglePlatform: (platformSlug: string) => void
+  onSelectAllFlows: () => void
+  onClearFlowSelection: () => void
   onViewFlow: (flow: Flow) => void
   settings?: AdvancedSettings
 }
@@ -18,6 +20,8 @@ export default function FlowsBrowserPanel({
   selectedFlowIds,
   onToggleFlow,
   onTogglePlatform,
+  onSelectAllFlows,
+  onClearFlowSelection,
   onViewFlow,
   settings
 }: FlowsBrowserPanelProps) {
@@ -126,6 +130,18 @@ export default function FlowsBrowserPanel({
     }
   }
 
+  // Select all checkbox state
+  const allSelected = visibleFlows.length > 0 && visibleFlows.every(flow => selectedFlowIds.has(flow.slug))
+  const someSelected = visibleFlows.some(flow => selectedFlowIds.has(flow.slug)) && !allSelected
+
+  const handleToggleAll = () => {
+    if (allSelected) {
+      onClearFlowSelection()
+    } else {
+      onSelectAllFlows()
+    }
+  }
+
   const toggleExpanded = (platformSlug: string) => {
     const newExpanded = new Set(expandedPlatforms)
     if (newExpanded.has(platformSlug)) {
@@ -159,6 +175,22 @@ export default function FlowsBrowserPanel({
           className="w-full pl-9 pr-3 py-2 text-sm border border-neutral-200 dark:border-neutral-700 rounded-md bg-white dark:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
       </div>
+
+      {/* Select All Checkbox */}
+      <label className="flex items-center gap-2 mb-3 pb-3 border-b border-neutral-200 dark:border-neutral-800 cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-800 -mx-2 px-2 py-1 rounded">
+        <input
+          type="checkbox"
+          checked={allSelected}
+          ref={(el) => {
+            if (el) el.indeterminate = someSelected
+          }}
+          onChange={handleToggleAll}
+          className="w-4 h-4 rounded border-neutral-300 text-blue-600 focus:ring-blue-500"
+        />
+        <span className="text-sm font-medium">
+          {allSelected ? 'Tout désélectionner' : 'Tout sélectionner'}
+        </span>
+      </label>
 
       {/* Warning: Hidden but selected flows */}
       {hiddenButSelectedFlows.length > 0 && (

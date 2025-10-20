@@ -213,7 +213,14 @@ export function useAutomation() {
   }, [])
 
   const togglePlatform = useCallback((platformSlug: string) => {
-    const platformFlows = flows.filter(f => f.platform === platformSlug)
+    // Filter platform flows
+    let platformFlows = flows.filter(f => f.platform === platformSlug)
+
+    // Exclude hidden flows if visibility filtering is enabled
+    if (settings.enableVisibilityFiltering && settings.hiddenFlows && settings.hiddenFlows.length > 0) {
+      platformFlows = platformFlows.filter(f => !settings.hiddenFlows.includes(f.slug))
+    }
+
     const platformFlowIds = platformFlows.map(f => f.slug)
 
     setSelectedFlowIds(prev => {
@@ -224,12 +231,12 @@ export function useAutomation() {
         // Deselect all flows of this platform
         platformFlowIds.forEach(id => next.delete(id))
       } else {
-        // Select all flows of this platform
+        // Select all flows of this platform (excluding hidden ones)
         platformFlowIds.forEach(id => next.add(id))
       }
       return next
     })
-  }, [flows])
+  }, [flows, settings.enableVisibilityFiltering, settings.hiddenFlows])
 
   const selectAllLeads = useCallback(() => {
     setSelectedLeadIds(new Set(leads.map(l => l.id)))
@@ -237,6 +244,19 @@ export function useAutomation() {
 
   const clearLeadSelection = useCallback(() => {
     setSelectedLeadIds(new Set())
+  }, [])
+
+  const selectAllFlows = useCallback(() => {
+    // Filter hidden flows if necessary
+    let flowsToSelect = flows
+    if (settings.enableVisibilityFiltering && settings.hiddenFlows && settings.hiddenFlows.length > 0) {
+      flowsToSelect = flows.filter(f => !settings.hiddenFlows.includes(f.slug))
+    }
+    setSelectedFlowIds(new Set(flowsToSelect.map(f => f.slug)))
+  }, [flows, settings.enableVisibilityFiltering, settings.hiddenFlows])
+
+  const clearFlowSelection = useCallback(() => {
+    setSelectedFlowIds(new Set())
   }, [])
 
   // Computed values
@@ -337,24 +357,61 @@ export function useAutomation() {
       const unsubscribe = window.api.scenarios.onProgress(newRunId, (event: any) => {
         console.log('[useAutomation] 📨 Received event:', event.type, event.itemId?.slice(0, 8) || '', event.currentStep !== undefined ? `step ${event.currentStep}/${event.totalSteps}` : '')
 
+        if (event.type === 'items-queued' && event.items) {
+          setExecutionItems(prev => {
+            const next = new Map(prev)
+            // Create all items in 'pending' status
+            for (const queuedItem of event.items) {
+              const lead = leads.find(l => l.id === queuedItem.leadId)
+              const flow = flows.find(f => f.slug === queuedItem.flowSlug)
+              const platform = platforms.find(p => p.slug === flow?.platform || queuedItem.platform)
+              const leadName = lead ? `${lead.data?.subscriber?.firstName || ''} ${lead.data?.subscriber?.lastName || ''}`.trim() || queuedItem.leadId.slice(0, 8) : queuedItem.leadId.slice(0, 8)
+
+              next.set(queuedItem.itemId, {
+                id: queuedItem.itemId,
+                leadId: queuedItem.leadId,
+                leadName: leadName,
+                platform: flow?.platform || queuedItem.platform,
+                platformName: platform?.name || queuedItem.platform,
+                flowSlug: queuedItem.flowSlug,
+                flowName: flow?.name || queuedItem.flowSlug,
+                status: 'pending'
+              })
+            }
+            return next
+          })
+        }
+
         if (event.type === 'item-start' && event.itemId) {
           setExecutionItems(prev => {
             const next = new Map(prev)
-            const lead = leads.find(l => l.id === event.leadId)
-            const flow = flows.find(f => f.slug === event.flowSlug)
-            const platform = platforms.find(p => p.slug === flow?.platform || event.platform)
-            const leadName = lead ? `${lead.data?.subscriber?.firstName || ''} ${lead.data?.subscriber?.lastName || ''}`.trim() || event.leadId.slice(0, 8) : event.leadId.slice(0, 8)
-            next.set(event.itemId, {
-              id: event.itemId,
-              leadId: event.leadId,
-              leadName: leadName,
-              platform: flow?.platform || event.platform,
-              platformName: platform?.name || event.platform,
-              flowSlug: event.flowSlug,
-              flowName: flow?.name || event.flowSlug,
-              status: 'running',
-              startedAt: new Date()
-            })
+            const existingItem = next.get(event.itemId)
+
+            if (existingItem) {
+              // Update existing pending item to running
+              next.set(event.itemId, {
+                ...existingItem,
+                status: 'running',
+                startedAt: new Date()
+              })
+            } else {
+              // Fallback: create new item if not in pending (shouldn't happen normally)
+              const lead = leads.find(l => l.id === event.leadId)
+              const flow = flows.find(f => f.slug === event.flowSlug)
+              const platform = platforms.find(p => p.slug === flow?.platform || event.platform)
+              const leadName = lead ? `${lead.data?.subscriber?.firstName || ''} ${lead.data?.subscriber?.lastName || ''}`.trim() || event.leadId.slice(0, 8) : event.leadId.slice(0, 8)
+              next.set(event.itemId, {
+                id: event.itemId,
+                leadId: event.leadId,
+                leadName: leadName,
+                platform: flow?.platform || event.platform,
+                platformName: platform?.name || event.platform,
+                flowSlug: event.flowSlug,
+                flowName: flow?.name || event.flowSlug,
+                status: 'running',
+                startedAt: new Date()
+              })
+            }
             return next
           })
         }
@@ -483,6 +540,8 @@ export function useAutomation() {
     togglePlatform,
     selectAllLeads,
     clearLeadSelection,
+    selectAllFlows,
+    clearFlowSelection,
 
     // Execution
     executionItems,
