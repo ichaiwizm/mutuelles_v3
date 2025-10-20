@@ -1,8 +1,7 @@
 import React, { useState } from 'react'
-import { Settings, Rocket } from 'lucide-react'
+import { Rocket } from 'lucide-react'
 import LeadSelector from './LeadSelector'
 import AutoPreviewModal from './AutoPreviewModal'
-import SettingsModal from './SettingsModal'
 import ExecutionDashboard from './ExecutionDashboard'
 import FlowsBrowserPanel from './FlowsBrowserPanel'
 import FlowTestModal from './FlowTestModal'
@@ -35,7 +34,6 @@ interface AdvancedModeTabProps {
   // Settings
   settings: AdvancedSettings
   onUpdateSettings: (settings: AdvancedSettings) => void
-  onResetSettings: () => void
 
   // Helpers
   getLeadName: (leadId: string) => string
@@ -60,11 +58,9 @@ export default function AdvancedModeTab({
   onStopExecution,
   settings,
   onUpdateSettings,
-  onResetSettings,
   getLeadName
 }: AdvancedModeTabProps) {
   const [showAutoPreview, setShowAutoPreview] = useState(false)
-  const [showSettings, setShowSettings] = useState(false)
   const [selectedDetailsFlow, setSelectedDetailsFlow] = useState<Flow | null>(null)
   const [selectedTestFlow, setSelectedTestFlow] = useState<Flow | null>(null)
 
@@ -137,16 +133,7 @@ export default function AdvancedModeTab({
           </div>
 
           {/* Action buttons */}
-          <div className="flex items-center justify-center gap-3">
-            {/* Settings Button */}
-            <button
-              onClick={() => setShowSettings(true)}
-              className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium border border-neutral-300 dark:border-neutral-700 rounded-md hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-all hover:shadow-md"
-            >
-              <Settings size={18} />
-              Paramètres
-            </button>
-
+          <div className="flex items-center justify-center">
             {/* Start Button */}
             <button
               onClick={handleStartClick}
@@ -193,16 +180,6 @@ export default function AdvancedModeTab({
         getLeadName={getLeadName}
         settings={settings}
         onUpdateSettings={onUpdateSettings}
-      />
-
-      <SettingsModal
-        isOpen={showSettings}
-        onClose={() => setShowSettings(false)}
-        settings={settings}
-        onSave={onUpdateSettings}
-        onReset={onResetSettings}
-        platforms={platforms}
-        flows={flows}
       />
 
       <FlowDetailsModal

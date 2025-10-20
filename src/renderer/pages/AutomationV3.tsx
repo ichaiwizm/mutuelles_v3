@@ -140,7 +140,6 @@ export default function AutomationV3() {
         onStopExecution={handleStopAll}
         settings={automation.settings}
         onUpdateSettings={automation.updateSettings}
-        onResetSettings={automation.resetSettings}
         getLeadName={automation.getLeadName}
       />
 
