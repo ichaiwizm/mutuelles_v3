@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import type { ExecutionItem } from '../../hooks/useAutomation'
 import type { GroupingMode } from '../../utils/executionGrouping'
+import { calculateExecutionStats } from '../../utils/executionStats'
 
 export type DashboardMode = 'current' | 'history'
 export type ViewMode = 'grid' | 'folders'
@@ -84,24 +85,7 @@ export function useDashboardState({
   // Users can manually switch between 'current' and 'history' modes
 
   // Current run stats
-  const currentStats = useMemo(() => {
-    const total = items.length
-    const pending = items.filter(i => i.status === 'pending').length
-    const running = items.filter(i => i.status === 'running').length
-    const success = items.filter(i => i.status === 'success').length
-    const error = items.filter(i => i.status === 'error').length
-    const completed = success + error
-
-    return {
-      total,
-      pending,
-      running,
-      success,
-      error,
-      completed,
-      progress: total > 0 ? Math.round((completed / total) * 100) : 0
-    }
-  }, [items])
+  const currentStats = useMemo(() => calculateExecutionStats(items), [items])
 
   return {
     mode,

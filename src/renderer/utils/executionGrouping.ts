@@ -1,4 +1,5 @@
 import type { ExecutionItem } from '../hooks/useAutomation'
+import { calculateExecutionStats } from './executionStats'
 
 export type GroupingMode = 'flow' | 'platform' | 'status'
 
@@ -79,12 +80,13 @@ export function groupExecutionItems(
  * Calculate statistics for a group of items
  */
 function calculateGroupStats(items: ExecutionItem[]) {
+  const stats = calculateExecutionStats(items)
   return {
-    total: items.length,
-    pending: items.filter(i => i.status === 'pending').length,
-    running: items.filter(i => i.status === 'running').length,
-    success: items.filter(i => i.status === 'success').length,
-    error: items.filter(i => i.status === 'error').length
+    total: stats.total,
+    pending: stats.pending,
+    running: stats.running,
+    success: stats.success,
+    error: stats.error
   }
 }
 

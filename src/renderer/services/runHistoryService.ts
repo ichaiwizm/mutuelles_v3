@@ -1,4 +1,5 @@
-import type { RunHistoryItem, ExecutionHistoryItem, RunHistoryStatus } from '../../shared/types/automation'
+import type { RunHistoryItem } from '../../shared/types/automation'
+import { getStats as getAnalyticsStats, checkHealth as checkAnalyticsHealth } from './runHistoryAnalytics'
 
 /**
  * Service for managing run history persistence in localStorage
@@ -7,7 +8,8 @@ import type { RunHistoryItem, ExecutionHistoryItem, RunHistoryStatus } from '../
  * - Save completed runs to localStorage
  * - Retrieve run history with validation
  * - Manage storage quota (max 100 runs, FIFO)
- * - Provide health checks and statistics
+ *
+ * For analytics and health checks, see runHistoryAnalytics.ts
  *
  * Storage format: JSON array in localStorage key 'automation-run-history'
  * Max size: 100 runs (oldest removed automatically)
@@ -151,98 +153,19 @@ export class RunHistoryService {
   }
 
   /**
-   * Get history statistics
+   * Get history statistics (delegates to analytics service)
    */
-  static getStats(): {
-    totalRuns: number
-    completedRuns: number
-    partialRuns: number
-    failedRuns: number
-    stoppedRuns: number
-    totalExecutions: number
-    successfulExecutions: number
-    failedExecutions: number
-    averageDuration: number
-    storageSizeKB: number
-  } {
+  static getStats() {
     const history = this.getHistory()
-
-    const totalRuns = history.length
-    const completedRuns = history.filter(r => r.status === 'completed').length
-    const partialRuns = history.filter(r => r.status === 'partial').length
-    const failedRuns = history.filter(r => r.status === 'failed').length
-    const stoppedRuns = history.filter(r => r.status === 'stopped').length
-
-    const totalExecutions = history.reduce((sum, r) => sum + r.totalItems, 0)
-    const successfulExecutions = history.reduce((sum, r) => sum + r.successItems, 0)
-    const failedExecutions = history.reduce((sum, r) => sum + r.errorItems, 0)
-
-    const durations = history.filter(r => r.durationMs > 0).map(r => r.durationMs)
-    const averageDuration = durations.length > 0
-      ? durations.reduce((sum, d) => sum + d, 0) / durations.length
-      : 0
-
-    const stored = localStorage.getItem(this.STORAGE_KEY) || ''
-    const storageSizeKB = new Blob([stored]).size / 1024
-
-    return {
-      totalRuns,
-      completedRuns,
-      partialRuns,
-      failedRuns,
-      stoppedRuns,
-      totalExecutions,
-      successfulExecutions,
-      failedExecutions,
-      averageDuration,
-      storageSizeKB
-    }
+    return getAnalyticsStats(history, this.STORAGE_KEY)
   }
 
   /**
-   * Check if storage is healthy
+   * Check if storage is healthy (delegates to analytics service)
    */
-  static checkHealth(): {
-    isHealthy: boolean
-    issues: string[]
-    warnings: string[]
-  } {
-    const issues: string[] = []
-    const warnings: string[] = []
-
-    try {
-      const history = this.getHistory()
-      const stats = this.getStats()
-
-      // Check storage size
-      if (stats.storageSizeKB > 5000) {
-        issues.push(`Storage size too large: ${stats.storageSizeKB.toFixed(2)} KB`)
-      } else if (stats.storageSizeKB > 3000) {
-        warnings.push(`Storage size getting large: ${stats.storageSizeKB.toFixed(2)} KB`)
-      }
-
-      // Check run count
-      if (history.length > this.MAX_HISTORY) {
-        issues.push(`Too many runs: ${history.length} (max: ${this.MAX_HISTORY})`)
-      } else if (history.length > this.MAX_HISTORY * 0.9) {
-        warnings.push(`Approaching max runs: ${history.length}/${this.MAX_HISTORY}`)
-      }
-
-      // Check for corrupted data
-      for (const run of history) {
-        if (!run.runId || !run.startedAt || !run.items || !Array.isArray(run.items)) {
-          issues.push(`Corrupted run found: ${run.runId || 'unknown'}`)
-        }
-      }
-
-    } catch (error) {
-      issues.push(`Failed to check health: ${error instanceof Error ? error.message : 'unknown error'}`)
-    }
-
-    return {
-      isHealthy: issues.length === 0,
-      issues,
-      warnings
-    }
+  static checkHealth() {
+    const history = this.getHistory()
+    const stats = this.getStats()
+    return checkAnalyticsHealth(history, stats, this.MAX_HISTORY)
   }
 }

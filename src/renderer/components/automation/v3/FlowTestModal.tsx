@@ -15,7 +15,6 @@ interface FlowTestModalProps {
 
 type TestMode = 'mock' | 'lead'
 type ExecutionStatus = 'idle' | 'running' | 'success' | 'error'
-type RunningStatus = 'running'
 
 export default function FlowTestModal({ isOpen, onClose, flow, leads }: FlowTestModalProps) {
   const [testMode, setTestMode] = useState<TestMode>('mock')
@@ -23,7 +22,6 @@ export default function FlowTestModal({ isOpen, onClose, flow, leads }: FlowTest
   const [status, setStatus] = useState<ExecutionStatus>('idle')
   const [visible, setVisible] = useState(false)
   const [output, setOutput] = useState<string[]>([])
-  const [runKey, setRunKey] = useState<string>('')
   const [latestRunDir, setLatestRunDir] = useState<string | null>(null)
   const unsubscribeRef = useRef<(() => void) | null>(null)
 
@@ -86,7 +84,6 @@ export default function FlowTestModal({ isOpen, onClose, flow, leads }: FlowTest
         keepOpen: visible
       })
 
-      setRunKey(result.runKey)
       setOutput(prev => [...prev, `Run key: ${result.runKey}`])
 
       // Listen for output
@@ -134,8 +131,7 @@ export default function FlowTestModal({ isOpen, onClose, flow, leads }: FlowTest
   }
 
   const handleClose = () => {
-    const runningStatus: RunningStatus = 'running'
-    if (status === runningStatus) {
+    if (status === 'running') {
       handleStop()
     }
     onClose()

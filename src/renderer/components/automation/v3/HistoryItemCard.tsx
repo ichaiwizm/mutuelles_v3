@@ -1,7 +1,8 @@
 import React from 'react'
-import { Play, Eye, CheckCircle, XCircle, Clock } from 'lucide-react'
+import { Play, Eye } from 'lucide-react'
 import type { ExecutionHistoryItem } from '../../../../shared/types/automation'
 import { formatDuration } from '../../../utils/dateGrouping'
+import { getHistoryStatusConfig } from '../../../utils/statusStyles'
 
 interface HistoryItemCardProps {
   item: ExecutionHistoryItem
@@ -14,33 +15,7 @@ export default function HistoryItemCard({
   onRerun,
   onViewDetails
 }: HistoryItemCardProps) {
-  const getStatusConfig = () => {
-    switch (item.status) {
-      case 'success':
-        return {
-          icon: CheckCircle,
-          color: 'text-emerald-600 dark:text-emerald-400',
-          bgColor: 'bg-emerald-50 dark:bg-emerald-950',
-          borderColor: 'border-emerald-200 dark:border-emerald-800'
-        }
-      case 'error':
-        return {
-          icon: XCircle,
-          color: 'text-red-600 dark:text-red-400',
-          bgColor: 'bg-red-50 dark:bg-red-950',
-          borderColor: 'border-red-200 dark:border-red-800'
-        }
-      case 'pending':
-        return {
-          icon: Clock,
-          color: 'text-amber-600 dark:text-amber-400',
-          bgColor: 'bg-amber-50 dark:bg-amber-950',
-          borderColor: 'border-amber-200 dark:border-amber-800'
-        }
-    }
-  }
-
-  const config = getStatusConfig()
+  const config = getHistoryStatusConfig(item.status)
   const StatusIcon = config.icon
 
   return (

@@ -38,7 +38,7 @@ export default function ExecutionDashboard({
   const items = useMemo(() => Array.from(executionItems.values()), [executionItems])
 
   // Handler for mode change - clear completed executions when switching views
-  const handleModeChange = (newMode: any, previousMode: any) => {
+  const handleModeChange = (newMode: any) => {
     if (onClearCompletedExecutions) {
       onClearCompletedExecutions()
     }

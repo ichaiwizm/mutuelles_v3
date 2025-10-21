@@ -5,6 +5,8 @@ import RunDetailsModal from './RunDetailsModal'
 import type { RunHistoryItem, ExecutionHistoryItem } from '../../../../shared/types/automation'
 import type { HistoryFilterState } from './HistoryFilters'
 import { getDateGroup } from '../../../utils/dateGrouping'
+import { useRunDetails } from '../../../hooks/useRunDetails'
+import { useConfirmation } from '../../../hooks/useConfirmation'
 
 interface ExecutionHistoryViewProps {
   runHistory: RunHistoryItem[]
@@ -31,17 +33,8 @@ export default function ExecutionHistoryView({
     dateFilter: 'all'
   })
 
-  // Modal state
-  const [selectedRunDetails, setSelectedRunDetails] = useState<{
-    runDir: string
-    leadName: string
-    platformName: string
-    flowName: string
-  } | null>(null)
-
-  const handleViewDetails = (runDir: string, leadName: string, platformName: string, flowName: string) => {
-    setSelectedRunDetails({ runDir, leadName, platformName, flowName })
-  }
+  const { selectedRunDetails, handleViewDetails, clearDetails } = useRunDetails()
+  const { confirm } = useConfirmation()
 
   // Filtered history
   const filteredHistory = useMemo(() => {
@@ -69,9 +62,10 @@ export default function ExecutionHistoryView({
   }, [runHistory, historyFilters])
 
   const handleClearHistory = () => {
-    if (confirm(`Êtes-vous sûr de vouloir supprimer tout l'historique (${runHistory.length} runs) ?`)) {
-      onClearAllHistory()
-    }
+    confirm(
+      `Êtes-vous sûr de vouloir supprimer tout l'historique (${runHistory.length} runs) ?`,
+      onClearAllHistory
+    )
   }
 
   return (
@@ -101,7 +95,7 @@ export default function ExecutionHistoryView({
           leadName={selectedRunDetails.leadName}
           platformName={selectedRunDetails.platformName}
           flowName={selectedRunDetails.flowName}
-          onClose={() => setSelectedRunDetails(null)}
+          onClose={clearDetails}
         />
       )}
     </div>

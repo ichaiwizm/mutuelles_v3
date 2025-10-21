@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React from 'react'
 import { Square, Grid3x3, FolderKanban, Clock, Play, Check, X } from 'lucide-react'
 import ExecutionItemCard from './ExecutionItemCard'
 import ExecutionFoldersView from './ExecutionFoldersView'
@@ -6,6 +6,7 @@ import RunDetailsModal from './RunDetailsModal'
 import type { ExecutionItem } from '../../../hooks/useAutomation'
 import type { GroupingMode } from '../../../utils/executionGrouping'
 import type { ViewMode } from '../../../hooks/automation/useDashboardState'
+import { useRunDetails } from '../../../hooks/useRunDetails'
 
 interface CurrentStats {
   total: number
@@ -43,17 +44,7 @@ export default function ExecutionCurrentView({
   onGroupingModeChange,
   onStopExecution
 }: ExecutionCurrentViewProps) {
-  // Modal state
-  const [selectedRunDetails, setSelectedRunDetails] = useState<{
-    runDir: string
-    leadName: string
-    platformName: string
-    flowName: string
-  } | null>(null)
-
-  const handleViewDetails = (runDir: string, leadName: string, platformName: string, flowName: string) => {
-    setSelectedRunDetails({ runDir, leadName, platformName, flowName })
-  }
+  const { selectedRunDetails, handleViewDetails, clearDetails } = useRunDetails()
 
   return (
     <>
@@ -174,7 +165,7 @@ export default function ExecutionCurrentView({
           leadName={selectedRunDetails.leadName}
           platformName={selectedRunDetails.platformName}
           flowName={selectedRunDetails.flowName}
-          onClose={() => setSelectedRunDetails(null)}
+          onClose={clearDetails}
         />
       )}
     </>

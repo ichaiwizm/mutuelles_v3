@@ -1,7 +1,9 @@
 import React, { useMemo } from 'react'
-import { Eye, CheckCircle, XCircle, Loader2, Clock } from 'lucide-react'
+import { Eye } from 'lucide-react'
 import type { ExecutionItem } from '../../../hooks/useAutomation'
 import { useNow } from '../../../hooks/useNow'
+import { getExecutionStatusConfig } from '../../../utils/statusStyles'
+import { formatDuration } from '../../../utils/dateGrouping'
 
 interface ExecutionItemCardProps {
   item: ExecutionItem
@@ -23,54 +25,10 @@ export default function ExecutionItemCard({
     const endTime = item.completedAt ? new Date(item.completedAt).getTime() : now
     const startTime = new Date(item.startedAt).getTime()
     const durationMs = endTime - startTime
-    const seconds = Math.floor(durationMs / 1000)
-    const minutes = Math.floor(seconds / 60)
-    const remainingSeconds = seconds % 60
-
-    if (minutes > 0) {
-      return `${minutes}m ${remainingSeconds}s`
-    }
-    return `${seconds}s`
+    return formatDuration(durationMs)
   }, [item.startedAt, item.completedAt, now])
 
-  const config = useMemo(() => {
-    switch (item.status) {
-      case 'pending':
-        return {
-          icon: Clock,
-          color: 'text-amber-600 dark:text-amber-400',
-          bgColor: 'bg-amber-50 dark:bg-amber-950',
-          borderColor: 'border-amber-200 dark:border-amber-800',
-          label: 'En file d\'attente',
-          pulse: true
-        }
-      case 'running':
-        return {
-          icon: Loader2,
-          color: 'text-blue-600 dark:text-blue-400',
-          bgColor: 'bg-blue-50 dark:bg-blue-950',
-          borderColor: 'border-blue-200 dark:border-blue-800',
-          label: 'En cours',
-          spin: true
-        }
-      case 'success':
-        return {
-          icon: CheckCircle,
-          color: 'text-emerald-600 dark:text-emerald-400',
-          bgColor: 'bg-emerald-50 dark:bg-emerald-950',
-          borderColor: 'border-emerald-200 dark:border-emerald-800',
-          label: 'Réussi'
-        }
-      case 'error':
-        return {
-          icon: XCircle,
-          color: 'text-red-600 dark:text-red-400',
-          bgColor: 'bg-red-50 dark:bg-red-950',
-          borderColor: 'border-red-200 dark:border-red-800',
-          label: 'Échoué'
-        }
-    }
-  }, [item.status])
+  const config = useMemo(() => getExecutionStatusConfig(item.status), [item.status])
 
   const StatusIcon = config.icon
 
