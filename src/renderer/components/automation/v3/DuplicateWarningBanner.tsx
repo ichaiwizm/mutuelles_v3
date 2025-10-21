@@ -75,7 +75,7 @@ export default function DuplicateWarningBanner({
                 </div>
                 <div className="flex flex-col items-end gap-1 flex-shrink-0">
                   <div className="text-neutral-600 dark:text-neutral-400">
-                    Il y a {dup.daysAgo}j
+                    Il y a {dup.timeAgo}
                   </div>
                   <div
                     className={`text-xs font-medium ${

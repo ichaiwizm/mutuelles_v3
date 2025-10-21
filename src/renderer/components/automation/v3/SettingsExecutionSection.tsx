@@ -48,13 +48,13 @@ export default function SettingsExecutionSection({
             <input
               type="number"
               min={1}
-              max={15}
+              max={10}
               value={settings.concurrency}
-              onChange={(e) => onUpdateSetting('concurrency', Math.max(1, Math.min(15, parseInt(e.target.value) || 6)))}
+              onChange={(e) => onUpdateSetting('concurrency', Math.max(1, Math.min(10, parseInt(e.target.value) || 4)))}
               className="w-full px-3 py-2 text-sm border border-neutral-200 dark:border-neutral-700 rounded-md bg-white dark:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <p className="text-xs text-neutral-500 mt-1">
-              Exécutions simultanées (1-15, recommandé: 6)
+              Exécutions simultanées (1-10, recommandé: 4)
             </p>
           </div>
         </div>

@@ -195,7 +195,7 @@ export function useExecution(
             for (const queuedItem of event.items) {
               const lead = leads.find(l => l.id === queuedItem.leadId)
               const flow = flows.find(f => f.slug === queuedItem.flowSlug)
-              const platform = platforms.find(p => p.slug === flow?.platform || queuedItem.platform)
+              const platform = platforms.find(p => p.slug === (flow?.platform || queuedItem.platform))
 
               const leadName = lead
                 ? `${lead.data?.subscriber?.firstName || ''} ${lead.data?.subscriber?.lastName || ''}`.trim() || queuedItem.leadId.slice(0, 8)
@@ -234,7 +234,7 @@ export function useExecution(
               // Fallback: create new item if not in pending (shouldn't happen normally)
               const lead = leads.find(l => l.id === event.leadId)
               const flow = flows.find(f => f.slug === event.flowSlug)
-              const platform = platforms.find(p => p.slug === flow?.platform || event.platform)
+              const platform = platforms.find(p => p.slug === (flow?.platform || event.platform))
 
               const leadName = lead
                 ? `${lead.data?.subscriber?.firstName || ''} ${lead.data?.subscriber?.lastName || ''}`.trim() || event.leadId.slice(0, 8)

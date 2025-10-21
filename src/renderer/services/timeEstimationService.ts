@@ -146,39 +146,9 @@ export function estimateRemainingTime(
 
 /**
  * Format duration as human-readable string
+ * Re-exported from dateGrouping for backward compatibility
  */
-export function formatDuration(durationMs: number): string {
-  const totalSeconds = Math.ceil(durationMs / 1000)
-
-  if (totalSeconds < 60) {
-    return `${totalSeconds}s`
-  }
-
-  const minutes = Math.floor(totalSeconds / 60)
-  const seconds = totalSeconds % 60
-
-  if (minutes < 60) {
-    return seconds > 0 ? `${minutes}m ${seconds}s` : `${minutes}m`
-  }
-
-  const hours = Math.floor(minutes / 60)
-  const remainingMinutes = minutes % 60
-
-  return remainingMinutes > 0
-    ? `${hours}h ${remainingMinutes}m`
-    : `${hours}h`
-}
-
-/**
- * Format estimated end time
- */
-export function formatEstimatedEndTime(durationMs: number): string {
-  const endTime = new Date(Date.now() + durationMs)
-  return endTime.toLocaleTimeString('fr-FR', {
-    hour: '2-digit',
-    minute: '2-digit'
-  })
-}
+export { formatDuration } from '../utils/dateGrouping'
 
 /**
  * Get historical average duration for a flow

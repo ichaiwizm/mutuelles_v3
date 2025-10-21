@@ -47,11 +47,11 @@ export default function ExecutionDashboard({
 }: ExecutionDashboardProps) {
   const items = useMemo(() => Array.from(executionItems.values()), [executionItems])
 
-  // Handler for mode change - clear completed executions when switching views
+  // Handler for mode change - NO LONGER clears completed executions automatically
+  // Items now stay visible during execution for better UX
   const handleModeChange = (newMode: any) => {
-    if (onClearCompletedExecutions) {
-      onClearCompletedExecutions()
-    }
+    // Removed auto-clear: onClearCompletedExecutions()
+    // Users can manually clear via button if needed
   }
 
   // Dashboard state management
@@ -84,14 +84,16 @@ export default function ExecutionDashboard({
           <div className="flex items-center gap-1 bg-neutral-100 dark:bg-neutral-800 rounded-md p-1">
             <button
               onClick={() => setMode('current')}
-              className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium transition-all ${
                 mode === 'current'
                   ? 'bg-white dark:bg-neutral-700 text-blue-600 dark:text-blue-400 shadow-sm'
                   : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100'
               }`}
-              disabled={items.length === 0}
               title="Afficher les exécutions en cours"
             >
+              {isRunning && (
+                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+              )}
               En cours
             </button>
             <button

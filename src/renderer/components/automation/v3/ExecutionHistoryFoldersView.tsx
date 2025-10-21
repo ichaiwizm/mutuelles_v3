@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect, useRef } from 'react'
 import { ChevronRight, Folder } from 'lucide-react'
 import type { RunHistoryItem, ExecutionHistoryItem } from '../../../../shared/types/automation'
 import { groupRunsByDate } from '../../../utils/dateGrouping'
@@ -22,10 +22,19 @@ export default function ExecutionHistoryFoldersView({
   // Group runs by date
   const dateGroups = useMemo(() => groupRunsByDate(runs), [runs])
 
-  // Track which folders are expanded (default: all expanded)
-  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(
-    new Set(dateGroups.map((g) => g.key))
-  )
+  // Track which folders are expanded (default: only most recent expanded)
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set())
+
+  // Track if initial setup has been done
+  const initializedRef = useRef(false)
+
+  // Initialize expanded groups only once (open most recent by default)
+  useEffect(() => {
+    if (!initializedRef.current && dateGroups.length > 0) {
+      setExpandedGroups(new Set([dateGroups[0].key]))
+      initializedRef.current = true
+    }
+  }, [dateGroups])
 
   const toggleGroup = (key: string) => {
     setExpandedGroups((prev) => {

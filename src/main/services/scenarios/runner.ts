@@ -199,6 +199,11 @@ export class ScenariosRunner {
         } catch (e) {
           const errorMsg = e instanceof Error ? e.message : String(e)
 
+          // Extract runDir from error if available (enriched by engine)
+          if (e instanceof Error && 'runDir' in e) {
+            runDir = (e as any).runDir
+          }
+
           // Check if we should retry
           if (retryFailed && attempt < maxRetries) {
             // Wait with exponential backoff: 2s, 5s, 10s

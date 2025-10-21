@@ -214,25 +214,45 @@ export default function ExecutionCurrentView({
         </div>
       </div>
 
-      {/* Execution Items */}
-      {viewMode === 'grid' ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {items.map((item) => (
-            <ExecutionItemCard
-              key={item.id}
-              item={item}
-              onViewDetails={handleViewDetails}
-              estimatedDurationMs={itemEstimates.get(item.id)}
-            />
-          ))}
+      {/* Empty/Initialization State */}
+      {items.length === 0 ? (
+        <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-8 text-center">
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900/30 mb-3">
+            <Play className={`text-blue-600 dark:text-blue-400 ${isRunning ? 'animate-pulse' : ''}`} size={24} />
+          </div>
+          <h3 className="font-semibold mb-1">
+            {isRunning ? 'Initialisation...' : 'Aucune automation en cours'}
+          </h3>
+          <p className="text-sm text-neutral-500">
+            {isRunning
+              ? 'Préparation des exécutions en cours'
+              : 'Les automations apparaîtront ici une fois démarrées'
+            }
+          </p>
         </div>
       ) : (
-        <ExecutionFoldersView
-          items={items}
-          groupingMode={groupingMode}
-          onGroupingModeChange={onGroupingModeChange}
-          onViewDetails={handleViewDetails}
-        />
+        /* Execution Items */
+        <>
+          {viewMode === 'grid' ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {items.map((item) => (
+                <ExecutionItemCard
+                  key={item.id}
+                  item={item}
+                  onViewDetails={handleViewDetails}
+                  estimatedDurationMs={itemEstimates.get(item.id)}
+                />
+              ))}
+            </div>
+          ) : (
+            <ExecutionFoldersView
+              items={items}
+              groupingMode={groupingMode}
+              onGroupingModeChange={onGroupingModeChange}
+              onViewDetails={handleViewDetails}
+            />
+          )}
+        </>
       )}
 
       {/* Details Modal */}

@@ -95,7 +95,7 @@ export function useDashboardState({
     setViewMode,
     setGroupingMode,
     currentStats,
-    showCurrent: mode === 'current' && items.length > 0,
+    showCurrent: mode === 'current',
     showHistory: mode === 'history',
     isRunning
   }

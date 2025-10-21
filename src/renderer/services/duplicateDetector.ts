@@ -5,13 +5,37 @@
 
 import type { RunHistoryItem, ExecutionHistoryItem } from '../../shared/types/automation'
 
+/**
+ * Format time elapsed in a human-readable way
+ * - < 1h: "X min"
+ * - < 24h: "Xh"
+ * - >= 24h: "Xj"
+ */
+function formatTimeAgo(milliseconds: number): string {
+  const seconds = Math.floor(milliseconds / 1000)
+  const minutes = Math.floor(seconds / 60)
+  const hours = Math.floor(minutes / 60)
+  const days = Math.floor(hours / 24)
+
+  if (days > 0) {
+    return `${days}j`
+  } else if (hours > 0) {
+    return `${hours}h`
+  } else if (minutes > 0) {
+    return `${minutes} min`
+  } else {
+    return 'à l\'instant'
+  }
+}
+
 export interface DuplicateInfo {
   leadId: string
   leadName: string
   flowSlug: string
   flowName: string
   lastSubmittedAt: string
-  daysAgo: number
+  daysAgo: number // Keep for backward compatibility
+  timeAgo: string // Human-readable time (e.g., "5h", "45 min", "3j")
   status: 'success' | 'error' | 'pending'
 }
 
@@ -60,9 +84,9 @@ export function detectDuplicates(
           return new Date(item.startedAt) > new Date(latest.startedAt) ? item : latest
         })
 
-        const daysAgo = Math.floor(
-          (Date.now() - new Date(mostRecent.startedAt).getTime()) / (1000 * 60 * 60 * 24)
-        )
+        const elapsedMs = Date.now() - new Date(mostRecent.startedAt).getTime()
+        const daysAgo = Math.floor(elapsedMs / (1000 * 60 * 60 * 24))
+        const timeAgo = formatTimeAgo(elapsedMs)
 
         duplicates.push({
           leadId,
@@ -71,6 +95,7 @@ export function detectDuplicates(
           flowName: mostRecent.flowName,
           lastSubmittedAt: mostRecent.startedAt,
           daysAgo,
+          timeAgo,
           status: mostRecent.status
         })
 
@@ -98,7 +123,7 @@ export function formatDuplicateSummary(duplicates: DuplicateInfo[]): string {
 
   if (duplicates.length === 1) {
     const dup = duplicates[0]
-    return `1 doublon détecté : ${dup.leadName} sur ${dup.flowName} (il y a ${dup.daysAgo}j)`
+    return `1 doublon détecté : ${dup.leadName} sur ${dup.flowName} (il y a ${dup.timeAgo})`
   }
 
   // Find most recent duplicate
@@ -106,7 +131,7 @@ export function formatDuplicateSummary(duplicates: DuplicateInfo[]): string {
     return dup.daysAgo < latest.daysAgo ? dup : latest
   })
 
-  return `${duplicates.length} doublons détectés (dernière soumission il y a ${mostRecent.daysAgo}j)`
+  return `${duplicates.length} doublons détectés (dernière soumission il y a ${mostRecent.timeAgo})`
 }
 
 /**

@@ -41,6 +41,7 @@ import { DomCollector } from './artifacts/DomCollector.mjs'
 import { describeHL } from './utils/stepDescriber.mjs'
 
 export async function runHighLevelFlow({ fieldsFile, flowFile, leadFile, leadData, username, password, outRoot='data/runs', mode='dev_private', chrome=null, video=false, dom='errors', a11y=false, keepOpen=true, redact='(password|token|authorization|cookie)=([^;\\s]+)', onProgress=null }) {
+  // Read files first
   const fields = JSON.parse(fs.readFileSync(fieldsFile, 'utf-8'))
   const flow = JSON.parse(fs.readFileSync(flowFile, 'utf-8'))
   const lead = leadData || (leadFile ? JSON.parse(fs.readFileSync(leadFile, 'utf-8')) : {})
@@ -48,6 +49,7 @@ export async function runHighLevelFlow({ fieldsFile, flowFile, leadFile, leadDat
   const platform = fields.platform || flow.platform
   const slug = flow.slug || path.basename(flowFile).replace(/\.json$/,'')
 
+  // Create runDir early (before browser launch and other heavy operations)
   ensureDir(outRoot)
   const runId = `${slug}-${tsId()}`
   const runDir = path.join(outRoot, slug, runId)
@@ -244,7 +246,11 @@ export async function runHighLevelFlow({ fieldsFile, flowFile, leadFile, leadDat
       }
 
       emit({ type:'run', status:'error', message: errorMsg })
-      throw new Error(errorMsg)
+
+      // Create enriched error with runDir
+      const error = new Error(errorMsg)
+      error.runDir = runDir
+      throw error
     }
 
     if (!keepOpen) {
@@ -273,6 +279,14 @@ export async function runHighLevelFlow({ fieldsFile, flowFile, leadFile, leadDat
       await browser?.close()
     } catch (closeErr) {
       console.warn('[Browser] Failed to close browser after error:', closeErr.message)
+    }
+
+    // Enrich error with runDir if it was created
+    if (runDir) {
+      const enrichedError = new Error(err.message || String(err))
+      enrichedError.stack = err.stack
+      enrichedError.runDir = runDir
+      throw enrichedError
     }
 
     throw err

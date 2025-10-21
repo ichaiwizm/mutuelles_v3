@@ -22,7 +22,7 @@ export type AdvancedSettings = {
 const DEFAULT_SETTINGS: AdvancedSettings = {
   mode: 'headless',
   keepBrowserOpen: false,
-  concurrency: 6,
+  concurrency: 4,
   showPreviewBeforeRun: true,
   retryFailed: true,
   maxRetries: 2,
