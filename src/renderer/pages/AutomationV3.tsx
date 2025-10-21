@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react'
 import { Settings, Zap } from 'lucide-react'
 import { useAutomation } from '../hooks/useAutomation'
 import { useToastContext } from '../contexts/ToastContext'
+import { useConfirmation } from '../hooks/useConfirmation'
 import { CompactStats, AdvancedModeTab, SettingsModal } from '../components/automation/v3'
 
 export default function AutomationV3() {
@@ -11,6 +12,7 @@ export default function AutomationV3() {
   // Hooks
   const automation = useAutomation()
   const toast = useToastContext()
+  const { confirm } = useConfirmation()
 
   // Additional state for runs history
   const [totalRuns, setTotalRuns] = React.useState(0)
@@ -72,17 +74,22 @@ export default function AutomationV3() {
       return
     }
 
-    try {
-      const result = await window.api.scenarios.stop(currentRunId)
-      if (result.success) {
-        toast.success('Arrêté', result.message || 'Exécution arrêtée')
-      } else {
-        toast.error('Erreur', result.message || 'Impossible d\'arrêter l\'exécution')
+    confirm(
+      'Êtes-vous sûr de vouloir arrêter l\'exécution en cours ?',
+      async () => {
+        try {
+          const result = await window.api.scenarios.stop(currentRunId)
+          if (result.success) {
+            toast.success('Arrêté', result.message || 'Exécution arrêtée')
+          } else {
+            toast.error('Erreur', result.message || 'Impossible d\'arrêter l\'exécution')
+          }
+        } catch (error) {
+          console.error('Failed to stop execution:', error)
+          toast.error('Erreur', error instanceof Error ? error.message : 'Impossible d\'arrêter l\'exécution')
+        }
       }
-    } catch (error) {
-      console.error('Failed to stop execution:', error)
-      toast.error('Erreur', error instanceof Error ? error.message : 'Impossible d\'arrêter l\'exécution')
-    }
+    )
   }
 
   return (
