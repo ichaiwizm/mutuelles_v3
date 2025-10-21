@@ -74,10 +74,14 @@ export function useHistory() {
         return
       }
 
-      // Calculate stats
-      const successItems = items.filter(i => i.status === 'success').length
-      const errorItems = items.filter(i => i.status === 'error').length
-      const pendingItems = items.filter(i => i.status === 'pending').length
+      // Filter to only keep completed items (success or error)
+      // Exclude items still running or pending to avoid saving incomplete data
+      const completedItems = items.filter(i => i.status === 'success' || i.status === 'error')
+
+      // Calculate stats based on completed items only
+      const successItems = completedItems.filter(i => i.status === 'success').length
+      const errorItems = completedItems.filter(i => i.status === 'error').length
+      const pendingItems = 0  // No pending items in completed list
 
       // Determine overall status
       let status: RunHistoryStatus
@@ -91,9 +95,9 @@ export function useHistory() {
         status = 'partial'
       }
 
-      // Find earliest start and latest completion times
-      const startTimes = items.map(i => i.startedAt).filter(Boolean) as Date[]
-      const completeTimes = items.map(i => i.completedAt).filter(Boolean) as Date[]
+      // Find earliest start and latest completion times from completed items
+      const startTimes = completedItems.map(i => i.startedAt).filter(Boolean) as Date[]
+      const completeTimes = completedItems.map(i => i.completedAt).filter(Boolean) as Date[]
 
       const startedAt = startTimes.length > 0
         ? new Date(Math.min(...startTimes.map(d => d.getTime())))
@@ -105,8 +109,8 @@ export function useHistory() {
 
       const durationMs = completedAt.getTime() - startedAt.getTime()
 
-      // Convert ExecutionItem[] to ExecutionHistoryItem[]
-      const historyItems: ExecutionHistoryItem[] = items.map(item => ({
+      // Convert ExecutionItem[] to ExecutionHistoryItem[] (only completed items)
+      const historyItems: ExecutionHistoryItem[] = completedItems.map(item => ({
         id: item.id,
         leadId: item.leadId,
         leadName: item.leadName,
