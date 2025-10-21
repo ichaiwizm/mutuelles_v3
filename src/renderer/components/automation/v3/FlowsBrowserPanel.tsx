@@ -57,7 +57,7 @@ export default function FlowsBrowserPanel({
       <div className="flex items-center justify-between mb-4">
         <h3 className="font-semibold">Flows par Plateforme</h3>
         <div className="text-sm text-neutral-500">
-          {selectedFlowIds.size} / {flows.length} sélectionnés
+          {selectedFlowIds.size} / {visibleFlows.length} sélectionnés
         </div>
       </div>
 
