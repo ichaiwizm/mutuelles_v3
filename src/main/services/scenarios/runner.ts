@@ -228,7 +228,7 @@ export class ScenariosRunner {
             })
           }
 
-          const result = await this.execHL({ ...def, mode, leadData: lead.data, keepOpen, onProgress: progressCallback })
+          const result = await this.execHL({ ...def, mode, leadData: lead.data, keepOpen, onProgress: progressCallback, sessionRunId: runId })
           runDir = result.runDir
 
           // Emit final progress before success
@@ -389,6 +389,7 @@ export class ScenariosRunner {
     mode: Mode
     keepOpen?: boolean
     onProgress?: (progress: any) => void
+    sessionRunId?: string
   }): Promise<{ runDir: string }>{
     const { pathToFileURL } = await import('node:url')
     const enginePath = path.join(process.cwd(), 'automation', 'engine', 'engine.mjs')
@@ -404,7 +405,8 @@ export class ScenariosRunner {
       keepOpen: args.keepOpen ?? (args.mode !== 'headless'),
       outRoot: path.join(process.cwd(), 'data', 'runs'),
       dom: 'steps',
-      onProgress: args.onProgress  // Pass the progress callback to the engine
+      onProgress: args.onProgress,  // Pass the progress callback to the engine
+      sessionRunId: args.sessionRunId  // Pass the global run ID to group executions
     })
   }
 }

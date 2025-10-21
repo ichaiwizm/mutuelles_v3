@@ -109,19 +109,20 @@ export function useAutomation() {
   // History management
   const history = useHistory()
 
-  // Execution management (with callback to save to history when run completes)
+  // Execution management (with callback to refresh history when run completes)
   const execution = useExecution(
     leads,
     flows,
     platforms,
     settings,
-    (executionItems, runId) => {
-      // Save to history when run completes or is cancelled
-      history.saveRunToHistory(runId, executionItems, settings)
+    () => {
+      // Reload history from filesystem when run completes or is cancelled
+      // The backend has already written the results to data/runs/
+      history.loadHistory()
     }
   )
 
-  // Load history on mount (only once)
+  // Load history on mount
   useEffect(() => {
     history.loadHistory()
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -278,7 +279,6 @@ export function useAutomation() {
     rerunHistoryRun,
     rerunSingleItem,
     deleteHistoryRun: history.deleteHistoryRun,
-    clearAllHistory: history.clearAllHistory,
     loadHistory: history.loadHistory,
 
     // Replay

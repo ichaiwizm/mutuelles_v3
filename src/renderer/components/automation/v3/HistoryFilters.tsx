@@ -12,7 +12,6 @@ export interface HistoryFilterState {
 interface HistoryFiltersProps {
   filters: HistoryFilterState
   onFiltersChange: (filters: HistoryFilterState) => void
-  onClearHistory: () => void
   totalRuns: number
   filteredRuns: number
 }
@@ -20,7 +19,6 @@ interface HistoryFiltersProps {
 export default function HistoryFilters({
   filters,
   onFiltersChange,
-  onClearHistory,
   totalRuns,
   filteredRuns
 }: HistoryFiltersProps) {
@@ -83,15 +81,7 @@ export default function HistoryFilters({
           <ChevronDown size={14} className={`transition-transform ${showFilters ? 'rotate-180' : ''}`} />
         </button>
 
-        {/* Clear history */}
-        <button
-          onClick={onClearHistory}
-          className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-red-600 dark:text-red-400 border border-red-300 dark:border-red-700 rounded-md hover:bg-red-50 dark:hover:bg-red-950 transition-colors"
-          title="Vider l'historique"
-        >
-          <Trash2 size={16} />
-          Nettoyer
-        </button>
+        {/* Clear history button removed - filesystem history cannot be bulk-deleted */}
       </div>
 
       {/* Filter options (collapsible) */}

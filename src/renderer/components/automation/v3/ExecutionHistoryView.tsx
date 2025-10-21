@@ -13,7 +13,6 @@ interface ExecutionHistoryViewProps {
   onRerunHistory: (runId: string) => void
   onRerunHistoryItem: (item: ExecutionHistoryItem) => void
   onDeleteHistory: (runId: string) => void
-  onClearAllHistory: () => void
 }
 
 /**
@@ -23,8 +22,7 @@ export default function ExecutionHistoryView({
   runHistory,
   onRerunHistory,
   onRerunHistoryItem,
-  onDeleteHistory,
-  onClearAllHistory
+  onDeleteHistory
 }: ExecutionHistoryViewProps) {
   // History filters
   const [historyFilters, setHistoryFilters] = useState<HistoryFilterState>({
@@ -61,12 +59,8 @@ export default function ExecutionHistoryView({
     return filtered
   }, [runHistory, historyFilters])
 
-  const handleClearHistory = () => {
-    confirm(
-      `Êtes-vous sûr de vouloir supprimer tout l'historique (${runHistory.length} runs) ?`,
-      onClearAllHistory
-    )
-  }
+  // Clear history removed - filesystem-based history cannot be bulk-deleted from UI
+  // Individual runs can still be deleted via onDeleteHistory
 
   return (
     <div className="space-y-4">
@@ -74,7 +68,6 @@ export default function ExecutionHistoryView({
       <HistoryFilters
         filters={historyFilters}
         onFiltersChange={setHistoryFilters}
-        onClearHistory={handleClearHistory}
         totalRuns={runHistory.length}
         filteredRuns={filteredHistory.length}
       />

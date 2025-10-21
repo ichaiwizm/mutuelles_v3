@@ -14,33 +14,15 @@ export default function AutomationV3() {
   const toast = useToastContext()
   const { confirm } = useConfirmation()
 
-  // Additional state for runs history
-  const [totalRuns, setTotalRuns] = React.useState(0)
-
-  // Load total runs on mount
-  React.useEffect(() => {
-    const loadTotalRuns = async () => {
-      try {
-        const history = await window.api.scenarios.getHistory()
-        if (history.success && Array.isArray(history.data)) {
-          setTotalRuns(history.data.length)
-        }
-      } catch (error) {
-        console.error('Failed to load runs history:', error)
-      }
-    }
-    loadTotalRuns()
-  }, [])
-
-  // Stats computation
+  // Stats computation - unified with runHistory
   const stats = useMemo(() => {
     return {
       totalLeads: automation.leads.length,
       totalPlatforms: automation.platforms.length,
       totalFlows: automation.flows.length,
-      totalRuns
+      totalRuns: automation.runHistory.length
     }
-  }, [automation.leads, automation.platforms, automation.flows, totalRuns])
+  }, [automation.leads, automation.platforms, automation.flows, automation.runHistory.length])
 
   // Handlers
   const handleStartExecution = async (mode: 'headless' | 'dev' | 'dev_private') => {
@@ -152,7 +134,6 @@ export default function AutomationV3() {
         onRerunHistory={automation.rerunHistoryRun}
         onRerunHistoryItem={automation.rerunSingleItem}
         onDeleteHistory={automation.deleteHistoryRun}
-        onClearAllHistory={automation.clearAllHistory}
         settings={automation.settings}
         onUpdateSettings={automation.updateSettings}
         getLeadName={automation.getLeadName}

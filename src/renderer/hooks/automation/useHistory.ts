@@ -1,210 +1,166 @@
 import { useState, useCallback } from 'react'
-import { RunHistoryService } from '../../services/runHistoryService'
 import type {
   RunHistoryItem,
   ExecutionHistoryItem,
-  RunHistoryStatus,
-  ExecutionSettings as SharedExecutionSettings
+  RunHistoryStatus
 } from '../../../shared/types/automation'
-import type { AdvancedSettings } from './useSettings'
-
-/**
- * Minimal ExecutionItem type for history (to avoid circular dependency)
- */
-export type ExecutionItemForHistory = {
-  id: string
-  leadId: string
-  leadName: string
-  platform: string
-  platformName: string
-  flowSlug?: string
-  flowName?: string
-  status: 'pending' | 'running' | 'success' | 'error'
-  runDir?: string
-  message?: string
-  startedAt?: Date
-  completedAt?: Date
-}
 
 /**
  * Hook for managing execution run history
  *
- * Responsibilities:
- * - Load history from localStorage
- * - Save completed runs to history
- * - Delete and clear history
- * - NO execution logic (just data persistence)
+ * Loads history from filesystem via IPC instead of localStorage.
+ * The backend writes execution results to data/runs/ during execution.
  *
  * @returns History state and management functions
  */
 export function useHistory() {
-  // History state
   const [runHistory, setRunHistory] = useState<RunHistoryItem[]>([])
 
   /**
-   * Load history from localStorage
+   * Load history from filesystem via IPC
+   * Groups individual execution items by runId into complete run records
    */
-  const loadHistory = useCallback(() => {
+  const loadHistory = useCallback(async () => {
     try {
-      const history = RunHistoryService.getHistory()
-      setRunHistory(history)
-      console.log(`[useHistory] Loaded ${history.length} runs from history`)
-    } catch (error) {
-      console.error('[useHistory] Failed to load history:', error)
-    }
-  }, [])
+      const response = await window.api.scenarios.getHistory()
 
-  /**
-   * Save a completed run to history
-   *
-   * @param runId - The run ID
-   * @param executionItems - Map of execution items
-   * @param settings - Settings used for the run
-   */
-  const saveRunToHistory = useCallback((
-    runId: string,
-    executionItems: Map<string, ExecutionItemForHistory>,
-    settings: AdvancedSettings
-  ) => {
-    try {
-      const items = Array.from(executionItems.values())
-
-      if (items.length === 0) {
-        console.warn('[useHistory] No items to save to history')
+      if (!response.success || !Array.isArray(response.data)) {
+        console.warn('[useHistory] Invalid history response')
+        setRunHistory([])
         return
       }
 
-      // Keep ALL items (including pending and running) to preserve full state
-      // This allows tracking incomplete runs and provides complete history
-      const allItems = items
+      // Group individual items by runId (items from same run share runId)
+      const grouped = groupByRunId(response.data)
+      setRunHistory(grouped)
 
-      // Calculate stats based on all items
-      const successItems = allItems.filter(i => i.status === 'success').length
-      const errorItems = allItems.filter(i => i.status === 'error').length
-      const pendingItems = allItems.filter(i => i.status === 'pending').length
-      const runningItems = allItems.filter(i => i.status === 'running').length
-
-      // Determine overall status based on actual item states
-      let status: RunHistoryStatus
-      if (pendingItems > 0 || runningItems > 0) {
-        // Run was stopped/interrupted - has incomplete items
-        status = 'stopped'
-      } else if (errorItems === 0) {
-        // All completed successfully
-        status = 'completed'
-      } else if (successItems === 0) {
-        // All failed
-        status = 'failed'
-      } else {
-        // Mix of success and errors
-        status = 'partial'
-      }
-
-      // Find earliest start and latest completion times from all items
-      const startTimes = allItems.map(i => i.startedAt).filter(Boolean) as Date[]
-      const completeTimes = allItems.map(i => i.completedAt).filter(Boolean) as Date[]
-
-      const startedAt = startTimes.length > 0
-        ? new Date(Math.min(...startTimes.map(d => d.getTime())))
-        : new Date()
-
-      const completedAt = completeTimes.length > 0
-        ? new Date(Math.max(...completeTimes.map(d => d.getTime())))
-        : new Date()
-
-      const durationMs = completedAt.getTime() - startedAt.getTime()
-
-      // Convert ExecutionItem[] to ExecutionHistoryItem[] (all items including pending/running)
-      const historyItems: ExecutionHistoryItem[] = allItems.map(item => ({
-        id: item.id,
-        leadId: item.leadId,
-        leadName: item.leadName,
-        platform: item.platform,
-        platformName: item.platformName,
-        flowSlug: item.flowSlug || '',
-        flowName: item.flowName || '',
-        status: item.status,
-        runDir: item.runDir,
-        error: item.message,
-        startedAt: item.startedAt?.toISOString() || new Date().toISOString(),
-        completedAt: item.completedAt?.toISOString(),
-        durationMs: item.completedAt && item.startedAt
-          ? item.completedAt.getTime() - item.startedAt.getTime()
-          : undefined
-      }))
-
-      // Convert AdvancedSettings to ExecutionSettings (shared type)
-      const executionSettings: SharedExecutionSettings = {
-        mode: settings.mode === 'visible' ? 'dev' : settings.mode === 'headless-minimized' ? 'headless' : settings.mode,
-        concurrency: settings.concurrency,
-        timeout: 300000,
-        keepBrowserOpen: settings.keepBrowserOpen,
-        screenshotFrequency: 'all',
-        retryFailed: settings.retryFailed,
-        maxRetries: settings.maxRetries
-      }
-
-      // Build history item
-      const historyItem: RunHistoryItem = {
-        runId,
-        startedAt: startedAt.toISOString(),
-        completedAt: completedAt.toISOString(),
-        durationMs,
-        totalItems: allItems.length,
-        successItems,
-        errorItems,
-        pendingItems,
-        status,
-        settings: executionSettings,
-        items: historyItems
-      }
-
-      // Save to localStorage
-      RunHistoryService.saveRun(historyItem)
-
-      // Update local state - replace if exists, add if new
-      setRunHistory(prev => {
-        const existingIndex = prev.findIndex(h => h.runId === runId)
-        if (existingIndex >= 0) {
-          // Update existing run
-          const updated = [...prev]
-          updated[existingIndex] = historyItem
-          return updated
-        } else {
-          // Add new run at the beginning
-          return [historyItem, ...prev]
-        }
-      })
-
-      console.log(`[useHistory] Saved run ${runId.slice(0, 8)} to history (status: ${status})`)
+      console.log(`[useHistory] Loaded ${grouped.length} runs from filesystem`)
     } catch (error) {
-      console.error('[useHistory] Failed to save run to history:', error)
+      console.error('[useHistory] Failed to load history:', error)
+      setRunHistory([])
     }
   }, [])
 
   /**
    * Delete a specific run from history
+   * Note: Currently not implemented in backend
    */
   const deleteHistoryRun = useCallback((historyRunId: string) => {
-    RunHistoryService.deleteRun(historyRunId)
+    console.warn('[useHistory] Delete not yet implemented in backend')
+    // TODO: Implement IPC call to delete run from filesystem
+    // For now, just remove from local state
     setRunHistory(prev => prev.filter(r => r.runId !== historyRunId))
-    console.log(`[useHistory] Deleted history run ${historyRunId.slice(0, 8)}`)
-  }, [])
-
-  /**
-   * Clear all history
-   */
-  const clearAllHistory = useCallback(() => {
-    RunHistoryService.clearAll()
-    setRunHistory([])
-    console.log('[useHistory] Cleared all history')
   }, [])
 
   return {
     runHistory,
     loadHistory,
-    saveRunToHistory,
-    deleteHistoryRun,
-    clearAllHistory
+    deleteHistoryRun
   }
 }
+
+/**
+ * Group individual execution items by sessionId into RunHistoryItem records
+ *
+ * The backend returns a flat list where each item represents one execution.
+ * Multiple items with the same sessionId are part of the same batch.
+ * We group them and aggregate stats.
+ */
+function groupByRunId(items: any[]): RunHistoryItem[] {
+  // Group items by sessionId (falls back to individual items if no sessionId)
+  const groups = new Map<string, any[]>()
+
+  for (const item of items) {
+    const sessionId = item.sessionId || item.id || 'unknown'
+    if (!groups.has(sessionId)) {
+      groups.set(sessionId, [])
+    }
+    groups.get(sessionId)!.push(item)
+  }
+
+  // Convert each group into a RunHistoryItem
+  const result: RunHistoryItem[] = []
+
+  for (const [sessionId, groupItems] of groups.entries()) {
+    // Aggregate stats
+    const totalItems = groupItems.length
+    const successItems = groupItems.filter(i => i.status === 'success').length
+    const errorItems = groupItems.filter(i => i.status === 'error').length
+    const pendingItems = groupItems.filter(i => i.status === 'pending').length
+    const runningItems = groupItems.filter(i => i.status === 'running').length
+
+    // Determine overall status
+    let status: RunHistoryStatus
+    if (pendingItems > 0 || runningItems > 0) {
+      status = 'stopped'  // Some items incomplete
+    } else if (errorItems === 0) {
+      status = 'completed'  // All success
+    } else if (successItems === 0) {
+      status = 'failed'  // All failed
+    } else {
+      status = 'partial'  // Mix of success and error
+    }
+
+    // Find earliest start and latest completion times
+    const startTimes = groupItems.map(i => i.startedAt).filter(Boolean)
+    const finishTimes = groupItems.map(i => i.finishedAt).filter(Boolean)
+
+    const startedAt = startTimes.length > 0
+      ? new Date(Math.min(...startTimes.map(t => new Date(t).getTime()))).toISOString()
+      : new Date().toISOString()
+
+    const completedAt = finishTimes.length > 0
+      ? new Date(Math.max(...finishTimes.map(t => new Date(t).getTime()))).toISOString()
+      : new Date().toISOString()
+
+    const durationMs = new Date(completedAt).getTime() - new Date(startedAt).getTime()
+
+    // Convert items to ExecutionHistoryItem format
+    const historyItems: ExecutionHistoryItem[] = groupItems.map(item => ({
+      id: item.id || 'unknown',
+      leadId: item.leadId || '',
+      leadName: item.leadName || '',
+      platform: item.platform || item.slug || '',
+      platformName: item.platform || item.slug || '',
+      flowSlug: item.slug || '',
+      flowName: item.slug || '',  // Flow name not available in current response
+      status: item.status || 'pending',
+      runDir: item.runDir,
+      error: item.error,
+      startedAt: item.startedAt || new Date().toISOString(),
+      completedAt: item.finishedAt,
+      durationMs: item.durationMs
+    }))
+
+    // Use mode from first item (all items in batch should have same mode)
+    const mode = groupItems[0]?.mode || 'headless'
+
+    result.push({
+      runId: sessionId,
+      startedAt,
+      completedAt,
+      durationMs,
+      totalItems,
+      successItems,
+      errorItems,
+      pendingItems,
+      status,
+      settings: {
+        mode,
+        concurrency: 1,
+        timeout: 300000,
+        keepBrowserOpen: false,
+        screenshotFrequency: 'all',
+        retryFailed: false,
+        maxRetries: 0
+      },
+      items: historyItems
+    })
+  }
+
+  // Sort by startedAt descending (most recent first)
+  return result.sort((a, b) =>
+    new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime()
+  )
+}
+

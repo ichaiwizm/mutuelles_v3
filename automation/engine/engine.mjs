@@ -40,7 +40,7 @@ import { ScreenshotManager } from './artifacts/ScreenshotManager.mjs'
 import { DomCollector } from './artifacts/DomCollector.mjs'
 import { describeHL } from './utils/stepDescriber.mjs'
 
-export async function runHighLevelFlow({ fieldsFile, flowFile, leadFile, leadData, username, password, outRoot='data/runs', mode='dev_private', chrome=null, video=false, dom='errors', a11y=false, keepOpen=true, redact='(password|token|authorization|cookie)=([^;\\s]+)', onProgress=null }) {
+export async function runHighLevelFlow({ fieldsFile, flowFile, leadFile, leadData, username, password, outRoot='data/runs', mode='dev_private', chrome=null, video=false, dom='errors', a11y=false, keepOpen=true, redact='(password|token|authorization|cookie)=([^;\\s]+)', onProgress=null, sessionRunId=null }) {
   // Read files first
   const fields = JSON.parse(fs.readFileSync(fieldsFile, 'utf-8'))
   const flow = JSON.parse(fs.readFileSync(flowFile, 'utf-8'))
@@ -75,7 +75,7 @@ export async function runHighLevelFlow({ fieldsFile, flowFile, leadFile, leadDat
   // Credentials provided by caller (.env or CLI flags)
   if (!username || !password) throw new Error('Missing credentials - use .env (PLATFORM_USERNAME/PASSWORD or FLOW_USERNAME/PASSWORD) or --username/--password flags')
 
-  const meta = { run:{ id:runId, slug, platform, startedAt:new Date().toISOString(), mode, chrome: chromePath, profileDir:null }, env:{ os:`${os.platform()} ${os.release()}`, node: process.versions.node }, options: { outRoot, mode } }
+  const meta = { run:{ id:runId, slug, platform, startedAt:new Date().toISOString(), mode, chrome: chromePath, profileDir:null, sessionId: sessionRunId }, env:{ os:`${os.platform()} ${os.release()}`, node: process.versions.node }, options: { outRoot, mode } }
 
   // Create resolver instances
   const templateResolver = new TemplateResolver()

@@ -116,6 +116,7 @@ export function registerScenariosIpc() {
 
               runs.push({
                 id: manifest.run?.id || runDir.name,
+                sessionId: manifest.run?.sessionId,  // Global run ID for grouping executions
                 slug: manifest.run?.slug || platformDir.name,
                 platform: manifest.run?.platform || platformDir.name,
                 leadId: manifest.lead?.id,
@@ -137,9 +138,9 @@ export function registerScenariosIpc() {
         }
       }
 
-      // Sort by date descending, limit to last 100
+      // Sort by date descending, limit to last 500
       runs.sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime())
-      const recent = runs.slice(0, 100)
+      const recent = runs.slice(0, 500)
 
       return { success: true, data: recent }
     } catch (error) {
