@@ -55,6 +55,10 @@ interface AdvancedModeTabProps {
   // Replay
   onPrepareReplayFromErrors?: (failedItems: ExecutionItem[]) => void
   onEditLead?: (leadId: string) => void
+
+  // Requeue
+  onRetryItem?: (itemId: string) => void
+  onRetryFailedItems?: (itemIds: string[]) => void
 }
 
 export default function AdvancedModeTab({
@@ -86,7 +90,9 @@ export default function AdvancedModeTab({
   onUpdateSettings,
   getLeadName,
   onPrepareReplayFromErrors,
-  onEditLead
+  onEditLead,
+  onRetryItem,
+  onRetryFailedItems
 }: AdvancedModeTabProps) {
   const [showAutoPreview, setShowAutoPreview] = useState(false)
   const [selectedDetailsFlow, setSelectedDetailsFlow] = useState<Flow | null>(null)
@@ -261,6 +267,8 @@ export default function AdvancedModeTab({
         concurrency={settings.concurrency}
         onPrepareReplayFromErrors={onPrepareReplayFromErrors}
         onEditLead={onEditLead}
+        onRetryItem={onRetryItem}
+        onRetryFailedItems={onRetryFailedItems}
       />
 
       {/* Modals */}

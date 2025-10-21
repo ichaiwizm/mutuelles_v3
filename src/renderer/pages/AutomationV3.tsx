@@ -157,6 +157,8 @@ export default function AutomationV3() {
         onUpdateSettings={automation.updateSettings}
         getLeadName={automation.getLeadName}
         onPrepareReplayFromErrors={automation.prepareReplayFromErrors}
+        onRetryItem={automation.requeueItem}
+        onRetryFailedItems={automation.requeueFailedItems}
       />
 
       {/* Settings Modal */}

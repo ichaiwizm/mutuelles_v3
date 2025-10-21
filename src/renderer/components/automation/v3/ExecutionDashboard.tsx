@@ -23,6 +23,9 @@ interface ExecutionDashboardProps {
   // For replay
   onPrepareReplayFromErrors?: (failedItems: ExecutionItem[]) => void
   onEditLead?: (leadId: string) => void
+  // For requeue
+  onRetryItem?: (itemId: string) => void
+  onRetryFailedItems?: (itemIds: string[]) => void
 }
 
 /**
@@ -43,7 +46,9 @@ export default function ExecutionDashboard({
   flows = [],
   concurrency = 2,
   onPrepareReplayFromErrors,
-  onEditLead
+  onEditLead,
+  onRetryItem,
+  onRetryFailedItems
 }: ExecutionDashboardProps) {
   const items = useMemo(() => Array.from(executionItems.values()), [executionItems])
 
@@ -127,6 +132,8 @@ export default function ExecutionDashboard({
           concurrency={concurrency}
           onReplayFailures={onPrepareReplayFromErrors}
           onEditLead={onEditLead}
+          onRetryItem={onRetryItem}
+          onRetryFailedItems={onRetryFailedItems}
         />
       )}
 

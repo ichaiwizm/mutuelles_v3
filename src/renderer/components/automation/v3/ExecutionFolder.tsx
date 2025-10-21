@@ -8,12 +8,16 @@ interface ExecutionFolderProps {
   group: ExecutionGroup
   defaultExpanded?: boolean
   onViewDetails?: (runDir: string, leadName: string, platformName: string, flowName: string) => void
+  onRetryItem?: (itemId: string) => void
+  isRunning?: boolean
 }
 
 export default function ExecutionFolder({
   group,
   defaultExpanded = false,
-  onViewDetails
+  onViewDetails,
+  onRetryItem,
+  isRunning
 }: ExecutionFolderProps) {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded)
   const colorConfig = getGroupColorConfig(group)
@@ -73,6 +77,8 @@ export default function ExecutionFolder({
               <ExecutionItemCard
                 item={item}
                 onViewDetails={onViewDetails}
+                onRetryItem={onRetryItem}
+                isRunning={isRunning}
               />
             </div>
           ))}

@@ -187,6 +187,29 @@ export function useExecution(
           event.currentStep !== undefined ? `step ${event.currentStep}/${event.totalSteps}` : ''
         )
 
+        // Handle item-requeued: reset item back to pending status
+        if (event.type === 'item-requeued' && event.itemId) {
+          setExecutionItems(prev => {
+            const next = new Map(prev)
+            const item = next.get(event.itemId!)
+
+            if (item) {
+              // Reset item to pending, clear error message and runDir
+              next.set(event.itemId!, {
+                ...item,
+                status: 'pending',
+                message: undefined,
+                runDir: undefined,
+                startedAt: undefined,
+                completedAt: undefined,
+                currentStep: undefined
+              })
+            }
+
+            return next
+          })
+        }
+
         // Handle items-queued: create all items in 'pending' status
         if (event.type === 'items-queued' && event.items) {
           setExecutionItems(prev => {
@@ -380,11 +403,57 @@ export function useExecution(
     })
   }, [])
 
+  /**
+   * Requeue a single failed item to be executed again
+   */
+  const requeueItem = useCallback(async (itemId: string) => {
+    if (!runId) {
+      throw new Error('Aucune run active')
+    }
+
+    try {
+      const result = await window.api.scenarios.requeueItem(runId, itemId)
+      if (!result.success) {
+        throw new Error(result.message || 'Impossible de remettre l\'item en queue')
+      }
+      console.log('[useExecution] Requeued item:', itemId.slice(0, 8))
+    } catch (error) {
+      console.error('[useExecution] Failed to requeue item:', error)
+      throw error
+    }
+  }, [runId])
+
+  /**
+   * Requeue multiple failed items at once
+   */
+  const requeueFailedItems = useCallback(async (itemIds: string[]) => {
+    if (!runId) {
+      throw new Error('Aucune run active')
+    }
+
+    if (itemIds.length === 0) {
+      return
+    }
+
+    try {
+      const result = await window.api.scenarios.requeueItems(runId, itemIds)
+      if (!result.success) {
+        throw new Error(result.message || 'Impossible de remettre les items en queue')
+      }
+      console.log('[useExecution] Requeued', result.requeuedCount, 'items')
+    } catch (error) {
+      console.error('[useExecution] Failed to requeue items:', error)
+      throw error
+    }
+  }, [runId])
+
   return {
     executionItems,
     runId,
     isRunning,
     startRun,
-    clearCompletedExecutions
+    clearCompletedExecutions,
+    requeueItem,
+    requeueFailedItems
   }
 }

@@ -10,13 +10,17 @@ interface ExecutionFoldersViewProps {
   groupingMode: GroupingMode
   onGroupingModeChange: (mode: GroupingMode) => void
   onViewDetails?: (runDir: string, leadName: string, platformName: string, flowName: string) => void
+  onRetryItem?: (itemId: string) => void
+  isRunning?: boolean
 }
 
 export default function ExecutionFoldersView({
   items,
   groupingMode,
   onGroupingModeChange,
-  onViewDetails
+  onViewDetails,
+  onRetryItem,
+  isRunning
 }: ExecutionFoldersViewProps) {
   const groups = groupExecutionItems(items, groupingMode)
 
@@ -76,6 +80,8 @@ export default function ExecutionFoldersView({
               group={group}
               defaultExpanded={false}
               onViewDetails={onViewDetails}
+              onRetryItem={onRetryItem}
+              isRunning={isRunning}
             />
           ))
         )}

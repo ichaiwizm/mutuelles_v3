@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react'
-import { Eye } from 'lucide-react'
+import { Eye, RotateCcw } from 'lucide-react'
 import type { ExecutionItem } from '../../../hooks/useAutomation'
 import { useNow } from '../../../hooks/useNow'
 import { getExecutionStatusConfig } from '../../../utils/statusStyles'
@@ -9,12 +9,16 @@ import TimeEstimator from './TimeEstimator'
 interface ExecutionItemCardProps {
   item: ExecutionItem
   onViewDetails?: (runDir: string, leadName: string, platformName: string, flowName: string) => void
+  onRetryItem?: (itemId: string) => void
+  isRunning?: boolean
   estimatedDurationMs?: number // Optional estimated duration for pending items
 }
 
 export default function ExecutionItemCard({
   item,
   onViewDetails,
+  onRetryItem,
+  isRunning = false,
   estimatedDurationMs
 }: ExecutionItemCardProps) {
   // Use useNow hook to update timestamp every second (instead of forcing re-render every 200ms)
@@ -73,6 +77,18 @@ export default function ExecutionItemCard({
 
         {/* Actions */}
         <div className="flex items-center gap-1 flex-shrink-0">
+          {/* Retry button - visible only for errors during active run */}
+          {item.status === 'error' && isRunning && onRetryItem && (
+            <button
+              onClick={() => onRetryItem(item.id)}
+              title="Réessayer"
+              className="p-1.5 rounded hover:bg-red-50 dark:hover:bg-red-950 transition-colors group"
+            >
+              <RotateCcw size={16} className="text-red-600 dark:text-red-400 group-hover:text-red-700 dark:group-hover:text-red-300 transition-colors" />
+            </button>
+          )}
+
+          {/* View details button */}
           {(item.status === 'success' || item.status === 'error') && item.runDir && onViewDetails && (
             <button
               onClick={() => onViewDetails(item.runDir!, item.leadName, item.platformName, item.flowName || '')}

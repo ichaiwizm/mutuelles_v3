@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react'
-import { Square, Grid3x3, FolderKanban, Clock, Play, Check, X } from 'lucide-react'
+import { Square, Grid3x3, FolderKanban, Clock, Play, Check, X, RotateCcw } from 'lucide-react'
 import ExecutionItemCard from './ExecutionItemCard'
 import ExecutionFoldersView from './ExecutionFoldersView'
 import RunDetailsModal from './RunDetailsModal'
@@ -40,6 +40,9 @@ interface ExecutionCurrentViewProps {
   // Optional props for replay
   onReplayFailures?: (failedItems: ExecutionItem[]) => void
   onEditLead?: (leadId: string) => void
+  // Optional props for requeue
+  onRetryItem?: (itemId: string) => void
+  onRetryFailedItems?: (itemIds: string[]) => void
 }
 
 /**
@@ -59,7 +62,9 @@ export default function ExecutionCurrentView({
   runHistory = [],
   concurrency = 2,
   onReplayFailures,
-  onEditLead
+  onEditLead,
+  onRetryItem,
+  onRetryFailedItems
 }: ExecutionCurrentViewProps) {
   const { selectedRunDetails, handleViewDetails, clearDetails } = useRunDetails()
   const [showReplayModal, setShowReplayModal] = useState(false)
@@ -101,9 +106,16 @@ export default function ExecutionCurrentView({
     return items.filter(item => item.status === 'error')
   }, [items])
 
-  // Handle replay all failures
+  // Handle replay/requeue all failures
   const handleReplayAll = () => {
-    if (onReplayFailures && failedItems.length > 0) {
+    if (failedItems.length === 0) return
+
+    if (isRunning && onRetryFailedItems) {
+      // During run: requeue items back into current queue
+      const failedIds = failedItems.map(item => item.id)
+      onRetryFailedItems(failedIds)
+    } else if (!isRunning && onReplayFailures) {
+      // After run: prepare new run with failed items
       onReplayFailures(failedItems)
     }
   }
@@ -134,12 +146,16 @@ export default function ExecutionCurrentView({
             </div>
 
             <div className="flex items-center gap-2">
-              {/* Replay Failures Button */}
-              {!isRunning && onReplayFailures && (
-                <ReplayFailuresButton
-                  errorCount={failedItems.length}
-                  onClick={() => setShowReplayModal(true)}
-                />
+              {/* Replay/Requeue Failures Button */}
+              {failedItems.length > 0 && (isRunning ? onRetryFailedItems : onReplayFailures) && (
+                <button
+                  onClick={isRunning ? handleReplayAll : () => setShowReplayModal(true)}
+                  className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-red-700 dark:text-red-300 border border-red-300 dark:border-red-700 rounded-md hover:bg-red-50 dark:hover:bg-red-950 transition-colors"
+                  title={isRunning ? "Remettre les échecs dans la queue" : "Rejouer les exécutions échouées"}
+                >
+                  <RotateCcw size={16} />
+                  {isRunning ? `Remettre en queue les ${failedItems.length} échec${failedItems.length > 1 ? 's' : ''}` : `Rejouer les ${failedItems.length} échec${failedItems.length > 1 ? 's' : ''}`}
+                </button>
               )}
 
               {/* View Toggle */}
@@ -242,6 +258,8 @@ export default function ExecutionCurrentView({
                   key={item.id}
                   item={item}
                   onViewDetails={handleViewDetails}
+                  onRetryItem={onRetryItem}
+                  isRunning={isRunning}
                   estimatedDurationMs={itemEstimates.get(item.id)}
                 />
               ))}
@@ -252,6 +270,8 @@ export default function ExecutionCurrentView({
               groupingMode={groupingMode}
               onGroupingModeChange={onGroupingModeChange}
               onViewDetails={handleViewDetails}
+              onRetryItem={onRetryItem}
+              isRunning={isRunning}
             />
           )}
         </>

@@ -24,7 +24,7 @@ export type RunRequest = {
 }
 
 export type RunProgressEvent = {
-  type: 'run-start'|'items-queued'|'item-start'|'item-progress'|'item-success'|'item-error'|'run-done'|'run-cancelled'
+  type: 'run-start'|'items-queued'|'item-start'|'item-progress'|'item-success'|'item-error'|'run-done'|'run-cancelled'|'item-requeued'
   runId: string
   itemId?: string
   leadId?: string
@@ -43,10 +43,31 @@ export type RunProgressEvent = {
   }>
 }
 
+type TaskDef = {
+  itemId: string
+  leadId: string
+  platform: string
+  flowFile: string
+  flowSlug: string
+  fieldsFile: string
+  username: string
+  password: string
+}
+
 type RunContext = {
   queue: RunnerQueue
   startedAt: Date
   sender?: BrowserWindow
+  // For requeue support
+  taskDefs: Map<string, TaskDef>
+  activeTasks: number
+  mode: Mode
+  keepOpen: boolean
+  retryFailed: boolean
+  maxRetries: number
+  leadsSvc: LeadsService
+  runId: string
+  executeWithRetry: (def: TaskDef, attempt?: number) => Promise<void>
 }
 
 function makeId(prefix: string) { return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2,7)}` }
@@ -85,7 +106,7 @@ export class ScenariosRunner {
 
     setTimeout(() => {
       const hl = listHLFlows(this.projectRoot)
-      const taskDefs: Array<{ itemId:string; leadId:string; platform:string; flowFile:string; flowSlug:string; fieldsFile:string; username:string; password:string }>= []
+      const taskDefs: TaskDef[] = []
       const earlyErrors: RunProgressEvent[] = []
 
       for (const leadId of payload.leadIds) {
@@ -133,17 +154,37 @@ export class ScenariosRunner {
 
       const queue = new RunnerQueue(concurrency)
 
-      // Store the run context for stop() functionality
-      this.activeRuns.set(runId, {
+      // Convert taskDefs array to Map for quick lookup
+      const taskDefsMap = new Map<string, TaskDef>()
+      taskDefs.forEach(def => taskDefsMap.set(def.itemId, def))
+
+      // Create run context (we'll update it with executeWithRetry later)
+      const runContext: RunContext = {
         queue,
         startedAt: new Date(),
-        sender
-      })
+        sender,
+        taskDefs: taskDefsMap,
+        activeTasks: taskDefs.length,
+        mode,
+        keepOpen,
+        retryFailed,
+        maxRetries,
+        leadsSvc,
+        runId,
+        executeWithRetry: null as any  // Will be set below
+      }
 
-      const scheduled: Promise<any>[] = []
+      // Helper function to check if run is complete
+      const checkCompletion = () => {
+        if (runContext.activeTasks === 0 && !queue.isRunning) {
+          console.log('[Runner] All tasks completed, sending run-done')
+          this.activeRuns.delete(runId)
+          send({ type:'run-done', runId, message:'Terminé' })
+        }
+      }
 
       // Helper function to execute with retry logic
-      const executeWithRetry = async (def: typeof taskDefs[0], attempt: number = 0): Promise<void> => {
+      const executeWithRetry = async (def: TaskDef, attempt: number = 0): Promise<void> => {
         const isRetry = attempt > 0
         if (isRetry) {
           send({ type:'item-start', runId, itemId: def.itemId, leadId: def.leadId, platform: def.platform, flowSlug: def.flowSlug, message: `Tentative ${attempt + 1}/${maxRetries + 1}` })
@@ -196,6 +237,10 @@ export class ScenariosRunner {
           }
 
           send({ type:'item-success', runId, itemId: def.itemId, leadId: def.leadId, platform: def.platform, flowSlug: def.flowSlug, runDir })
+
+          // Task completed successfully - decrement counter
+          runContext.activeTasks--
+          checkCompletion()
         } catch (e) {
           const errorMsg = e instanceof Error ? e.message : String(e)
 
@@ -215,24 +260,26 @@ export class ScenariosRunner {
             // Final error (no retry or max retries reached)
             const finalMsg = attempt > 0 ? `${errorMsg} (après ${attempt + 1} tentative(s))` : errorMsg
             send({ type:'item-error', runId, itemId: def.itemId, leadId: def.leadId, platform: def.platform, flowSlug: def.flowSlug, message: finalMsg, runDir })
+
+            // Task failed - decrement counter
+            runContext.activeTasks--
+            checkCompletion()
           }
         }
       }
 
-      for (const def of taskDefs) {
-        scheduled.push(queue.add(() => executeWithRetry(def)))
-      }
+      // Store executeWithRetry in context
+      runContext.executeWithRetry = executeWithRetry
 
-      // Async completion handler
-      ;(async () => {
-        try {
-          await Promise.allSettled(scheduled)
-        } finally {
-          // Cleanup active run
-          this.activeRuns.delete(runId)
-          send({ type:'run-done', runId, message:'Terminé' })
-        }
-      })()
+      // Store the run context for stop() and requeue functionality
+      this.activeRuns.set(runId, runContext)
+
+      // Queue all initial tasks
+      for (const def of taskDefs) {
+        queue.add(() => executeWithRetry(def)).catch(err => {
+          console.error('[Runner] Task execution failed:', err)
+        })
+      }
     }, 0)
     return { runId }
   }
@@ -262,6 +309,74 @@ export class ScenariosRunner {
       success: true,
       message: `Run arrêté avec succès (${cancelledCount} tâches annulées)`,
       cancelledCount
+    }
+  }
+
+  /**
+   * Requeue a single failed item to be executed again
+   */
+  requeueItem(runId: string, itemId: string): { success: boolean; message: string } {
+    const runContext = this.activeRuns.get(runId)
+    if (!runContext) {
+      return { success: false, message: 'Run introuvable ou déjà terminée' }
+    }
+
+    const taskDef = runContext.taskDefs.get(itemId)
+    if (!taskDef) {
+      return { success: false, message: 'Item introuvable dans cette run' }
+    }
+
+    // Increment active tasks counter
+    runContext.activeTasks++
+
+    // Send requeued event to notify frontend
+    if (runContext.sender) {
+      try {
+        runContext.sender.webContents.send(`scenarios:progress:${runId}`, {
+          type: 'item-requeued',
+          runId,
+          itemId,
+          leadId: taskDef.leadId,
+          platform: taskDef.platform,
+          flowSlug: taskDef.flowSlug
+        } as RunProgressEvent)
+      } catch (err) {
+        console.error('Failed to send requeue event:', err)
+      }
+    }
+
+    // Add task back to queue
+    runContext.queue.add(() => runContext.executeWithRetry(taskDef)).catch(err => {
+      console.error('[Runner] Requeued task execution failed:', err)
+    })
+
+    console.log(`[Runner] Requeued item ${itemId.slice(0, 8)} for run ${runId.slice(0, 8)}`)
+
+    return { success: true, message: 'Item remis en queue avec succès' }
+  }
+
+  /**
+   * Requeue multiple failed items at once
+   */
+  requeueItems(runId: string, itemIds: string[]): { success: boolean; message: string; requeuedCount?: number } {
+    const runContext = this.activeRuns.get(runId)
+    if (!runContext) {
+      return { success: false, message: 'Run introuvable ou déjà terminée' }
+    }
+
+    let requeuedCount = 0
+
+    for (const itemId of itemIds) {
+      const result = this.requeueItem(runId, itemId)
+      if (result.success) {
+        requeuedCount++
+      }
+    }
+
+    return {
+      success: true,
+      message: `${requeuedCount} item(s) remis en queue`,
+      requeuedCount
     }
   }
 

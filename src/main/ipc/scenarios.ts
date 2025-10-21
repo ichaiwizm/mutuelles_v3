@@ -214,5 +214,47 @@ export function registerScenariosIpc() {
     }
   })
 
+  // Requeue a single failed item
+  ipcMain.handle('scenarios:requeueItem', async (_e, runId: string, itemId: string) => {
+    try {
+      if (!runId || !itemId) {
+        return {
+          success: false,
+          message: 'Run ID et Item ID requis'
+        }
+      }
+
+      const result = runner.requeueItem(runId, itemId)
+      return result
+    } catch (error) {
+      console.error('Error requeueing item:', error)
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Failed to requeue item'
+      }
+    }
+  })
+
+  // Requeue multiple failed items
+  ipcMain.handle('scenarios:requeueItems', async (_e, runId: string, itemIds: string[]) => {
+    try {
+      if (!runId || !itemIds || !Array.isArray(itemIds)) {
+        return {
+          success: false,
+          message: 'Run ID et tableau d\'Item IDs requis'
+        }
+      }
+
+      const result = runner.requeueItems(runId, itemIds)
+      return result
+    } catch (error) {
+      console.error('Error requeueing items:', error)
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Failed to requeue items'
+      }
+    }
+  })
+
 }
 

@@ -261,6 +261,8 @@ export function useAutomation() {
     totalExecutions: selection.totalExecutions,
     startRun,
     clearCompletedExecutions: execution.clearCompletedExecutions,
+    requeueItem: execution.requeueItem,
+    requeueFailedItems: execution.requeueFailedItems,
 
     // Helpers
     getLeadName,
