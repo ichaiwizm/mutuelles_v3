@@ -149,6 +149,7 @@ export default function AutomationV3() {
         settings={automation.settings}
         onUpdateSettings={automation.updateSettings}
         getLeadName={automation.getLeadName}
+        onPrepareReplayFromErrors={automation.prepareReplayFromErrors}
       />
 
       {/* Settings Modal */}

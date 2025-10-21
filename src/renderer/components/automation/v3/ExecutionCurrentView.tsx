@@ -1,12 +1,17 @@
-import React from 'react'
+import React, { useMemo, useState } from 'react'
 import { Square, Grid3x3, FolderKanban, Clock, Play, Check, X } from 'lucide-react'
 import ExecutionItemCard from './ExecutionItemCard'
 import ExecutionFoldersView from './ExecutionFoldersView'
 import RunDetailsModal from './RunDetailsModal'
-import type { ExecutionItem } from '../../../hooks/useAutomation'
+import GlobalTimeTracker from './GlobalTimeTracker'
+import ReplayFailuresButton from './ReplayFailuresButton'
+import ReplayFailuresModal from './ReplayFailuresModal'
+import type { ExecutionItem, Flow } from '../../../hooks/useAutomation'
 import type { GroupingMode } from '../../../utils/executionGrouping'
 import type { ViewMode } from '../../../hooks/automation/useDashboardState'
+import type { RunHistoryItem } from '../../../../shared/types/automation'
 import { useRunDetails } from '../../../hooks/useRunDetails'
+import { estimateRemainingTime, estimateFlowDuration } from '../../../services/timeEstimationService'
 
 interface CurrentStats {
   total: number
@@ -28,6 +33,13 @@ interface ExecutionCurrentViewProps {
   onViewModeChange: (mode: ViewMode) => void
   onGroupingModeChange: (mode: GroupingMode) => void
   onStopExecution?: () => void
+  // Optional props for time estimation
+  flows?: Flow[]
+  runHistory?: RunHistoryItem[]
+  concurrency?: number
+  // Optional props for replay
+  onReplayFailures?: (failedItems: ExecutionItem[]) => void
+  onEditLead?: (leadId: string) => void
 }
 
 /**
@@ -42,9 +54,59 @@ export default function ExecutionCurrentView({
   isRunning,
   onViewModeChange,
   onGroupingModeChange,
-  onStopExecution
+  onStopExecution,
+  flows = [],
+  runHistory = [],
+  concurrency = 2,
+  onReplayFailures,
+  onEditLead
 }: ExecutionCurrentViewProps) {
   const { selectedRunDetails, handleViewDetails, clearDetails } = useRunDetails()
+  const [showReplayModal, setShowReplayModal] = useState(false)
+
+  // Calculate remaining time estimate
+  const remainingTime = useMemo(() => {
+    if (!isRunning || currentStats.pending === 0) {
+      return { durationMs: 0, confidence: 'high' as const, source: 'history' as const }
+    }
+
+    // Get unique flow slugs from items
+    const flowSlugs = Array.from(new Set(items.map(item => item.flowSlug).filter(Boolean))) as string[]
+
+    return estimateRemainingTime(
+      currentStats.pending,
+      currentStats.running,
+      currentStats.success + currentStats.error,
+      concurrency,
+      runHistory,
+      flows,
+      flowSlugs
+    )
+  }, [isRunning, currentStats, items, concurrency, runHistory, flows])
+
+  // Calculate estimated duration for each pending item
+  const itemEstimates = useMemo(() => {
+    const estimates = new Map<string, number>()
+
+    items.filter(item => item.status === 'pending' && item.flowSlug).forEach(item => {
+      const estimate = estimateFlowDuration(item.flowSlug!, runHistory, flows)
+      estimates.set(item.id, estimate.durationMs)
+    })
+
+    return estimates
+  }, [items, runHistory, flows])
+
+  // Filter failed items for replay
+  const failedItems = useMemo(() => {
+    return items.filter(item => item.status === 'error')
+  }, [items])
+
+  // Handle replay all failures
+  const handleReplayAll = () => {
+    if (onReplayFailures && failedItems.length > 0) {
+      onReplayFailures(failedItems)
+    }
+  }
 
   return (
     <>
@@ -62,9 +124,23 @@ export default function ExecutionCurrentView({
             <span className="font-semibold text-blue-600 dark:text-blue-400">
               {currentStats.progress}%
             </span>
+            {isRunning && remainingTime.durationMs > 0 && (
+              <>
+                <span className="text-neutral-400">·</span>
+                <GlobalTimeTracker remainingTime={remainingTime} showEndTime={true} />
+              </>
+            )}
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Replay Failures Button */}
+            {!isRunning && onReplayFailures && (
+              <ReplayFailuresButton
+                errorCount={failedItems.length}
+                onClick={() => setShowReplayModal(true)}
+              />
+            )}
+
             {/* View Toggle */}
             {items.length > 0 && (
               <div className="flex items-center gap-1 bg-neutral-100 dark:bg-neutral-800 rounded p-0.5">
@@ -146,6 +222,7 @@ export default function ExecutionCurrentView({
               key={item.id}
               item={item}
               onViewDetails={handleViewDetails}
+              estimatedDurationMs={itemEstimates.get(item.id)}
             />
           ))}
         </div>
@@ -168,6 +245,15 @@ export default function ExecutionCurrentView({
           onClose={clearDetails}
         />
       )}
+
+      {/* Replay Failures Modal */}
+      <ReplayFailuresModal
+        isOpen={showReplayModal}
+        onClose={() => setShowReplayModal(false)}
+        failedItems={failedItems}
+        onReplayAll={handleReplayAll}
+        onEditLead={onEditLead}
+      />
     </>
   )
 }

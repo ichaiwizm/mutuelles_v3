@@ -4,15 +4,18 @@ import type { ExecutionItem } from '../../../hooks/useAutomation'
 import { useNow } from '../../../hooks/useNow'
 import { getExecutionStatusConfig } from '../../../utils/statusStyles'
 import { formatDuration } from '../../../utils/dateGrouping'
+import TimeEstimator from './TimeEstimator'
 
 interface ExecutionItemCardProps {
   item: ExecutionItem
   onViewDetails?: (runDir: string, leadName: string, platformName: string, flowName: string) => void
+  estimatedDurationMs?: number // Optional estimated duration for pending items
 }
 
 export default function ExecutionItemCard({
   item,
-  onViewDetails
+  onViewDetails,
+  estimatedDurationMs
 }: ExecutionItemCardProps) {
   // Use useNow hook to update timestamp every second (instead of forcing re-render every 200ms)
   const now = useNow(
@@ -102,8 +105,13 @@ export default function ExecutionItemCard({
 
       {/* Duration or Status Message */}
       {item.status === 'pending' ? (
-        <div className="text-xs text-amber-600 dark:text-amber-400 font-medium">
-          En attente de démarrage...
+        <div className="space-y-1">
+          <div className="text-xs text-amber-600 dark:text-amber-400 font-medium">
+            En attente de démarrage...
+          </div>
+          {estimatedDurationMs && (
+            <TimeEstimator durationMs={estimatedDurationMs} />
+          )}
         </div>
       ) : duration ? (
         <div className="text-xs text-neutral-500">

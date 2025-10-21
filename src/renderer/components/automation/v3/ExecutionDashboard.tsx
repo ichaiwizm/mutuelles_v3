@@ -3,7 +3,7 @@ import { Play, Activity, History as HistoryIcon } from 'lucide-react'
 import ExecutionCurrentView from './ExecutionCurrentView'
 import ExecutionHistoryView from './ExecutionHistoryView'
 import { useDashboardState } from '../../../hooks/automation/useDashboardState'
-import type { ExecutionItem } from '../../../hooks/useAutomation'
+import type { ExecutionItem, Flow } from '../../../hooks/useAutomation'
 import type { RunHistoryItem, ExecutionHistoryItem } from '../../../../shared/types/automation'
 
 interface ExecutionDashboardProps {
@@ -17,6 +17,12 @@ interface ExecutionDashboardProps {
   onDeleteHistory?: (runId: string) => void
   onClearAllHistory?: () => void
   onClearCompletedExecutions?: () => void
+  // For time estimation
+  flows?: Flow[]
+  concurrency?: number
+  // For replay
+  onPrepareReplayFromErrors?: (failedItems: ExecutionItem[]) => void
+  onEditLead?: (leadId: string) => void
 }
 
 /**
@@ -33,7 +39,11 @@ export default function ExecutionDashboard({
   onRerunHistoryItem,
   onDeleteHistory,
   onClearAllHistory,
-  onClearCompletedExecutions
+  onClearCompletedExecutions,
+  flows = [],
+  concurrency = 2,
+  onPrepareReplayFromErrors,
+  onEditLead
 }: ExecutionDashboardProps) {
   const items = useMemo(() => Array.from(executionItems.values()), [executionItems])
 
@@ -113,6 +123,11 @@ export default function ExecutionDashboard({
           onViewModeChange={setViewMode}
           onGroupingModeChange={setGroupingMode}
           onStopExecution={onStopExecution}
+          flows={flows}
+          runHistory={runHistory}
+          concurrency={concurrency}
+          onReplayFailures={onPrepareReplayFromErrors}
+          onEditLead={onEditLead}
         />
       )}
 

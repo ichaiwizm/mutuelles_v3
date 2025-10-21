@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import { Rocket } from 'lucide-react'
 import LeadSelector from './LeadSelector'
 import AutoPreviewModal from './AutoPreviewModal'
@@ -6,6 +6,9 @@ import ExecutionDashboard from './ExecutionDashboard'
 import FlowsBrowserPanel from './FlowsBrowserPanel'
 import FlowTestModal from './FlowTestModal'
 import FlowDetailsModal from './FlowDetailsModal'
+import DuplicateWarningBanner from './DuplicateWarningBanner'
+import { detectDuplicates, excludeDuplicates } from '../../../services/duplicateDetector'
+import { estimateTotalDuration, formatDuration } from '../../../services/timeEstimationService'
 import type { Lead, Platform, Flow, ExecutionItem, AdvancedSettings } from '../../../hooks/useAutomation'
 import type { RunHistoryItem, ExecutionHistoryItem } from '../../../../shared/types/automation'
 
@@ -48,6 +51,10 @@ interface AdvancedModeTabProps {
 
   // Helpers
   getLeadName: (leadId: string) => string
+
+  // Replay
+  onPrepareReplayFromErrors?: (failedItems: ExecutionItem[]) => void
+  onEditLead?: (leadId: string) => void
 }
 
 export default function AdvancedModeTab({
@@ -77,7 +84,9 @@ export default function AdvancedModeTab({
   onClearAllHistory,
   settings,
   onUpdateSettings,
-  getLeadName
+  getLeadName,
+  onPrepareReplayFromErrors,
+  onEditLead
 }: AdvancedModeTabProps) {
   const [showAutoPreview, setShowAutoPreview] = useState(false)
   const [selectedDetailsFlow, setSelectedDetailsFlow] = useState<Flow | null>(null)
@@ -88,6 +97,44 @@ export default function AdvancedModeTab({
   const selectedFlows = flows.filter((flow) => selectedFlowIds.has(flow.slug))
 
   const canStart = selectedLeadIds.size > 0 && selectedFlowIds.size > 0
+
+  // Detect duplicates
+  const duplicateDetection = useMemo(() => {
+    return detectDuplicates(
+      Array.from(selectedLeadIds),
+      Array.from(selectedFlowIds),
+      runHistory,
+      getLeadName
+    )
+  }, [selectedLeadIds, selectedFlowIds, runHistory, getLeadName])
+
+  // Handle exclude duplicates
+  const handleExcludeDuplicates = () => {
+    const { leadIds } = excludeDuplicates(
+      selectedLeadIds,
+      selectedFlowIds,
+      duplicateDetection.duplicates
+    )
+
+    // Clear and re-select leads without duplicates
+    onClearLeadSelection()
+    leadIds.forEach(leadId => onToggleLead(leadId))
+  }
+
+  // Calculate total estimated duration
+  const totalEstimate = useMemo(() => {
+    if (selectedLeadIds.size === 0 || selectedFlowIds.size === 0) {
+      return null
+    }
+
+    return estimateTotalDuration(
+      selectedLeadIds.size,
+      Array.from(selectedFlowIds),
+      settings.concurrency,
+      runHistory,
+      flows
+    )
+  }, [selectedLeadIds, selectedFlowIds, settings.concurrency, runHistory, flows])
 
   // Map settings mode to API expected mode
   const getModeForAPI = (mode: AdvancedSettings['mode']): 'headless' | 'dev' | 'dev_private' => {
@@ -138,6 +185,8 @@ export default function AdvancedModeTab({
               onSelectAll={onSelectAllLeads}
               onClearSelection={onClearLeadSelection}
               getLeadName={getLeadName}
+              selectedFlowSlugs={Array.from(selectedFlowIds)}
+              runHistory={runHistory}
             />
 
             <FlowsBrowserPanel
@@ -153,8 +202,16 @@ export default function AdvancedModeTab({
             />
           </div>
 
+          {/* Duplicate Warning */}
+          {duplicateDetection.hasDuplicates && (
+            <DuplicateWarningBanner
+              duplicates={duplicateDetection.duplicates}
+              onExcludeDuplicates={handleExcludeDuplicates}
+            />
+          )}
+
           {/* Action buttons */}
-          <div className="flex items-center justify-center">
+          <div className="flex flex-col items-center gap-2">
             {/* Start Button */}
             <button
               onClick={handleStartClick}
@@ -168,6 +225,13 @@ export default function AdvancedModeTab({
               <Rocket size={20} />
               Démarrer {totalExecutions} exécution{totalExecutions > 1 ? 's' : ''}
             </button>
+
+            {/* Estimated duration */}
+            {totalEstimate && canStart && (
+              <div className="text-sm text-neutral-600 dark:text-neutral-400">
+                Durée estimée: ~{formatDuration(totalEstimate.durationMs)}
+              </div>
+            )}
           </div>
 
           {/* Info message */}
@@ -193,6 +257,10 @@ export default function AdvancedModeTab({
         onDeleteHistory={onDeleteHistory}
         onClearAllHistory={onClearAllHistory}
         onClearCompletedExecutions={onClearCompletedExecutions}
+        flows={flows}
+        concurrency={settings.concurrency}
+        onPrepareReplayFromErrors={onPrepareReplayFromErrors}
+        onEditLead={onEditLead}
       />
 
       {/* Modals */}

@@ -3,6 +3,8 @@ import { contextBridge, ipcRenderer } from 'electron'
 contextBridge.exposeInMainWorld('api', {
   getVersion: () => ipcRenderer.invoke('app:getVersion'),
   getStats: () => ipcRenderer.invoke('app:getStats') as Promise<{ platforms:number; profiles:number; credentials:number }>,
+  sendFailureNotification: (failures: Array<{leadName: string; platform: string; error?: string}>) =>
+    ipcRenderer.invoke('notifications:sendFailure', failures) as Promise<{success: boolean}>,
   settings: {
     getTheme: () => ipcRenderer.invoke('settings:getTheme') as Promise<'light' | 'dark' | null>,
     setTheme: (t: 'light' | 'dark') => ipcRenderer.invoke('settings:setTheme', t) as Promise<boolean>
@@ -134,6 +136,7 @@ declare global {
     api: {
       getVersion: () => Promise<string>
       getStats: () => Promise<{ platforms:number; profiles:number; credentials:number }>
+      sendFailureNotification: (failures: Array<{leadName: string; platform: string; error?: string}>) => Promise<{success: boolean}>
       settings: {
         getTheme: () => Promise<'light' | 'dark' | null>
         setTheme: (t: 'light' | 'dark') => Promise<boolean>

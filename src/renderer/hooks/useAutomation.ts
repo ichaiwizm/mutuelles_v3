@@ -215,6 +215,22 @@ export function useAutomation() {
     console.log(`[useAutomation] Rerunning single item: ${item.leadName} × ${item.flowName}`)
   }, [selection, settings.mode, startRun])
 
+  /**
+   * Prepare replay from failed items
+   * Pre-selects leads and flows from failed items without starting immediately
+   */
+  const prepareReplayFromErrors = useCallback((failedItems: ExecutionItem[]) => {
+    // Extract unique lead IDs and flow slugs
+    const leadIds = [...new Set(failedItems.map(i => i.leadId))]
+    const flowSlugs = [...new Set(failedItems.map(i => i.flowSlug).filter(Boolean) as string[])]
+
+    // Update selections
+    selection.updateLeadSelection(new Set(leadIds))
+    selection.updateFlowSelection(new Set(flowSlugs))
+
+    console.log(`[useAutomation] Prepared replay for ${failedItems.length} failed items`)
+  }, [selection])
+
   // ============================================================
   // UNIFIED API (BACKWARD COMPATIBLE)
   // ============================================================
@@ -244,6 +260,7 @@ export function useAutomation() {
     isRunning: execution.isRunning,
     totalExecutions: selection.totalExecutions,
     startRun,
+    clearCompletedExecutions: execution.clearCompletedExecutions,
 
     // Helpers
     getLeadName,
@@ -259,6 +276,9 @@ export function useAutomation() {
     rerunSingleItem,
     deleteHistoryRun: history.deleteHistoryRun,
     clearAllHistory: history.clearAllHistory,
-    loadHistory: history.loadHistory
+    loadHistory: history.loadHistory,
+
+    // Replay
+    prepareReplayFromErrors
   }
 }

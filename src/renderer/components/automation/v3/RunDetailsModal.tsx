@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
-import { X, ChevronLeft, ChevronRight, CheckCircle, XCircle, Clock, Loader2 } from 'lucide-react'
+import { X, CheckCircle, XCircle, Clock, Loader2 } from 'lucide-react'
+import ScreenshotTimeline from './ScreenshotTimeline'
 
 interface RunDetailsModalProps {
   runDir: string
@@ -105,25 +106,9 @@ export default function RunDetailsModal({
     loadImage()
   }, [currentImageIndex, screenshots, runDir, loadedImages])
 
-  const handlePrevious = () => {
-    if (currentImageIndex > 0) {
-      setCurrentImageIndex(prev => prev - 1)
-    }
-  }
-
-  const handleNext = () => {
-    if (currentImageIndex < screenshots.length - 1) {
-      setCurrentImageIndex(prev => prev + 1)
-    }
-  }
-
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape') {
       onClose()
-    } else if (e.key === 'ArrowLeft') {
-      handlePrevious()
-    } else if (e.key === 'ArrowRight') {
-      handleNext()
     }
   }
 
@@ -226,53 +211,43 @@ export default function RunDetailsModal({
                 </span>
               </div>
 
-              {/* Screenshots Carousel */}
+              {/* Screenshots Gallery */}
               {screenshots.length > 0 && (
-                <div className="space-y-3">
-                  <h3 className="text-sm font-semibold">Screenshots</h3>
+                <div className="space-y-4">
+                  {/* Main image viewer */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-semibold">
+                        Screenshot #{currentImageIndex + 1}
+                      </h3>
+                      <span className="text-xs text-neutral-600 dark:text-neutral-400">
+                        {screenshots[currentImageIndex]?.type}
+                      </span>
+                    </div>
 
-                  {/* Main image */}
-                  <div className="relative bg-neutral-100 dark:bg-neutral-800 rounded-lg overflow-hidden" style={{ minHeight: '400px' }}>
-                    {loadingImage && (
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <Loader2 className="animate-spin text-blue-600" size={24} />
-                      </div>
-                    )}
-                    {currentImage && (
-                      <img
-                        src={currentImage}
-                        alt={`Screenshot ${currentImageIndex + 1}`}
-                        className="w-full h-auto"
-                      />
-                    )}
+                    <div className="relative bg-neutral-100 dark:bg-neutral-800 rounded-lg overflow-hidden" style={{ minHeight: '400px' }}>
+                      {loadingImage && (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <Loader2 className="animate-spin text-blue-600" size={24} />
+                        </div>
+                      )}
+                      {currentImage && (
+                        <img
+                          src={currentImage}
+                          alt={`Screenshot ${currentImageIndex + 1}`}
+                          className="w-full h-auto"
+                        />
+                      )}
+                    </div>
                   </div>
 
-                  {/* Navigation */}
-                  {screenshots.length > 1 && (
-                    <div className="flex items-center justify-between">
-                      <button
-                        onClick={handlePrevious}
-                        disabled={currentImageIndex === 0}
-                        className="flex items-center gap-2 px-3 py-2 rounded border border-neutral-300 dark:border-neutral-700 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
-                      >
-                        <ChevronLeft size={16} />
-                        Précédent
-                      </button>
-
-                      <span className="text-sm text-neutral-600 dark:text-neutral-400">
-                        {currentImageIndex + 1} / {screenshots.length}
-                      </span>
-
-                      <button
-                        onClick={handleNext}
-                        disabled={currentImageIndex === screenshots.length - 1}
-                        className="flex items-center gap-2 px-3 py-2 rounded border border-neutral-300 dark:border-neutral-700 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
-                      >
-                        Suivant
-                        <ChevronRight size={16} />
-                      </button>
-                    </div>
-                  )}
+                  {/* Screenshot Timeline */}
+                  <ScreenshotTimeline
+                    steps={manifest?.steps || []}
+                    runDir={runDir}
+                    currentIndex={currentImageIndex}
+                    onSelectIndex={setCurrentImageIndex}
+                  />
                 </div>
               )}
 

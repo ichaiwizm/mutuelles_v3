@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import type { AdvancedSettings } from './useSettings'
+import { notificationBatcher } from '../../services/notificationBatcher'
 
 export type ExecutionItem = {
   id: string
@@ -312,6 +313,13 @@ export function useExecution(
                 status: 'error',
                 message: event.message,
                 completedAt: new Date()
+              })
+
+              // Send failure notification
+              notificationBatcher.addFailure({
+                leadName: item.leadName,
+                platform: item.platformName,
+                error: event.message
               })
             }
 

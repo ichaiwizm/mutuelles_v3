@@ -10,6 +10,7 @@ import { registerBrowsersIpc } from './ipc/browsers'
 import { registerAdminCliIpc } from './ipc/admin_cli'
 import { registerLeadsIPC } from './ipc/leads'
 import { registerScenariosIpc } from './ipc/scenarios'
+import { sendFailureNotification } from './services/notificationService'
 
 let mainWindow: BrowserWindow | null = null
 
@@ -53,6 +54,14 @@ app.whenReady().then(() => {
   registerAdminCliIpc()
   registerLeadsIPC()
   registerScenariosIpc()
+
+  // Register notification handler
+  ipcMain.handle('notifications:sendFailure', async (event, failures) => {
+    const window = BrowserWindow.fromWebContents(event.sender)
+    sendFailureNotification(failures, window ?? undefined)
+    return { success: true }
+  })
+
   createMainWindow()
 
   app.on('activate', () => {
