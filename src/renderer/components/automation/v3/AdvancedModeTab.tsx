@@ -33,6 +33,7 @@ interface AdvancedModeTabProps {
   totalExecutions: number
   onStartRun: (mode: 'headless' | 'dev' | 'dev_private') => Promise<string | void>
   onStopExecution?: () => void
+  onClearCompletedExecutions?: () => void
 
   // History
   runHistory: RunHistoryItem[]
@@ -68,6 +69,7 @@ export default function AdvancedModeTab({
   totalExecutions,
   onStartRun,
   onStopExecution,
+  onClearCompletedExecutions,
   runHistory,
   onRerunHistory,
   onRerunHistoryItem,
@@ -190,6 +192,7 @@ export default function AdvancedModeTab({
         onRerunHistoryItem={onRerunHistoryItem}
         onDeleteHistory={onDeleteHistory}
         onClearAllHistory={onClearAllHistory}
+        onClearCompletedExecutions={onClearCompletedExecutions}
       />
 
       {/* Modals */}

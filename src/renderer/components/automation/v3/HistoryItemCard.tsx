@@ -1,20 +1,18 @@
 import React from 'react'
-import { Play, FolderOpen, FileText, CheckCircle, XCircle, Clock } from 'lucide-react'
+import { Play, Eye, CheckCircle, XCircle, Clock } from 'lucide-react'
 import type { ExecutionHistoryItem } from '../../../../shared/types/automation'
 import { formatDuration } from '../../../utils/dateGrouping'
 
 interface HistoryItemCardProps {
   item: ExecutionHistoryItem
   onRerun: (item: ExecutionHistoryItem) => void
-  onOpenFolder?: (runDir: string) => void
-  onViewManifest?: (runDir: string) => void
+  onViewDetails?: (runDir: string, leadName: string, platformName: string, flowName: string) => void
 }
 
 export default function HistoryItemCard({
   item,
   onRerun,
-  onOpenFolder,
-  onViewManifest
+  onViewDetails
 }: HistoryItemCardProps) {
   const getStatusConfig = () => {
     switch (item.status) {
@@ -81,25 +79,14 @@ export default function HistoryItemCard({
           <Play size={14} className="text-neutral-600 dark:text-neutral-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors" />
         </button>
 
-        {/* Open folder */}
-        {item.runDir && onOpenFolder && (
+        {/* View details */}
+        {item.runDir && onViewDetails && (
           <button
-            onClick={() => onOpenFolder(item.runDir!)}
+            onClick={() => onViewDetails(item.runDir!, item.leadName, item.platformName, item.flowName)}
             className="p-1.5 rounded hover:bg-white dark:hover:bg-neutral-800 transition-colors group"
-            title="Ouvrir le dossier"
+            title="Voir les détails"
           >
-            <FolderOpen size={14} className="text-neutral-600 dark:text-neutral-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors" />
-          </button>
-        )}
-
-        {/* View manifest */}
-        {item.runDir && onViewManifest && (
-          <button
-            onClick={() => onViewManifest(item.runDir!)}
-            className="p-1.5 rounded hover:bg-white dark:hover:bg-neutral-800 transition-colors group"
-            title="Voir le manifest"
-          >
-            <FileText size={14} className="text-neutral-600 dark:text-neutral-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors" />
+            <Eye size={14} className="text-neutral-600 dark:text-neutral-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors" />
           </button>
         )}
       </div>

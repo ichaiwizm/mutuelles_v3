@@ -7,13 +7,13 @@ import ExecutionItemCard from './ExecutionItemCard'
 interface ExecutionFolderProps {
   group: ExecutionGroup
   defaultExpanded?: boolean
-  onOpenFolder?: (runDir: string) => void
+  onViewDetails?: (runDir: string, leadName: string, platformName: string, flowName: string) => void
 }
 
 export default function ExecutionFolder({
   group,
   defaultExpanded = false,
-  onOpenFolder
+  onViewDetails
 }: ExecutionFolderProps) {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded)
   const colorConfig = getGroupColorConfig(group)
@@ -72,7 +72,7 @@ export default function ExecutionFolder({
             >
               <ExecutionItemCard
                 item={item}
-                onOpenFolder={item.runDir && onOpenFolder ? () => onOpenFolder(item.runDir!) : undefined}
+                onViewDetails={onViewDetails}
               />
             </div>
           ))}

@@ -1,16 +1,16 @@
 import React, { useMemo } from 'react'
-import { FolderOpen, CheckCircle, XCircle, Loader2, Clock } from 'lucide-react'
+import { Eye, CheckCircle, XCircle, Loader2, Clock } from 'lucide-react'
 import type { ExecutionItem } from '../../../hooks/useAutomation'
 import { useNow } from '../../../hooks/useNow'
 
 interface ExecutionItemCardProps {
   item: ExecutionItem
-  onOpenFolder?: () => void
+  onViewDetails?: (runDir: string, leadName: string, platformName: string, flowName: string) => void
 }
 
 export default function ExecutionItemCard({
   item,
-  onOpenFolder
+  onViewDetails
 }: ExecutionItemCardProps) {
   // Use useNow hook to update timestamp every second (instead of forcing re-render every 200ms)
   const now = useNow(
@@ -112,13 +112,13 @@ export default function ExecutionItemCard({
 
         {/* Actions */}
         <div className="flex items-center gap-1 flex-shrink-0">
-          {(item.status === 'success' || item.status === 'error') && item.runDir && onOpenFolder && (
+          {(item.status === 'success' || item.status === 'error') && item.runDir && onViewDetails && (
             <button
-              onClick={onOpenFolder}
-              title="Ouvrir le dossier"
-              className="p-1.5 rounded hover:bg-white dark:hover:bg-neutral-800 transition-colors"
+              onClick={() => onViewDetails(item.runDir!, item.leadName, item.platformName, item.flowName || '')}
+              title="Voir les détails"
+              className="p-1.5 rounded hover:bg-white dark:hover:bg-neutral-800 transition-colors group"
             >
-              <FolderOpen size={16} className="text-neutral-600 dark:text-neutral-400" />
+              <Eye size={16} className="text-neutral-600 dark:text-neutral-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors" />
             </button>
           )}
         </div>

@@ -354,10 +354,28 @@ export function useExecution(
     }
   }, [leads, flows, platforms, settings, onRunComplete])
 
+  /**
+   * Clear completed execution items (success/error only)
+   * Keep running and pending items
+   */
+  const clearCompletedExecutions = useCallback(() => {
+    setExecutionItems(prev => {
+      const next = new Map()
+      // Keep only running and pending items
+      for (const [id, item] of prev.entries()) {
+        if (item.status === 'running' || item.status === 'pending') {
+          next.set(id, item)
+        }
+      }
+      return next
+    })
+  }, [])
+
   return {
     executionItems,
     runId,
     isRunning,
-    startRun
+    startRun,
+    clearCompletedExecutions
   }
 }

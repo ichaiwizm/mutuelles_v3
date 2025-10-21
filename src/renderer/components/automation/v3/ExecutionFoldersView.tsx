@@ -9,14 +9,14 @@ interface ExecutionFoldersViewProps {
   items: ExecutionItem[]
   groupingMode: GroupingMode
   onGroupingModeChange: (mode: GroupingMode) => void
-  onOpenFolder?: (runDir: string) => void
+  onViewDetails?: (runDir: string, leadName: string, platformName: string, flowName: string) => void
 }
 
 export default function ExecutionFoldersView({
   items,
   groupingMode,
   onGroupingModeChange,
-  onOpenFolder
+  onViewDetails
 }: ExecutionFoldersViewProps) {
   const groups = groupExecutionItems(items, groupingMode)
 
@@ -75,7 +75,7 @@ export default function ExecutionFoldersView({
               key={group.key}
               group={group}
               defaultExpanded={false}
-              onOpenFolder={onOpenFolder}
+              onViewDetails={onViewDetails}
             />
           ))
         )}

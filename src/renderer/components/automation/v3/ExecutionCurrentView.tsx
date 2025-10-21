@@ -1,7 +1,8 @@
-import React from 'react'
-import { Square, Grid3x3, FolderKanban } from 'lucide-react'
+import React, { useState } from 'react'
+import { Square, Grid3x3, FolderKanban, Clock, Play, Check, X } from 'lucide-react'
 import ExecutionItemCard from './ExecutionItemCard'
 import ExecutionFoldersView from './ExecutionFoldersView'
+import RunDetailsModal from './RunDetailsModal'
 import type { ExecutionItem } from '../../../hooks/useAutomation'
 import type { GroupingMode } from '../../../utils/executionGrouping'
 import type { ViewMode } from '../../../hooks/automation/useDashboardState'
@@ -26,7 +27,6 @@ interface ExecutionCurrentViewProps {
   onViewModeChange: (mode: ViewMode) => void
   onGroupingModeChange: (mode: GroupingMode) => void
   onStopExecution?: () => void
-  onOpenFolder: (runDir: string) => void
 }
 
 /**
@@ -41,9 +41,20 @@ export default function ExecutionCurrentView({
   isRunning,
   onViewModeChange,
   onGroupingModeChange,
-  onStopExecution,
-  onOpenFolder
+  onStopExecution
 }: ExecutionCurrentViewProps) {
+  // Modal state
+  const [selectedRunDetails, setSelectedRunDetails] = useState<{
+    runDir: string
+    leadName: string
+    platformName: string
+    flowName: string
+  } | null>(null)
+
+  const handleViewDetails = (runDir: string, leadName: string, platformName: string, flowName: string) => {
+    setSelectedRunDetails({ runDir, leadName, platformName, flowName })
+  }
+
   return (
     <>
       {/* Compact Progress Header */}
@@ -116,17 +127,21 @@ export default function ExecutionCurrentView({
 
           {/* Inline stats */}
           <div className="flex items-center gap-3 text-xs flex-shrink-0">
-            <span className="text-neutral-600 dark:text-neutral-400" title="En attente">
-              🕒 {currentStats.pending}
+            <span className="flex items-center gap-1 text-neutral-600 dark:text-neutral-400" title="En attente">
+              <Clock size={12} />
+              {currentStats.pending}
             </span>
-            <span className="text-blue-600 dark:text-blue-400" title="En cours">
-              ▶ {currentStats.running}
+            <span className="flex items-center gap-1 text-blue-600 dark:text-blue-400" title="En cours">
+              <Play size={12} className="fill-current" />
+              {currentStats.running}
             </span>
-            <span className="text-emerald-600 dark:text-emerald-400" title="Réussis">
-              ✓ {currentStats.success}
+            <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400" title="Réussis">
+              <Check size={12} />
+              {currentStats.success}
             </span>
-            <span className="text-red-600 dark:text-red-400" title="Échoués">
-              ✗ {currentStats.error}
+            <span className="flex items-center gap-1 text-red-600 dark:text-red-400" title="Échoués">
+              <X size={12} />
+              {currentStats.error}
             </span>
           </div>
         </div>
@@ -139,7 +154,7 @@ export default function ExecutionCurrentView({
             <ExecutionItemCard
               key={item.id}
               item={item}
-              onOpenFolder={item.runDir ? () => onOpenFolder(item.runDir!) : undefined}
+              onViewDetails={handleViewDetails}
             />
           ))}
         </div>
@@ -148,7 +163,18 @@ export default function ExecutionCurrentView({
           items={items}
           groupingMode={groupingMode}
           onGroupingModeChange={onGroupingModeChange}
-          onOpenFolder={onOpenFolder}
+          onViewDetails={handleViewDetails}
+        />
+      )}
+
+      {/* Details Modal */}
+      {selectedRunDetails && (
+        <RunDetailsModal
+          runDir={selectedRunDetails.runDir}
+          leadName={selectedRunDetails.leadName}
+          platformName={selectedRunDetails.platformName}
+          flowName={selectedRunDetails.flowName}
+          onClose={() => setSelectedRunDetails(null)}
         />
       )}
     </>

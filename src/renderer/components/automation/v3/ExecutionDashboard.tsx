@@ -16,6 +16,7 @@ interface ExecutionDashboardProps {
   onRerunHistoryItem?: (item: ExecutionHistoryItem) => void
   onDeleteHistory?: (runId: string) => void
   onClearAllHistory?: () => void
+  onClearCompletedExecutions?: () => void
 }
 
 /**
@@ -31,11 +32,19 @@ export default function ExecutionDashboard({
   onRerunHistory,
   onRerunHistoryItem,
   onDeleteHistory,
-  onClearAllHistory
+  onClearAllHistory,
+  onClearCompletedExecutions
 }: ExecutionDashboardProps) {
   const items = useMemo(() => Array.from(executionItems.values()), [executionItems])
 
-  // Dashboard state management with auto-switching and persistence
+  // Handler for mode change - clear completed executions when switching views
+  const handleModeChange = (newMode: any, previousMode: any) => {
+    if (onClearCompletedExecutions) {
+      onClearCompletedExecutions()
+    }
+  }
+
+  // Dashboard state management
   const {
     mode,
     viewMode,
@@ -47,25 +56,7 @@ export default function ExecutionDashboard({
     showCurrent,
     showHistory,
     isRunning: dashboardIsRunning
-  } = useDashboardState({ items, isRunning })
-
-  const handleOpenFolder = async (runDir: string) => {
-    try {
-      await window.api.scenarios.openPath(runDir)
-    } catch (error) {
-      console.error('Failed to open folder:', error)
-    }
-  }
-
-  const handleViewManifest = async (runDir: string) => {
-    try {
-      // Manifest is typically at runDir/manifest.json
-      const manifestPath = `${runDir}/manifest.json`
-      await window.api.scenarios.openPath(manifestPath)
-    } catch (error) {
-      console.error('Failed to open manifest:', error)
-    }
-  }
+  } = useDashboardState({ items, isRunning, onModeChange: handleModeChange })
 
   const showHistorySection = showHistory && runHistory.length > 0
 
@@ -122,7 +113,6 @@ export default function ExecutionDashboard({
           onViewModeChange={setViewMode}
           onGroupingModeChange={setGroupingMode}
           onStopExecution={onStopExecution}
-          onOpenFolder={handleOpenFolder}
         />
       )}
 
@@ -134,8 +124,6 @@ export default function ExecutionDashboard({
           onRerunHistoryItem={onRerunHistoryItem!}
           onDeleteHistory={onDeleteHistory!}
           onClearAllHistory={onClearAllHistory!}
-          onOpenFolder={handleOpenFolder}
-          onViewManifest={handleViewManifest}
         />
       )}
 

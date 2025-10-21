@@ -9,8 +9,7 @@ interface RunHistoryCardProps {
   onRerun: (runId: string) => void
   onRerunItem: (item: ExecutionHistoryItem) => void
   onDelete: (runId: string) => void
-  onOpenFolder?: (runDir: string) => void
-  onViewManifest?: (runDir: string) => void
+  onViewDetails?: (runDir: string, leadName: string, platformName: string, flowName: string) => void
 }
 
 export default function RunHistoryCard({
@@ -18,8 +17,7 @@ export default function RunHistoryCard({
   onRerun,
   onRerunItem,
   onDelete,
-  onOpenFolder,
-  onViewManifest
+  onViewDetails
 }: RunHistoryCardProps) {
   const [isExpanded, setIsExpanded] = useState(false)
 
@@ -185,8 +183,7 @@ export default function RunHistoryCard({
               key={item.id}
               item={item}
               onRerun={onRerunItem}
-              onOpenFolder={onOpenFolder}
-              onViewManifest={onViewManifest}
+              onViewDetails={onViewDetails}
             />
           ))}
         </div>

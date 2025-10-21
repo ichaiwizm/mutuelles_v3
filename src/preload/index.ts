@@ -115,6 +115,11 @@ contextBridge.exposeInMainWorld('api', {
       data?: any
       error?: string
     }>,
+    readScreenshot: (screenshotPath: string) => ipcRenderer.invoke('scenarios:readScreenshot', screenshotPath) as Promise<{
+      success: boolean
+      data?: string
+      error?: string
+    }>,
     stop: (runId: string) => ipcRenderer.invoke('scenarios:stop', runId) as Promise<{
       success: boolean
       message?: string
@@ -206,6 +211,11 @@ declare global {
         getRunDetails: (runDir: string) => Promise<{
           success: boolean
           data?: any
+          error?: string
+        }>
+        readScreenshot: (screenshotPath: string) => Promise<{
+          success: boolean
+          data?: string
           error?: string
         }>
         stop: (runId: string) => Promise<{

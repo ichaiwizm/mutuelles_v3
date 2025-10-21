@@ -9,8 +9,7 @@ interface ExecutionHistoryFoldersViewProps {
   onRerun: (runId: string) => void
   onRerunItem: (item: ExecutionHistoryItem) => void
   onDelete: (runId: string) => void
-  onOpenFolder?: (runDir: string) => void
-  onViewManifest?: (runDir: string) => void
+  onViewDetails?: (runDir: string, leadName: string, platformName: string, flowName: string) => void
 }
 
 export default function ExecutionHistoryFoldersView({
@@ -18,8 +17,7 @@ export default function ExecutionHistoryFoldersView({
   onRerun,
   onRerunItem,
   onDelete,
-  onOpenFolder,
-  onViewManifest
+  onViewDetails
 }: ExecutionHistoryFoldersViewProps) {
   // Group runs by date
   const dateGroups = useMemo(() => groupRunsByDate(runs), [runs])
@@ -119,8 +117,7 @@ export default function ExecutionHistoryFoldersView({
                     onRerun={onRerun}
                     onRerunItem={onRerunItem}
                     onDelete={onDelete}
-                    onOpenFolder={onOpenFolder}
-                    onViewManifest={onViewManifest}
+                    onViewDetails={onViewDetails}
                   />
                 ))}
               </div>

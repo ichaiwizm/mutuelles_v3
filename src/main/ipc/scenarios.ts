@@ -170,6 +170,29 @@ export function registerScenariosIpc() {
     }
   })
 
+  // Read screenshot as base64
+  ipcMain.handle('scenarios:readScreenshot', async (_e, screenshotPath: unknown) => {
+    try {
+      if (typeof screenshotPath !== 'string') {
+        throw new Error('Invalid screenshot path')
+      }
+
+      if (!fs.existsSync(screenshotPath)) {
+        throw new Error('Screenshot file not found')
+      }
+
+      const imageBuffer = fs.readFileSync(screenshotPath)
+      const base64 = imageBuffer.toString('base64')
+      const ext = path.extname(screenshotPath).toLowerCase()
+      const mimeType = ext === '.png' ? 'image/png' : 'image/jpeg'
+
+      return { success: true, data: `data:${mimeType};base64,${base64}` }
+    } catch (error) {
+      console.error('Error reading screenshot:', error)
+      return { success: false, error: error instanceof Error ? error.message : 'Failed to read screenshot' }
+    }
+  })
+
   // Stop a running execution (gracefully)
   ipcMain.handle('scenarios:stop', async (_e, runId: string) => {
     try {

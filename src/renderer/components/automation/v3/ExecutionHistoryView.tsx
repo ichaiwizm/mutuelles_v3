@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react'
 import ExecutionHistoryFoldersView from './ExecutionHistoryFoldersView'
 import HistoryFilters from './HistoryFilters'
+import RunDetailsModal from './RunDetailsModal'
 import type { RunHistoryItem, ExecutionHistoryItem } from '../../../../shared/types/automation'
 import type { HistoryFilterState } from './HistoryFilters'
 import { getDateGroup } from '../../../utils/dateGrouping'
@@ -11,8 +12,6 @@ interface ExecutionHistoryViewProps {
   onRerunHistoryItem: (item: ExecutionHistoryItem) => void
   onDeleteHistory: (runId: string) => void
   onClearAllHistory: () => void
-  onOpenFolder: (runDir: string) => void
-  onViewManifest: (runDir: string) => void
 }
 
 /**
@@ -23,9 +22,7 @@ export default function ExecutionHistoryView({
   onRerunHistory,
   onRerunHistoryItem,
   onDeleteHistory,
-  onClearAllHistory,
-  onOpenFolder,
-  onViewManifest
+  onClearAllHistory
 }: ExecutionHistoryViewProps) {
   // History filters
   const [historyFilters, setHistoryFilters] = useState<HistoryFilterState>({
@@ -33,6 +30,18 @@ export default function ExecutionHistoryView({
     statusFilter: 'all',
     dateFilter: 'all'
   })
+
+  // Modal state
+  const [selectedRunDetails, setSelectedRunDetails] = useState<{
+    runDir: string
+    leadName: string
+    platformName: string
+    flowName: string
+  } | null>(null)
+
+  const handleViewDetails = (runDir: string, leadName: string, platformName: string, flowName: string) => {
+    setSelectedRunDetails({ runDir, leadName, platformName, flowName })
+  }
 
   // Filtered history
   const filteredHistory = useMemo(() => {
@@ -82,9 +91,19 @@ export default function ExecutionHistoryView({
         onRerun={onRerunHistory}
         onRerunItem={onRerunHistoryItem}
         onDelete={onDeleteHistory}
-        onOpenFolder={onOpenFolder}
-        onViewManifest={onViewManifest}
+        onViewDetails={handleViewDetails}
       />
+
+      {/* Details Modal */}
+      {selectedRunDetails && (
+        <RunDetailsModal
+          runDir={selectedRunDetails.runDir}
+          leadName={selectedRunDetails.leadName}
+          platformName={selectedRunDetails.platformName}
+          flowName={selectedRunDetails.flowName}
+          onClose={() => setSelectedRunDetails(null)}
+        />
+      )}
     </div>
   )
 }

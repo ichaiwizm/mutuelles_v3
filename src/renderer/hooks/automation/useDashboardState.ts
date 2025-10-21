@@ -8,6 +8,7 @@ export type ViewMode = 'grid' | 'folders'
 interface UseDashboardStateProps {
   items: ExecutionItem[]
   isRunning: boolean
+  onModeChange?: (newMode: DashboardMode, previousMode: DashboardMode) => void
 }
 
 interface DashboardState {
@@ -37,7 +38,8 @@ interface DashboardState {
  */
 export function useDashboardState({
   items,
-  isRunning
+  isRunning,
+  onModeChange
 }: UseDashboardStateProps): DashboardState {
   // Dashboard mode (current, history)
   const [mode, setMode] = useState<DashboardMode>(() => {
@@ -57,10 +59,16 @@ export function useDashboardState({
     return (saved === 'flow' || saved === 'platform' || saved === 'status') ? saved : 'flow'
   })
 
-  // Persist mode to localStorage
+  // Persist mode to localStorage and trigger callback on change
   useEffect(() => {
+    const previousMode = localStorage.getItem('executionDashboardMode') as DashboardMode | null
     localStorage.setItem('executionDashboardMode', mode)
-  }, [mode])
+
+    // Trigger callback if mode changed
+    if (previousMode && previousMode !== mode && onModeChange) {
+      onModeChange(mode, previousMode)
+    }
+  }, [mode, onModeChange])
 
   // Persist view mode to localStorage
   useEffect(() => {
