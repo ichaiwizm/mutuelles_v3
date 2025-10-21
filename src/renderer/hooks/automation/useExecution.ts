@@ -312,6 +312,7 @@ export function useExecution(
                 ...item,
                 status: 'error',
                 message: event.message,
+                runDir: event.runDir,
                 completedAt: new Date()
               })
 

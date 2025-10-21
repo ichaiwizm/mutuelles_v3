@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
-import { X, CheckCircle, XCircle, Clock, Loader2 } from 'lucide-react'
+import { X, CheckCircle, XCircle, Clock, Loader2, ArrowLeft, ArrowRight, Copy, Check } from 'lucide-react'
 import ScreenshotTimeline from './ScreenshotTimeline'
+import Tabs from '../../Tabs'
 
 interface RunDetailsModalProps {
   runDir: string
@@ -36,6 +37,8 @@ interface RunManifest {
   }
 }
 
+type TabKey = 'overview' | 'screenshots' | 'details'
+
 export default function RunDetailsModal({
   runDir,
   leadName,
@@ -49,6 +52,8 @@ export default function RunDetailsModal({
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [loadedImages, setLoadedImages] = useState<Map<string, string>>(new Map())
   const [loadingImage, setLoadingImage] = useState(false)
+  const [activeTab, setActiveTab] = useState<TabKey>('overview')
+  const [copiedJson, setCopiedJson] = useState(false)
 
   // Load manifest on mount
   useEffect(() => {
@@ -76,6 +81,14 @@ export default function RunDetailsModal({
 
   // Get screenshots list
   const screenshots = manifest?.steps?.filter(s => s.screenshot) || []
+
+  // Initialize to middle screenshot when manifest is loaded
+  useEffect(() => {
+    if (screenshots.length > 0 && currentImageIndex === 0) {
+      const middleIndex = Math.floor(screenshots.length / 2)
+      setCurrentImageIndex(middleIndex)
+    }
+  }, [screenshots.length])
 
   // Load current image
   useEffect(() => {
@@ -110,6 +123,32 @@ export default function RunDetailsModal({
     if (e.key === 'Escape') {
       onClose()
     }
+
+    // Screenshot navigation when in screenshots tab
+    if (activeTab === 'screenshots' && screenshots.length > 0) {
+      if (e.key === 'ArrowLeft' && currentImageIndex > 0) {
+        setCurrentImageIndex(currentImageIndex - 1)
+      } else if (e.key === 'ArrowRight' && currentImageIndex < screenshots.length - 1) {
+        setCurrentImageIndex(currentImageIndex + 1)
+      }
+    }
+  }
+
+  // Handle copying JSON to clipboard
+  const handleCopyJson = () => {
+    if (!manifest) return
+    navigator.clipboard.writeText(JSON.stringify(manifest, null, 2))
+    setCopiedJson(true)
+    setTimeout(() => setCopiedJson(false), 2000)
+  }
+
+  // Navigate to screenshot from timeline
+  const handleViewScreenshot = (screenshotPath: string) => {
+    const screenshotIdx = screenshots.findIndex(s => s.screenshot === screenshotPath)
+    if (screenshotIdx >= 0) {
+      setCurrentImageIndex(screenshotIdx)
+      setActiveTab('screenshots')
+    }
   }
 
   // Calculate duration
@@ -134,11 +173,33 @@ export default function RunDetailsModal({
   const totalSteps = manifest?.steps?.length || 0
   const successSteps = manifest?.steps?.filter(s => s.ok).length || 0
   const errorSteps = manifest?.steps?.filter(s => !s.ok && !s.skipped).length || 0
+  const skippedSteps = manifest?.steps?.filter(s => s.skipped).length || 0
   const status = errorSteps > 0 ? (successSteps > 0 ? 'partial' : 'error') : 'success'
+
+  // Find first error
+  const firstError = manifest?.steps?.find(s => !s.ok && !s.skipped)
+
+  // Calculate average step duration
+  const stepsWithDuration = manifest?.steps?.filter(s => s.ms && s.ms > 0) || []
+  const avgStepDuration = stepsWithDuration.length > 0
+    ? stepsWithDuration.reduce((sum, s) => sum + (s.ms || 0), 0) / stepsWithDuration.length
+    : 0
+
+  // Find slowest step
+  const slowestStep = stepsWithDuration.length > 0
+    ? stepsWithDuration.reduce((max, s) => (s.ms || 0) > (max.ms || 0) ? s : max)
+    : null
 
   const currentImage = screenshots[currentImageIndex]?.screenshot
     ? loadedImages.get(screenshots[currentImageIndex].screenshot)
     : null
+
+  // Tabs configuration
+  const tabs = [
+    { key: 'overview', label: 'Vue d\'ensemble' },
+    { key: 'screenshots', label: `Screenshots (${screenshots.length})` },
+    { key: 'details', label: 'Détails' }
+  ]
 
   return (
     <div
@@ -148,7 +209,7 @@ export default function RunDetailsModal({
       tabIndex={-1}
     >
       <div
-        className="bg-white dark:bg-neutral-900 rounded-lg shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col"
+        className="bg-white dark:bg-neutral-900 rounded-lg shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -169,160 +230,206 @@ export default function RunDetailsModal({
           </button>
         </div>
 
+        {/* Tabs */}
+        <Tabs tabs={tabs} activeTab={activeTab} onTabChange={(key) => setActiveTab(key as TabKey)} />
+
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-4">
-          {loading && (
+          {loading ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="animate-spin text-blue-600" size={32} />
               <span className="ml-3 text-neutral-600 dark:text-neutral-400">Chargement...</span>
             </div>
-          )}
-
-          {error && (
+          ) : error ? (
             <div className="p-4 rounded bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800">
               <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
             </div>
-          )}
+          ) : manifest ? (
+            <>
+              {/* OVERVIEW TAB */}
+              {activeTab === 'overview' && (
+                <div className="space-y-6">
+                  {/* Status Badge */}
+                  <div className="flex items-center gap-3 flex-wrap">
+                    {status === 'success' && (
+                      <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300">
+                        <CheckCircle size={16} />
+                        <span className="text-sm font-medium">Succès complet</span>
+                      </div>
+                    )}
+                    {status === 'partial' && (
+                      <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300">
+                        <CheckCircle size={16} />
+                        <span className="text-sm font-medium">Succès partiel</span>
+                      </div>
+                    )}
+                    {status === 'error' && (
+                      <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-300">
+                        <XCircle size={16} />
+                        <span className="text-sm font-medium">Échec</span>
+                      </div>
+                    )}
+                  </div>
 
-          {!loading && !error && manifest && (
-            <div className="space-y-6">
-              {/* Status Badge */}
-              <div className="flex items-center gap-3">
-                {status === 'success' && (
-                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300">
-                    <CheckCircle size={16} />
-                    <span className="text-sm font-medium">Succès complet</span>
-                  </div>
-                )}
-                {status === 'partial' && (
-                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300">
-                    <CheckCircle size={16} />
-                    <span className="text-sm font-medium">Succès partiel</span>
-                  </div>
-                )}
-                {status === 'error' && (
-                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-300">
-                    <XCircle size={16} />
-                    <span className="text-sm font-medium">Échec</span>
-                  </div>
-                )}
-                <span className="text-sm text-neutral-600 dark:text-neutral-400">
-                  {successSteps}/{totalSteps} étapes réussies
-                </span>
-              </div>
-
-              {/* Screenshots Gallery */}
-              {screenshots.length > 0 && (
-                <div className="space-y-4">
-                  {/* Main image viewer */}
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-sm font-semibold">
-                        Screenshot #{currentImageIndex + 1}
-                      </h3>
-                      <span className="text-xs text-neutral-600 dark:text-neutral-400">
-                        {screenshots[currentImageIndex]?.type}
-                      </span>
+                  {/* Statistics Grid */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="p-4 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900">
+                      <div className="text-xs text-neutral-500 mb-1">Étapes réussies</div>
+                      <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{successSteps}/{totalSteps}</div>
                     </div>
-
-                    <div className="relative bg-neutral-100 dark:bg-neutral-800 rounded-lg overflow-hidden" style={{ minHeight: '400px' }}>
-                      {loadingImage && (
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <Loader2 className="animate-spin text-blue-600" size={24} />
-                        </div>
-                      )}
-                      {currentImage && (
-                        <img
-                          src={currentImage}
-                          alt={`Screenshot ${currentImageIndex + 1}`}
-                          className="w-full h-auto"
-                        />
-                      )}
+                    <div className="p-4 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900">
+                      <div className="text-xs text-neutral-500 mb-1">Durée totale</div>
+                      <div className="text-2xl font-bold">{duration ? formatDuration(duration) : '-'}</div>
+                    </div>
+                    <div className="p-4 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900">
+                      <div className="text-xs text-neutral-500 mb-1">Durée moyenne/étape</div>
+                      <div className="text-2xl font-bold">{formatStepDuration(avgStepDuration)}</div>
+                    </div>
+                    <div className="p-4 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900">
+                      <div className="text-xs text-neutral-500 mb-1">Screenshots</div>
+                      <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{screenshots.length}</div>
                     </div>
                   </div>
 
-                  {/* Screenshot Timeline */}
-                  <ScreenshotTimeline
-                    steps={manifest?.steps || []}
-                    runDir={runDir}
-                    currentIndex={currentImageIndex}
-                    onSelectIndex={setCurrentImageIndex}
-                  />
-                </div>
-              )}
-
-              {/* Steps Timeline */}
-              {manifest.steps && manifest.steps.length > 0 && (
-                <div className="space-y-3">
-                  <h3 className="text-sm font-semibold">Étapes d'exécution</h3>
-                  <div className="space-y-2">
-                    {manifest.steps.map((step, idx) => (
-                      <div
-                        key={idx}
-                        className={`flex items-start gap-3 p-3 rounded border ${
-                          step.ok
-                            ? 'border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/30'
-                            : step.skipped
-                            ? 'border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900'
-                            : 'border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30'
-                        }`}
-                      >
-                        {/* Icon */}
-                        {step.ok ? (
-                          <CheckCircle size={16} className="flex-shrink-0 mt-0.5 text-emerald-600 dark:text-emerald-400" />
-                        ) : step.skipped ? (
-                          <Clock size={16} className="flex-shrink-0 mt-0.5 text-neutral-500" />
-                        ) : (
-                          <XCircle size={16} className="flex-shrink-0 mt-0.5 text-red-600 dark:text-red-400" />
-                        )}
-
-                        {/* Content */}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="text-sm font-medium">
-                              Étape {step.index + 1}
-                            </span>
-                            <span className="text-xs text-neutral-500">
-                              {step.type}
-                            </span>
-                            <span className="text-xs text-neutral-500">
-                              {formatStepDuration(step.ms)}
-                            </span>
-                          </div>
-
-                          {step.error && (
-                            <p className="text-xs text-red-700 dark:text-red-300 mt-1">
-                              → {step.error}
-                            </p>
-                          )}
-
-                          {step.screenshot && (
+                  {/* Error Section */}
+                  {firstError && (
+                    <div className="p-4 rounded-lg border-2 border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30">
+                      <h3 className="text-sm font-semibold text-red-700 dark:text-red-300 mb-2">Première erreur détectée</h3>
+                      <div className="flex items-start gap-3">
+                        <XCircle size={20} className="flex-shrink-0 text-red-600 dark:text-red-400 mt-0.5" />
+                        <div className="flex-1">
+                          <div className="text-sm font-medium mb-1">Étape {firstError.index + 1} - {firstError.type}</div>
+                          <p className="text-sm text-red-700 dark:text-red-300">{firstError.error}</p>
+                          {firstError.screenshot && (
                             <button
-                              onClick={() => {
-                                const screenshotIdx = screenshots.findIndex(s => s.screenshot === step.screenshot)
-                                if (screenshotIdx >= 0) {
-                                  setCurrentImageIndex(screenshotIdx)
-                                }
-                              }}
-                              className="text-xs text-blue-600 dark:text-blue-400 hover:underline mt-1"
+                              onClick={() => handleViewScreenshot(firstError.screenshot!)}
+                              className="mt-2 text-xs text-blue-600 dark:text-blue-400 hover:underline"
                             >
-                              Voir screenshot
+                              Voir le screenshot de l'erreur →
                             </button>
                           )}
                         </div>
                       </div>
-                    ))}
+                    </div>
+                  )}
+
+                  {/* Quick Actions */}
+                  <div className="flex gap-3">
+                    {screenshots.length > 0 && (
+                      <button
+                        onClick={() => setActiveTab('screenshots')}
+                        className="flex-1 px-4 py-3 rounded-lg border border-neutral-200 dark:border-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
+                      >
+                        <div className="text-sm font-medium">Voir les screenshots</div>
+                        <div className="text-xs text-neutral-500">{screenshots.length} disponibles</div>
+                      </button>
+                    )}
                   </div>
+
+                  {/* Slowest Step */}
+                  {slowestStep && (
+                    <div className="p-4 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30">
+                      <h3 className="text-sm font-semibold text-amber-700 dark:text-amber-300 mb-1">Étape la plus lente</h3>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">Étape {slowestStep.index + 1} - {slowestStep.type}</span>
+                        <span className="text-sm font-bold text-amber-700 dark:text-amber-400">{formatStepDuration(slowestStep.ms)}</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
-              {manifest.steps && manifest.steps.length === 0 && (
-                <div className="text-center py-8 text-neutral-500">
-                  Aucune étape enregistrée pour cette exécution
+              {/* SCREENSHOTS TAB */}
+              {activeTab === 'screenshots' && (
+                <div className="space-y-4">
+                  {screenshots.length > 0 ? (
+                    <>
+                      {/* Navigation hint */}
+                      <div className="flex items-center justify-between text-xs text-neutral-500">
+                        <div className="flex items-center gap-2">
+                          <ArrowLeft size={14} />
+                          <span>Utilisez les flèches ← → pour naviguer</span>
+                          <ArrowRight size={14} />
+                        </div>
+                        <span>Screenshot {currentImageIndex + 1}/{screenshots.length}</span>
+                      </div>
+
+                      {/* Main image viewer */}
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-sm font-semibold">
+                            Screenshot #{currentImageIndex + 1}
+                          </h3>
+                          <span className="text-xs text-neutral-600 dark:text-neutral-400">
+                            {screenshots[currentImageIndex]?.type}
+                          </span>
+                        </div>
+
+                        <div className="relative bg-neutral-100 dark:bg-neutral-800 rounded-lg overflow-hidden" style={{ minHeight: '400px' }}>
+                          {loadingImage && (
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <Loader2 className="animate-spin text-blue-600" size={24} />
+                            </div>
+                          )}
+                          {currentImage && (
+                            <img
+                              src={currentImage}
+                              alt={`Screenshot ${currentImageIndex + 1}`}
+                              className="w-full h-auto"
+                            />
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Screenshot Timeline */}
+                      <ScreenshotTimeline
+                        steps={manifest?.steps || []}
+                        runDir={runDir}
+                        currentIndex={currentImageIndex}
+                        onSelectIndex={setCurrentImageIndex}
+                      />
+                    </>
+                  ) : (
+                    <div className="text-center py-12 text-neutral-500">
+                      Aucun screenshot disponible pour cette exécution
+                    </div>
+                  )}
                 </div>
               )}
-            </div>
-          )}
+
+              {/* DETAILS TAB */}
+              {activeTab === 'details' && (
+                <div className="space-y-4">
+                  {/* Copy button */}
+                  <div className="flex justify-end">
+                    <button
+                      onClick={handleCopyJson}
+                      className="flex items-center gap-2 px-3 py-1.5 text-sm rounded border border-neutral-200 dark:border-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
+                    >
+                      {copiedJson ? (
+                        <>
+                          <Check size={14} className="text-emerald-600" />
+                          <span>Copié !</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy size={14} />
+                          <span>Copier le JSON</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+
+                  {/* JSON Display */}
+                  <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900 p-4 overflow-x-auto">
+                    <pre className="text-xs font-mono">
+                      {JSON.stringify(manifest, null, 2)}
+                    </pre>
+                  </div>
+                </div>
+              )}
+            </>
+          ) : null}
         </div>
       </div>
     </div>

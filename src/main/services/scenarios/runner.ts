@@ -166,6 +166,8 @@ export class ScenariosRunner {
           send({ type:'item-progress', runId, itemId: def.itemId, leadId: def.leadId, platform: def.platform, flowSlug: def.flowSlug, currentStep: 0, totalSteps })
         }
 
+        let runDir: string | undefined = undefined
+
         try {
           const lead = await leadsSvc.getLead(def.leadId)
           if (!lead) throw new Error('Lead introuvable')
@@ -185,7 +187,8 @@ export class ScenariosRunner {
             })
           }
 
-          const { runDir } = await this.execHL({ ...def, mode, leadData: lead.data, keepOpen, onProgress: progressCallback })
+          const result = await this.execHL({ ...def, mode, leadData: lead.data, keepOpen, onProgress: progressCallback })
+          runDir = result.runDir
 
           // Emit final progress before success
           if (totalSteps > 0) {
@@ -206,7 +209,7 @@ export class ScenariosRunner {
           } else {
             // Final error (no retry or max retries reached)
             const finalMsg = attempt > 0 ? `${errorMsg} (après ${attempt + 1} tentative(s))` : errorMsg
-            send({ type:'item-error', runId, itemId: def.itemId, leadId: def.leadId, platform: def.platform, flowSlug: def.flowSlug, message: finalMsg })
+            send({ type:'item-error', runId, itemId: def.itemId, leadId: def.leadId, platform: def.platform, flowSlug: def.flowSlug, message: finalMsg, runDir })
           }
         }
       }

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import ScreenshotThumbnail from './ScreenshotThumbnail'
 
 interface Step {
@@ -28,6 +28,8 @@ export default function ScreenshotTimeline({
   onSelectIndex
 }: ScreenshotTimelineProps) {
   const [loadedImages, setLoadedImages] = useState<Map<string, string>>(new Map())
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const thumbnailRefs = useRef<Map<number, HTMLDivElement>>(new Map())
 
   // Filter steps with screenshots
   const screenshotSteps = steps.filter(s => s.screenshot)
@@ -35,9 +37,9 @@ export default function ScreenshotTimeline({
   // Preload visible thumbnails
   useEffect(() => {
     const loadVisibleThumbnails = async () => {
-      // Load current + 2 prev + 2 next
-      const startIdx = Math.max(0, currentIndex - 2)
-      const endIdx = Math.min(screenshotSteps.length - 1, currentIndex + 2)
+      // Load current + 10 prev + 10 next
+      const startIdx = Math.max(0, currentIndex - 10)
+      const endIdx = Math.min(screenshotSteps.length - 1, currentIndex + 10)
 
       for (let i = startIdx; i <= endIdx; i++) {
         const step = screenshotSteps[i]
@@ -61,6 +63,24 @@ export default function ScreenshotTimeline({
     }
   }, [currentIndex, screenshotSteps, runDir, loadedImages])
 
+  // Auto-scroll to selected thumbnail
+  useEffect(() => {
+    const scrollContainer = scrollContainerRef.current
+    const selectedThumbnail = thumbnailRefs.current.get(currentIndex)
+
+    if (scrollContainer && selectedThumbnail) {
+      const containerRect = scrollContainer.getBoundingClientRect()
+      const thumbnailRect = selectedThumbnail.getBoundingClientRect()
+
+      // Calculate the position to center the thumbnail
+      const scrollLeft = selectedThumbnail.offsetLeft - (containerRect.width / 2) + (thumbnailRect.width / 2)
+
+      scrollContainer.scrollTo({
+        left: scrollLeft,
+        behavior: 'smooth'
+      })
+    }
+  }, [currentIndex])
 
   if (screenshotSteps.length === 0) {
     return (
@@ -79,19 +99,29 @@ export default function ScreenshotTimeline({
         </p>
       </div>
 
-      <div className="p-3 overflow-x-auto">
+      <div ref={scrollContainerRef} className="p-3 overflow-x-auto">
         <div className="flex gap-2" style={{ minWidth: 'max-content' }}>
           {screenshotSteps.map((step, index) => (
-            <ScreenshotThumbnail
+            <div
               key={step.screenshot}
-              screenshot={step.screenshot!}
-              stepIndex={step.index}
-              stepType={step.type}
-              isError={!step.ok}
-              isSelected={index === currentIndex}
-              imageData={loadedImages.get(step.screenshot!) || null}
-              onSelect={() => onSelectIndex(index)}
-            />
+              ref={(el) => {
+                if (el) {
+                  thumbnailRefs.current.set(index, el)
+                } else {
+                  thumbnailRefs.current.delete(index)
+                }
+              }}
+            >
+              <ScreenshotThumbnail
+                screenshot={step.screenshot!}
+                stepIndex={step.index}
+                stepType={step.type}
+                isError={!step.ok}
+                isSelected={index === currentIndex}
+                imageData={loadedImages.get(step.screenshot!) || null}
+                onSelect={() => onSelectIndex(index)}
+              />
+            </div>
           ))}
         </div>
       </div>
