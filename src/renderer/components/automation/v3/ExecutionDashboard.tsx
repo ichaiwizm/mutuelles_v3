@@ -68,8 +68,6 @@ export default function ExecutionDashboard({
     isRunning: dashboardIsRunning
   } = useDashboardState({ items, isRunning, onModeChange: handleModeChange })
 
-  const showHistorySection = showHistory && runHistory.length > 0
-
   return (
     <div className="space-y-4">
       {/* Header */}
@@ -132,8 +130,8 @@ export default function ExecutionDashboard({
         />
       )}
 
-      {/* History View */}
-      {showHistorySection && (
+      {/* History View - Show even when empty to display empty state message */}
+      {showHistory && (
         <ExecutionHistoryView
           runHistory={runHistory}
           onRerunHistory={onRerunHistory!}
