@@ -121,10 +121,11 @@ export function useAutomation() {
     }
   )
 
-  // Load history on mount
+  // Load history on mount (only once)
   useEffect(() => {
     history.loadHistory()
-  }, [history])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // ============================================================
   // COORDINATED ACTIONS

@@ -147,17 +147,6 @@ export default function ExecutionDashboard({
           onClearAllHistory={onClearAllHistory!}
         />
       )}
-
-      {/* Empty State */}
-      {items.length === 0 && runHistory.length === 0 && (
-        <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-8 text-center">
-          <Play className="mx-auto mb-3 text-neutral-400" size={48} />
-          <h3 className="font-semibold mb-1">Aucune exécution</h3>
-          <p className="text-sm text-neutral-500">
-            Les exécutions apparaîtront ici une fois démarrées
-          </p>
-        </div>
-      )}
     </div>
   )
 }

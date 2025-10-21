@@ -236,7 +236,7 @@ export interface ExecutionHistoryItem {
   platformName: string
   flowSlug: string
   flowName: string
-  status: 'success' | 'error' | 'pending'
+  status: 'success' | 'error' | 'pending' | 'running'
   runDir?: string
   error?: string
   startedAt: string

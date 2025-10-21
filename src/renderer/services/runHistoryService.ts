@@ -41,15 +41,27 @@ export class RunHistoryService {
     try {
       const history = this.getHistory()
 
-      // Add new run at the beginning (most recent first)
-      const updated = [run, ...history]
+      // Check if this runId already exists (for requeue scenarios)
+      const existingIndex = history.findIndex(h => h.runId === run.runId)
+
+      let updated: RunHistoryItem[]
+      if (existingIndex >= 0) {
+        // Update existing run - replace it with new data
+        updated = [...history]
+        updated[existingIndex] = run
+        console.log(`[RunHistoryService] Updated existing run ${run.runId.slice(0, 8)}`)
+      } else {
+        // Add new run at the beginning (most recent first)
+        updated = [run, ...history]
+        console.log(`[RunHistoryService] Added new run ${run.runId.slice(0, 8)}`)
+      }
 
       // Keep only MAX_HISTORY most recent runs
       const limited = updated.slice(0, this.MAX_HISTORY)
 
       localStorage.setItem(this.STORAGE_KEY, JSON.stringify(limited))
 
-      console.log(`[RunHistoryService] Saved run ${run.runId.slice(0, 8)}, total: ${limited.length}`)
+      console.log(`[RunHistoryService] Total history: ${limited.length} runs`)
     } catch (error) {
       console.error('[RunHistoryService] Failed to save run:', error)
 
@@ -61,8 +73,18 @@ export class RunHistoryService {
         // Retry save
         try {
           const history = this.getHistory()
-          const updated = [run, ...history].slice(0, this.MAX_HISTORY)
-          localStorage.setItem(this.STORAGE_KEY, JSON.stringify(updated))
+          const existingIndex = history.findIndex(h => h.runId === run.runId)
+
+          let updated: RunHistoryItem[]
+          if (existingIndex >= 0) {
+            updated = [...history]
+            updated[existingIndex] = run
+          } else {
+            updated = [run, ...history]
+          }
+
+          const limited = updated.slice(0, this.MAX_HISTORY)
+          localStorage.setItem(this.STORAGE_KEY, JSON.stringify(limited))
         } catch (retryError) {
           console.error('[RunHistoryService] Failed to save run after cleanup:', retryError)
         }

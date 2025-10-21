@@ -74,30 +74,35 @@ export function useHistory() {
         return
       }
 
-      // Filter to only keep completed items (success or error)
-      // Exclude items still running or pending to avoid saving incomplete data
-      const completedItems = items.filter(i => i.status === 'success' || i.status === 'error')
+      // Keep ALL items (including pending and running) to preserve full state
+      // This allows tracking incomplete runs and provides complete history
+      const allItems = items
 
-      // Calculate stats based on completed items only
-      const successItems = completedItems.filter(i => i.status === 'success').length
-      const errorItems = completedItems.filter(i => i.status === 'error').length
-      const pendingItems = 0  // No pending items in completed list
+      // Calculate stats based on all items
+      const successItems = allItems.filter(i => i.status === 'success').length
+      const errorItems = allItems.filter(i => i.status === 'error').length
+      const pendingItems = allItems.filter(i => i.status === 'pending').length
+      const runningItems = allItems.filter(i => i.status === 'running').length
 
-      // Determine overall status
+      // Determine overall status based on actual item states
       let status: RunHistoryStatus
-      if (errorItems === 0 && pendingItems === 0) {
+      if (pendingItems > 0 || runningItems > 0) {
+        // Run was stopped/interrupted - has incomplete items
+        status = 'stopped'
+      } else if (errorItems === 0) {
+        // All completed successfully
         status = 'completed'
       } else if (successItems === 0) {
+        // All failed
         status = 'failed'
-      } else if (pendingItems > 0) {
-        status = 'stopped'
       } else {
+        // Mix of success and errors
         status = 'partial'
       }
 
-      // Find earliest start and latest completion times from completed items
-      const startTimes = completedItems.map(i => i.startedAt).filter(Boolean) as Date[]
-      const completeTimes = completedItems.map(i => i.completedAt).filter(Boolean) as Date[]
+      // Find earliest start and latest completion times from all items
+      const startTimes = allItems.map(i => i.startedAt).filter(Boolean) as Date[]
+      const completeTimes = allItems.map(i => i.completedAt).filter(Boolean) as Date[]
 
       const startedAt = startTimes.length > 0
         ? new Date(Math.min(...startTimes.map(d => d.getTime())))
@@ -109,8 +114,8 @@ export function useHistory() {
 
       const durationMs = completedAt.getTime() - startedAt.getTime()
 
-      // Convert ExecutionItem[] to ExecutionHistoryItem[] (only completed items)
-      const historyItems: ExecutionHistoryItem[] = completedItems.map(item => ({
+      // Convert ExecutionItem[] to ExecutionHistoryItem[] (all items including pending/running)
+      const historyItems: ExecutionHistoryItem[] = allItems.map(item => ({
         id: item.id,
         leadId: item.leadId,
         leadName: item.leadName,
@@ -118,7 +123,7 @@ export function useHistory() {
         platformName: item.platformName,
         flowSlug: item.flowSlug || '',
         flowName: item.flowName || '',
-        status: item.status === 'pending' ? 'pending' : item.status === 'success' ? 'success' : 'error',
+        status: item.status,
         runDir: item.runDir,
         error: item.message,
         startedAt: item.startedAt?.toISOString() || new Date().toISOString(),
@@ -145,7 +150,7 @@ export function useHistory() {
         startedAt: startedAt.toISOString(),
         completedAt: completedAt.toISOString(),
         durationMs,
-        totalItems: items.length,
+        totalItems: allItems.length,
         successItems,
         errorItems,
         pendingItems,
@@ -157,8 +162,19 @@ export function useHistory() {
       // Save to localStorage
       RunHistoryService.saveRun(historyItem)
 
-      // Update local state
-      setRunHistory(prev => [historyItem, ...prev])
+      // Update local state - replace if exists, add if new
+      setRunHistory(prev => {
+        const existingIndex = prev.findIndex(h => h.runId === runId)
+        if (existingIndex >= 0) {
+          // Update existing run
+          const updated = [...prev]
+          updated[existingIndex] = historyItem
+          return updated
+        } else {
+          // Add new run at the beginning
+          return [historyItem, ...prev]
+        }
+      })
 
       console.log(`[useHistory] Saved run ${runId.slice(0, 8)} to history (status: ${status})`)
     } catch (error) {
