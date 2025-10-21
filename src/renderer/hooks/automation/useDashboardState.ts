@@ -81,8 +81,12 @@ export function useDashboardState({
     localStorage.setItem('executionGroupingMode', groupingMode)
   }, [groupingMode])
 
-  // Auto-switching has been removed to give users full control
-  // Users can manually switch between 'current' and 'history' modes
+  // Auto-switch to 'current' view when execution starts
+  useEffect(() => {
+    if (isRunning && mode === 'history') {
+      setMode('current')
+    }
+  }, [isRunning, mode])
 
   // Current run stats
   const currentStats = useMemo(() => calculateExecutionStats(items), [items])
