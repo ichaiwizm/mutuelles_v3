@@ -677,19 +677,20 @@ export class ScenariosRunner {
         runContext.sender.webContents.send(`scenarios:progress:${runId}`, {
           type: 'run-cancelled',
           runId,
-          message: `Arrêté (${queueCancelledCount + dbCancelledCount} tâches annulées)`
+          message: `Arrêté (${dbCancelledCount} tâches annulées)`
         } as RunProgressEvent)
       } catch (err) {
         console.error('Failed to send cancellation event:', err)
       }
     }
 
-    const totalCancelled = queueCancelledCount + dbCancelledCount
-
+    // Note: We use dbCancelledCount (not queueCancelledCount + dbCancelledCount)
+    // because items in the queue are ALSO in the database (status='pending')
+    // Using both would double-count those items!
     return {
       success: true,
-      message: `Run arrêté avec succès (${totalCancelled} tâches annulées)`,
-      cancelledCount: totalCancelled
+      message: `Run arrêté avec succès (${dbCancelledCount} tâches annulées)`,
+      cancelledCount: dbCancelledCount
     }
   }
 
