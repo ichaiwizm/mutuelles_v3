@@ -653,8 +653,13 @@ export class ScenariosRunner {
         duration_ms: durationMs
       })
 
-      // Update counters: move pending + running to cancelled
-      execQueries.incrementRunCounter(db, runId, 'pending_items', -pendingCount)
+      // Update counters: move pending to cancelled
+      // Note: Running items were ALREADY decremented from pending_items when they started (line 379)
+      // so we must NOT decrement them again here!
+      if (pendingCount > 0) {
+        execQueries.incrementRunCounter(db, runId, 'pending_items', -pendingCount)
+      }
+      // Add all cancelled items (pending + running) to cancelled counter
       execQueries.incrementRunCounter(db, runId, 'cancelled_items', dbCancelledCount)
 
       console.log(`[Runner] Run ${runId.slice(0,8)} marked as 'stopped' in DB`)

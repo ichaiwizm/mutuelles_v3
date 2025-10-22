@@ -112,6 +112,9 @@ export default function RunHistoryCard({
               {run.errorItems > 0 && (
                 <span className="ml-1">• {run.errorItems} échouée{run.errorItems > 1 ? 's' : ''}</span>
               )}
+              {run.cancelledItems > 0 && (
+                <span className="ml-1">• {run.cancelledItems} annulé{run.cancelledItems > 1 ? 's' : ''}</span>
+              )}
               {run.pendingItems > 0 && (
                 <span className="ml-1">• {run.pendingItems} en attente</span>
               )}
