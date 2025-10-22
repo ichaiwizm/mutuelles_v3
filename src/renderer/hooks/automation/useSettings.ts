@@ -1,84 +1,62 @@
 import { useState, useEffect, useCallback } from 'react'
-
-export type AdvancedSettings = {
-  // EXECUTION
-  mode: 'headless' | 'headless-minimized' | 'visible'
-  keepBrowserOpen: boolean
-  concurrency: number
-
-  // PREVIEW
-  showPreviewBeforeRun: boolean
-
-  // RETRY
-  retryFailed: boolean
-  maxRetries: number
-
-  // VISIBILITY
-  enableVisibilityFiltering: boolean
-  hiddenPlatforms: string[]
-  hiddenFlows: string[]
-}
-
-const DEFAULT_SETTINGS: AdvancedSettings = {
-  mode: 'headless',
-  keepBrowserOpen: false,
-  concurrency: 4,
-  showPreviewBeforeRun: true,
-  retryFailed: true,
-  maxRetries: 2,
-  enableVisibilityFiltering: true,
-  hiddenPlatforms: [],
-  hiddenFlows: ['alptis_login_hl', 'swisslifeone_login', 'swisslifeone_slsis_inspect']
-}
-
-const STORAGE_KEY = 'automation-settings'
+import type { AdvancedSettings } from '../../../shared/settings'
+import { DEFAULT_AUTOMATION_SETTINGS } from '../../../shared/settings'
 
 /**
- * Hook for managing automation settings with localStorage persistence
+ * Hook for managing automation settings with database persistence
  *
  * @returns Settings state and update functions
  */
 export function useSettings() {
-  const [settings, setSettings] = useState<AdvancedSettings>(() => {
-    const stored = localStorage.getItem(STORAGE_KEY)
-    if (stored) {
+  const [settings, setSettings] = useState<AdvancedSettings>(DEFAULT_AUTOMATION_SETTINGS)
+  const [isLoaded, setIsLoaded] = useState(false)
+
+  // Load settings from database on mount
+  useEffect(() => {
+    const loadSettings = async () => {
       try {
-        const parsed = JSON.parse(stored)
-        // Merge with defaults to add new keys
-        const merged = { ...DEFAULT_SETTINGS, ...parsed }
-
-        // Migration: if enableVisibilityFiltering doesn't exist, use new defaults
-        if (parsed.enableVisibilityFiltering === undefined) {
-          merged.enableVisibilityFiltering = DEFAULT_SETTINGS.enableVisibilityFiltering
-          merged.hiddenFlows = DEFAULT_SETTINGS.hiddenFlows
-        }
-
-        return merged
-      } catch {
-        return DEFAULT_SETTINGS
+        const dbSettings = await window.api.settings.getAutomationSettings()
+        setSettings(dbSettings)
+        setIsLoaded(true)
+      } catch (error) {
+        console.error('Failed to load automation settings from DB:', error)
+        setSettings(DEFAULT_AUTOMATION_SETTINGS)
+        setIsLoaded(true)
       }
     }
-    return DEFAULT_SETTINGS
-  })
 
-  // Persist to localStorage when settings change
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(settings))
-  }, [settings])
-
-  // Update settings (partial update supported)
-  const updateSettings = useCallback((partial: Partial<AdvancedSettings>) => {
-    setSettings(prev => ({ ...prev, ...partial }))
+    loadSettings()
   }, [])
 
+  // Update settings (partial update supported)
+  const updateSettings = useCallback(async (partial: Partial<AdvancedSettings>) => {
+    const newSettings = { ...settings, ...partial }
+    setSettings(newSettings)
+
+    try {
+      await window.api.settings.setAutomationSettings(newSettings)
+    } catch (error) {
+      console.error('Failed to save automation settings to DB:', error)
+      // Revert on error
+      setSettings(settings)
+    }
+  }, [settings])
+
   // Reset to defaults
-  const resetSettings = useCallback(() => {
-    setSettings(DEFAULT_SETTINGS)
+  const resetSettings = useCallback(async () => {
+    setSettings(DEFAULT_AUTOMATION_SETTINGS)
+
+    try {
+      await window.api.settings.setAutomationSettings(DEFAULT_AUTOMATION_SETTINGS)
+    } catch (error) {
+      console.error('Failed to reset automation settings in DB:', error)
+    }
   }, [])
 
   return {
     settings,
     updateSettings,
-    resetSettings
+    resetSettings,
+    isLoaded
   }
 }

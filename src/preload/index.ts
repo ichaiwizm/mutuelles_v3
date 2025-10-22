@@ -7,7 +7,9 @@ contextBridge.exposeInMainWorld('api', {
     ipcRenderer.invoke('notifications:sendFailure', failures) as Promise<{success: boolean}>,
   settings: {
     getTheme: () => ipcRenderer.invoke('settings:getTheme') as Promise<'light' | 'dark' | null>,
-    setTheme: (t: 'light' | 'dark') => ipcRenderer.invoke('settings:setTheme', t) as Promise<boolean>
+    setTheme: (t: 'light' | 'dark') => ipcRenderer.invoke('settings:setTheme', t) as Promise<boolean>,
+    getAutomationSettings: () => ipcRenderer.invoke('settings:getAutomationSettings'),
+    setAutomationSettings: (settings: any) => ipcRenderer.invoke('settings:setAutomationSettings', settings) as Promise<boolean>
   },
   catalog: {
     list: () => ipcRenderer.invoke('catalog:list') as Promise<Array<{id:number; slug:string; name:string; status:string; selected:boolean; has_creds:boolean}>>,
@@ -151,6 +153,8 @@ declare global {
       settings: {
         getTheme: () => Promise<'light' | 'dark' | null>
         setTheme: (t: 'light' | 'dark') => Promise<boolean>
+        getAutomationSettings: () => Promise<any>
+        setAutomationSettings: (settings: any) => Promise<boolean>
       }
       catalog: {
         list: () => Promise<Array<{id:number; slug:string; name:string; status:string; selected:boolean; has_creds:boolean}>>

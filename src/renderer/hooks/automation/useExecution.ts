@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
-import type { AdvancedSettings } from './useSettings'
+import type { AdvancedSettings } from '../../../shared/settings'
 import { notificationBatcher } from '../../services/notificationBatcher'
 
 export type ExecutionItem = {

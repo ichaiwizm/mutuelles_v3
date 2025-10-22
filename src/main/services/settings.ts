@@ -1,8 +1,21 @@
 import { z } from 'zod'
 import { getDb } from '../db/connection'
-import type { Theme } from '../../shared/settings'
+import type { Theme, AdvancedSettings } from '../../shared/settings'
+import { DEFAULT_AUTOMATION_SETTINGS } from '../../shared/settings'
 
 const ThemeSchema = z.enum(['light', 'dark'])
+
+const AdvancedSettingsSchema = z.object({
+  mode: z.enum(['headless', 'headless-minimized', 'visible']),
+  keepBrowserOpen: z.boolean(),
+  concurrency: z.number().int().min(1).max(10),
+  showPreviewBeforeRun: z.boolean(),
+  retryFailed: z.boolean(),
+  maxRetries: z.number().int().min(1).max(5),
+  enableVisibilityFiltering: z.boolean(),
+  hiddenPlatforms: z.array(z.string()),
+  hiddenFlows: z.array(z.string())
+})
 
 export function getTheme(): Theme | undefined {
   const row = getDb()
@@ -31,4 +44,35 @@ export function getChromePath(): string | undefined {
 export function setChromePath(path: string) {
   const value = JSON.stringify(path)
   getDb().prepare('INSERT INTO settings(key, value) VALUES(?, ?) ON CONFLICT(key) DO UPDATE SET value=excluded.value').run('chrome_path', value)
+}
+
+export function getAutomationSettings(): AdvancedSettings {
+  const row = getDb()
+    .prepare('SELECT value FROM settings WHERE key = ?')
+    .get('automation-settings') as { value?: string } | undefined
+
+  if (!row?.value) return DEFAULT_AUTOMATION_SETTINGS
+
+  try {
+    const parsed = JSON.parse(row.value)
+    const validated = AdvancedSettingsSchema.safeParse(parsed)
+
+    if (!validated.success) {
+      console.error('Invalid automation settings in DB, using defaults:', validated.error)
+      return DEFAULT_AUTOMATION_SETTINGS
+    }
+
+    return validated.data
+  } catch (error) {
+    console.error('Failed to parse automation settings from DB:', error)
+    return DEFAULT_AUTOMATION_SETTINGS
+  }
+}
+
+export function setAutomationSettings(settings: AdvancedSettings) {
+  const validated = AdvancedSettingsSchema.parse(settings)
+  const value = JSON.stringify(validated)
+  getDb()
+    .prepare('INSERT INTO settings(key, value) VALUES(?, ?) ON CONFLICT(key) DO UPDATE SET value=excluded.value')
+    .run('automation-settings', value)
 }

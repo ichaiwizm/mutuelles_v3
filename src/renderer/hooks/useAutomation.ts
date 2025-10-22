@@ -5,7 +5,7 @@ import { useSelection } from './automation/useSelection'
 import { useExecution, type ExecutionItem } from './automation/useExecution'
 
 // Re-export types for backwards compatibility
-export type { AdvancedSettings } from './automation/useSettings'
+export type { AdvancedSettings } from '../../shared/settings'
 export type { ExecutionItem } from './automation/useExecution'
 
 export type Lead = {
@@ -149,7 +149,7 @@ export function useAutomation() {
    * Deselects newly hidden flows
    */
   const updateSettings = useCallback((
-    partial: Partial<import('./automation/useSettings').AdvancedSettings>,
+    partial: Partial<import('../../shared/settings').AdvancedSettings>,
     newlyHiddenFlows?: string[]
   ) => {
     updateSettingsBase(partial)

@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import type { Lead, Flow } from '../useAutomation'
-import type { AdvancedSettings } from './useSettings'
+import type { AdvancedSettings } from '../../../shared/settings'
 
 export type UseSelectionOptions = {
   leads: Lead[]
