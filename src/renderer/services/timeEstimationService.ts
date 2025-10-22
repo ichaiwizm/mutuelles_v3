@@ -155,8 +155,10 @@ export { formatDuration } from '../utils/dateGrouping'
  * Returns null if no history available
  */
 function getHistoricalAverage(flowSlug: string, runHistory: RunHistoryItem[]): number | null {
-  // Flatten all items
-  const allItems: ExecutionHistoryItem[] = runHistory.flatMap(run => run.items)
+  // Flatten all items - defensive filtering
+  const allItems: ExecutionHistoryItem[] = runHistory
+    .filter(run => Array.isArray(run.items))
+    .flatMap(run => run.items)
 
   // Filter items for this flow that have completed successfully
   const flowItems = allItems.filter(item =>

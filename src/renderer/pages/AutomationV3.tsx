@@ -50,8 +50,7 @@ export default function AutomationV3() {
   }
 
   const handleStopAll = async () => {
-    const currentRunId = automation.runId
-    if (!currentRunId) {
+    if (!automation.isRunning) {
       toast.warning('Aucune exécution', 'Aucune exécution en cours')
       return
     }
@@ -60,7 +59,8 @@ export default function AutomationV3() {
       'Êtes-vous sûr de vouloir arrêter l\'exécution en cours ?',
       async () => {
         try {
-          const result = await window.api.scenarios.stop(currentRunId)
+          // Use the hook's stopRun method for proper state management
+          const result = await automation.stopRun()
           if (result.success) {
             toast.success('Arrêté', result.message || 'Exécution arrêtée')
           } else {
@@ -129,7 +129,7 @@ export default function AutomationV3() {
         totalExecutions={automation.totalExecutions}
         onStartRun={handleStartExecution}
         onStopExecution={handleStopAll}
-        onClearCompletedExecutions={automation.clearCompletedExecutions}
+        onClearCompletedExecutions={automation.clearExecution}
         runHistory={automation.runHistory}
         onRerunHistory={automation.rerunHistoryRun}
         onRerunHistoryItem={automation.rerunSingleItem}
@@ -139,7 +139,7 @@ export default function AutomationV3() {
         getLeadName={automation.getLeadName}
         onPrepareReplayFromErrors={automation.prepareReplayFromErrors}
         onRetryItem={automation.requeueItem}
-        onRetryFailedItems={automation.requeueFailedItems}
+        onRetryFailedItems={automation.requeueItems}
       />
 
       {/* Settings Modal */}

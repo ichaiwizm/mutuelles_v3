@@ -38,11 +38,14 @@ export default function ExecutionHistoryView({
   const filteredHistory = useMemo(() => {
     let filtered = runHistory
 
-    // Search filter
+    // Search filter - search by runId since items are not loaded at list level
     if (historyFilters.searchQuery) {
       const query = historyFilters.searchQuery.toLowerCase()
       filtered = filtered.filter(run =>
-        run.items.some((item: ExecutionHistoryItem) => item.leadName.toLowerCase().includes(query))
+        run.runId.toLowerCase().includes(query) ||
+        String(run.totalItems).includes(query) ||
+        String(run.successItems).includes(query) ||
+        String(run.errorItems).includes(query)
       )
     }
 
@@ -84,6 +87,8 @@ export default function ExecutionHistoryView({
       {/* Details Modal */}
       {selectedRunDetails && (
         <RunDetailsModal
+          runId={selectedRunDetails.runId}
+          itemId={selectedRunDetails.itemId}
           runDir={selectedRunDetails.runDir}
           leadName={selectedRunDetails.leadName}
           platformName={selectedRunDetails.platformName}

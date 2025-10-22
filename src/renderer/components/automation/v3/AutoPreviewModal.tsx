@@ -41,10 +41,8 @@ export default function AutoPreviewModal({
 
   const handleConfirm = () => {
     if (dontShowAgain) {
-      // Update settings to disable preview
+      // Update settings to disable preview (persisted to database)
       onUpdateSettings({ ...settings, showPreviewBeforeRun: false })
-      // Also set localStorage for immediate effect
-      localStorage.setItem('automation-preview-disabled', 'true')
     }
     onConfirm()
   }

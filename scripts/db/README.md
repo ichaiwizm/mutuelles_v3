@@ -1,148 +1,215 @@
-# Database Management System
+# Scripts de Gestion de Base de Données
 
-Ce dossier contient le nouveau système de gestion de base de données avec migrations versionnées et seeds modulaires.
+## Table des matières
+- [Vue d'ensemble](#vue-densemble)
+- [Scripts disponibles](#scripts-disponibles)
+- [Préservation de tables lors du reset](#préservation-de-tables-lors-du-reset)
+- [Exemples d'utilisation](#exemples-dutilisation)
 
-## Architecture
+## Vue d'ensemble
 
-```
-scripts/db/
-├── core/
-│   ├── connection.mjs      # Gestion connexion DB unifiée
-│   ├── migrator.mjs        # Moteur de migrations
-│   └── seeder.mjs          # Moteur de seeds
-├── migrations/
-│   ├── 001_initial_schema.mjs
-│   ├── 002_add_leads_tables.mjs
-│   ├── 003_add_flows_tables.mjs
-│   └── 004_add_indexes.mjs
-├── seeds/
-│   ├── 01_platforms.mjs    # Plateformes (Alptis, Swisslife)
-│   ├── 02_flows.mjs        # Import flows depuis JSON
-│   ├── 03_leads.mjs        # Leads de test
-│   ├── 04_credentials.mjs  # Credentials depuis env vars
-│   └── 05_profiles.mjs     # Profils Chrome
-├── reset.mjs               # Reset complet
-├── migrate.mjs             # Migrations
-├── seed.mjs                # Seeds
-└── status.mjs              # Statut DB
-```
+Ce dossier contient tous les scripts de gestion de la base de données SQLite pour le projet Mutuelles.
 
-## Commandes principales
+## Scripts disponibles
 
-### Reset et initialisation
+### `npm run db:reset` - Reset de la base de données
+
+Reset complet de la base de données. **Supprime toutes les données** et recrée le schéma.
+
+**Options:**
+- `--seed` : Exécute les seeders après le reset
+- `--dry-run` : Mode simulation (affiche ce qui serait fait sans l'exécuter)
+- `--only <seeders>` : N'exécute que les seeders spécifiés (séparés par des virgules)
+- `--skip <seeders>` : Ignore les seeders spécifiés (séparés par des virgules)
+- `--preserve-tables <tables>` : **NOUVEAU** Préserve les tables spécifiées lors du reset
+- `--keep-tables <tables>` : Alias pour `--preserve-tables`
+- `--help, -h` : Affiche l'aide
+
+### `npm run db:migrate` - Exécution des migrations
+
+Exécute les migrations de schéma.
+
+### `npm run db:seed` - Peuplement de la base de données
+
+Peuple la base de données avec des données de test/développement.
+
+**Options:**
+- `--dry-run` : Mode simulation
+- `--only <seeders>` : N'exécute que les seeders spécifiés
+- `--skip <seeders>` : Ignore les seeders spécifiés
+- `--force` : Force le re-seed même si les données existent déjà
+- `--list` : Liste les seeders disponibles
+
+### `npm run db:dump` - Dump de la base de données
+
+Crée un dump SQL de la base de données.
+
+**Options:**
+- `--schema-only` : Exporte uniquement le schéma (pas de données)
+- `--data-only` : Exporte uniquement les données (pas de schéma)
+- `--output, -o <fichier>` : Nom du fichier de sortie personnalisé
+
+### `npm run db:status` - Statut de la base de données
+
+Affiche l'état actuel de la base de données (migrations, statistiques, etc.).
+
+## Préservation de tables lors du reset
+
+### Pourquoi préserver des tables ?
+
+Lors du développement, vous pouvez vouloir :
+- Reset le schéma sans perdre vos données de test
+- Conserver certaines configurations (credentials, platforms, profiles)
+- Réinitialiser uniquement certaines parties de la DB
+
+### Comment ça marche ?
+
+Le script de reset avec l'option `--preserve-tables` fonctionne en 4 étapes :
+
+1. **Backup** : Sauvegarde les données des tables spécifiées en mémoire
+2. **Delete** : Supprime complètement la base de données
+3. **Rebuild** : Recrée le schéma via les migrations
+4. **Restore** : Restaure les données sauvegardées dans les nouvelles tables
+
+### Tables disponibles
+
+Voici les principales tables que vous pouvez préserver :
+
+- `platforms_catalog` : Catalogue des plateformes (Alptis, SwissLife, etc.)
+- `platform_credentials` : Identifiants de connexion aux plateformes
+- `profiles` : Profils de navigateur Chrome
+- `clean_leads` : Leads nettoyés
+- `settings` : Paramètres de l'application
+- `execution_runs` : Historique des exécutions
+- `execution_items` : Items d'exécution
+- `execution_steps` : Étapes d'exécution
+- `execution_attempts` : Tentatives d'exécution
+
+> **Note** : Pour voir la liste complète des tables, utilisez `npm run db:status`
+
+### Limitations
+
+- Les tables doivent exister dans le nouveau schéma (après migrations)
+- Si le schéma de la table a changé, la restauration peut échouer
+- Les relations (foreign keys) doivent être cohérentes
+
+## Exemples d'utilisation
+
+### Reset basique
+
 ```bash
-# Reset complet avec structure vierge
+# Reset complet (perd toutes les données)
 npm run db:reset
 
-# Reset avec toutes les données de test
-npm run db:reset:seed
+# Reset + seed automatique
+npm run db:reset --seed
 
-# Voir ce qui serait fait (dry-run)
-npm run db:reset:dry
+# Simulation
+npm run db:reset --dry-run
 ```
 
-### Migrations
+### Reset avec préservation de tables
+
 ```bash
-# Exécuter les migrations pendantes
-npm run db:migrate
+# Préserver les credentials et platforms
+npm run db:reset -- --preserve-tables "platforms_catalog,platform_credentials"
 
-# Voir le statut des migrations
-npm run db:migrate:status
+# Préserver plusieurs tables
+npm run db:reset -- --preserve-tables "platforms_catalog,platform_credentials,profiles,settings"
 
-# Dry-run des migrations
-npm run db:migrate:dry
+# Préserver + seed (les seeders ne remplaceront pas les données préservées)
+npm run db:reset -- --seed --preserve-tables "platforms_catalog"
+
+# Mode simulation pour voir ce qui sera fait
+npm run db:reset -- --dry-run --preserve-tables "clean_leads"
 ```
 
-### Seeds (données de test)
+**⚠️ Important :** 
+- Utilisez `--` avant les options pour les passer au script
+- Mettez les noms de tables entre **guillemets** si vous en spécifiez plusieurs (séparées par des virgules)
+
+### Seed sélectif
+
 ```bash
-# Exécuter tous les seeds
-npm run db:seed
-
-# Lister les seeds disponibles
-npm run db:seed:list
-
-# Seeds spécifiques
+# Seed uniquement les platforms
 npm run db:seed:platforms
-npm run db:seed:flows
-npm run db:seed:leads
-npm run db:seed:credentials
-npm run db:seed:profiles
 
-# Dry-run des seeds
-npm run db:seed:dry
+# Seed tous sauf credentials
+npm run db:seed -- --skip credentials
+
+# Force re-seed même si les données existent
+npm run db:seed -- --force
 ```
 
-### Statut
+### Dump et restauration
+
 ```bash
-# Vue d'ensemble de la DB
+# Dump complet
+npm run db:dump
+
+# Dump uniquement le schéma
+npm run db:dump:schema
+
+# Dump avec nom personnalisé
+npm run db:dump -- --output backup_avant_modif.sql
+```
+
+### Workflow typique de développement
+
+```bash
+# 1. Vérifier l'état actuel
 npm run db:status
 
-# Informations détaillées
-npm run db:status:verbose
+# 2. Faire un backup de sécurité
+npm run db:dump -- --output backup_$(date +%Y%m%d).sql
+
+# 3. Reset en préservant les données importantes
+npm run db:reset -- --preserve-tables "platforms_catalog,platform_credentials,profiles"
+
+# 4. Vérifier que tout est OK
+npm run db:status
+
+# 5. Lancer l'app
+npm run dev
 ```
-
-## Seeds inclus
-
-### 1. Plateformes (Required)
-- **Alptis** et **Swisslife** avec leurs pages et champs
-- Pages de connexion avec identifiant/mot de passe
-- Sélection automatique des plateformes
-
-### 2. Flows (Optional)
-- Import automatique depuis le dossier `flows/`
-- **Flows par défaut :**
-  - `alptis_login` - Connexion Alptis
-  - `alptis_sante_select_pro_full` - Alptis Santé Select – Informations projet complet
-
-### 3. Leads (Optional)
-- 3 leads de test avec données complètes
-- Sources variées : manual, gmail, file
-- Providers : generic, assurprospect, assurlead
-
-### 4. Credentials (Optional)
-- Lecture depuis variables d'environnement
-- Chiffrement automatique avec Electron safeStorage
-- Variables supportées :
-  - `ALPTIS_USERNAME` / `ALPTIS_PASSWORD`
-  - `SWISSLIFE_USERNAME` / `SWISSLIFE_PASSWORD`
-
-### 5. Profiles (Optional)
-- Profils Chrome de test
-- Répertoires automatiquement créés
-- Configuration basique pré-configurée
 
 ## Variables d'environnement
 
-```bash
-# Credentials (optionnel pour seeding)
-ALPTIS_USERNAME=your_username
-ALPTIS_PASSWORD=your_password
-SWISSLIFE_USERNAME=your_username
-SWISSLIFE_PASSWORD=your_password
+Pour les seeders de credentials :
 
-# Configuration DB
-MUTUELLES_DB_DIR=./dev-data  # Par défaut
+```bash
+ALPTIS_USERNAME=votre_username
+ALPTIS_PASSWORD=votre_password
+SWISSLIFE_USERNAME=votre_username
+SWISSLIFE_PASSWORD=votre_password
 ```
 
-## Utilisation dans l'application
+## Dépannage
 
-L'application utilise désormais une approche simplifiée :
+### Erreur "EBUSY: resource busy or locked"
 
-1. **Au démarrage**, elle vérifie que la DB existe
-2. **Si elle n'existe pas**, affiche un message pour exécuter `npm run db:reset:seed`
-3. **Les migrations et seeds sont gérés par les scripts CLI uniquement**
+La base de données est verrouillée par un autre processus.
 
-Cela évite la complexité de l'ancien système qui mélangeait init application et gestion de schéma.
+**Solution** : Fermez tous les processus qui utilisent la DB (notamment l'application Electron).
 
-## Extensibilité
+### Erreur "Table 'xxx' does not exist"
 
-### Ajouter une migration
-1. Créer `scripts/db/migrations/00X_nom_migration.mjs`
-2. Exporter un objet avec `version`, `name`, `up()` et optionnel `down()`
+La table que vous essayez de préserver n'existe pas dans la base de données actuelle.
 
-### Ajouter un seeder
-1. Créer `scripts/db/seeds/0X_nom_seeder.mjs`
-2. Exporter un objet avec `name`, `description`, `run(db, options)`
+**Solution** : Vérifiez le nom exact de la table avec `npm run db:status` ou en inspectant un dump.
 
-### Modifier la structure
-Le système est modulaire, chaque composant peut être modifié indépendamment.
+### Les données préservées ne sont pas restaurées
+
+La table existe peut-être dans la nouvelle DB mais avec un schéma différent.
+
+**Solution** : Vérifiez que le schéma de la table n'a pas changé dans les migrations récentes.
+
+## Debug
+
+Pour activer le mode debug :
+
+```bash
+DEBUG=1 npm run db:reset --preserve-tables ...
+```
+
+Cela affichera la stack trace complète en cas d'erreur.

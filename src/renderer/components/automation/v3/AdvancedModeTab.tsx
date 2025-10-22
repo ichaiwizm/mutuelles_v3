@@ -32,7 +32,7 @@ interface AdvancedModeTabProps {
   // Execution
   isRunning: boolean
   runId: string | null
-  executionItems: Map<string, ExecutionItem>
+  executionItems: ExecutionItem[]
   totalExecutions: number
   onStartRun: (mode: 'headless' | 'dev' | 'dev_private') => Promise<string | void>
   onStopExecution?: () => void

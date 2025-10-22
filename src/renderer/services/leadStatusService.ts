@@ -76,11 +76,16 @@ function checkDuplicate(
   const thirtyDaysAgo = new Date()
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
 
-  // Flatten all history items
-  const allItems: ExecutionHistoryItem[] = runHistory.flatMap(run => run.items)
+  // Flatten all history items - defensive filtering
+  const allItems: ExecutionHistoryItem[] = runHistory
+    .filter(run => Array.isArray(run.items))
+    .flatMap(run => run.items)
 
   // Find most recent submission for this lead × selected flows
   const duplicates = allItems.filter(item => {
+    // Defensive: skip items without startedAt
+    if (!item.startedAt) return false
+
     const itemDate = new Date(item.startedAt)
     return (
       item.leadId === leadId &&
@@ -95,8 +100,15 @@ function checkDuplicate(
 
   // Find most recent duplicate
   const mostRecent = duplicates.reduce((latest, item) => {
+    // Defensive: ensure both have startedAt before comparing
+    if (!item.startedAt || !latest.startedAt) return latest
     return new Date(item.startedAt) > new Date(latest.startedAt) ? item : latest
   })
+
+  // Defensive: ensure mostRecent has startedAt
+  if (!mostRecent.startedAt) {
+    return null
+  }
 
   const daysAgo = Math.floor(
     (Date.now() - new Date(mostRecent.startedAt).getTime()) / (1000 * 60 * 60 * 24)
@@ -118,11 +130,13 @@ function checkRecentError(
   leadId: string,
   runHistory: RunHistoryItem[]
 ): LeadStatus | null {
-  // Find most recent error for this lead
-  const allItems: ExecutionHistoryItem[] = runHistory.flatMap(run => run.items)
+  // Find most recent error for this lead - defensive filtering
+  const allItems: ExecutionHistoryItem[] = runHistory
+    .filter(run => Array.isArray(run.items))
+    .flatMap(run => run.items)
 
   const errors = allItems.filter(item =>
-    item.leadId === leadId && item.status === 'error'
+    item.leadId === leadId && item.status === 'error' && item.startedAt  // Defensive: ensure startedAt exists
   )
 
   if (errors.length === 0) {
@@ -131,8 +145,15 @@ function checkRecentError(
 
   // Get most recent error
   const mostRecent = errors.reduce((latest, item) => {
+    // Defensive: ensure both have startedAt before comparing
+    if (!item.startedAt || !latest.startedAt) return latest
     return new Date(item.startedAt) > new Date(latest.startedAt) ? item : latest
   })
+
+  // Defensive: ensure mostRecent has startedAt
+  if (!mostRecent.startedAt) {
+    return null
+  }
 
   const count = errors.length
   const daysAgo = Math.floor(
@@ -185,6 +206,9 @@ function checkIncomplete(lead: Lead): LeadStatus | null {
  * Check if lead has never been submitted
  */
 function checkIsNew(leadId: string, runHistory: RunHistoryItem[]): boolean {
-  const allItems: ExecutionHistoryItem[] = runHistory.flatMap(run => run.items)
+  // Defensive filtering
+  const allItems: ExecutionHistoryItem[] = runHistory
+    .filter(run => Array.isArray(run.items))
+    .flatMap(run => run.items)
   return !allItems.some(item => item.leadId === leadId)
 }

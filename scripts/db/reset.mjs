@@ -10,6 +10,7 @@ function parseArgs() {
     dryRun: false,
     only: null,
     skip: [],
+    preserveTables: [],
     help: false
   }
 
@@ -30,6 +31,10 @@ function parseArgs() {
       case '--skip':
         opts.skip = next()?.split(',').map(s => s.trim()) || []
         break
+      case '--preserve-tables':
+      case '--keep-tables':
+        opts.preserveTables = next()?.split(',').map(s => s.trim()) || []
+        break
       case '--help':
       case '-h':
         opts.help = true
@@ -48,18 +53,21 @@ Usage:
   npm run db:reset [options]
 
 Options:
-  --seed              Run seeders after reset
-  --dry-run           Show what would be done without executing
-  --only <seeders>    Run only specific seeders (comma-separated)
-  --skip <seeders>    Skip specific seeders (comma-separated)
-  --help, -h          Show this help
+  --seed                      Run seeders after reset
+  --dry-run                   Show what would be done without executing
+  --only <seeders>            Run only specific seeders (comma-separated)
+  --skip <seeders>            Skip specific seeders (comma-separated)
+  --preserve-tables <tables>  Preserve specific tables during reset (comma-separated)
+  --keep-tables <tables>      Alias for --preserve-tables
+  --help, -h                  Show this help
 
 Examples:
-  npm run db:reset                    # Reset DB with fresh schema
-  npm run db:reset --seed             # Reset and run all seeders
-  npm run db:reset --seed --only platforms,flows
-                                     # Reset and seed only platforms and flows
-  npm run db:reset --dry-run --seed   # Show what would be executed
+  npm run db:reset                                    # Reset DB with fresh schema
+  npm run db:reset --seed                             # Reset and run all seeders
+  npm run db:reset --seed --only platforms,flows      # Reset and seed only platforms and flows
+  npm run db:reset --preserve-tables platforms,credentials
+                                                      # Reset DB but keep platforms and credentials tables
+  npm run db:reset --dry-run --seed                   # Show what would be executed
 
 Environment Variables:
   ALPTIS_USERNAME     Username for Alptis platform
@@ -67,6 +75,94 @@ Environment Variables:
   SWISSLIFE_USERNAME  Username for Swisslife platform
   SWISSLIFE_PASSWORD  Password for Swisslife platform
 `)
+}
+
+/**
+ * Escapes a string value for SQL insertion
+ */
+function escapeString(str) {
+  if (str === null || str === undefined) return 'NULL'
+  if (typeof str === 'number') return String(str)
+  return `'${String(str).replace(/'/g, "''")}'`
+}
+
+/**
+ * Checks if a table exists in the database
+ */
+function tableExists(db, tableName) {
+  const result = db.prepare(`
+    SELECT name FROM sqlite_master 
+    WHERE type='table' AND name=?
+  `).get(tableName)
+  return !!result
+}
+
+/**
+ * Backs up data from specified tables
+ */
+function backupTables(db, tableNames) {
+  const backups = {}
+
+  for (const tableName of tableNames) {
+    if (!tableExists(db, tableName)) {
+      console.log(`   [WARN] Table '${tableName}' does not exist, skipping backup`)
+      continue
+    }
+
+    // Get all rows from the table
+    const rows = db.prepare(`SELECT * FROM ${tableName}`).all()
+    
+    if (rows.length === 0) {
+      console.log(`   [INFO] Table '${tableName}' is empty, no data to backup`)
+      backups[tableName] = []
+      continue
+    }
+
+    backups[tableName] = rows
+    console.log(`   [OK] Backed up ${rows.length} row(s) from '${tableName}'`)
+  }
+
+  return backups
+}
+
+/**
+ * Restores data to specified tables
+ */
+function restoreTables(db, backups) {
+  for (const [tableName, rows] of Object.entries(backups)) {
+    if (!tableExists(db, tableName)) {
+      console.log(`   [WARN] Table '${tableName}' does not exist in new schema, skipping restore`)
+      continue
+    }
+
+    if (rows.length === 0) {
+      console.log(`   [INFO] No data to restore for '${tableName}'`)
+      continue
+    }
+
+    // Get column names from the first row
+    const columns = Object.keys(rows[0])
+    const columnList = columns.join(', ')
+    const placeholders = columns.map(() => '?').join(', ')
+
+    // Prepare insert statement
+    const stmt = db.prepare(`INSERT INTO ${tableName} (${columnList}) VALUES (${placeholders})`)
+
+    // Insert all rows in a transaction
+    const insertMany = db.transaction((rows) => {
+      for (const row of rows) {
+        const values = columns.map(col => row[col])
+        stmt.run(...values)
+      }
+    })
+
+    try {
+      insertMany(rows)
+      console.log(`   [OK] Restored ${rows.length} row(s) to '${tableName}'`)
+    } catch (error) {
+      console.log(`   [ERROR] Failed to restore '${tableName}': ${error.message}`)
+    }
+  }
 }
 
 async function main() {
@@ -83,6 +179,26 @@ async function main() {
   try {
     if (options.dryRun) {
       console.log('[DRY RUN] No changes will be made')
+      console.log()
+    }
+
+    let backups = {}
+
+    // Step 0: Backup tables if requested
+    if (options.preserveTables.length > 0) {
+      console.log('Step 0: Backing up specified tables...')
+      console.log(`   Tables to preserve: ${options.preserveTables.join(', ')}`)
+      
+      if (!options.dryRun) {
+        const db = openDb()
+        try {
+          backups = backupTables(db, options.preserveTables)
+        } finally {
+          db.close()
+        }
+      } else {
+        console.log(`   [DRY RUN] Would backup ${options.preserveTables.length} table(s)`)
+      }
       console.log()
     }
 
@@ -110,6 +226,23 @@ async function main() {
       console.log('   [DRY RUN] Would run all migrations')
     }
     console.log()
+
+    // Step 2.5: Restore backed up tables
+    if (options.preserveTables.length > 0 && Object.keys(backups).length > 0) {
+      console.log('Step 2.5: Restoring preserved tables...')
+      
+      if (!options.dryRun) {
+        const db = openDb()
+        try {
+          restoreTables(db, backups)
+        } finally {
+          db.close()
+        }
+      } else {
+        console.log(`   [DRY RUN] Would restore ${Object.keys(backups).length} table(s)`)
+      }
+      console.log()
+    }
 
     // Step 3: Run seeders (if requested)
     if (options.seed) {

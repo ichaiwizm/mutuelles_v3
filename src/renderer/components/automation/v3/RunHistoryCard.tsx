@@ -172,20 +172,20 @@ export default function RunHistoryCard({
         >
           <div className="flex items-center justify-between mb-2">
             <h5 className="text-xs font-semibold text-neutral-700 dark:text-neutral-300 uppercase tracking-wide">
-              Exécutions ({run.items.length})
+              Exécutions ({run.items?.length || 0})
             </h5>
             <span className="text-xs text-neutral-500">
               Run ID: {run.runId.slice(0, 8)}
             </span>
           </div>
-          {run.items.map((item) => (
+          {run.items?.map((item) => (
             <HistoryItemCard
               key={item.id}
               item={item}
               onRerun={onRerunItem}
               onViewDetails={onViewDetails}
             />
-          ))}
+          )) || <p className="text-xs text-neutral-500">Aucune exécution</p>}
         </div>
       )}
     </div>

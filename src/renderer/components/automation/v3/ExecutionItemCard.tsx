@@ -8,7 +8,7 @@ import TimeEstimator from './TimeEstimator'
 
 interface ExecutionItemCardProps {
   item: ExecutionItem
-  onViewDetails?: (runDir: string, leadName: string, platformName: string, flowName: string) => void
+  onViewDetails?: (runId: string, itemId: string, runDir: string, leadName: string, platformName: string, flowName: string) => void
   onRetryItem?: (itemId: string) => void
   isRunning?: boolean
   estimatedDurationMs?: number // Optional estimated duration for pending items
@@ -91,7 +91,7 @@ export default function ExecutionItemCard({
           {/* View details button */}
           {(item.status === 'success' || item.status === 'error') && item.runDir && onViewDetails && (
             <button
-              onClick={() => onViewDetails(item.runDir!, item.leadName, item.platformName, item.flowName || '')}
+              onClick={() => onViewDetails(item.runId, item.id, item.runDir!, item.leadName, item.platformName, item.flowName || '')}
               title="Voir les détails"
               className="p-1.5 rounded hover:bg-white dark:hover:bg-neutral-800 transition-colors group"
             >

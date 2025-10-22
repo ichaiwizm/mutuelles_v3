@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import type { ExecutionItem } from '../../hooks/useAutomation'
 import type { GroupingMode } from '../../utils/executionGrouping'
 import { calculateExecutionStats } from '../../utils/executionStats'
@@ -81,11 +81,15 @@ export function useDashboardState({
     localStorage.setItem('executionGroupingMode', groupingMode)
   }, [groupingMode])
 
-  // Auto-switch to 'current' view when execution starts
+  // Auto-switch to 'current' view ONLY when execution starts (not on every render)
+  const prevIsRunning = useRef(false)
+
   useEffect(() => {
-    if (isRunning && mode === 'history') {
+    // Only switch when transition from not running → running
+    if (isRunning && !prevIsRunning.current && mode === 'history') {
       setMode('current')
     }
+    prevIsRunning.current = isRunning
   }, [isRunning, mode])
 
   // Current run stats

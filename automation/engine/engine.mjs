@@ -40,7 +40,7 @@ import { ScreenshotManager } from './artifacts/ScreenshotManager.mjs'
 import { DomCollector } from './artifacts/DomCollector.mjs'
 import { describeHL } from './utils/stepDescriber.mjs'
 
-export async function runHighLevelFlow({ fieldsFile, flowFile, leadFile, leadData, username, password, outRoot='data/runs', mode='dev_private', chrome=null, video=false, dom='errors', a11y=false, keepOpen=true, redact='(password|token|authorization|cookie)=([^;\\s]+)', onProgress=null, sessionRunId=null }) {
+export async function runHighLevelFlow({ fieldsFile, flowFile, leadFile, leadData, username, password, outRoot='data/runs', mode='dev_private', chrome=null, video=false, dom='errors', a11y=false, keepOpen=true, redact='(password|token|authorization|cookie)=([^;\\s]+)', onProgress=null, sessionRunId=null, onBrowserCreated=null }) {
   // Read files first
   const fields = JSON.parse(fs.readFileSync(fieldsFile, 'utf-8'))
   const flow = JSON.parse(fs.readFileSync(flowFile, 'utf-8'))
@@ -132,6 +132,15 @@ export async function runHighLevelFlow({ fieldsFile, flowFile, leadFile, leadDat
     page = context.pages()[0] || await context.newPage()
     page.setDefaultTimeout(15000)
     context.on('page', (p) => { try { page = p; page.setDefaultTimeout(15000) } catch (err) { console.warn('[Browser] Failed to set timeout on new page:', err.message) } })
+
+    // Notify runner that browser is ready (for force-close capability on stop)
+    if (typeof onBrowserCreated === 'function') {
+      try {
+        onBrowserCreated(browser, context)
+      } catch (err) {
+        console.warn('[Engine] onBrowserCreated callback failed:', err.message)
+      }
+    }
 
     // Support iframes: stack de contextes (page principale, puis frames)
     const contextStack = [page]

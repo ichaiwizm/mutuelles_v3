@@ -94,7 +94,7 @@ contextBridge.exposeInMainWorld('api', {
       }>
       error?: string
     }>,
-    getHistory: () => ipcRenderer.invoke('scenarios:getHistory') as Promise<{
+    getHistory: (filters?: any) => ipcRenderer.invoke('scenarios:getHistory', filters) as Promise<{
       success: boolean
       data?: Array<{
         id: string
@@ -114,7 +114,32 @@ contextBridge.exposeInMainWorld('api', {
       }>
       error?: string
     }>,
+    getActiveRun: (runId: string) => ipcRenderer.invoke('scenarios:getActiveRun', runId) as Promise<{
+      success: boolean
+      data?: any
+      error?: string
+    }>,
+    getRunItems: (runId: string) => ipcRenderer.invoke('scenarios:getRunItems', runId) as Promise<{
+      success: boolean
+      data?: Array<any>
+      error?: string
+    }>,
+    getRunSteps: (itemId: string) => ipcRenderer.invoke('scenarios:getRunSteps', itemId) as Promise<{
+      success: boolean
+      data?: Array<any>
+      error?: string
+    }>,
+    deleteRun: (runId: string) => ipcRenderer.invoke('scenarios:deleteRun', runId) as Promise<{
+      success: boolean
+      message?: string
+      error?: string
+    }>,
     getRunDetails: (runDir: string) => ipcRenderer.invoke('scenarios:getRunDetails', runDir) as Promise<{
+      success: boolean
+      data?: any
+      error?: string
+    }>,
+    getItemDetails: (itemId: string) => ipcRenderer.invoke('scenarios:getItemDetails', itemId) as Promise<{
       success: boolean
       data?: any
       error?: string
@@ -227,6 +252,11 @@ declare global {
           error?: string
         }>
         getRunDetails: (runDir: string) => Promise<{
+          success: boolean
+          data?: any
+          error?: string
+        }>
+        getItemDetails: (itemId: string) => Promise<{
           success: boolean
           data?: any
           error?: string

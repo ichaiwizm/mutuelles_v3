@@ -27,7 +27,12 @@ export interface DateGroup {
  * // Returns: 'today' | 'yesterday' | 'thisWeek' | 'thisMonth' | 'older'
  * ```
  */
-export function getDateGroup(dateString: string): DateGroupKey {
+export function getDateGroup(dateString: string | null | undefined): DateGroupKey {
+  // Defensive: handle null/undefined dates
+  if (!dateString) {
+    return 'older'
+  }
+
   const date = new Date(dateString)
   const now = new Date()
 
@@ -101,8 +106,14 @@ export function groupRunsByDate(runs: RunHistoryItem[]): DateGroup[] {
     older: []
   }
 
-  // Group runs
+  // Group runs - filter out invalid runs with missing data
   runs.forEach(run => {
+    // Defensive: skip runs with invalid structure
+    if (!run || !run.runId) {
+      console.warn('[groupRunsByDate] Skipping invalid run:', run)
+      return
+    }
+
     const group = getDateGroup(run.startedAt)
     groups[group].push(run)
   })
@@ -143,7 +154,12 @@ export function groupRunsByDate(runs: RunHistoryItem[]): DateGroup[] {
  * formatDuration(3600000)   // "1h"
  * ```
  */
-export function formatDuration(durationMs: number): string {
+export function formatDuration(durationMs: number | null | undefined): string {
+  // Defensive: handle null/undefined durations
+  if (durationMs == null) {
+    return '-'
+  }
+
   const seconds = Math.floor(durationMs / 1000)
   const minutes = Math.floor(seconds / 60)
   const hours = Math.floor(minutes / 60)
@@ -176,7 +192,12 @@ export function formatDuration(durationMs: number): string {
  * formatRelativeTime("2025-10-15T10:00:00Z") // "15 oct"
  * ```
  */
-export function formatRelativeTime(dateString: string): string {
+export function formatRelativeTime(dateString: string | null | undefined): string {
+  // Defensive: handle null/undefined dates
+  if (!dateString) {
+    return '-'
+  }
+
   const date = new Date(dateString)
   const now = new Date()
   const diffMs = now.getTime() - date.getTime()
@@ -203,7 +224,12 @@ export function formatRelativeTime(dateString: string): string {
 /**
  * Format a full date and time
  */
-export function formatDateTime(dateString: string): string {
+export function formatDateTime(dateString: string | null | undefined): string {
+  // Defensive: handle null/undefined dates
+  if (!dateString) {
+    return '-'
+  }
+
   const date = new Date(dateString)
   return date.toLocaleString('fr-FR', {
     year: 'numeric',

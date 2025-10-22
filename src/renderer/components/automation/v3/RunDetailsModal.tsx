@@ -4,7 +4,9 @@ import ScreenshotTimeline from './ScreenshotTimeline'
 import Tabs from '../../Tabs'
 
 interface RunDetailsModalProps {
-  runDir: string
+  runId: string      // Parent run ID
+  itemId: string     // Execution item ID (for loading data from DB)
+  runDir: string     // Filesystem path (for loading screenshots)
   leadName: string
   platformName: string
   flowName: string
@@ -40,6 +42,8 @@ interface RunManifest {
 type TabKey = 'overview' | 'screenshots' | 'details'
 
 export default function RunDetailsModal({
+  runId,
+  itemId,
   runDir,
   leadName,
   platformName,
@@ -55,12 +59,12 @@ export default function RunDetailsModal({
   const [activeTab, setActiveTab] = useState<TabKey>('overview')
   const [copiedJson, setCopiedJson] = useState(false)
 
-  // Load manifest on mount
+  // Load manifest on mount using itemId from database
   useEffect(() => {
     const loadManifest = async () => {
       try {
         setLoading(true)
-        const response = await window.api.scenarios.getRunDetails(runDir)
+        const response = await window.api.scenarios.getItemDetails(itemId)
 
         if (!response.success || !response.data) {
           throw new Error(response.error || 'Failed to load run details')
@@ -77,7 +81,7 @@ export default function RunDetailsModal({
     }
 
     loadManifest()
-  }, [runDir])
+  }, [itemId])
 
   // Get screenshots list
   const screenshots = manifest?.steps?.filter(s => s.screenshot) || []

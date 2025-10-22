@@ -4,6 +4,7 @@ import fs from 'node:fs'
 import { ScenariosRunner } from '../services/scenarios/runner'
 import { listHLFlows } from '../services/scenarios/hl_catalog'
 import { getDb } from '../db/connection'
+import * as execQueries from '../../shared/db/queries/executions'
 
 const runner = new ScenariosRunner()
 
@@ -75,99 +76,178 @@ export function registerScenariosIpc() {
     }
   })
 
-  // Get execution history from runs directory
-  ipcMain.handle('scenarios:getHistory', async () => {
+  // Get execution history from database
+  ipcMain.handle('scenarios:getHistory', async (_e, filters?: execQueries.HistoryFilters) => {
     try {
-      const projectRoot = process.cwd()
-      const runsDir = path.join(projectRoot, 'data', 'runs')
+      const db = getDb()
+      const runs = execQueries.getRunHistory(db, filters)
 
-      if (!fs.existsSync(runsDir)) {
-        return { success: true, data: [] }
-      }
-
-      const runs: any[] = []
-
-      // Walk through platform directories
-      const platformDirs = fs.readdirSync(runsDir, { withFileTypes: true })
-        .filter(d => d.isDirectory())
-
-      for (const platformDir of platformDirs) {
-        const platformPath = path.join(runsDir, platformDir.name)
-        const runDirs = fs.readdirSync(platformPath, { withFileTypes: true })
-          .filter(d => d.isDirectory())
-
-        for (const runDir of runDirs) {
-          const runPath = path.join(platformPath, runDir.name)
-          const indexFile = path.join(runPath, 'index.json')
-
-          if (fs.existsSync(indexFile)) {
-            try {
-              const manifest = JSON.parse(fs.readFileSync(indexFile, 'utf-8'))
-
-              const startedAt = manifest.run?.startedAt || new Date(0).toISOString()
-              const finishedAt = manifest.run?.finishedAt
-              const durationMs = finishedAt
-                ? new Date(finishedAt).getTime() - new Date(startedAt).getTime()
-                : undefined
-
-              const stepsTotal = manifest.steps?.length || 0
-              const stepsCompleted = manifest.steps?.filter((s: any) => s.ok).length || 0
-              const hasError = manifest.error || manifest.steps?.some((s: any) => !s.ok)
-
-              runs.push({
-                id: manifest.run?.id || runDir.name,
-                sessionId: manifest.run?.sessionId,  // Global run ID for grouping executions
-                slug: manifest.run?.slug || platformDir.name,
-                platform: manifest.run?.platform || platformDir.name,
-                leadId: manifest.lead?.id,
-                leadName: manifest.lead?.name,
-                status: hasError ? 'error' : (finishedAt ? 'success' : 'running'),
-                startedAt,
-                finishedAt,
-                durationMs,
-                runDir: runPath,
-                error: manifest.error?.message,
-                mode: manifest.run?.mode || 'headless',
-                stepsTotal,
-                stepsCompleted
-              })
-            } catch (err) {
-              console.error(`Error reading run manifest ${indexFile}:`, err)
-            }
-          }
-        }
-      }
-
-      // Sort by date descending, limit to last 500
-      runs.sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime())
-      const recent = runs.slice(0, 500)
-
-      return { success: true, data: recent }
+      return { success: true, data: runs }
     } catch (error) {
       console.error('Error getting history:', error)
       return { success: false, error: error instanceof Error ? error.message : 'Failed to get history' }
     }
   })
 
-  // Get detailed info about a specific run
-  ipcMain.handle('scenarios:getRunDetails', async (_e, runDir: unknown) => {
+  // Get active run details (for polling)
+  ipcMain.handle('scenarios:getActiveRun', async (_e, runId: string) => {
     try {
-      if (typeof runDir !== 'string') {
-        throw new Error('Invalid run directory path')
+      if (!runId) {
+        return { success: false, error: 'Run ID required' }
       }
 
-      const indexFile = path.join(runDir, 'index.json')
+      const db = getDb()
+      const run = execQueries.getActiveRun(db, runId)
 
-      if (!fs.existsSync(indexFile)) {
-        throw new Error('Run manifest not found')
+      if (!run) {
+        return { success: false, error: 'Run not found' }
       }
 
-      const manifest = JSON.parse(fs.readFileSync(indexFile, 'utf-8'))
+      return { success: true, data: run }
+    } catch (error) {
+      console.error('Error getting active run:', error)
+      return { success: false, error: error instanceof Error ? error.message : 'Failed to get active run' }
+    }
+  })
 
-      return { success: true, data: manifest }
+  // Get execution items for a run (for polling)
+  ipcMain.handle('scenarios:getRunItems', async (_e, runId: string) => {
+    try {
+      if (!runId) {
+        return { success: false, error: 'Run ID required' }
+      }
+
+      const db = getDb()
+      const items = execQueries.getRunItems(db, runId)
+
+      return { success: true, data: items }
+    } catch (error) {
+      console.error('Error getting run items:', error)
+      return { success: false, error: error instanceof Error ? error.message : 'Failed to get run items' }
+    }
+  })
+
+  // Get execution steps for an item
+  ipcMain.handle('scenarios:getRunSteps', async (_e, itemId: string) => {
+    try {
+      if (!itemId) {
+        return { success: false, error: 'Item ID required' }
+      }
+
+      const db = getDb()
+      const steps = execQueries.getItemSteps(db, itemId)
+
+      return { success: true, data: steps }
+    } catch (error) {
+      console.error('Error getting run steps:', error)
+      return { success: false, error: error instanceof Error ? error.message : 'Failed to get run steps' }
+    }
+  })
+
+  // Delete a run from database (cascade deletes items, steps, attempts)
+  ipcMain.handle('scenarios:deleteRun', async (_e, runId: string) => {
+    try {
+      if (!runId) {
+        return { success: false, error: 'Run ID required' }
+      }
+
+      const db = getDb()
+
+      // Get run details to find run_dir for filesystem cleanup
+      const run = execQueries.getRunById(db, runId)
+      if (!run) {
+        return { success: false, error: 'Run not found' }
+      }
+
+      // Get all items to find their run_dirs
+      const items = execQueries.getRunItems(db, runId)
+      const runDirs = new Set(items.map(item => item.run_dir).filter(Boolean))
+
+      // Delete from database (cascade will handle items, steps, attempts)
+      execQueries.deleteRun(db, runId)
+
+      // Delete filesystem artifacts (screenshots, DOM, traces)
+      for (const runDir of runDirs) {
+        if (runDir && fs.existsSync(runDir)) {
+          try {
+            fs.rmSync(runDir, { recursive: true, force: true })
+          } catch (err) {
+            console.error(`Failed to delete run directory ${runDir}:`, err)
+          }
+        }
+      }
+
+      return { success: true, message: 'Run deleted successfully' }
+    } catch (error) {
+      console.error('Error deleting run:', error)
+      return { success: false, error: error instanceof Error ? error.message : 'Failed to delete run' }
+    }
+  })
+
+  // Get detailed info about a specific run (from database)
+  ipcMain.handle('scenarios:getRunDetails', async (_e, runId: unknown) => {
+    try {
+      if (typeof runId !== 'string') {
+        throw new Error('Invalid runId')
+      }
+
+      const db = getDb()
+      const run = execQueries.getActiveRun(db, runId)
+
+      if (!run) {
+        throw new Error('Run not found')
+      }
+
+      const items = execQueries.getRunItems(db, runId)
+
+      // Fetch steps & attempts for each item
+      const itemsWithDetails = items.map((item: any) => ({
+        ...item,
+        steps: execQueries.getItemSteps(db, item.id),
+        attempts: execQueries.getItemAttempts(db, item.id)
+      }))
+
+      return {
+        success: true,
+        data: {
+          run,
+          items: itemsWithDetails
+        }
+      }
     } catch (error) {
       console.error('Error getting run details:', error)
       return { success: false, error: error instanceof Error ? error.message : 'Failed to get run details' }
+    }
+  })
+
+  // Get detailed info about a specific execution item (from database)
+  ipcMain.handle('scenarios:getItemDetails', async (_e, itemId: unknown) => {
+    try {
+      if (typeof itemId !== 'string') {
+        throw new Error('Invalid itemId')
+      }
+
+      const db = getDb()
+      const item = execQueries.getItemById(db, itemId)
+
+      if (!item) {
+        throw new Error('Item not found')
+      }
+
+      const steps = execQueries.getItemSteps(db, itemId)
+      const attempts = execQueries.getItemAttempts(db, itemId)
+
+      return {
+        success: true,
+        data: {
+          item,
+          steps,
+          attempts
+        }
+      }
+    } catch (error) {
+      console.error('Error getting item details:', error)
+      return { success: false, error: error instanceof Error ? error.message : 'Failed to get item details' }
     }
   })
 
@@ -204,7 +284,7 @@ export function registerScenariosIpc() {
         }
       }
 
-      const result = runner.stop(runId)
+      const result = await runner.stop(runId)
       return result
     } catch (error) {
       console.error('Error stopping execution:', error)

@@ -1,23 +1,7 @@
-import { useState, useCallback, useRef, useEffect } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import type { AdvancedSettings } from '../../../shared/settings'
+import type { ExecutionItem } from '../../../shared/types/automation'
 import { notificationBatcher } from '../../services/notificationBatcher'
-
-export type ExecutionItem = {
-  id: string
-  leadId: string
-  leadName: string
-  platform: string
-  platformName: string
-  flowSlug?: string
-  flowName?: string
-  status: 'pending' | 'running' | 'success' | 'error'
-  runDir?: string
-  message?: string
-  startedAt?: Date
-  completedAt?: Date
-  currentStep?: number
-  totalSteps?: number
-}
 
 export type Lead = {
   id: string
@@ -42,21 +26,35 @@ export type Flow = {
   file: string
 }
 
+export type ExecutionRun = {
+  id: string
+  status: 'running' | 'completed' | 'failed' | 'stopped'
+  mode: string
+  concurrency: number | null
+  total_items: number
+  success_items: number
+  error_items: number
+  pending_items: number
+  cancelled_items: number
+  started_at: string
+  completed_at: string | null
+  duration_ms: number | null
+}
+
 /**
- * Hook for managing execution state and progress tracking
+ * Hook for managing execution state via DB polling
  *
  * Responsibilities:
- * - Manage execution items (pending, running, success, error)
- * - Handle IPC progress events (items-queued, item-start, item-progress, item-success, item-error)
- * - Stream execution updates in real-time
- * - Coordinate with history hook to save completed runs
- * - Handle run lifecycle (start, progress, completion, cancellation)
+ * - Poll database for execution state every 2.5 seconds
+ * - Display real-time execution progress from DB
+ * - Handle run lifecycle (start, poll, completion)
+ * - Recover state after page refresh
  *
  * @param leads - Available leads
  * @param flows - Available flows
  * @param platforms - Available platforms
  * @param settings - Automation settings
- * @param onRunComplete - Callback when run completes or is cancelled
+ * @param onRunComplete - Callback when run completes
  * @returns Execution state and control functions
  */
 export function useExecution(
@@ -64,45 +62,110 @@ export function useExecution(
   flows: Flow[],
   platforms: Platform[],
   settings: AdvancedSettings,
-  onRunComplete: (executionItems: Map<string, ExecutionItem>, runId: string) => void
+  onRunComplete: (runId: string) => void
 ) {
-  // Execution state
-  const [executionItems, setExecutionItems] = useState<Map<string, ExecutionItem>>(new Map())
+  // Execution state from database
+  const [activeRun, setActiveRun] = useState<ExecutionRun | null>(null)
+  const [items, setItems] = useState<ExecutionItem[]>([])
   const [runId, setRunId] = useState<string>('')
   const [isRunning, setIsRunning] = useState(false)
 
-  // Ref to store the unsubscribe function for cleanup
-  const unsubscribeRef = useRef<(() => void) | null>(null)
-
-  // Ref to store the latest executionItems to avoid stale closure in callbacks
-  const executionItemsRef = useRef<Map<string, ExecutionItem>>(new Map())
-
   /**
-   * Keep ref in sync with state to avoid stale closure issues
+   * Poll database for current run state
    */
-  useEffect(() => {
-    executionItemsRef.current = executionItems
-  }, [executionItems])
+  const pollRunState = useCallback(async (currentRunId: string) => {
+    if (!currentRunId) return
 
-  /**
-   * Cleanup IPC listener on unmount
-   */
-  useEffect(() => {
-    return () => {
-      if (unsubscribeRef.current) {
-        console.log('[useExecution] Cleaning up IPC listener on unmount')
-        unsubscribeRef.current()
-        unsubscribeRef.current = null
+    try {
+      const [runRes, itemsRes] = await Promise.all([
+        window.api.scenarios.getActiveRun(currentRunId),
+        window.api.scenarios.getRunItems(currentRunId)
+      ])
+
+      if (runRes.success && runRes.data) {
+        setActiveRun(runRes.data)
+
+        // Check if run is complete
+        if (runRes.data.status === 'completed' || runRes.data.status === 'failed' || runRes.data.status === 'stopped') {
+          setIsRunning(false)
+          console.log('[useExecution] Run completed, stopping polling')
+
+          // Notify failures (exclude cancelled items - those are user-initiated stops)
+          if (itemsRes.success && itemsRes.data) {
+            const failures = itemsRes.data
+              .filter((item: any) => item.status === 'error')  // Only real errors, not cancelled
+              .map((item: any) => ({
+                leadName: item.lead_name || item.lead_id,
+                platform: item.platform_name || item.platform,
+                error: item.error_message
+              }))
+
+            // Send each failure individually (not as array)
+            failures.forEach(failure => {
+              notificationBatcher.addFailure(failure)
+            })
+          }
+
+          // Callback to update history
+          onRunComplete(currentRunId)
+        }
       }
+
+      if (itemsRes.success && itemsRes.data) {
+        // Transform DB items to ExecutionItem format
+        const transformedItems: ExecutionItem[] = itemsRes.data.map((item: any) => ({
+          id: item.id,
+          runId: item.run_id,  // Map run_id from database
+          leadId: item.lead_id || '',
+          leadName: item.lead_name || item.lead_id || '',
+          platform: item.platform,
+          platformName: item.platform_name || item.platform,
+          flowSlug: item.flow_slug || undefined,
+          flowName: item.flow_name || item.flow_slug || undefined,
+          status: item.status,
+          runDir: item.run_dir || undefined,
+          message: item.error_message || undefined,
+          startedAt: item.started_at ? new Date(item.started_at) : undefined,
+          completedAt: item.completed_at ? new Date(item.completed_at) : undefined,
+          currentStep: item.current_step || undefined,
+          totalSteps: item.total_steps || undefined,
+          durationMs: item.duration_ms || undefined,
+          attemptNumber: item.attempt_number || undefined
+        }))
+
+        setItems(transformedItems)
+      }
+    } catch (error) {
+      console.error('[useExecution] Polling error:', error)
     }
-  }, [])
+  }, [onRunComplete])
+
+  /**
+   * Polling effect - runs every 2.5 seconds when a run is active
+   */
+  useEffect(() => {
+    if (!runId || !isRunning) {
+      return
+    }
+
+    console.log('[useExecution] Starting polling for run:', runId)
+
+    // Poll immediately
+    pollRunState(runId)
+
+    // Then poll every 2.5 seconds
+    const interval = setInterval(() => {
+      pollRunState(runId)
+    }, 2500)
+
+    return () => {
+      console.log('[useExecution] Stopping polling')
+      clearInterval(interval)
+    }
+  }, [runId, isRunning, pollRunState])
 
   /**
    * Start a new automation run
-   *
-   * @param selectedLeadIds - IDs of leads to execute
-   * @param selectedFlows - Flows to execute
-   * @param mode - Execution mode (headless, dev, dev_private)
    */
   const startRun = useCallback(async (
     selectedLeadIds: Set<string>,
@@ -113,9 +176,9 @@ export function useExecution(
       throw new Error('Vous devez sélectionner au moins un lead et un flow')
     }
 
-    setIsRunning(true)
-    setExecutionItems(new Map()) // Clear previous execution items
-    console.log('[useExecution] Cleared execution items, starting new run')
+    // Reset state
+    setItems([])
+    setActiveRun(null)
 
     try {
       // Filter out hidden flows if visibility filtering is enabled
@@ -170,290 +233,112 @@ export function useExecution(
 
       // Start the run via IPC
       const { runId: newRunId } = await window.api.scenarios.run(payload)
+
+      // Set state to start polling
       setRunId(newRunId)
+      setIsRunning(true)
 
-      // Clean up previous listener if exists
-      if (unsubscribeRef.current) {
-        console.log('[useExecution] Cleaning up previous listener before starting new run')
-        unsubscribeRef.current()
-      }
-
-      // Listen for progress events
-      const unsubscribe = window.api.scenarios.onProgress(newRunId, (event: any) => {
-        console.log(
-          '[useExecution] Received event:',
-          event.type,
-          event.itemId?.slice(0, 8) || '',
-          event.currentStep !== undefined ? `step ${event.currentStep}/${event.totalSteps}` : ''
-        )
-
-        // Handle item-requeued: reset item back to pending status
-        if (event.type === 'item-requeued' && event.itemId) {
-          setExecutionItems(prev => {
-            const next = new Map(prev)
-            const item = next.get(event.itemId!)
-
-            if (item) {
-              // Reset item to pending, clear error message and runDir
-              next.set(event.itemId!, {
-                ...item,
-                status: 'pending',
-                message: undefined,
-                runDir: undefined,
-                startedAt: undefined,
-                completedAt: undefined,
-                currentStep: undefined
-              })
-            }
-
-            return next
-          })
-        }
-
-        // Handle items-queued: create all items in 'pending' status
-        if (event.type === 'items-queued' && event.items) {
-          setExecutionItems(prev => {
-            const next = new Map(prev)
-
-            for (const queuedItem of event.items) {
-              const lead = leads.find(l => l.id === queuedItem.leadId)
-              const flow = flows.find(f => f.slug === queuedItem.flowSlug)
-              const platform = platforms.find(p => p.slug === (flow?.platform || queuedItem.platform))
-
-              const leadName = lead
-                ? `${lead.data?.subscriber?.firstName || ''} ${lead.data?.subscriber?.lastName || ''}`.trim() || queuedItem.leadId.slice(0, 8)
-                : queuedItem.leadId.slice(0, 8)
-
-              next.set(queuedItem.itemId, {
-                id: queuedItem.itemId,
-                leadId: queuedItem.leadId,
-                leadName: leadName,
-                platform: flow?.platform || queuedItem.platform,
-                platformName: platform?.name || queuedItem.platform,
-                flowSlug: queuedItem.flowSlug,
-                flowName: flow?.name || queuedItem.flowSlug,
-                status: 'pending'
-              })
-            }
-
-            return next
-          })
-        }
-
-        // Handle item-start: update pending item to running
-        if (event.type === 'item-start' && event.itemId) {
-          setExecutionItems(prev => {
-            const next = new Map(prev)
-            const existingItem = next.get(event.itemId)
-
-            if (existingItem) {
-              // Update existing pending item to running
-              next.set(event.itemId, {
-                ...existingItem,
-                status: 'running',
-                startedAt: new Date()
-              })
-            } else {
-              // Fallback: create new item if not in pending (shouldn't happen normally)
-              const lead = leads.find(l => l.id === event.leadId)
-              const flow = flows.find(f => f.slug === event.flowSlug)
-              const platform = platforms.find(p => p.slug === (flow?.platform || event.platform))
-
-              const leadName = lead
-                ? `${lead.data?.subscriber?.firstName || ''} ${lead.data?.subscriber?.lastName || ''}`.trim() || event.leadId.slice(0, 8)
-                : event.leadId.slice(0, 8)
-
-              next.set(event.itemId, {
-                id: event.itemId,
-                leadId: event.leadId,
-                leadName: leadName,
-                platform: flow?.platform || event.platform,
-                platformName: platform?.name || event.platform,
-                flowSlug: event.flowSlug,
-                flowName: flow?.name || event.flowSlug,
-                status: 'running',
-                startedAt: new Date()
-              })
-            }
-
-            return next
-          })
-        }
-
-        // Handle item-progress: update step progress
-        if (event.type === 'item-progress' && event.itemId) {
-          setExecutionItems(prev => {
-            const next = new Map(prev)
-            const item = next.get(event.itemId)
-
-            if (item) {
-              next.set(event.itemId, {
-                ...item,
-                currentStep: event.currentStep,
-                totalSteps: event.totalSteps
-              })
-            }
-
-            return next
-          })
-        }
-
-        // Handle item-success: mark as completed successfully
-        if (event.type === 'item-success' && event.itemId) {
-          setExecutionItems(prev => {
-            const next = new Map(prev)
-            const item = next.get(event.itemId)
-
-            if (item) {
-              next.set(event.itemId, {
-                ...item,
-                status: 'success',
-                runDir: event.runDir,
-                completedAt: new Date(),
-                // Ensure final progress is 100%
-                currentStep: item.totalSteps || item.currentStep
-              })
-            }
-
-            return next
-          })
-
-          // Force re-render after a small delay to ensure state is applied
-          setTimeout(() => {
-            setExecutionItems(prev => new Map(prev))
-          }, 100)
-        }
-
-        // Handle item-error: mark as failed with error message
-        if (event.type === 'item-error' && event.itemId) {
-          setExecutionItems(prev => {
-            const next = new Map(prev)
-            const item = next.get(event.itemId)
-
-            if (item) {
-              next.set(event.itemId, {
-                ...item,
-                status: 'error',
-                message: event.message,
-                runDir: event.runDir,
-                completedAt: new Date()
-              })
-
-              // Send failure notification
-              notificationBatcher.addFailure({
-                leadName: item.leadName,
-                platform: item.platformName,
-                error: event.message
-              })
-            }
-
-            return next
-          })
-        }
-
-        // Handle run-done: run completed
-        if (event.type === 'run-done') {
-          setIsRunning(false)
-          unsubscribe()
-          unsubscribeRef.current = null
-
-          // Notify parent to save to history (using ref to get latest state)
-          onRunComplete(executionItemsRef.current, newRunId)
-
-          // IMPORTANT: Do NOT clear executionItems - keep them visible
-        }
-
-        // Handle run-cancelled: run was stopped
-        if (event.type === 'run-cancelled') {
-          setIsRunning(false)
-          unsubscribe()
-          unsubscribeRef.current = null
-
-          // Notify parent to save to history (even if cancelled, using ref to get latest state)
-          onRunComplete(executionItemsRef.current, newRunId)
-
-          // IMPORTANT: Do NOT clear executionItems - keep them visible
-        }
-      })
-
-      // Store unsubscribe for cleanup
-      unsubscribeRef.current = unsubscribe
-
-      return newRunId
+      console.log('[useExecution] Started run:', newRunId)
     } catch (error) {
       setIsRunning(false)
       throw error
     }
-  }, [leads, flows, platforms, settings, onRunComplete])
+  }, [settings])
 
   /**
-   * Clear completed execution items (success/error only)
-   * Keep running and pending items
+   * Stop the current run
    */
-  const clearCompletedExecutions = useCallback(() => {
-    setExecutionItems(prev => {
-      const next = new Map()
-      // Keep only running and pending items
-      for (const [id, item] of prev.entries()) {
-        if (item.status === 'running' || item.status === 'pending') {
-          next.set(id, item)
-        }
-      }
-      return next
-    })
-  }, [])
+  const stopRun = useCallback(async () => {
+    if (!runId) {
+      throw new Error('Aucune exécution en cours')
+    }
+
+    console.log('[useExecution] Stopping run:', runId)
+
+    const result = await window.api.scenarios.stop(runId)
+
+    if (result.success) {
+      setIsRunning(false)
+      // Final poll to get updated state
+      await pollRunState(runId)
+    }
+
+    return result
+  }, [runId, pollRunState])
 
   /**
-   * Requeue a single failed item to be executed again
+   * Requeue a single failed item
    */
   const requeueItem = useCallback(async (itemId: string) => {
     if (!runId) {
-      throw new Error('Aucune run active')
+      throw new Error('Aucune exécution en cours')
     }
 
-    try {
-      const result = await window.api.scenarios.requeueItem(runId, itemId)
-      if (!result.success) {
-        throw new Error(result.message || 'Impossible de remettre l\'item en queue')
-      }
-      console.log('[useExecution] Requeued item:', itemId.slice(0, 8))
-    } catch (error) {
-      console.error('[useExecution] Failed to requeue item:', error)
-      throw error
+    console.log('[useExecution] Requeuing item:', itemId)
+
+    const result = await window.api.scenarios.requeueItem(runId, itemId)
+
+    if (result.success) {
+      // Poll immediately to show updated state
+      await pollRunState(runId)
     }
-  }, [runId])
+
+    return result
+  }, [runId, pollRunState])
 
   /**
-   * Requeue multiple failed items at once
+   * Requeue multiple failed items
    */
-  const requeueFailedItems = useCallback(async (itemIds: string[]) => {
+  const requeueItems = useCallback(async (itemIds: string[]) => {
     if (!runId) {
-      throw new Error('Aucune run active')
+      throw new Error('Aucune exécution en cours')
     }
 
-    if (itemIds.length === 0) {
-      return
+    console.log('[useExecution] Requeuing items:', itemIds.length)
+
+    const result = await window.api.scenarios.requeueItems(runId, itemIds)
+
+    if (result.success) {
+      // Poll immediately to show updated state
+      await pollRunState(runId)
     }
 
-    try {
-      const result = await window.api.scenarios.requeueItems(runId, itemIds)
-      if (!result.success) {
-        throw new Error(result.message || 'Impossible de remettre les items en queue')
-      }
-      console.log('[useExecution] Requeued', result.requeuedCount, 'items')
-    } catch (error) {
-      console.error('[useExecution] Failed to requeue items:', error)
-      throw error
-    }
-  }, [runId])
+    return result
+  }, [runId, pollRunState])
+
+  /**
+   * Get error items from current execution
+   */
+  const getErrorItems = useCallback(() => {
+    return items.filter(item => item.status === 'error')
+  }, [items])
+
+  /**
+   * Clear execution state (when user navigates away)
+   */
+  const clearExecution = useCallback(() => {
+    console.log('[useExecution] Clearing execution state')
+    setItems([])
+    setActiveRun(null)
+    setRunId('')
+    setIsRunning(false)
+  }, [])
 
   return {
-    executionItems,
+    // State
+    activeRun,
+    items,
     runId,
     isRunning,
+
+    // Actions
     startRun,
-    clearCompletedExecutions,
+    stopRun,
     requeueItem,
-    requeueFailedItems
+    requeueItems,
+    clearExecution,
+
+    // Helpers
+    getErrorItems
   }
 }

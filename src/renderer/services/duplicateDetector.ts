@@ -59,7 +59,10 @@ export function detectDuplicates(
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
 
   // Flatten all history items
-  const allItems: ExecutionHistoryItem[] = runHistory.flatMap(run => run.items)
+  // Defensive: filter out runs without items array
+  const allItems: ExecutionHistoryItem[] = runHistory
+    .filter(run => Array.isArray(run.items))
+    .flatMap(run => run.items)
 
   // Find duplicates
   const duplicates: DuplicateInfo[] = []
@@ -70,6 +73,9 @@ export function detectDuplicates(
     for (const flowSlug of selectedFlowSlugs) {
       // Find submissions for this Lead × Flow in last 30 days
       const submissions = allItems.filter(item => {
+        // Defensive: skip items without startedAt
+        if (!item.startedAt) return false
+
         const itemDate = new Date(item.startedAt)
         return (
           item.leadId === leadId &&
@@ -81,8 +87,13 @@ export function detectDuplicates(
       if (submissions.length > 0) {
         // Get most recent submission
         const mostRecent = submissions.reduce((latest, item) => {
+          // Defensive: ensure both have startedAt before comparing
+          if (!item.startedAt || !latest.startedAt) return latest
           return new Date(item.startedAt) > new Date(latest.startedAt) ? item : latest
         })
+
+        // Defensive: ensure mostRecent has startedAt
+        if (!mostRecent.startedAt) continue
 
         const elapsedMs = Date.now() - new Date(mostRecent.startedAt).getTime()
         const daysAgo = Math.floor(elapsedMs / (1000 * 60 * 60 * 24))

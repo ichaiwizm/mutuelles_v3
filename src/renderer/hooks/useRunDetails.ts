@@ -6,7 +6,9 @@
 import { useState, useCallback } from 'react'
 
 export interface RunDetails {
-  runDir: string
+  runId: string      // Parent run ID
+  itemId: string     // Execution item ID
+  runDir: string     // Filesystem path for artifacts
   leadName: string
   platformName: string
   flowName: string
@@ -14,7 +16,7 @@ export interface RunDetails {
 
 export interface UseRunDetailsResult {
   selectedRunDetails: RunDetails | null
-  handleViewDetails: (runDir: string, leadName: string, platformName: string, flowName: string) => void
+  handleViewDetails: (runId: string, itemId: string, runDir: string, leadName: string, platformName: string, flowName: string) => void
   clearDetails: () => void
 }
 
@@ -26,12 +28,14 @@ export function useRunDetails(): UseRunDetailsResult {
   const [selectedRunDetails, setSelectedRunDetails] = useState<RunDetails | null>(null)
 
   const handleViewDetails = useCallback((
+    runId: string,
+    itemId: string,
     runDir: string,
     leadName: string,
     platformName: string,
     flowName: string
   ) => {
-    setSelectedRunDetails({ runDir, leadName, platformName, flowName })
+    setSelectedRunDetails({ runId, itemId, runDir, leadName, platformName, flowName })
   }, [])
 
   const clearDetails = useCallback(() => {

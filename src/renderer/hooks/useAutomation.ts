@@ -115,10 +115,11 @@ export function useAutomation() {
     flows,
     platforms,
     settings,
-    () => {
-      // Reload history from filesystem when run completes or is cancelled
-      // The backend has already written the results to data/runs/
+    (runId: string) => {
+      // Reload history from database when run completes
+      // The backend has written results to execution_runs/items/steps tables
       history.loadHistory()
+      console.log('[useAutomation] Run completed:', runId, '- reloading history')
     }
   )
 
@@ -174,7 +175,7 @@ export function useAutomation() {
 
   /**
    * Rerun a historical run
-   * Updates selections and starts new run
+   * Loads run items from DB, updates selections and starts new run
    */
   const rerunHistoryRun = useCallback(async (historyRunId: string) => {
     const historyRun = history.runHistory.find(r => r.runId === historyRunId)
@@ -182,20 +183,23 @@ export function useAutomation() {
       throw new Error(`Run ${historyRunId} not found in history`)
     }
 
+    // Get items for this run from database
+    const items = await history.getRunItems(historyRunId)
+
     // Extract unique lead IDs and flow slugs
-    const leadIds = [...new Set(historyRun.items.map(i => i.leadId))]
-    const flowSlugs = [...new Set(historyRun.items.map(i => i.flowSlug))]
+    const leadIds = [...new Set(items.map((i: any) => i.lead_id).filter(Boolean))]
+    const flowSlugs = [...new Set(items.map((i: any) => i.flow_slug).filter(Boolean))]
 
     // Update selections
     selection.updateLeadSelection(new Set(leadIds))
     selection.updateFlowSelection(new Set(flowSlugs))
 
-    // Start run with same mode
-    const mode = historyRun.settings.mode
+    // Start run with same mode as original
+    const mode = historyRun.mode as 'headless' | 'dev' | 'dev_private'
     await startRun(mode)
 
     console.log(`[useAutomation] Rerunning history run ${historyRunId.slice(0, 8)}`)
-  }, [history.runHistory, selection, startRun])
+  }, [history, selection, startRun])
 
   /**
    * Rerun a single execution item
@@ -257,14 +261,17 @@ export function useAutomation() {
     clearFlowSelection: selection.clearFlowSelection,
 
     // Execution (from useExecution)
-    executionItems: execution.executionItems,
+    activeRun: execution.activeRun,
+    executionItems: execution.items, // For backward compatibility, expose items as executionItems
     runId: execution.runId,
     isRunning: execution.isRunning,
     totalExecutions: selection.totalExecutions,
     startRun,
-    clearCompletedExecutions: execution.clearCompletedExecutions,
+    stopRun: execution.stopRun,
+    clearExecution: execution.clearExecution,
     requeueItem: execution.requeueItem,
-    requeueFailedItems: execution.requeueFailedItems,
+    requeueItems: execution.requeueItems,
+    getErrorItems: execution.getErrorItems,
 
     // Helpers
     getLeadName,

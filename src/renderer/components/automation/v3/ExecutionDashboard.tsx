@@ -8,14 +8,13 @@ import type { RunHistoryItem, ExecutionHistoryItem } from '../../../../shared/ty
 
 interface ExecutionDashboardProps {
   runId: string
-  executionItems: Map<string, ExecutionItem>
+  executionItems: ExecutionItem[]
   runHistory: RunHistoryItem[]
   isRunning: boolean
   onStopExecution?: () => void
   onRerunHistory?: (runId: string) => void
   onRerunHistoryItem?: (item: ExecutionHistoryItem) => void
   onDeleteHistory?: (runId: string) => void
-  onClearCompletedExecutions?: () => void
   // For time estimation
   flows?: Flow[]
   concurrency?: number
@@ -40,7 +39,6 @@ export default function ExecutionDashboard({
   onRerunHistory,
   onRerunHistoryItem,
   onDeleteHistory,
-  onClearCompletedExecutions,
   flows = [],
   concurrency = 2,
   onPrepareReplayFromErrors,
@@ -48,14 +46,7 @@ export default function ExecutionDashboard({
   onRetryItem,
   onRetryFailedItems
 }: ExecutionDashboardProps) {
-  const items = useMemo(() => Array.from(executionItems.values()), [executionItems])
-
-  // Handler for mode change - NO LONGER clears completed executions automatically
-  // Items now stay visible during execution for better UX
-  const handleModeChange = (newMode: any) => {
-    // Removed auto-clear: onClearCompletedExecutions()
-    // Users can manually clear via button if needed
-  }
+  const items = executionItems
 
   // Dashboard state management
   const {
@@ -69,7 +60,7 @@ export default function ExecutionDashboard({
     showCurrent,
     showHistory,
     isRunning: dashboardIsRunning
-  } = useDashboardState({ items, isRunning, onModeChange: handleModeChange })
+  } = useDashboardState({ items, isRunning })
 
   return (
     <div className="space-y-4">

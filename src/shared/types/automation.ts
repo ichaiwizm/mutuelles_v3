@@ -55,23 +55,26 @@ export const DEFAULT_EXECUTION_SETTINGS: ExecutionSettings = {
 // Execution Progress & State
 // ============================================================================
 
-export type ExecutionItemStatus = 'pending' | 'running' | 'success' | 'error' | 'skipped'
+export type ExecutionItemStatus = 'pending' | 'running' | 'success' | 'error' | 'cancelled'
 
 export interface ExecutionItem {
   id: string
+  runId: string  // Parent run ID
   leadId: string
   leadName: string
   platform: string
   platformName: string
-  flowSlug: string
-  flowName: string
+  flowSlug?: string
+  flowName?: string
   status: ExecutionItemStatus
-  progress?: ExecutionItemProgress
   runDir?: string
-  error?: string
-  startedAt?: string
-  completedAt?: string
+  message?: string
+  startedAt?: Date
+  completedAt?: Date
+  currentStep?: number
+  totalSteps?: number
   durationMs?: number
+  attemptNumber?: number
 }
 
 export interface ExecutionItemProgress {
@@ -236,7 +239,7 @@ export interface ExecutionHistoryItem {
   platformName: string
   flowSlug: string
   flowName: string
-  status: 'success' | 'error' | 'pending' | 'running'
+  status: 'success' | 'error' | 'pending' | 'running' | 'cancelled'
   runDir?: string
   error?: string
   startedAt: string
@@ -253,6 +256,7 @@ export interface RunHistoryItem {
   successItems: number
   errorItems: number
   pendingItems: number
+  cancelledItems: number
   status: RunHistoryStatus
   settings: ExecutionSettings
   items: ExecutionHistoryItem[]
