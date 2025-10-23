@@ -280,6 +280,8 @@ export default function ExecutionCurrentView({
       {/* Details Modal */}
       {selectedRunDetails && (
         <RunDetailsModal
+          runId={selectedRunDetails.runId}
+          itemId={selectedRunDetails.itemId}
           runDir={selectedRunDetails.runDir}
           leadName={selectedRunDetails.leadName}
           platformName={selectedRunDetails.platformName}

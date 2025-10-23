@@ -9,7 +9,14 @@ interface RunHistoryCardProps {
   onRerun: (runId: string) => void
   onRerunItem: (item: ExecutionHistoryItem) => void
   onDelete: (runId: string) => void
-  onViewDetails?: (runDir: string, leadName: string, platformName: string, flowName: string) => void
+  onViewDetails?: (
+    runId: string,
+    itemId: string,
+    runDir: string,
+    leadName: string,
+    platformName: string,
+    flowName: string
+  ) => void
 }
 
 export default function RunHistoryCard({
@@ -184,6 +191,7 @@ export default function RunHistoryCard({
           {run.items?.map((item) => (
             <HistoryItemCard
               key={item.id}
+              runId={run.runId}
               item={item}
               onRerun={onRerunItem}
               onViewDetails={onViewDetails}

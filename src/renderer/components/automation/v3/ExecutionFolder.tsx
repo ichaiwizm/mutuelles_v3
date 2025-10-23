@@ -7,7 +7,14 @@ import ExecutionItemCard from './ExecutionItemCard'
 interface ExecutionFolderProps {
   group: ExecutionGroup
   defaultExpanded?: boolean
-  onViewDetails?: (runDir: string, leadName: string, platformName: string, flowName: string) => void
+  onViewDetails?: (
+    runId: string,
+    itemId: string,
+    runDir: string,
+    leadName: string,
+    platformName: string,
+    flowName: string
+  ) => void
   onRetryItem?: (itemId: string) => void
   isRunning?: boolean
 }

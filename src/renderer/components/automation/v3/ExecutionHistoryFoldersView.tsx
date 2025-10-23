@@ -9,7 +9,14 @@ interface ExecutionHistoryFoldersViewProps {
   onRerun: (runId: string) => void
   onRerunItem: (item: ExecutionHistoryItem) => void
   onDelete: (runId: string) => void
-  onViewDetails?: (runDir: string, leadName: string, platformName: string, flowName: string) => void
+  onViewDetails?: (
+    runId: string,
+    itemId: string,
+    runDir: string,
+    leadName: string,
+    platformName: string,
+    flowName: string
+  ) => void
 }
 
 export default function ExecutionHistoryFoldersView({

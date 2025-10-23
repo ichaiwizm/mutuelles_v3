@@ -46,7 +46,9 @@ export default function ScreenshotTimeline({
         if (!step?.screenshot || loadedImages.has(step.screenshot)) continue
 
         try {
-          const screenshotPath = `${runDir}/${step.screenshot}`
+          const s = step.screenshot
+          const isAbsolute = /^([a-zA-Z]:[\\/]|\\\\|\/)/.test(s)
+          const screenshotPath = isAbsolute ? s : `${runDir}/${s}`
           const response = await window.api.scenarios.readScreenshot(screenshotPath)
 
           if (response.success && response.data) {

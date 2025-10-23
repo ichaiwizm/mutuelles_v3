@@ -70,7 +70,53 @@ export default function RunDetailsModal({
           throw new Error(response.error || 'Failed to load run details')
         }
 
-        setManifest(response.data)
+        // Normalize DB payload { item, steps, attempts } to UI-friendly manifest
+        const dbItem = response.data.item || {}
+        const dbSteps: any[] = Array.isArray(response.data.steps) ? response.data.steps : []
+
+        const normalizePath = (p: string) => p.replace(/\\\\/g, '/')
+        const runDirNorm = normalizePath(runDir)
+
+        const mappedSteps: Step[] = dbSteps.map((s: any) => {
+          const rawPath: string | undefined = s.screenshot_path || s.screenshot
+          let screenshot: string | undefined = undefined
+          if (rawPath && typeof rawPath === 'string') {
+            const p = normalizePath(rawPath)
+            if (p.startsWith(runDirNorm + '/')) {
+              screenshot = p.slice(runDirNorm.length + 1)
+            } else if (p.startsWith(runDirNorm)) {
+              const rel = p.slice(runDirNorm.length)
+              screenshot = rel.startsWith('/') ? rel.slice(1) : rel
+            } else {
+              // Fallback to filename only
+              const lastSlash = Math.max(p.lastIndexOf('/'), p.lastIndexOf('\\'))
+              screenshot = lastSlash >= 0 ? p.slice(lastSlash + 1) : p
+            }
+          }
+
+        return {
+            index: s.step_index ?? s.index ?? 0,
+            type: s.step_label || s.step_type || s.type || 'Step',
+            ok: s.status ? s.status === 'success' : !!s.ok,
+            ms: s.duration_ms ?? s.ms,
+            screenshot,
+            error: s.error_message ?? (typeof s.error === 'string' ? s.error : s.error?.message),
+            skipped: s.status ? s.status === 'skipped' : !!s.skipped
+          }
+        })
+
+        const normalized: RunManifest = {
+          run: {
+            platform: dbItem.platform,
+            slug: dbItem.flow_slug || undefined,
+            startedAt: dbItem.started_at || dbItem.startedAt,
+            finishedAt: dbItem.completed_at || dbItem.completedAt
+          },
+          steps: mappedSteps,
+          artifacts: { screenshotsDir: runDir }
+        }
+
+        setManifest(normalized)
         setError(null)
       } catch (err) {
         console.error('Error loading manifest:', err)
@@ -107,7 +153,10 @@ export default function RunDetailsModal({
     const loadImage = async () => {
       try {
         setLoadingImage(true)
-        const screenshotPath = `${runDir}/${currentScreenshot.screenshot}`
+        // Support relative (within runDir) and absolute paths
+        const s = currentScreenshot.screenshot
+        const isAbsolute = /^([a-zA-Z]:[\\/]|\\\\|\/)/.test(s)
+        const screenshotPath = isAbsolute ? s : `${runDir}/${s}`
         const response = await window.api.scenarios.readScreenshot(screenshotPath)
 
         if (response.success && response.data) {

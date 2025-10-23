@@ -9,7 +9,14 @@ interface ExecutionFoldersViewProps {
   items: ExecutionItem[]
   groupingMode: GroupingMode
   onGroupingModeChange: (mode: GroupingMode) => void
-  onViewDetails?: (runDir: string, leadName: string, platformName: string, flowName: string) => void
+  onViewDetails?: (
+    runId: string,
+    itemId: string,
+    runDir: string,
+    leadName: string,
+    platformName: string,
+    flowName: string
+  ) => void
   onRetryItem?: (itemId: string) => void
   isRunning?: boolean
 }

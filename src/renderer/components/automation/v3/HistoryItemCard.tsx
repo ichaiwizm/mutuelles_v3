@@ -5,12 +5,21 @@ import { formatDuration } from '../../../utils/dateGrouping'
 import { getHistoryStatusConfig } from '../../../utils/statusStyles'
 
 interface HistoryItemCardProps {
+  runId: string
   item: ExecutionHistoryItem
   onRerun: (item: ExecutionHistoryItem) => void
-  onViewDetails?: (runDir: string, leadName: string, platformName: string, flowName: string) => void
+  onViewDetails?: (
+    runId: string,
+    itemId: string,
+    runDir: string,
+    leadName: string,
+    platformName: string,
+    flowName: string
+  ) => void
 }
 
 export default function HistoryItemCard({
+  runId,
   item,
   onRerun,
   onViewDetails
@@ -57,7 +66,16 @@ export default function HistoryItemCard({
         {/* View details */}
         {item.runDir && onViewDetails && (
           <button
-            onClick={() => onViewDetails(item.runDir!, item.leadName, item.platformName, item.flowName)}
+            onClick={() =>
+              onViewDetails(
+                runId,
+                item.id,
+                item.runDir!,
+                item.leadName,
+                item.platformName,
+                item.flowName
+              )
+            }
             className="p-1.5 rounded hover:bg-white dark:hover:bg-neutral-800 transition-colors group"
             title="Voir les détails"
           >
