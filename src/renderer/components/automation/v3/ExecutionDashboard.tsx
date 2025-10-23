@@ -52,13 +52,6 @@ export default function ExecutionDashboard({
 
   return (
     <div className="space-y-4">
-      {/* Header */}
-      <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-4">
-        <div className="flex items-center gap-3">
-          <Activity className="text-blue-600 dark:text-blue-400" size={20} />
-          <h3 className="font-semibold">Exécutions</h3>
-        </div>
-      </div>
 
       {/* Current Execution View */}
       {showCurrent && (
@@ -80,7 +73,7 @@ export default function ExecutionDashboard({
         />
       )}
 
-      {/* History View - always shown below */}
+      {/* History View - always shown below when available */}
       {showHistory && (
         <ExecutionHistoryView
           runHistory={runHistory}
