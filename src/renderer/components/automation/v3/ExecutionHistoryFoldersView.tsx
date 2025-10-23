@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react'
-import { ChevronRight, Folder } from 'lucide-react'
+import { ChevronRight, Folder, Check, X, Activity } from 'lucide-react'
 import type { RunHistoryItem, ExecutionHistoryItem } from '../../../../shared/types/automation'
 import { groupRunsByDate } from '../../../utils/dateGrouping'
 import RunHistoryCard from './RunHistoryCard'
@@ -98,21 +98,24 @@ export default function ExecutionHistoryFoldersView({
               {/* Stats badge */}
               <div className="ml-auto flex items-center gap-2 text-xs">
                 {/* Success count */}
-                <span className="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 font-medium">
-                  {group.runs.filter((r) => r.status === 'completed').length} ✓
+                <span className="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 font-medium flex items-center gap-1">
+                  <Check size={12} />
+                  {group.runs.filter((r) => r.status === 'completed').length}
                 </span>
 
                 {/* Partial count */}
                 {group.runs.filter((r) => r.status === 'partial').length > 0 && (
-                  <span className="px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 font-medium">
-                    {group.runs.filter((r) => r.status === 'partial').length} ≈
+                  <span className="px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 font-medium flex items-center gap-1">
+                    <Activity size={12} />
+                    {group.runs.filter((r) => r.status === 'partial').length}
                   </span>
                 )}
 
                 {/* Error count */}
                 {group.runs.filter((r) => r.status === 'failed').length > 0 && (
-                  <span className="px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 font-medium">
-                    {group.runs.filter((r) => r.status === 'failed').length} ✗
+                  <span className="px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 font-medium flex items-center gap-1">
+                    <X size={12} />
+                    {group.runs.filter((r) => r.status === 'failed').length}
                   </span>
                 )}
               </div>

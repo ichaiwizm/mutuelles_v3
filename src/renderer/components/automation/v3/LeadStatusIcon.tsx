@@ -4,6 +4,7 @@
  */
 
 import React from 'react'
+import { RefreshCw, XCircle, AlertTriangle, Star, Circle } from 'lucide-react'
 import type { LeadStatus } from '../../../services/leadStatusService'
 
 interface LeadStatusIconProps {
@@ -16,15 +17,24 @@ export default function LeadStatusIcon({ status }: LeadStatusIconProps) {
     return null
   }
 
+  const iconEl = (() => {
+    switch (status.type) {
+      case 'duplicate':
+        return <RefreshCw size={14} className={status.color} />
+      case 'error':
+        return <XCircle size={14} className={status.color} />
+      case 'incomplete':
+        return <AlertTriangle size={14} className={status.color} />
+      case 'new':
+        return <Star size={14} className={status.color} />
+      default:
+        return <Circle size={12} className={status.color} />
+    }
+  })()
+
   return (
-    <span
-      className="relative group cursor-help flex-shrink-0"
-      title={status.tooltip}
-    >
-      {/* Icon */}
-      <span className={`text-sm ${status.color}`}>
-        {status.icon}
-      </span>
+    <span className="relative group cursor-help flex-shrink-0" title={status.tooltip}>
+      {iconEl}
 
       {/* Tooltip (on hover) */}
       <span className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover:block z-50 whitespace-nowrap">

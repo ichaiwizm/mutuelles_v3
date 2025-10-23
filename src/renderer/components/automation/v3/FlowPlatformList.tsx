@@ -53,8 +53,9 @@ export default function FlowPlatformList({
         <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-md">
           <div className="flex items-start gap-3">
             <div className="flex-1">
-              <div className="text-sm font-medium text-amber-900 dark:text-amber-100 mb-1">
-                ⚠️ Flows cachés sélectionnés
+              <div className="text-sm font-medium text-amber-900 dark:text-amber-100 mb-1 flex items-center gap-1.5">
+                <AlertCircle size={14} className="text-amber-700 dark:text-amber-300" />
+                Flows cachés sélectionnés
               </div>
               <div className="text-xs text-amber-700 dark:text-amber-300">
                 {hiddenButSelectedFlows.length} flow{hiddenButSelectedFlows.length > 1 ? 's' : ''} caché{hiddenButSelectedFlows.length > 1 ? 's' : ''} {hiddenButSelectedFlows.length > 1 ? 'sont encore sélectionnés' : 'est encore sélectionné'} :

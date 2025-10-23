@@ -1,6 +1,5 @@
 import React, { useMemo, useState } from 'react'
 import { Square, FolderKanban, Clock, Play, Check, X, RotateCcw } from 'lucide-react'
-import ExecutionItemCard from './ExecutionItemCard'
 import ExecutionFoldersView from './ExecutionFoldersView'
 import RunDetailsModal from './RunDetailsModal'
 import GlobalTimeTracker from './GlobalTimeTracker'

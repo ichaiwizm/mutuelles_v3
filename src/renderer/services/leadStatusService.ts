@@ -118,7 +118,7 @@ function checkDuplicate(
     type: 'duplicate',
     label: 'Doublon',
     tooltip: `Déjà soumis il y a ${daysAgo}j sur ${mostRecent.flowName}`,
-    icon: '🔄',
+    icon: '',
     color: 'text-orange-600 dark:text-orange-400'
   }
 }
@@ -166,7 +166,7 @@ function checkRecentError(
     tooltip: count > 1
       ? `Échoué ${count}x, dernière fois il y a ${daysAgo}j`
       : `Échoué il y a ${daysAgo}j`,
-    icon: '❌',
+    icon: '',
     color: 'text-red-600 dark:text-red-400'
   }
 }
@@ -197,7 +197,7 @@ function checkIncomplete(lead: Lead): LeadStatus | null {
     type: 'incomplete',
     label: 'Incomplet',
     tooltip: `Champs manquants: ${missingFields.join(', ')}`,
-    icon: '⚠️',
+    icon: '',
     color: 'text-amber-600 dark:text-amber-400'
   }
 }

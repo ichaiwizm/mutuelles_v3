@@ -18,7 +18,7 @@ export interface ExecutionStats {
 
 /**
  * Calculate execution statistics from a list of execution items
- * Used in useDashboardState, executionGrouping, and other components
+ * Used in executionGrouping and other components
  */
 export function calculateExecutionStats(items: ExecutionItem[]): ExecutionStats {
   const total = items.length

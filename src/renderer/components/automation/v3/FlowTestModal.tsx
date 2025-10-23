@@ -65,7 +65,7 @@ export default function FlowTestModal({ isOpen, onClose, flow, leads }: FlowTest
         }
 
         leadId = createResult.data.id
-        setOutput(prev => [...prev, `✓ Lead de test créé: ${leadId.slice(0, 8)}`])
+        setOutput(prev => [...prev, `Lead de test créé: ${leadId.slice(0, 8)}`])
       }
 
       setOutput(prev => [...prev, `Démarrage du flow: ${flow.name}`])
@@ -103,10 +103,10 @@ export default function FlowTestModal({ isOpen, onClose, flow, leads }: FlowTest
 
           if (event.code === 0) {
             setStatus('success')
-            setOutput(prev => [...prev, '', '✓ Flow exécuté avec succès'])
+            setOutput(prev => [...prev, '', 'Flow exécuté avec succès'])
           } else {
             setStatus('error')
-            setOutput(prev => [...prev, '', `✗ Flow terminé avec le code: ${event.code}`])
+            setOutput(prev => [...prev, '', `Flow terminé avec le code: ${event.code}`])
           }
 
           if (unsub) unsub()
@@ -117,7 +117,7 @@ export default function FlowTestModal({ isOpen, onClose, flow, leads }: FlowTest
       unsubscribeRef.current = unsub
     } catch (error) {
       setStatus('error')
-      setOutput(prev => [...prev, '', `✗ Erreur: ${String(error)}`])
+      setOutput(prev => [...prev, '', `Erreur: ${String(error)}`])
     }
   }
 
@@ -127,7 +127,7 @@ export default function FlowTestModal({ isOpen, onClose, flow, leads }: FlowTest
       unsubscribeRef.current = null
     }
     setStatus('idle')
-    setOutput(prev => [...prev, '', '⊗ Test arrêté par l\'utilisateur'])
+    setOutput(prev => [...prev, '', "Test arrêté par l'utilisateur"]) 
   }
 
   const handleClose = () => {

@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { AlertCircle, Rocket, Table } from 'lucide-react'
+import { AlertCircle, Rocket, Table, Check } from 'lucide-react'
 import Modal from '../../Modal'
 import type { Lead, Flow, AdvancedSettings } from '../../../hooks/useAutomation'
 
@@ -133,7 +133,7 @@ export default function AutoPreviewModal({
                             className="px-4 py-3 border-b border-l border-neutral-200 dark:border-neutral-700"
                           >
                             <div className="flex items-center gap-2">
-                              <span className="text-green-600 dark:text-green-400 text-lg">✓</span>
+                              <Check className="text-green-600 dark:text-green-400" size={16} />
                               <div className="text-xs text-neutral-600 dark:text-neutral-400">
                                 {platformFlows.map(f => f.name).join(', ')}
                               </div>

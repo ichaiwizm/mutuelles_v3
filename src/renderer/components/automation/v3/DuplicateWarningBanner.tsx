@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from 'react'
-import { AlertTriangle, ChevronDown, ChevronUp, X } from 'lucide-react'
+import { AlertTriangle, ChevronDown, ChevronUp, X, Check } from 'lucide-react'
 import type { DuplicateInfo } from '../../../services/duplicateDetector'
 import { formatDuplicateSummary } from '../../../services/duplicateDetector'
 
@@ -78,7 +78,7 @@ export default function DuplicateWarningBanner({
                     Il y a {dup.timeAgo}
                   </div>
                   <div
-                    className={`text-xs font-medium ${
+                    className={`flex items-center gap-1 text-xs font-medium ${
                       dup.status === 'success'
                         ? 'text-emerald-600 dark:text-emerald-400'
                         : dup.status === 'error'
@@ -86,7 +86,19 @@ export default function DuplicateWarningBanner({
                         : 'text-neutral-600 dark:text-neutral-400'
                     }`}
                   >
-                    {dup.status === 'success' ? '✓ Succès' : dup.status === 'error' ? '✗ Échec' : 'En attente'}
+                    {dup.status === 'success' ? (
+                      <>
+                        <Check size={12} />
+                        <span>Succès</span>
+                      </>
+                    ) : dup.status === 'error' ? (
+                      <>
+                        <X size={12} />
+                        <span>Échec</span>
+                      </>
+                    ) : (
+                      <span>En attente</span>
+                    )}
                   </div>
                 </div>
               </div>

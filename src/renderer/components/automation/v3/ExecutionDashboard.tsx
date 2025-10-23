@@ -1,5 +1,4 @@
 import React, { useMemo, useState } from 'react'
-import { Activity } from 'lucide-react'
 import ExecutionCurrentView from './ExecutionCurrentView'
 import ExecutionHistoryView from './ExecutionHistoryView'
 import type { ExecutionItem, Flow } from '../../../hooks/useAutomation'

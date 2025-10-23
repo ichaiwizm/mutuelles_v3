@@ -23,7 +23,8 @@ export default function CredentialsContent() {
   React.useEffect(() => { load() }, [load])
 
   function setField(pid:number, key:'username'|'password', value:string) {
-    setEdit(prev => ({ ...prev, [pid]: { username: prev[pid]?.username ?? '', password: prev[pid]?.password ?? '', [key]: value } }))
+    // Ne pas écraser l'autre champ avec '' : conserver la valeur existante
+    setEdit(prev => ({ ...prev, [pid]: { ...(prev[pid] || {}), [key]: value } }))
   }
 
   async function onSave(pid:number) {
@@ -36,7 +37,8 @@ export default function CredentialsContent() {
       if (!u) throw new Error('Login requis')
       if (!p) throw new Error('Mot de passe requis')
       await window.api.credentials.set({ platform_id: pid, username: u, password: p })
-      setEdit(prev => ({ ...prev, [pid]: { username: '', password: '' } }))
+      // Nettoyer l'état d'édition pour cette ligne afin de ré-afficher les valeurs rechargées
+      setEdit(prev => { const { [pid]: _removed, ...rest } = prev; return rest })
       await load()
       toast.update(tid, { type: 'success', title: 'Identifiants enregistrés', message: `Pour ${name}`, duration: 3000 })
     } catch (e) {
