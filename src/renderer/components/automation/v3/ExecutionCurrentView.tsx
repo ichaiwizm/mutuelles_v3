@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react'
-import { Square, Grid3x3, FolderKanban, Clock, Play, Check, X, RotateCcw } from 'lucide-react'
+import { Square, FolderKanban, Clock, Play, Check, X, RotateCcw } from 'lucide-react'
 import ExecutionItemCard from './ExecutionItemCard'
 import ExecutionFoldersView from './ExecutionFoldersView'
 import RunDetailsModal from './RunDetailsModal'
@@ -8,7 +8,7 @@ import ReplayFailuresButton from './ReplayFailuresButton'
 import ReplayFailuresModal from './ReplayFailuresModal'
 import type { ExecutionItem, Flow } from '../../../hooks/useAutomation'
 import type { GroupingMode } from '../../../utils/executionGrouping'
-import type { ViewMode } from '../../../hooks/automation/useDashboardState'
+// ViewMode removed in simplified UI
 import type { RunHistoryItem } from '../../../../shared/types/automation'
 import { useRunDetails } from '../../../hooks/useRunDetails'
 import { estimateRemainingTime, estimateFlowDuration } from '../../../services/timeEstimationService'
@@ -27,10 +27,8 @@ interface ExecutionCurrentViewProps {
   runId: string
   items: ExecutionItem[]
   currentStats: CurrentStats
-  viewMode: ViewMode
   groupingMode: GroupingMode
   isRunning: boolean
-  onViewModeChange: (mode: ViewMode) => void
   onGroupingModeChange: (mode: GroupingMode) => void
   onStopExecution?: () => void
   // Optional props for time estimation
@@ -52,10 +50,8 @@ export default function ExecutionCurrentView({
   runId,
   items,
   currentStats,
-  viewMode,
   groupingMode,
   isRunning,
-  onViewModeChange,
   onGroupingModeChange,
   onStopExecution,
   flows = [],
@@ -158,31 +154,11 @@ export default function ExecutionCurrentView({
                 </button>
               )}
 
-              {/* View Toggle */}
+              {/* View fixed to folders */}
               {items.length > 0 && (
-                <div className="flex items-center gap-1 bg-neutral-100 dark:bg-neutral-800 rounded p-0.5">
-                  <button
-                    onClick={() => onViewModeChange('grid')}
-                    className={`p-1 rounded transition-all ${
-                      viewMode === 'grid'
-                        ? 'bg-white dark:bg-neutral-700 text-blue-600 dark:text-blue-400 shadow-sm'
-                        : 'text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300'
-                    }`}
-                    title="Vue grille"
-                  >
-                    <Grid3x3 size={14} />
-                  </button>
-                  <button
-                    onClick={() => onViewModeChange('folders')}
-                    className={`p-1 rounded transition-all ${
-                      viewMode === 'folders'
-                        ? 'bg-white dark:bg-neutral-700 text-blue-600 dark:text-blue-400 shadow-sm'
-                        : 'text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300'
-                    }`}
-                    title="Vue dossiers"
-                  >
-                    <FolderKanban size={14} />
-                  </button>
+                <div className="flex items-center gap-2 text-xs text-neutral-600 dark:text-neutral-400">
+                  <FolderKanban size={14} />
+                  Vue: Dossiers
                 </div>
               )}
 
@@ -227,6 +203,8 @@ export default function ExecutionCurrentView({
                 <X size={12} />
                 {currentStats.error}
               </span>
+              {/* Cancelled (neutral) */}
+              {/* Using the same X icon would be confusing; keep counts in progress only if desired */}
             </div>
           </div>
         </div>
@@ -249,32 +227,14 @@ export default function ExecutionCurrentView({
           </p>
         </div>
       ) : (
-        /* Execution Items */
-        <>
-          {viewMode === 'grid' ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {items.map((item) => (
-                <ExecutionItemCard
-                  key={item.id}
-                  item={item}
-                  onViewDetails={handleViewDetails}
-                  onRetryItem={onRetryItem}
-                  isRunning={isRunning}
-                  estimatedDurationMs={itemEstimates.get(item.id)}
-                />
-              ))}
-            </div>
-          ) : (
-            <ExecutionFoldersView
-              items={items}
-              groupingMode={groupingMode}
-              onGroupingModeChange={onGroupingModeChange}
-              onViewDetails={handleViewDetails}
-              onRetryItem={onRetryItem}
-              isRunning={isRunning}
-            />
-          )}
-        </>
+        <ExecutionFoldersView
+          items={items}
+          groupingMode={groupingMode}
+          onGroupingModeChange={onGroupingModeChange}
+          onViewDetails={handleViewDetails}
+          onRetryItem={onRetryItem}
+          isRunning={isRunning}
+        />
       )}
 
       {/* Details Modal */}

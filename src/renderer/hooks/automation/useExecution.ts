@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import type { AdvancedSettings } from '../../../shared/settings'
 import type { ExecutionItem } from '../../../shared/types/automation'
 import { notificationBatcher } from '../../services/notificationBatcher'
@@ -70,6 +70,10 @@ export function useExecution(
   const [runId, setRunId] = useState<string>('')
   const [isRunning, setIsRunning] = useState(false)
 
+  // Debounce for event-driven polls
+  const lastPollRef = useRef<number>(0)
+  const pendingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
   /**
    * Poll database for current run state
    */
@@ -88,7 +92,6 @@ export function useExecution(
         // Check if run is complete
         if (runRes.data.status === 'completed' || runRes.data.status === 'failed' || runRes.data.status === 'stopped') {
           setIsRunning(false)
-          console.log('[useExecution] Run completed, stopping polling')
 
           // Notify failures (exclude cancelled items - those are user-initiated stops)
           if (itemsRes.success && itemsRes.data) {
@@ -136,9 +139,54 @@ export function useExecution(
         setItems(transformedItems)
       }
     } catch (error) {
-      console.error('[useExecution] Polling error:', error)
+      // Silent failure; UI will retry on next tick
     }
   }, [onRunComplete])
+
+  /**
+   * Subscribe to runner progress events for real-time updates
+   * On each event, trigger a debounced poll to sync from DB (source of truth)
+   */
+  useEffect(() => {
+    if (!runId || !isRunning) return
+
+    const unsubscribe = window.api.scenarios.onProgress(runId, (evt: any) => {
+      const now = Date.now()
+      const since = now - (lastPollRef.current || 0)
+      const schedulePoll = () => {
+        if (pendingTimerRef.current) return
+        pendingTimerRef.current = setTimeout(async () => {
+          pendingTimerRef.current = null
+          lastPollRef.current = Date.now()
+          await pollRunState(runId)
+        }, 200)
+      }
+
+      // For terminal events, update immediately
+      if (evt?.type === 'run-done' || evt?.type === 'run-cancelled') {
+        setIsRunning(false)
+        pollRunState(runId)
+          .finally(() => onRunComplete(runId))
+        return
+      }
+
+      // For frequent progress events, debounce to reduce load
+      if (since > 400) {
+        lastPollRef.current = now
+        void pollRunState(runId)
+      } else {
+        schedulePoll()
+      }
+    })
+
+    return () => {
+      if (pendingTimerRef.current) {
+        clearTimeout(pendingTimerRef.current)
+        pendingTimerRef.current = null
+      }
+      unsubscribe?.()
+    }
+  }, [runId, isRunning, pollRunState, onRunComplete])
 
   /**
    * Polling effect - runs every 2.5 seconds when a run is active
@@ -147,8 +195,6 @@ export function useExecution(
     if (!runId || !isRunning) {
       return
     }
-
-    console.log('[useExecution] Starting polling for run:', runId)
 
     // Poll immediately
     pollRunState(runId)
@@ -159,10 +205,30 @@ export function useExecution(
     }, 2500)
 
     return () => {
-      console.log('[useExecution] Stopping polling')
       clearInterval(interval)
     }
   }, [runId, isRunning, pollRunState])
+
+  /**
+   * Safety: if all items are in a terminal state, consider run finished even
+   * if an event was missed. This prevents the UI from staying stuck in
+   * "en cours" with a Stop button.
+   */
+  useEffect(() => {
+    if (!isRunning || !runId) return
+    if (items.length === 0) return
+    const allDone = items.every((it) => it.status === 'success' || it.status === 'error' || it.status === 'cancelled')
+    if (allDone) {
+      setIsRunning(false)
+      // Try to pick up final DB status (finalizer may take a tick)
+      const attemptPoll = async () => {
+        try { await pollRunState(runId) } catch {}
+        // If finalizer not done yet, poll once more shortly after
+        setTimeout(() => { void pollRunState(runId) }, 300)
+      }
+      void attemptPoll()
+    }
+  }, [items, isRunning, runId, pollRunState])
 
   /**
    * Start a new automation run
@@ -188,9 +254,7 @@ export function useExecution(
         flowsToExecute = flowsToExecute.filter(f => !settings.hiddenFlows.includes(f.slug))
         const filteredCount = beforeCount - flowsToExecute.length
 
-        if (filteredCount > 0) {
-          console.warn('[useExecution] Filtered out', filteredCount, 'hidden flows from execution')
-        }
+        // silent
 
         if (flowsToExecute.length === 0) {
           throw new Error('Aucun flow visible sélectionné. Veuillez afficher des flows ou désactiver le filtrage.')
@@ -237,8 +301,9 @@ export function useExecution(
       // Set state to start polling
       setRunId(newRunId)
       setIsRunning(true)
+      lastPollRef.current = 0
 
-      console.log('[useExecution] Started run:', newRunId)
+      // silent
     } catch (error) {
       setIsRunning(false)
       throw error
@@ -253,14 +318,15 @@ export function useExecution(
       throw new Error('Aucune exécution en cours')
     }
 
-    console.log('[useExecution] Stopping run:', runId)
+    // silent
 
     const result = await window.api.scenarios.stop(runId)
 
     if (result.success) {
-      setIsRunning(false)
-      // Final poll to get updated state
+      // Runner emits a terminal event; we let the event finalize and call onRunComplete
+      // Do a light poll just in case events are missed
       await pollRunState(runId)
+      setIsRunning(false)
     }
 
     return result
@@ -274,7 +340,7 @@ export function useExecution(
       throw new Error('Aucune exécution en cours')
     }
 
-    console.log('[useExecution] Requeuing item:', itemId)
+    // silent
 
     const result = await window.api.scenarios.requeueItem(runId, itemId)
 
@@ -294,7 +360,7 @@ export function useExecution(
       throw new Error('Aucune exécution en cours')
     }
 
-    console.log('[useExecution] Requeuing items:', itemIds.length)
+    // silent
 
     const result = await window.api.scenarios.requeueItems(runId, itemIds)
 
@@ -317,11 +383,15 @@ export function useExecution(
    * Clear execution state (when user navigates away)
    */
   const clearExecution = useCallback(() => {
-    console.log('[useExecution] Clearing execution state')
+    // silent
     setItems([])
     setActiveRun(null)
     setRunId('')
     setIsRunning(false)
+    if (pendingTimerRef.current) {
+      clearTimeout(pendingTimerRef.current)
+      pendingTimerRef.current = null
+    }
   }, [])
 
   return {

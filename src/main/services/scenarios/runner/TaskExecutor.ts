@@ -14,7 +14,6 @@ export function makeTaskExecutor(runContext: RunContext, deps: {
 
   const executeWithRetry = async (def: TaskDef, attempt: number = 0): Promise<void> => {
     if (runContext.isStopped) {
-      console.log(`[Runner] Skipping execution of ${def.itemId} - run was stopped`)
       try {
         Db.updateItem(def.itemId, {
           status: 'error',
@@ -87,7 +86,10 @@ export function makeTaskExecutor(runContext: RunContext, deps: {
       }
 
       runContext.activeTasks--
+      // First check (may still see queue as running)
       deps.checkCompletion()
+      // Ensure a second check after the queue decremented its internal counter
+      setTimeout(() => { try { deps.checkCompletion() } catch (e) { console.error(e) } }, 0)
     } catch (e: any) {
       const msg = e instanceof Error ? e.message : String(e)
       if (e && typeof e === 'object' && 'runDir' in e) runDir = (e as any).runDir
@@ -121,7 +123,10 @@ export function makeTaskExecutor(runContext: RunContext, deps: {
         }
         deps.onUntrackBrowser(def.itemId)
         runContext.activeTasks--
+        // First check (may still see queue as running)
         deps.checkCompletion()
+        // Ensure a second check after the queue decremented its internal counter
+        setTimeout(() => { try { deps.checkCompletion() } catch (e) { console.error(e) } }, 0)
       }
     } finally {
       deps.onUntrackBrowser(def.itemId)

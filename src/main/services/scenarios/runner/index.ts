@@ -113,32 +113,33 @@ export class ScenariosRunner {
       return { success: false, message: 'Run introuvable ou déjà terminé' }
     }
 
-    console.log(`[Runner] Stopping run ${runId}`)
+    // silent
     runContext.isStopped = true
-    console.log(`[Runner] Marked run as stopped - new tasks will be skipped`)
+    // silent
 
     // Force-close browsers
     const { createBrowserTracker } = await import('./BrowserTracker')
     const tracker = createBrowserTracker(runContext)
     await tracker.closeAll()
-    console.log(`[Runner] All browsers force-closed`)
+    // silent
 
     // Stop queue
     const queueCancelledCount = runContext.queue.stop()
-    console.log(`[Runner] ${queueCancelledCount} tasks cancelled from queue`)
+    // silent
 
     const { pending, running } = Db.getCountsForStop(runId)
-    console.log(`[Runner] Before stop: ${pending} pending, ${running} running`)
+    // silent
     const dbCancelledCount = Db.cancelPendingItems(runId)
-    console.log(`[Runner] ${dbCancelledCount} items (pending + running) marked as cancelled in DB`)
+    // silent
 
     try {
       const completedAt = new Date().toISOString()
       const durationMs = runContext.startedAt ? Date.now() - runContext.startedAt.getTime() : null
       Db.updateRun(runId, { status: 'stopped', completed_at: completedAt, duration_ms: durationMs })
       Db.incrementRunCounter(runId, 'pending_items', -pending)
-      Db.incrementRunCounter(runId, 'error_items', dbCancelledCount)
-      console.log(`[Runner] Run ${runId.slice(0,8)} marked as 'stopped' in DB`)
+      // Count cancelled separately
+      Db.incrementRunCounter(runId, 'cancelled_items', dbCancelledCount)
+      // silent
     } catch (err) {
       console.error('[Runner] Failed to update run status on stop:', err)
     }
@@ -172,7 +173,7 @@ export class ScenariosRunner {
     }
 
     runContext.queue.add(() => runContext.executeWithRetry(taskDef)).catch(err => console.error('[Runner] Requeued task execution failed:', err))
-    console.log(`[Runner] Requeued item ${itemId.slice(0, 8)} for run ${runId.slice(0, 8)}`)
+    // silent
     return { success: true, message: 'Item remis en queue avec succès' }
   }
 
@@ -187,4 +188,3 @@ export class ScenariosRunner {
     return { success: true, message: `${requeuedCount} item(s) remis en queue`, requeuedCount }
   }
 }
-

@@ -22,7 +22,7 @@ export interface StatusConfig {
  * Used in ExecutionItemCard and similar components
  */
 export function getExecutionStatusConfig(
-  status: 'pending' | 'running' | 'success' | 'error'
+  status: 'pending' | 'running' | 'success' | 'error' | 'cancelled'
 ): StatusConfig {
   const configs: Record<string, StatusConfig> = {
     pending: {
@@ -54,6 +54,13 @@ export function getExecutionStatusConfig(
       bgColor: 'bg-red-50 dark:bg-red-950',
       borderColor: 'border-red-200 dark:border-red-800',
       label: 'Échoué'
+    },
+    cancelled: {
+      icon: StopCircle,
+      color: 'text-neutral-600 dark:text-neutral-400',
+      bgColor: 'bg-neutral-50 dark:bg-neutral-950',
+      borderColor: 'border-neutral-200 dark:border-neutral-800',
+      label: 'Annulé'
     }
   }
 
@@ -65,7 +72,7 @@ export function getExecutionStatusConfig(
  * Used in HistoryItemCard
  */
 export function getHistoryStatusConfig(
-  status: 'success' | 'error' | 'pending'
+  status: 'success' | 'error' | 'pending' | 'cancelled'
 ): Omit<StatusConfig, 'label'> {
   return getExecutionStatusConfig(status)
 }

@@ -23,7 +23,7 @@ export const Db = {
     const db = getDb()
     execQueries.updateItem(db as any, id, updates)
   },
-  incrementRunCounter(runId: string, field: 'pending_items' | 'success_items' | 'error_items', delta = 1) {
+  incrementRunCounter(runId: string, field: 'pending_items' | 'success_items' | 'error_items' | 'cancelled_items', delta = 1) {
     const db = getDb()
     execQueries.incrementRunCounter(db as any, runId, field as any, delta)
   },

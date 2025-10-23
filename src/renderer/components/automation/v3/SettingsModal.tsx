@@ -39,7 +39,6 @@ export default function SettingsModal({
       slug => !settings.hiddenFlows.includes(slug)
     )
 
-    console.log('[SettingsModal] Newly hidden flows:', newlyHiddenFlows)
 
     onSave(localSettings, newlyHiddenFlows)
     onClose()

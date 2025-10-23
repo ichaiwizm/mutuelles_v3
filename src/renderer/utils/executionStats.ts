@@ -11,6 +11,7 @@ export interface ExecutionStats {
   running: number
   success: number
   error: number
+  cancelled: number
   completed: number
   progress: number
 }
@@ -25,7 +26,8 @@ export function calculateExecutionStats(items: ExecutionItem[]): ExecutionStats 
   const running = items.filter(i => i.status === 'running').length
   const success = items.filter(i => i.status === 'success').length
   const error = items.filter(i => i.status === 'error').length
-  const completed = success + error
+  const cancelled = items.filter(i => i.status === 'cancelled').length
+  const completed = success + error + cancelled
 
   return {
     total,
@@ -33,6 +35,7 @@ export function calculateExecutionStats(items: ExecutionItem[]): ExecutionStats 
     running,
     success,
     error,
+    cancelled,
     completed,
     progress: total > 0 ? Math.round((completed / total) * 100) : 0
   }

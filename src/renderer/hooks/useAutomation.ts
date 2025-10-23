@@ -119,7 +119,6 @@ export function useAutomation() {
       // Reload history from database when run completes
       // The backend has written results to execution_runs/items/steps tables
       history.loadHistory()
-      console.log('[useAutomation] Run completed:', runId, '- reloading history')
     }
   )
 
@@ -157,7 +156,6 @@ export function useAutomation() {
 
     // Clean selection: deselect newly hidden flows
     if (newlyHiddenFlows && newlyHiddenFlows.length > 0) {
-      console.log('[useAutomation] Deselecting newly hidden flows:', newlyHiddenFlows)
       selection.deselectFlows(newlyHiddenFlows)
     }
   }, [updateSettingsBase, selection])
@@ -198,7 +196,6 @@ export function useAutomation() {
     const mode = historyRun.mode as 'headless' | 'dev' | 'dev_private'
     await startRun(mode)
 
-    console.log(`[useAutomation] Rerunning history run ${historyRunId.slice(0, 8)}`)
   }, [history, selection, startRun])
 
   /**
@@ -218,7 +215,6 @@ export function useAutomation() {
     // Start run with current settings
     await startRun(mode)
 
-    console.log(`[useAutomation] Rerunning single item: ${item.leadName} × ${item.flowName}`)
   }, [selection, settings.mode, startRun])
 
   /**
@@ -234,7 +230,6 @@ export function useAutomation() {
     selection.updateLeadSelection(new Set(leadIds))
     selection.updateFlowSelection(new Set(flowSlugs))
 
-    console.log(`[useAutomation] Prepared replay for ${failedItems.length} failed items`)
   }, [selection])
 
   // ============================================================

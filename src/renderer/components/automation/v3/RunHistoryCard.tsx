@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { RefreshCw, ChevronDown, Trash2, CheckCircle2, CheckCircle, AlertCircle, XCircle, StopCircle } from 'lucide-react'
 import type { RunHistoryItem, ExecutionHistoryItem } from '../../../../shared/types/automation'
 import { formatRelativeTime, formatDuration } from '../../../utils/dateGrouping'
@@ -27,6 +27,9 @@ export default function RunHistoryCard({
   onViewDetails
 }: RunHistoryCardProps) {
   const [isExpanded, setIsExpanded] = useState(false)
+  const [loadingItems, setLoadingItems] = useState(false)
+  const [items, setItems] = useState<ExecutionHistoryItem[] | null>(null)
+  const [loadError, setLoadError] = useState<string | null>(null)
 
   const getStatusConfig = () => {
     switch (run.status) {
@@ -94,6 +97,50 @@ export default function RunHistoryCard({
       onDelete(run.runId)
     }
   }
+
+  // Lazy-load items when expanding for the first time
+  useEffect(() => {
+    let cancelled = false
+    const loadItems = async () => {
+      if (!isExpanded) return
+      if (items && items.length > 0) return
+      setLoadingItems(true)
+      setLoadError(null)
+      try {
+        const resp = await window.api.scenarios.getRunItems(run.runId)
+        if (!resp?.success || !Array.isArray(resp.data)) {
+          throw new Error(resp?.error || 'Réponse invalide')
+        }
+        const mapped: ExecutionHistoryItem[] = resp.data.map((row: any) => ({
+          id: row.id,
+          leadId: row.lead_id || '',
+          leadName: row.lead_name || row.lead_id || '',
+          platform: row.platform,
+          platformName: row.platform_name || row.platform,
+          flowSlug: row.flow_slug || '',
+          flowName: row.flow_name || row.flow_slug || '',
+          status: row.status,
+          runDir: row.run_dir || undefined,
+          error: row.error_message || undefined,
+          startedAt: row.started_at || '',
+          completedAt: row.completed_at || undefined,
+          durationMs: row.duration_ms || undefined
+        }))
+        if (!cancelled) setItems(mapped)
+      } catch (e: any) {
+        if (!cancelled) setLoadError(e?.message || String(e))
+      } finally {
+        if (!cancelled) setLoadingItems(false)
+      }
+    }
+    void loadItems()
+    return () => { cancelled = true }
+  }, [isExpanded])
+
+  const displayedCount = useMemo(() => {
+    if (items && items.length >= 0) return items.length
+    return run.totalItems || 0
+  }, [items, run.totalItems])
 
   return (
     <div
@@ -182,21 +229,34 @@ export default function RunHistoryCard({
         >
           <div className="flex items-center justify-between mb-2">
             <h5 className="text-xs font-semibold text-neutral-700 dark:text-neutral-300 uppercase tracking-wide">
-              Exécutions ({run.items?.length || 0})
+              Exécutions ({displayedCount})
             </h5>
             <span className="text-xs text-neutral-500">
               Run ID: {run.runId.slice(0, 8)}
             </span>
           </div>
-          {run.items?.map((item) => (
-            <HistoryItemCard
-              key={item.id}
-              runId={run.runId}
-              item={item}
-              onRerun={onRerunItem}
-              onViewDetails={onViewDetails}
-            />
-          )) || <p className="text-xs text-neutral-500">Aucune exécution</p>}
+          {loadingItems && (
+            <p className="text-xs text-neutral-500">Chargement…</p>
+          )}
+          {loadError && (
+            <p className="text-xs text-red-500">Erreur lors du chargement: {loadError}</p>
+          )}
+          {!loadingItems && !loadError && items && items.length === 0 && (
+            <p className="text-xs text-neutral-500">Aucune exécution</p>
+          )}
+          {!loadingItems && !loadError && items && items.length > 0 && (
+            <>
+              {items.map((item) => (
+                <HistoryItemCard
+                  key={item.id}
+                  runId={run.runId}
+                  item={item}
+                  onRerun={onRerunItem}
+                  onViewDetails={onViewDetails}
+                />
+              ))}
+            </>
+          )}
         </div>
       )}
     </div>

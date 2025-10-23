@@ -48,10 +48,7 @@ export function useSelection(options: UseSelectionOptions) {
         }
       })
 
-      if (changed) {
-        const deselectedCount = settings.hiddenFlows.filter(s => prev.has(s)).length
-        console.log('[useSelection] Auto-deselected', deselectedCount, 'hidden flows')
-      }
+      // silent
 
       return changed ? next : prev
     })
@@ -240,10 +237,7 @@ export function useSelection(options: UseSelectionOptions) {
         }
       })
 
-      if (changed) {
-        const deselectedCount = flowSlugs.filter(s => prev.has(s)).length
-        console.log('[useSelection] Deselected', deselectedCount, 'flows')
-      }
+      // silent
 
       return changed ? next : prev
     })

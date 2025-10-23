@@ -81,11 +81,78 @@ export function registerScenariosIpc() {
     try {
       const db = getDb()
       const runs = execQueries.getRunHistory(db, filters)
-
       return { success: true, data: runs }
     } catch (error) {
       console.error('Error getting history:', error)
       return { success: false, error: error instanceof Error ? error.message : 'Failed to get history' }
+    }
+  })
+
+  // Debug: dump basic DB state for executions (runs + items per status)
+  ipcMain.handle('scenarios:debugDump', async () => {
+    try {
+      const db = getDb()
+      const runs = db.prepare(`
+        SELECT id, status, started_at, completed_at,
+               total_items, success_items, error_items, pending_items, cancelled_items
+        FROM execution_runs
+        ORDER BY started_at DESC
+        LIMIT 100
+      `).all() as any[]
+      const items = db.prepare(`
+        SELECT run_id, status, COUNT(*) as count
+        FROM execution_items
+        GROUP BY run_id, status
+        ORDER BY run_id
+      `).all() as any[]
+
+      return { success: true, data: { runs, items } }
+    } catch (error) {
+      console.error('[IPC][scenarios:debugDump] Error:', error)
+      return { success: false, error: error instanceof Error ? error.message : 'Failed to dump DB' }
+    }
+  })
+
+  // Repair: finalize runs stuck in 'running' when they have no pending/running items
+  ipcMain.handle('scenarios:repairFinalize', async () => {
+    try {
+      const db = getDb()
+      const stuckRuns = db.prepare(`
+        SELECT * FROM execution_runs r
+        WHERE r.status = 'running'
+      `).all() as any[]
+
+      let repaired = 0
+      for (const run of stuckRuns) {
+        const counts = db.prepare(`
+          SELECT
+            SUM(CASE WHEN status='pending' THEN 1 ELSE 0 END) as pending,
+            SUM(CASE WHEN status='running' THEN 1 ELSE 0 END) as running,
+            SUM(CASE WHEN status='error' THEN 1 ELSE 0 END) as error_cnt,
+            SUM(CASE WHEN status='success' THEN 1 ELSE 0 END) as success_cnt,
+            SUM(CASE WHEN status='cancelled' THEN 1 ELSE 0 END) as cancelled_cnt
+          FROM execution_items WHERE run_id = ?
+        `).get(run.id) as { pending:number; running:number; error_cnt:number; success_cnt:number; cancelled_cnt:number }
+
+        const pending = counts?.pending || 0
+        const running = counts?.running || 0
+        if (pending === 0 && running === 0) {
+          const finalStatus = (counts?.error_cnt || 0) > 0 ? 'failed' : 'completed'
+          const completedAt = new Date().toISOString()
+          const durationMs = run.started_at ? Date.now() - Date.parse(run.started_at) : null
+          execQueries.updateRun(db as any, run.id, {
+            status: finalStatus,
+            completed_at: completedAt,
+            duration_ms: durationMs
+          })
+          repaired++
+        }
+      }
+
+      return { success: true, repaired }
+    } catch (error) {
+      console.error('[IPC][scenarios:repairFinalize] Error:', error)
+      return { success: false, error: error instanceof Error ? error.message : 'Failed to repair finalize' }
     }
   })
 

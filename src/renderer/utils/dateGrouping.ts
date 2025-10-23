@@ -109,10 +109,7 @@ export function groupRunsByDate(runs: RunHistoryItem[]): DateGroup[] {
   // Group runs - filter out invalid runs with missing data
   runs.forEach(run => {
     // Defensive: skip runs with invalid structure
-    if (!run || !run.runId) {
-      console.warn('[groupRunsByDate] Skipping invalid run:', run)
-      return
-    }
+    if (!run || !run.runId) return
 
     const group = getDateGroup(run.startedAt)
     groups[group].push(run)

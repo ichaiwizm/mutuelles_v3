@@ -139,6 +139,16 @@ contextBridge.exposeInMainWorld('api', {
       data?: any
       error?: string
     }>,
+    debugDump: () => ipcRenderer.invoke('scenarios:debugDump') as Promise<{
+      success: boolean
+      data?: { runs: any[]; items: any[] }
+      error?: string
+    }>,
+    repairFinalize: () => ipcRenderer.invoke('scenarios:repairFinalize') as Promise<{
+      success: boolean
+      repaired?: number
+      error?: string
+    }>,
     getItemDetails: (itemId: string) => ipcRenderer.invoke('scenarios:getItemDetails', itemId) as Promise<{
       success: boolean
       data?: any
@@ -251,11 +261,21 @@ declare global {
           }>
           error?: string
         }>
-        getRunDetails: (runDir: string) => Promise<{
-          success: boolean
-          data?: any
-          error?: string
-        }>
+      getRunDetails: (runDir: string) => Promise<{
+        success: boolean
+        data?: any
+        error?: string
+      }>
+      debugDump: () => Promise<{
+        success: boolean
+        data?: { runs: any[]; items: any[] }
+        error?: string
+      }>
+      repairFinalize: () => Promise<{
+        success: boolean
+        repaired?: number
+        error?: string
+      }>
         getItemDetails: (itemId: string) => Promise<{
           success: boolean
           data?: any

@@ -47,7 +47,7 @@ class NotificationBatcher {
     try {
       // Send to main process
       await window.api.sendFailureNotification(failures)
-      console.log(`[NotificationBatcher] Sent batch of ${failures.length} failures`)
+      // silent
     } catch (error) {
       console.error('[NotificationBatcher] Failed to send notification:', error)
     }

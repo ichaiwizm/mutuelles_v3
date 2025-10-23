@@ -1,19 +1,5 @@
 import { useState, useCallback } from 'react'
-
-export type RunHistoryItem = {
-  runId: string
-  status: 'running' | 'completed' | 'failed' | 'stopped'
-  mode: string
-  concurrency: number | null
-  totalItems: number
-  successItems: number
-  errorItems: number
-  pendingItems: number
-  cancelledItems: number
-  startedAt: string
-  completedAt: string | null
-  durationMs: number | null
-}
+import type { RunHistoryItem as SharedRunHistoryItem } from '../../../shared/types/automation'
 
 export type HistoryFilters = {
   status?: string
@@ -33,7 +19,7 @@ export type HistoryFilters = {
  * @returns History state and management functions
  */
 export function useHistory() {
-  const [runHistory, setRunHistory] = useState<RunHistoryItem[]>([])
+  const [runHistory, setRunHistory] = useState<SharedRunHistoryItem[]>([])
   const [isLoading, setIsLoading] = useState(false)
 
   /**
@@ -46,42 +32,93 @@ export function useHistory() {
       const response = await window.api.scenarios.getHistory(filters)
 
       if (!response.success || !Array.isArray(response.data)) {
-        console.warn('[useHistory] Invalid history response')
         setRunHistory([])
         return
       }
 
       // Transform DB runs to RunHistoryItem format with defensive filtering
-      const runs: RunHistoryItem[] = response.data
+      const runs: SharedRunHistoryItem[] = response.data
         .filter((run: any) => {
           // Defensive: filter out invalid runs
-          if (!run || !run.id || !run.started_at) {
-            console.warn('[useHistory] Skipping invalid run:', run)
-            return false
-          }
+          if (!run || !run.id || !run.started_at) { return false }
           return true
         })
-        .map((run: any) => ({
-          runId: run.id,
-          status: run.status,
-          mode: run.mode,
-          concurrency: run.concurrency,
-          totalItems: run.total_items,
-          successItems: run.success_items,
-          errorItems: run.error_items,
-          pendingItems: run.pending_items,
-          cancelledItems: run.cancelled_items || 0,
-          startedAt: run.started_at,
-          completedAt: run.completed_at,
-          durationMs: run.duration_ms,
-          items: []  // Items are loaded separately via getRunItems() when needed
-        }))
+        .map((run: any) => {
+          const computed = computeRunStatus(run)
+          const base: SharedRunHistoryItem = {
+            runId: run.id,
+            // Compute partial for UI clarity
+            status: computed,
+            mode: run.mode,
+            concurrency: run.concurrency,
+            totalItems: run.total_items,
+            successItems: run.success_items,
+            errorItems: run.error_items,
+            pendingItems: run.pending_items,
+            cancelledItems: run.cancelled_items || 0,
+            startedAt: run.started_at,
+            completedAt: run.completed_at,
+            durationMs: run.duration_ms,
+            settings: {
+              mode: 'headless',
+              concurrency: run.concurrency ?? 2,
+              timeout: 300000,
+              keepBrowserOpen: false,
+              screenshotFrequency: 'all',
+              retryFailed: false,
+              maxRetries: 1
+            },
+            items: []
+          }
+          return base
+        })
 
       setRunHistory(runs)
+      // Check if DB has running runs that are not yet finalized (silent)
+      let runningCount = 0
+      try {
+        const runningResp = await window.api.scenarios.getHistory({ status: 'running' })
+        if (runningResp?.success && Array.isArray(runningResp.data)) {
+          runningCount = runningResp.data.length
+        }
+      } catch {}
 
-      console.log(`[useHistory] Loaded ${runs.length} runs from database`)
+      if (runs.length === 0 && runningCount > 0) {
+        // Attempt a silent repair; then reload once
+        try {
+          const repaired = await window.api.scenarios.repairFinalize()
+          if (repaired?.success) {
+            const again = await window.api.scenarios.getHistory()
+            if (again?.success && Array.isArray(again.data)) {
+              setRunHistory(again.data.map((run: any) => ({
+                runId: run.id,
+                status: computeRunStatus(run),
+                mode: run.mode,
+                concurrency: run.concurrency,
+                totalItems: run.total_items,
+                successItems: run.success_items,
+                errorItems: run.error_items,
+                pendingItems: run.pending_items,
+                cancelledItems: run.cancelled_items || 0,
+                startedAt: run.started_at,
+                completedAt: run.completed_at,
+                durationMs: run.duration_ms,
+                settings: {
+                  mode: 'headless',
+                  concurrency: run.concurrency ?? 2,
+                  timeout: 300000,
+                  keepBrowserOpen: false,
+                  screenshotFrequency: 'all',
+                  retryFailed: false,
+                  maxRetries: 1
+                },
+                items: []
+              } as SharedRunHistoryItem)))
+            }
+          }
+        } catch {}
+      }
     } catch (error) {
-      console.error('[useHistory] Failed to load history:', error)
       setRunHistory([])
     } finally {
       setIsLoading(false)
@@ -96,16 +133,11 @@ export function useHistory() {
       const result = await window.api.scenarios.deleteRun(runId)
 
       if (result.success) {
-        // Remove from local state
         setRunHistory(prev => prev.filter(r => r.runId !== runId))
-        console.log('[useHistory] Deleted run:', runId)
-      } else {
-        console.error('[useHistory] Failed to delete run:', result.error)
       }
 
       return result
     } catch (error) {
-      console.error('[useHistory] Error deleting run:', error)
       return { success: false, error: String(error) }
     }
   }, [])
@@ -118,7 +150,6 @@ export function useHistory() {
       const response = await window.api.scenarios.getRunItems(runId)
       return response.success ? response.data : []
     } catch (error) {
-      console.error('[useHistory] Failed to load run items:', error)
       return []
     }
   }, [])
@@ -131,7 +162,6 @@ export function useHistory() {
       const response = await window.api.scenarios.getRunSteps(itemId)
       return response.success ? response.data : []
     } catch (error) {
-      console.error('[useHistory] Failed to load item steps:', error)
       return []
     }
   }, [])
@@ -144,4 +174,19 @@ export function useHistory() {
     getRunItems,
     getItemSteps
   }
+}
+
+// Helpers
+function computeRunStatus(run: any): 'completed' | 'partial' | 'failed' | 'stopped' {
+  // If DB says stopped, keep stopped
+  if (run.status === 'stopped') return 'stopped'
+  // If DB says running (should be filtered out), fallback to partial/failed rules anyway
+  const total = run.total_items || 0
+  const success = run.success_items || 0
+  const error = run.error_items || 0
+  const cancelled = run.cancelled_items || 0
+  if (error > 0 || cancelled > 0) {
+    return success > 0 ? 'partial' : 'failed'
+  }
+  return 'completed'
 }

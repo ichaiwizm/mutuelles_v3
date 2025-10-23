@@ -59,5 +59,5 @@ export function sendFailureNotification(
     }
   })
 
-  console.log(`[NotificationService] Sent failure notification (${failures.length} items, focused: ${isAppFocused})`)
+  // silent
 }

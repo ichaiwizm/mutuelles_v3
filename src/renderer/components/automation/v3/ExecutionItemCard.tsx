@@ -78,7 +78,7 @@ export default function ExecutionItemCard({
         {/* Actions */}
         <div className="flex items-center gap-1 flex-shrink-0">
           {/* Retry button - visible only for errors during active run */}
-          {item.status === 'error' && isRunning && onRetryItem && (
+  {(item.status === 'error') && isRunning && onRetryItem && (
             <button
               onClick={() => onRetryItem(item.id)}
               title="Réessayer"
@@ -89,7 +89,7 @@ export default function ExecutionItemCard({
           )}
 
           {/* View details button */}
-          {(item.status === 'success' || item.status === 'error') && item.runDir && onViewDetails && (
+      {(item.status === 'success' || item.status === 'error' || item.status === 'cancelled') && item.runDir && onViewDetails && (
             <button
               onClick={() => onViewDetails(item.runId, item.id, item.runDir!, item.leadName, item.platformName, item.flowName || '')}
               title="Voir les détails"

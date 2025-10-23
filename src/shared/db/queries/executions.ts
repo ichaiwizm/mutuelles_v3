@@ -170,7 +170,7 @@ export function getActiveRun(db: Database.Database, runId: string): ExecutionRun
 export function incrementRunCounter(
   db: Database.Database,
   runId: string,
-  counter: 'success_items' | 'error_items' | 'pending_items',
+  counter: 'success_items' | 'error_items' | 'pending_items' | 'cancelled_items',
   amount: number = 1
 ): void {
   const query = `UPDATE execution_runs SET ${counter} = ${counter} + ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`
