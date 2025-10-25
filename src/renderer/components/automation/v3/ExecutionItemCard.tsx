@@ -115,7 +115,6 @@ export default function ExecutionItemCard({
           {isRunning && winState !== null && (item.status === 'running' || item.status === 'pending') && (
             <button
               onClick={async () => {
-                console.log('[UI] toggle window', { itemId: item.id, from: winState })
                 if (winState === 'minimized') await restoreWin(); else await minimizeWin()
               }}
               title={winState === 'minimized' ? 'Afficher la fenêtre' : 'Réduire la fenêtre'}

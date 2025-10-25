@@ -177,7 +177,6 @@ contextBridge.exposeInMainWorld('api', {
       requeuedCount?: number
     }>,
     stopItem: (runId: string, itemId: string) => {
-      console.log('[preload] scenarios.stopItem', { runId, itemId })
       return ipcRenderer.invoke('scenarios:stopItem', runId, itemId) as Promise<{
         success: boolean
         message?: string
@@ -189,14 +188,9 @@ contextBridge.exposeInMainWorld('api', {
         // noisy in UI; keep silent
         return ipcRenderer.invoke('scenarios:window:getState', runId, itemId) as Promise<{ success: boolean; state?: string; message?: string }>
       },
-      minimize: async (runId: string, itemId: string) => {
-        console.log('[preload] scenarios.window.minimize', { runId, itemId })
-        return ipcRenderer.invoke('scenarios:window:minimize', runId, itemId) as Promise<{ success: boolean; message?: string }>
-      },
-      restore: async (runId: string, itemId: string) => {
-        console.log('[preload] scenarios.window.restore', { runId, itemId })
-        return ipcRenderer.invoke('scenarios:window:restore', runId, itemId) as Promise<{ success: boolean; message?: string }>
-      }
+      minimize: async (runId: string, itemId: string) => ipcRenderer.invoke('scenarios:window:minimize', runId, itemId) as Promise<{ success: boolean; message?: string }>,
+      restore: async (runId: string, itemId: string) => ipcRenderer.invoke('scenarios:window:restore', runId, itemId) as Promise<{ success: boolean; message?: string }>
+    }
     }
   }
 })

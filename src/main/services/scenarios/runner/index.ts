@@ -24,7 +24,6 @@ export class ScenariosRunner {
     const leadsSvc = new LeadsService()
     const mode: Mode = payload.options?.mode || 'headless'
     const displayMode: 'headless' | 'headless-minimized' | 'visible' = (payload.options as any)?.displayMode || (mode === 'headless' ? 'headless' : 'visible')
-    console.log('[Runner] run start', { runId, mode, displayMode })
     const concurrency = Math.max(1, Math.min(15, payload.options?.concurrency ?? 2))
     const keepOpen = payload.options?.keepBrowserOpen ?? false
     const retryFailed = payload.options?.retryFailed ?? false
