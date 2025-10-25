@@ -11,6 +11,7 @@ export interface ExecutionGroup {
   running: number
   success: number
   error: number
+  cancelled: number
   total: number
 }
 
@@ -86,7 +87,8 @@ function calculateGroupStats(items: ExecutionItem[]) {
     pending: stats.pending,
     running: stats.running,
     success: stats.success,
-    error: stats.error
+    error: stats.error,
+    cancelled: stats.cancelled
   }
 }
 
@@ -157,6 +159,15 @@ export function getGroupColorConfig(group: ExecutionGroup) {
       badgeColor: 'bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300'
     }
   }
+  // All cancelled (neutral grey)
+  if (group.cancelled > 0 && group.success === 0) {
+    return {
+      iconColor: 'text-neutral-600 dark:text-neutral-400',
+      bgColor: 'bg-neutral-50 dark:bg-neutral-950',
+      borderColor: 'border-neutral-200 dark:border-neutral-800',
+      badgeColor: 'bg-neutral-100 dark:bg-neutral-900 text-neutral-700 dark:text-neutral-300'
+    }
+  }
   // All success
   return {
     iconColor: 'text-emerald-600 dark:text-emerald-400',
@@ -176,6 +187,7 @@ export function formatGroupStats(group: ExecutionGroup): string {
   if (group.pending > 0) parts.push(`${group.pending} en attente`)
   if (group.error > 0) parts.push(`${group.error} erreur${group.error > 1 ? 's' : ''}`)
   if (group.success > 0) parts.push(`${group.success} réussi${group.success > 1 ? 's' : ''}`)
+  if (group.cancelled > 0) parts.push(`${group.cancelled} annulé${group.cancelled > 1 ? 's' : ''}`)
 
   return parts.join(', ') || `${group.total} élément${group.total > 1 ? 's' : ''}`
 }
