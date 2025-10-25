@@ -27,8 +27,8 @@ export default function ExecutionItemCard({
 }: ExecutionItemCardProps) {
   // Use useNow hook to update timestamp every second (instead of forcing re-render every 200ms)
   const now = useNow(
-    item.status === 'running' || item.status === 'pending',
-    1000 // Update every 1 second instead of 200ms = 80% reduction in re-renders
+    (item.status === 'running' || item.status === 'pending') && !item.isPaused,
+    1000 // Update every 1 second
   )
 
   const duration = useMemo(() => {
