@@ -14,14 +14,19 @@ export function makeTaskExecutor(runContext: RunContext, deps: {
 
   const executeWithRetry = async (def: TaskDef, attempt: number = 0): Promise<void> => {
     if (runContext.isStopped) {
+      // Run was stopped before this item started: mark as cancelled and fix counters
+      const completedAt = new Date().toISOString()
       try {
         Db.updateItem(def.itemId, {
-          status: 'error',
-          completed_at: new Date().toISOString(),
-          error_message: "Arrêté par l'utilisateur avant le démarrage"
+          status: 'cancelled',
+          completed_at: completedAt,
+          error_message: "Arrêté par l'utilisateur (avant démarrage)"
         })
+        // Decrement pending if it was counted, and bump cancelled
+        Db.incrementRunCounter(runId, 'pending_items', -1)
+        Db.incrementRunCounter(runId, 'cancelled_items', 1)
       } catch (err) {
-        console.error('[Runner] Failed to mark item as cancelled:', err)
+        console.error('[Runner] Failed to mark item as cancelled (pre-start):', err)
       }
       return
     }
@@ -94,7 +99,11 @@ export function makeTaskExecutor(runContext: RunContext, deps: {
       const msg = e instanceof Error ? e.message : String(e)
       if (e && typeof e === 'object' && 'runDir' in e) runDir = (e as any).runDir
 
-      if (retryFailed && attempt < maxRetries) {
+      // Detect user-initiated stop or browser/context-closed errors during stop
+      const isStopTriggered = runContext.isStopped
+      const isClosedError = typeof msg === 'string' && /Target .* (has been closed|closed)|context .*closed|Execution context was destroyed|Protocol error|Task cancelled: queue stopped|ENOENT: no such file or directory, open .*trace/i.test(msg)
+
+      if (!isStopTriggered && retryFailed && attempt < maxRetries) {
         try {
           const completedAt = new Date().toISOString()
           const durationMs = Date.parse(completedAt) - Date.parse(startedAt)
@@ -106,20 +115,30 @@ export function makeTaskExecutor(runContext: RunContext, deps: {
         return executeWithRetry(def, attempt + 1)
       } else {
         const finalMsg = attempt > 0 ? `${msg} (après ${attempt + 1} tentative(s))` : msg
-        deps.send({ type:'item-error', runId, itemId: def.itemId, leadId: def.leadId, platform: def.platform, flowSlug: def.flowSlug, message: finalMsg, runDir })
         const completedAt = new Date().toISOString()
         const durationMs = Date.parse(completedAt) - Date.parse(startedAt)
-        Db.updateItem(def.itemId, { status: 'error', error_message: finalMsg, run_dir: runDir || undefined, completed_at: completedAt, duration_ms: durationMs })
-        Db.incrementRunCounter(runId, 'error_items')
-        Db.updateAttempt(def.itemId, attempt + 1, { status: 'error', error_message: finalMsg, completed_at: completedAt, duration_ms: durationMs })
-        if (runDir) {
-          try {
-            const manifestPath = path.join(runDir, 'index.json')
-            if (fs.existsSync(manifestPath)) {
-              const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'))
-              if (Array.isArray(manifest.steps)) manifest.steps.forEach((s:any)=>Db.createStepFromManifest(def.itemId, s, runDir!))
-            }
-          } catch (err) { console.error('[Runner] Failed to create step records:', err) }
+
+        if (isStopTriggered || isClosedError) {
+          // Treat as user cancellation, not a real error
+          deps.send({ type:'item-error', runId, itemId: def.itemId, leadId: def.leadId, platform: def.platform, flowSlug: def.flowSlug, message: 'Annulé par l’utilisateur', runDir })
+          Db.updateItem(def.itemId, { status: 'cancelled', error_message: 'Annulé par l’utilisateur', run_dir: runDir || undefined, completed_at: completedAt, duration_ms: durationMs })
+          // attempts: mark as cancelled if supported; ignore type mismatch silently
+          try { Db.updateAttempt(def.itemId, attempt + 1, { status: 'cancelled' as any, error_message: 'Annulé par l’utilisateur', completed_at: completedAt, duration_ms: durationMs }) } catch {}
+          Db.incrementRunCounter(runId, 'cancelled_items')
+        } else {
+          deps.send({ type:'item-error', runId, itemId: def.itemId, leadId: def.leadId, platform: def.platform, flowSlug: def.flowSlug, message: finalMsg, runDir })
+          Db.updateItem(def.itemId, { status: 'error', error_message: finalMsg, run_dir: runDir || undefined, completed_at: completedAt, duration_ms: durationMs })
+          Db.incrementRunCounter(runId, 'error_items')
+          try { Db.updateAttempt(def.itemId, attempt + 1, { status: 'error', error_message: finalMsg, completed_at: completedAt, duration_ms: durationMs }) } catch {}
+          if (runDir) {
+            try {
+              const manifestPath = path.join(runDir, 'index.json')
+              if (fs.existsSync(manifestPath)) {
+                const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'))
+                if (Array.isArray(manifest.steps)) manifest.steps.forEach((s:any)=>Db.createStepFromManifest(def.itemId, s, runDir!))
+              }
+            } catch (err) { console.error('[Runner] Failed to create step records:', err) }
+          }
         }
         deps.onUntrackBrowser(def.itemId)
         runContext.activeTasks--

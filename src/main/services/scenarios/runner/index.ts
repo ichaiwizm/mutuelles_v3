@@ -117,14 +117,14 @@ export class ScenariosRunner {
     runContext.isStopped = true
     // silent
 
-    // Force-close browsers
+    // Stop queue first to prevent new tasks from starting
+    const queueCancelledCount = runContext.queue.stop()
+    // silent
+
+    // Force-close browsers (best-effort)
     const { createBrowserTracker } = await import('./BrowserTracker')
     const tracker = createBrowserTracker(runContext)
     await tracker.closeAll()
-    // silent
-
-    // Stop queue
-    const queueCancelledCount = runContext.queue.stop()
     // silent
 
     const { pending, running } = Db.getCountsForStop(runId)

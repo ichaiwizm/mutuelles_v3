@@ -64,7 +64,7 @@ export interface ExecutionAttempt {
   id: number
   item_id: string
   attempt_number: number
-  status: 'success' | 'error'
+  status: 'success' | 'error' | 'cancelled'
   error_message: string | null
   started_at: string
   completed_at: string | null

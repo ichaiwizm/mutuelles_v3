@@ -125,7 +125,18 @@ export async function runHighLevelFlow({ fieldsFile, flowFile, leadFile, leadDat
     meta.run.finishedAt = new Date().toISOString()
     const manifest = { ...meta, steps: stepsSummary, artifacts: { screenshotsDir:'screenshots', trace: tracingStarted ? 'trace/trace.zip' : null, video: video ? 'video' : null, progress:'progress.ndjson' } }
     writeJson(path.join(runDir,'index.json'), manifest)
-    if (tracingStarted) { ensureDir(traceDir); await context.tracing.stop({ path: path.join(traceDir,'trace.zip') }) }
+    if (tracingStarted) {
+      try {
+        ensureDir(traceDir)
+        await context.tracing.stop({ path: path.join(traceDir,'trace.zip') })
+      } catch (err) {
+        // Swallow errors when the context/browser has already been closed by a stop
+        const msg = err?.message || ''
+        if (!/has been closed|context .*closed|ENOENT/i.test(String(msg))) {
+          console.debug('[Trace] tracing.stop failed:', msg)
+        }
+      }
+    }
 
     const failedSteps = stepsSummary.filter(s => s.ok === false && !s.skipped)
     if (failedSteps.length > 0) {
