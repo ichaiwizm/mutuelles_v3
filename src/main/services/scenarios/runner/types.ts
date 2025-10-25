@@ -75,6 +75,8 @@ export type RunContext = {
   activeBrowsers: Map<string, { browser: any; context: any; itemId: string }>
   // For per-item cancellation
   cancelledItems: Set<string>
+  // For per-item pause/resume (cooperative)
+  pausedItems: Set<string>
   // Display mode and window tracking
   displayMode: 'headless' | 'headless-minimized' | 'visible'
   windowInfos: Map<string, { windowId: number; state: 'normal' | 'minimized' | 'maximized' | 'fullscreen'; targetId: string }>

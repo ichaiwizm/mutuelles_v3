@@ -70,6 +70,9 @@ export function useExecution(
   const [runId, setRunId] = useState<string>('')
   const [isRunning, setIsRunning] = useState(false)
 
+  // Local paused set (UI-only) so polling DB cannot erase pause visual state
+  const pausedItemIdsRef = useRef<Set<string>>(new Set())
+
   // Debounce for event-driven polls
   const lastPollRef = useRef<number>(0)
   const pendingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -116,7 +119,7 @@ export function useExecution(
 
       if (itemsRes.success && itemsRes.data) {
         // Transform DB items to ExecutionItem format
-        const transformedItems: ExecutionItem[] = itemsRes.data.map((item: any) => ({
+        let transformedItems: ExecutionItem[] = itemsRes.data.map((item: any) => ({
           id: item.id,
           runId: item.run_id,  // Map run_id from database
           leadId: item.lead_id || '',
@@ -135,6 +138,14 @@ export function useExecution(
           durationMs: item.duration_ms || undefined,
           attemptNumber: item.attempt_number || undefined
         }))
+
+        // Apply local paused flag on top of DB state (status untouched)
+        if (pausedItemIdsRef.current.size > 0) {
+          transformedItems = transformedItems.map((it) => ({
+            ...it,
+            isPaused: pausedItemIdsRef.current.has(it.id)
+          }))
+        }
 
         setItems(transformedItems)
       }
@@ -349,6 +360,46 @@ export function useExecution(
   }, [runId, pollRunState])
 
   /**
+   * Pause a single execution item
+   */
+  const pauseItem = useCallback(async (itemId: string) => {
+    if (!runId) {
+      throw new Error('Aucune exécution en cours')
+    }
+    const result = await window.api.scenarios.pauseItem(runId, itemId)
+    if (result?.success) {
+      // Optimistic UI update for immediate feedback
+      pausedItemIdsRef.current.add(itemId)
+      setItems(prev => {
+        const next = prev.map(it => it.id === itemId ? { ...it, isPaused: true } : it)
+        return next
+      })
+    }
+    try { await pollRunState(runId) } catch {}
+    return result
+  }, [runId, pollRunState])
+
+  /**
+   * Resume a single paused item
+   */
+  const resumeItem = useCallback(async (itemId: string) => {
+    if (!runId) {
+      throw new Error('Aucune exécution en cours')
+    }
+    const result = await window.api.scenarios.resumeItem(runId, itemId)
+    if (result?.success) {
+      // Optimistic UI update; executor continues at next boundary
+      pausedItemIdsRef.current.delete(itemId)
+      setItems(prev => {
+        const next = prev.map(it => it.id === itemId ? { ...it, isPaused: false } : it)
+        return next
+      })
+    }
+    try { await pollRunState(runId) } catch {}
+    return result
+  }, [runId, pollRunState])
+
+  /**
    * Requeue a single failed item
    */
   const requeueItem = useCallback(async (itemId: string) => {
@@ -423,6 +474,8 @@ export function useExecution(
     requeueItem,
     requeueItems,
     stopItem,
+    pauseItem,
+    resumeItem,
     clearExecution,
 
     // Helpers

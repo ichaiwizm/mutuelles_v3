@@ -41,6 +41,7 @@ interface ExecutionCurrentViewProps {
   onRetryItem?: (itemId: string) => void
   onRetryFailedItems?: (itemIds: string[]) => void
   onStopItem?: (itemId: string) => void
+  onTogglePauseItem?: (itemId: string) => void
 }
 
 /**
@@ -61,7 +62,8 @@ export default function ExecutionCurrentView({
   onEditLead,
   onRetryItem,
   onRetryFailedItems,
-  onStopItem
+  onStopItem,
+  onTogglePauseItem
 }: ExecutionCurrentViewProps) {
   const { selectedRunDetails, handleViewDetails, clearDetails } = useRunDetails()
   const [showReplayModal, setShowReplayModal] = useState(false)
@@ -236,6 +238,7 @@ export default function ExecutionCurrentView({
           onRetryItem={onRetryItem}
           isRunning={isRunning}
           onStopItem={onStopItem}
+          onTogglePauseItem={onTogglePauseItem}
         />
       )}
 

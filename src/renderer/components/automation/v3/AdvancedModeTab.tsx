@@ -59,6 +59,7 @@ interface AdvancedModeTabProps {
   onRetryItem?: (itemId: string) => void
   onRetryFailedItems?: (itemIds: string[]) => void
   onStopItem?: (itemId: string) => void
+  onTogglePauseItem?: (itemId: string) => void
 }
 
 export default function AdvancedModeTab({
@@ -92,7 +93,8 @@ export default function AdvancedModeTab({
   onEditLead,
   onRetryItem,
   onRetryFailedItems,
-  onStopItem
+  onStopItem,
+  onTogglePauseItem
 }: AdvancedModeTabProps) {
   const [showAutoPreview, setShowAutoPreview] = useState(false)
   const [selectedDetailsFlow, setSelectedDetailsFlow] = useState<Flow | null>(null)
@@ -269,6 +271,7 @@ export default function AdvancedModeTab({
         onRetryItem={onRetryItem}
         onRetryFailedItems={onRetryFailedItems}
         onStopItem={onStopItem}
+        onTogglePauseItem={onTogglePauseItem}
       />
 
       {/* Modals */}

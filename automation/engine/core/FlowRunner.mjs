@@ -17,7 +17,7 @@ import { ProgressEmitter } from './ProgressEmitter.mjs'
 import { RunError } from '../errors/RunError.mjs'
 import { describeHL } from '../utils/stepDescriber.mjs'
 
-export async function runHighLevelFlow({ fieldsFile, flowFile, leadFile, leadData, username, password, outRoot='data/runs', mode='dev_private', chrome=null, video=false, dom='errors', a11y=false, keepOpen=true, redact='(password|token|authorization|cookie)=([^;\\s]+)', onProgress=null, sessionRunId=null, onBrowserCreated=null }) {
+export async function runHighLevelFlow({ fieldsFile, flowFile, leadFile, leadData, username, password, outRoot='data/runs', mode='dev_private', chrome=null, video=false, dom='errors', a11y=false, keepOpen=true, redact='(password|token|authorization|cookie)=([^;\\s]+)', onProgress=null, sessionRunId=null, onBrowserCreated=null, pauseGate=null }) {
   const fields = JSON.parse(fs.readFileSync(fieldsFile, 'utf-8'))
   const flow = JSON.parse(fs.readFileSync(flowFile, 'utf-8'))
   const lead = leadData || (leadFile ? JSON.parse(fs.readFileSync(leadFile, 'utf-8')) : {})
@@ -77,7 +77,15 @@ export async function runHighLevelFlow({ fieldsFile, flowFile, leadFile, leadDat
 
     const getCurrentContext = () => getPage()
 
+    // Pause gate at begin (cooperative)
+    if (typeof pauseGate === 'function') {
+      try { await pauseGate('begin') } catch (e) { throw e }
+    }
+
     for (let i=0;i<flow.steps.length;i++) {
+      if (typeof pauseGate === 'function') {
+        try { await pauseGate('before-step', i) } catch (e) { throw e }
+      }
       const step = flow.steps[i]
       const label = step.label || step.type || `step-${i+1}`
 

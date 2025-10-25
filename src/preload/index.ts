@@ -108,6 +108,8 @@ contextBridge.exposeInMainWorld('api', {
     requeueItem: (runId: string, itemId: string) => ipcRenderer.invoke('scenarios:requeueItem', runId, itemId) as Promise<{ success: boolean; message?: string; error?: string }>,
     requeueItems: (runId: string, itemIds: string[]) => ipcRenderer.invoke('scenarios:requeueItems', runId, itemIds) as Promise<{ success: boolean; message?: string; error?: string; requeuedCount?: number }>,
     stopItem: (runId: string, itemId: string) => ipcRenderer.invoke('scenarios:stopItem', runId, itemId) as Promise<{ success: boolean; message?: string; error?: string }>,
+    pauseItem: (runId: string, itemId: string) => ipcRenderer.invoke('scenarios:pauseItem', runId, itemId) as Promise<{ success: boolean; message?: string; error?: string }>,
+    resumeItem: (runId: string, itemId: string) => ipcRenderer.invoke('scenarios:resumeItem', runId, itemId) as Promise<{ success: boolean; message?: string; error?: string }>,
     window: {
       getState: async (runId: string, itemId: string) => ipcRenderer.invoke('scenarios:window:getState', runId, itemId) as Promise<{ success: boolean; state?: string; message?: string }>,
       minimize: async (runId: string, itemId: string) => ipcRenderer.invoke('scenarios:window:minimize', runId, itemId) as Promise<{ success: boolean; message?: string }>,
@@ -256,6 +258,16 @@ declare global {
           requeuedCount?: number
         }>
         stopItem: (runId: string, itemId: string) => Promise<{
+          success: boolean
+          message?: string
+          error?: string
+        }>
+        pauseItem: (runId: string, itemId: string) => Promise<{
+          success: boolean
+          message?: string
+          error?: string
+        }>
+        resumeItem: (runId: string, itemId: string) => Promise<{
           success: boolean
           message?: string
           error?: string

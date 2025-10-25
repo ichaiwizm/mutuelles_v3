@@ -122,6 +122,14 @@ export function useAutomation() {
     }
   )
 
+  // Toggle pause/resume for a given item (based on current status)
+  const toggleItemPause = useCallback(async (itemId: string) => {
+    const item = execution.items.find(i => i.id === itemId)
+    if (!item) return
+    if (item.isPaused) await execution.resumeItem(itemId)
+    else await execution.pauseItem(itemId)
+  }, [execution.items, execution])
+
   // Load history on mount
   useEffect(() => {
     history.loadHistory()
@@ -264,6 +272,7 @@ export function useAutomation() {
     startRun,
     stopRun: execution.stopRun,
     stopItem: execution.stopItem,
+    toggleItemPause,
     clearExecution: execution.clearExecution,
     requeueItem: execution.requeueItem,
     requeueItems: execution.requeueItems,

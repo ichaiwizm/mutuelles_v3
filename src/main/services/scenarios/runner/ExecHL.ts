@@ -11,6 +11,7 @@ export async function execHL(args: {
   onProgress?: (progress: any) => void
   sessionRunId?: string
   onBrowserCreated?: (browser: any, context: any) => void
+  pauseGate?: (where: 'begin' | 'before-step', stepIndex?: number) => Promise<void>
 }): Promise<{ runDir: string }>{
   const { pathToFileURL } = await import('node:url')
   // Import depuis le nouvel index du moteur
@@ -29,7 +30,8 @@ export async function execHL(args: {
     dom: 'steps',
     onProgress: args.onProgress,
     sessionRunId: args.sessionRunId,
-    onBrowserCreated: args.onBrowserCreated
+    onBrowserCreated: args.onBrowserCreated,
+    pauseGate: args.pauseGate
   })
 }
 

@@ -67,6 +67,8 @@ export interface ExecutionItem {
   flowSlug?: string
   flowName?: string
   status: ExecutionItemStatus
+  // Renderer-only, transient UI flag (not persisted):
+  isPaused?: boolean
   runDir?: string
   message?: string
   startedAt?: Date

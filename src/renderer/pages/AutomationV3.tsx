@@ -141,6 +141,7 @@ export default function AutomationV3() {
         onRetryItem={automation.requeueItem}
         onRetryFailedItems={automation.requeueItems}
         onStopItem={automation.stopItem}
+        onTogglePauseItem={automation.toggleItemPause}
       />
 
       {/* Settings Modal */}

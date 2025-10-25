@@ -92,6 +92,7 @@ export class ScenariosRunner {
         isStopped: false,
         activeBrowsers: new Map(),
         cancelledItems: new Set(),
+        pausedItems: new Set(),
         displayMode,
         windowInfos: new Map()
       }
@@ -187,6 +188,38 @@ export class ScenariosRunner {
     }
 
     return { success: true, message: 'Item en cours d\'annulation' }
+  }
+
+  async pauseItem(runId: string, itemId: string): Promise<{ success: boolean; message: string }> {
+    const runContext = this.activeRuns.get(runId)
+    if (!runContext) {
+      return { success: false, message: 'Run introuvable ou déjà terminée' }
+    }
+    if (!itemId) {
+      return { success: false, message: 'Item ID manquant' }
+    }
+
+    // Mark item as paused-requested
+    runContext.pausedItems.add(itemId)
+
+    // Best-effort: reflect paused in DB for pending/running items
+    // Do not change DB status: paused is transient/UI-only
+  
+    return { success: true, message: 'Item mis en pause' }
+  }
+
+  async resumeItem(runId: string, itemId: string): Promise<{ success: boolean; message: string }> {
+    const runContext = this.activeRuns.get(runId)
+    if (!runContext) {
+      return { success: false, message: 'Run introuvable ou déjà terminée' }
+    }
+    if (!itemId) {
+      return { success: false, message: 'Item ID manquant' }
+    }
+
+    runContext.pausedItems.delete(itemId)
+    
+    return { success: true, message: 'Item repris' }
   }
 
   async minimizeItemWindow(runId: string, itemId: string): Promise<{ success: boolean; message: string }> {

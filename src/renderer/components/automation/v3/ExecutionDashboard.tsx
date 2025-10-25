@@ -25,6 +25,7 @@ interface ExecutionDashboardProps {
   onRetryItem?: (itemId: string) => void
   onRetryFailedItems?: (itemIds: string[]) => void
   onStopItem?: (itemId: string) => void
+  onTogglePauseItem?: (itemId: string) => void
 }
 
 export default function ExecutionDashboard({
@@ -42,7 +43,8 @@ export default function ExecutionDashboard({
   onEditLead,
   onRetryItem,
   onRetryFailedItems,
-  onStopItem
+  onStopItem,
+  onTogglePauseItem
 }: ExecutionDashboardProps) {
   const items = executionItems
   const [groupingMode, setGroupingMode] = useState<'flow' | 'platform' | 'status'>('flow')
@@ -73,6 +75,7 @@ export default function ExecutionDashboard({
           onRetryItem={onRetryItem}
           onRetryFailedItems={onRetryFailedItems}
           onStopItem={onStopItem}
+          onTogglePauseItem={onTogglePauseItem}
         />
       )}
 

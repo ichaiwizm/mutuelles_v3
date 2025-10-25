@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react'
-import { Eye, RotateCcw, Square, Minimize2, Maximize2 } from 'lucide-react'
+import { Eye, RotateCcw, Square, Minimize2, Maximize2, Pause, Play } from 'lucide-react'
 import type { ExecutionItem } from '../../../hooks/useAutomation'
 import { useNow } from '../../../hooks/useNow'
 import { getExecutionStatusConfig } from '../../../utils/statusStyles'
@@ -13,6 +13,7 @@ interface ExecutionItemCardProps {
   isRunning?: boolean
   estimatedDurationMs?: number // Optional estimated duration for pending items
   onStopItem?: (itemId: string) => void
+  onTogglePauseItem?: (itemId: string) => void
 }
 
 export default function ExecutionItemCard({
@@ -21,7 +22,8 @@ export default function ExecutionItemCard({
   onRetryItem,
   isRunning = false,
   estimatedDurationMs,
-  onStopItem
+  onStopItem,
+  onTogglePauseItem
 }: ExecutionItemCardProps) {
   // Use useNow hook to update timestamp every second (instead of forcing re-render every 200ms)
   const now = useNow(
@@ -111,6 +113,20 @@ export default function ExecutionItemCard({
 
         {/* Actions */}
         <div className="flex items-center gap-1 flex-shrink-0">
+          {/* Pause/Resume toggle (UI-only, not a persisted status) */}
+          {isRunning && onTogglePauseItem && (item.status === 'running' || item.status === 'pending' || item.isPaused) && (
+            <button
+              onClick={() => onTogglePauseItem(item.id)}
+              title={item.isPaused ? 'Reprendre' : 'Mettre en pause'}
+              className="p-1.5 rounded hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors group"
+            >
+              {item.isPaused ? (
+                <Play size={16} className="text-neutral-700 dark:text-neutral-300 group-hover:text-blue-600 dark:group-hover:text-blue-400" />
+              ) : (
+                <Pause size={16} className="text-neutral-700 dark:text-neutral-300 group-hover:text-blue-600 dark:group-hover:text-blue-400" />
+              )}
+            </button>
+          )}
           {/* Window toggle (headed modes only): one button on/off */}
           {isRunning && winState !== null && (item.status === 'running' || item.status === 'pending') && (
             <button
@@ -197,6 +213,9 @@ export default function ExecutionItemCard({
           Durée: {duration}
           {winState && (
             <span className="ml-2">• Fenêtre: {winState === 'minimized' ? 'minimisée' : 'visible'}</span>
+          )}
+          {item.isPaused && (
+            <span className="ml-2 text-neutral-600 dark:text-neutral-400">• En pause</span>
           )}
         </div>
       ) : null}

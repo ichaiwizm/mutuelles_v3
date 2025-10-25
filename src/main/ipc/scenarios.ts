@@ -404,6 +404,40 @@ export function registerScenariosIpc() {
     }
   })
 
+  // Pause a single item
+  ipcMain.handle('scenarios:pauseItem', async (_e, runId: string, itemId: string) => {
+    try {
+      if (!runId || !itemId) {
+        return {
+          success: false,
+          message: 'Run ID et Item ID requis'
+        }
+      }
+      const result = await runner.pauseItem(runId, itemId)
+      return result
+    } catch (error) {
+      console.error('Error pausing item:', error)
+      return { success: false, message: error instanceof Error ? error.message : 'Failed to pause item' }
+    }
+  })
+
+  // Resume a single item
+  ipcMain.handle('scenarios:resumeItem', async (_e, runId: string, itemId: string) => {
+    try {
+      if (!runId || !itemId) {
+        return {
+          success: false,
+          message: 'Run ID et Item ID requis'
+        }
+      }
+      const result = await runner.resumeItem(runId, itemId)
+      return result
+    } catch (error) {
+      console.error('Error resuming item:', error)
+      return { success: false, message: error instanceof Error ? error.message : 'Failed to resume item' }
+    }
+  })
+
   // Window controls for a single item
   ipcMain.handle('scenarios:window:getState', async (_e, runId: string, itemId: string) => {
     try { return await runner.getItemWindowState(runId, itemId) }

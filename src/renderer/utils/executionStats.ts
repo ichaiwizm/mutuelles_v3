@@ -27,7 +27,7 @@ export function calculateExecutionStats(items: ExecutionItem[]): ExecutionStats 
   const success = items.filter(i => i.status === 'success').length
   const error = items.filter(i => i.status === 'error').length
   const cancelled = items.filter(i => i.status === 'cancelled').length
-  const completed = success + error + cancelled
+  const completed = success + error + cancelled // paused is not completed
 
   return {
     total,

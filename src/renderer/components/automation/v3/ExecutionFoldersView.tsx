@@ -20,6 +20,7 @@ interface ExecutionFoldersViewProps {
   onRetryItem?: (itemId: string) => void
   isRunning?: boolean
   onStopItem?: (itemId: string) => void
+  onTogglePauseItem?: (itemId: string) => void
 }
 
 export default function ExecutionFoldersView({
@@ -29,7 +30,8 @@ export default function ExecutionFoldersView({
   onViewDetails,
   onRetryItem,
   isRunning,
-  onStopItem
+  onStopItem,
+  onTogglePauseItem
 }: ExecutionFoldersViewProps) {
   const groups = groupExecutionItems(items, groupingMode)
 
@@ -92,6 +94,7 @@ export default function ExecutionFoldersView({
               onRetryItem={onRetryItem}
               isRunning={isRunning}
               onStopItem={onStopItem}
+              onTogglePauseItem={onTogglePauseItem}
             />
           ))
         )}

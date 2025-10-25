@@ -32,15 +32,24 @@ export function makeTaskExecutor(runContext: RunContext, deps: {
     }
 
     const isRetry = attempt > 0
+    // Cooperative pause gate (per item) – no DB status change
+    const pauseGate = async (_where: 'begin' | 'before-step', _stepIndex?: number) => {
+      while (runContext.pausedItems.has(def.itemId)) {
+        if (runContext.isStopped || runContext.cancelledItems.has(def.itemId)) {
+          throw new Error('Item cancelled by user')
+        }
+        await new Promise(r => setTimeout(r, 350))
+      }
+    }
+
+    // Honor pause before any start/attempt creation
+    await pauseGate('begin')
+
     const startedAt = new Date().toISOString()
 
     deps.send({ type:'item-start', runId, itemId: def.itemId, leadId: def.leadId, platform: def.platform, flowSlug: def.flowSlug, message: isRetry ? `Tentative ${attempt + 1}/${maxRetries + 1}` : undefined })
 
-    try {
-      Db.createAttempt({ item_id: def.itemId, attempt_number: attempt + 1, status: 'running', started_at: startedAt })
-    } catch (err) {
-      console.error('[Runner] Failed to create attempt record:', err)
-    }
+    // Defer attempt persistence until we know the final status for this attempt
 
     try {
       Db.updateItem(def.itemId, { status: 'running', started_at: startedAt, attempt_number: attempt + 1 })
@@ -66,7 +75,7 @@ export function makeTaskExecutor(runContext: RunContext, deps: {
 
       const browserCallback = (browser: any, context: any) => deps.onTrackBrowser(def.itemId, browser, context)
 
-      const result = await execHL({ ...def, mode, leadData: lead.data, keepOpen, onProgress: progressCallback, sessionRunId: runId, onBrowserCreated: browserCallback })
+      const result = await execHL({ ...def, mode, leadData: lead.data, keepOpen, onProgress: progressCallback, sessionRunId: runId, onBrowserCreated: browserCallback, pauseGate })
       runDir = result.runDir
 
       deps.onUntrackBrowser(def.itemId)
@@ -77,7 +86,9 @@ export function makeTaskExecutor(runContext: RunContext, deps: {
       const durationMs = Date.parse(completedAt) - Date.parse(startedAt)
       Db.updateItem(def.itemId, { status: 'success', run_dir: runDir, completed_at: completedAt, duration_ms: durationMs })
       Db.incrementRunCounter(runId, 'success_items')
-      Db.updateAttempt(def.itemId, attempt + 1, { status: 'success', completed_at: completedAt, duration_ms: durationMs })
+      try {
+        Db.createAttempt({ item_id: def.itemId, attempt_number: attempt + 1, status: 'success', started_at: startedAt, completed_at: completedAt, duration_ms: durationMs })
+      } catch (err) { console.error('[Runner] Failed to persist success attempt:', err) }
 
       // Persist steps from manifest
       try {
@@ -107,8 +118,8 @@ export function makeTaskExecutor(runContext: RunContext, deps: {
         try {
           const completedAt = new Date().toISOString()
           const durationMs = Date.parse(completedAt) - Date.parse(startedAt)
-          Db.updateAttempt(def.itemId, attempt + 1, { status: 'error', error_message: msg, completed_at: completedAt, duration_ms: durationMs })
-        } catch (err) { console.error('[Runner] Failed to update attempt error before retry:', err) }
+          Db.createAttempt({ item_id: def.itemId, attempt_number: attempt + 1, status: 'error', error_message: msg, started_at: startedAt, completed_at: completedAt, duration_ms: durationMs })
+        } catch (err) { console.error('[Runner] Failed to persist error attempt before retry:', err) }
 
         const delay = attempt === 0 ? 2000 : attempt === 1 ? 5000 : 10000
         await new Promise(r => setTimeout(r, delay))
@@ -123,13 +134,13 @@ export function makeTaskExecutor(runContext: RunContext, deps: {
           deps.send({ type:'item-error', runId, itemId: def.itemId, leadId: def.leadId, platform: def.platform, flowSlug: def.flowSlug, message: 'Annulé par l’utilisateur', runDir })
           Db.updateItem(def.itemId, { status: 'cancelled', error_message: 'Annulé par l’utilisateur', run_dir: runDir || undefined, completed_at: completedAt, duration_ms: durationMs })
           // attempts: mark as cancelled if supported; ignore type mismatch silently
-          try { Db.updateAttempt(def.itemId, attempt + 1, { status: 'cancelled' as any, error_message: 'Annulé par l’utilisateur', completed_at: completedAt, duration_ms: durationMs }) } catch {}
+          try { Db.createAttempt({ item_id: def.itemId, attempt_number: attempt + 1, status: 'cancelled' as any, error_message: 'Annulé par l’utilisateur', started_at: startedAt, completed_at: completedAt, duration_ms: durationMs }) } catch {}
           Db.incrementRunCounter(runId, 'cancelled_items')
         } else {
           deps.send({ type:'item-error', runId, itemId: def.itemId, leadId: def.leadId, platform: def.platform, flowSlug: def.flowSlug, message: finalMsg, runDir })
           Db.updateItem(def.itemId, { status: 'error', error_message: finalMsg, run_dir: runDir || undefined, completed_at: completedAt, duration_ms: durationMs })
           Db.incrementRunCounter(runId, 'error_items')
-          try { Db.updateAttempt(def.itemId, attempt + 1, { status: 'error', error_message: finalMsg, completed_at: completedAt, duration_ms: durationMs }) } catch {}
+          try { Db.createAttempt({ item_id: def.itemId, attempt_number: attempt + 1, status: 'error', error_message: finalMsg, started_at: startedAt, completed_at: completedAt, duration_ms: durationMs }) } catch {}
           if (runDir) {
             try {
               const manifestPath = path.join(runDir, 'index.json')

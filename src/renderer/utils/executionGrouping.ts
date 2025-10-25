@@ -112,13 +112,7 @@ function getStatusLabel(status: string): string {
 function sortGroups(groups: ExecutionGroup[], mode: GroupingMode): ExecutionGroup[] {
   if (mode === 'status') {
     // Status priority for display: running > pending > error > cancelled > success
-    const order: Record<string, number> = {
-      running: 1,
-      pending: 2,
-      error: 3,
-      cancelled: 4,
-      success: 5
-    }
+    const order: Record<string, number> = { running: 1, pending: 2, error: 3, cancelled: 4, success: 5 }
     return groups.sort((a, b) => {
       const orderA = order[a.key] || 999
       const orderB = order[b.key] || 999
