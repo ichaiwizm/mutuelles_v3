@@ -285,6 +285,8 @@ export function useExecution(
       // Build execution payload
       const payload = {
         leadIds: Array.from(selectedLeadIds),
+        // Limit execution strictly to platforms of the selected flows
+        platformSlugs: Array.from(new Set(flowsToExecute.map(f => f.platform))),
         flowOverrides,
         options: {
           mode,

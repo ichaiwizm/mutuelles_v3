@@ -31,7 +31,11 @@ export class ScenariosRunner {
 
     const db = Db.conn()
     const platformsSelected = db.prepare(`SELECT slug, id FROM platforms_catalog WHERE selected = 1 ORDER BY name`).all() as Array<{slug:string; id:number}>
-    const allSlugs = payload.platformSlugs && payload.platformSlugs.length ? payload.platformSlugs : platformsSelected.map(p => p.slug)
+    const allSlugs = (payload.platformSlugs && payload.platformSlugs.length)
+      ? payload.platformSlugs
+      : ((payload.flowOverrides && Object.keys(payload.flowOverrides).length)
+          ? Object.keys(payload.flowOverrides!)
+          : platformsSelected.map(p => p.slug))
 
     setTimeout(async () => {
       const { taskDefs, earlyErrors } = buildTasks(this.projectRoot, payload.leadIds, allSlugs, payload.flowOverrides)

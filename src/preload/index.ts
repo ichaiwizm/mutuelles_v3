@@ -76,7 +76,7 @@ contextBridge.exposeInMainWorld('api', {
   ,
   scenarios: {
     run: (payload: { scenarioId?: string; platformSlugs?: string[]; leadIds: string[]; options?: { mode?: 'headless'|'dev'|'dev_private'; concurrency?: number } }) =>
-      ipcRenderer.invoke('scenarios:run', payload) as Promise<{ runId: string }> ,
+      ipcRenderer.invoke('scenarios:run', payload) as Promise<{ runId: string }>,
     onProgress: (runId: string, cb: (e:any)=>void) => {
       const ch = `scenarios:progress:${runId}`
       const h = (_: any, data: any) => cb(data)
@@ -94,103 +94,24 @@ contextBridge.exposeInMainWorld('api', {
       }>
       error?: string
     }>,
-    getHistory: (filters?: any) => ipcRenderer.invoke('scenarios:getHistory', filters) as Promise<{
-      success: boolean
-      data?: Array<{
-        id: string
-        slug: string
-        platform: string
-        leadId?: string
-        leadName?: string
-        status: 'success' | 'error' | 'running' | 'stopped'
-        startedAt: string
-        finishedAt?: string
-        durationMs?: number
-        runDir: string
-        error?: string
-        mode: 'headless' | 'dev' | 'dev_private'
-        stepsTotal?: number
-        stepsCompleted?: number
-      }>
-      error?: string
-    }>,
-    getActiveRun: (runId: string) => ipcRenderer.invoke('scenarios:getActiveRun', runId) as Promise<{
-      success: boolean
-      data?: any
-      error?: string
-    }>,
-    getRunItems: (runId: string) => ipcRenderer.invoke('scenarios:getRunItems', runId) as Promise<{
-      success: boolean
-      data?: Array<any>
-      error?: string
-    }>,
-    getRunSteps: (itemId: string) => ipcRenderer.invoke('scenarios:getRunSteps', itemId) as Promise<{
-      success: boolean
-      data?: Array<any>
-      error?: string
-    }>,
-    deleteRun: (runId: string) => ipcRenderer.invoke('scenarios:deleteRun', runId) as Promise<{
-      success: boolean
-      message?: string
-      error?: string
-    }>,
-    getRunDetails: (runDir: string) => ipcRenderer.invoke('scenarios:getRunDetails', runDir) as Promise<{
-      success: boolean
-      data?: any
-      error?: string
-    }>,
-    debugDump: () => ipcRenderer.invoke('scenarios:debugDump') as Promise<{
-      success: boolean
-      data?: { runs: any[]; items: any[] }
-      error?: string
-    }>,
-    repairFinalize: () => ipcRenderer.invoke('scenarios:repairFinalize') as Promise<{
-      success: boolean
-      repaired?: number
-      error?: string
-    }>,
-    getItemDetails: (itemId: string) => ipcRenderer.invoke('scenarios:getItemDetails', itemId) as Promise<{
-      success: boolean
-      data?: any
-      error?: string
-    }>,
-    readScreenshot: (screenshotPath: string) => ipcRenderer.invoke('scenarios:readScreenshot', screenshotPath) as Promise<{
-      success: boolean
-      data?: string
-      error?: string
-    }>,
-    stop: (runId: string) => ipcRenderer.invoke('scenarios:stop', runId) as Promise<{
-      success: boolean
-      message?: string
-      error?: string
-      cancelledCount?: number
-    }>,
-    requeueItem: (runId: string, itemId: string) => ipcRenderer.invoke('scenarios:requeueItem', runId, itemId) as Promise<{
-      success: boolean
-      message?: string
-      error?: string
-    }>,
-    requeueItems: (runId: string, itemIds: string[]) => ipcRenderer.invoke('scenarios:requeueItems', runId, itemIds) as Promise<{
-      success: boolean
-      message?: string
-      error?: string
-      requeuedCount?: number
-    }>,
-    stopItem: (runId: string, itemId: string) => {
-      return ipcRenderer.invoke('scenarios:stopItem', runId, itemId) as Promise<{
-        success: boolean
-        message?: string
-        error?: string
-      }>
-    },
+    getHistory: (filters?: any) => ipcRenderer.invoke('scenarios:getHistory', filters) as Promise<{ success: boolean; data?: Array<any>; error?: string }>,
+    getActiveRun: (runId: string) => ipcRenderer.invoke('scenarios:getActiveRun', runId) as Promise<{ success: boolean; data?: any; error?: string }>,
+    getRunItems: (runId: string) => ipcRenderer.invoke('scenarios:getRunItems', runId) as Promise<{ success: boolean; data?: Array<any>; error?: string }>,
+    getRunSteps: (itemId: string) => ipcRenderer.invoke('scenarios:getRunSteps', itemId) as Promise<{ success: boolean; data?: Array<any>; error?: string }>,
+    deleteRun: (runId: string) => ipcRenderer.invoke('scenarios:deleteRun', runId) as Promise<{ success: boolean; message?: string; error?: string }>,
+    getRunDetails: (runDir: string) => ipcRenderer.invoke('scenarios:getRunDetails', runDir) as Promise<{ success: boolean; data?: any; error?: string }>,
+    debugDump: () => ipcRenderer.invoke('scenarios:debugDump') as Promise<{ success: boolean; data?: { runs: any[]; items: any[] }; error?: string }>,
+    repairFinalize: () => ipcRenderer.invoke('scenarios:repairFinalize') as Promise<{ success: boolean; repaired?: number; error?: string }>,
+    getItemDetails: (itemId: string) => ipcRenderer.invoke('scenarios:getItemDetails', itemId) as Promise<{ success: boolean; data?: any; error?: string }>,
+    readScreenshot: (screenshotPath: string) => ipcRenderer.invoke('scenarios:readScreenshot', screenshotPath) as Promise<{ success: boolean; data?: string; error?: string }>,
+    stop: (runId: string) => ipcRenderer.invoke('scenarios:stop', runId) as Promise<{ success: boolean; message?: string; error?: string; cancelledCount?: number }>,
+    requeueItem: (runId: string, itemId: string) => ipcRenderer.invoke('scenarios:requeueItem', runId, itemId) as Promise<{ success: boolean; message?: string; error?: string }>,
+    requeueItems: (runId: string, itemIds: string[]) => ipcRenderer.invoke('scenarios:requeueItems', runId, itemIds) as Promise<{ success: boolean; message?: string; error?: string; requeuedCount?: number }>,
+    stopItem: (runId: string, itemId: string) => ipcRenderer.invoke('scenarios:stopItem', runId, itemId) as Promise<{ success: boolean; message?: string; error?: string }>,
     window: {
-      getState: async (runId: string, itemId: string) => {
-        // noisy in UI; keep silent
-        return ipcRenderer.invoke('scenarios:window:getState', runId, itemId) as Promise<{ success: boolean; state?: string; message?: string }>
-      },
+      getState: async (runId: string, itemId: string) => ipcRenderer.invoke('scenarios:window:getState', runId, itemId) as Promise<{ success: boolean; state?: string; message?: string }>,
       minimize: async (runId: string, itemId: string) => ipcRenderer.invoke('scenarios:window:minimize', runId, itemId) as Promise<{ success: boolean; message?: string }>,
       restore: async (runId: string, itemId: string) => ipcRenderer.invoke('scenarios:window:restore', runId, itemId) as Promise<{ success: boolean; message?: string }>
-    }
     }
   }
 })
