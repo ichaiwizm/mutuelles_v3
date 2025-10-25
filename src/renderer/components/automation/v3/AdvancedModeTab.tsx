@@ -148,7 +148,7 @@ export default function AdvancedModeTab({
       case 'headless':
         return 'headless'
       case 'headless-minimized':
-        return 'dev' // Use dev mode for headless-minimized
+        return 'dev' // headed + minimized via CDP
       case 'visible':
         return 'dev'
       default:

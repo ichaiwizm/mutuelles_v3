@@ -37,7 +37,7 @@ export default function SettingsExecutionSection({
               <option value="visible">Fenêtre visible</option>
             </select>
             <p className="text-xs text-neutral-500 mt-1">
-              Mode d'affichage du navigateur
+              Headless = aucune fenêtre • Fenêtre minimisée = visible mais réduite • Visible = fenêtre affichée
             </p>
           </div>
 

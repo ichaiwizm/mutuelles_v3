@@ -404,6 +404,35 @@ export function registerScenariosIpc() {
     }
   })
 
+  // Window controls for a single item
+  ipcMain.handle('scenarios:window:getState', async (_e, runId: string, itemId: string) => {
+    try {
+      console.log('[IPC] window:getState', { runId, itemId })
+      const result = await runner.getItemWindowState(runId, itemId)
+      console.log('[IPC] window:getState result', result)
+      return result
+    } catch (error) {
+      return { success: false, message: error instanceof Error ? error.message : 'Failed to get window state' }
+    }
+  })
+  ipcMain.handle('scenarios:window:minimize', async (_e, runId: string, itemId: string) => {
+    try {
+      console.log('[IPC] window:minimize', { runId, itemId })
+      const r = await runner.minimizeItemWindow(runId, itemId)
+      console.log('[IPC] window:minimize result', r)
+      return r
+    } catch (error) { return { success: false, message: 'Failed to minimize' } }
+  })
+  ipcMain.handle('scenarios:window:restore', async (_e, runId: string, itemId: string) => {
+    try {
+      console.log('[IPC] window:restore', { runId, itemId })
+      const r = await runner.restoreItemWindow(runId, itemId)
+      console.log('[IPC] window:restore result', r)
+      return r
+    } catch (error) { return { success: false, message: 'Failed to restore' } }
+  })
+  // optional: bringToFront could be exposed later
+
   // Requeue multiple failed items
   ipcMain.handle('scenarios:requeueItems', async (_e, runId: string, itemIds: string[]) => {
     try {

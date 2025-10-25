@@ -23,6 +23,8 @@ export class ScenariosRunner {
 
     const leadsSvc = new LeadsService()
     const mode: Mode = payload.options?.mode || 'headless'
+    const displayMode: 'headless' | 'headless-minimized' | 'visible' = (payload.options as any)?.displayMode || (mode === 'headless' ? 'headless' : 'visible')
+    console.log('[Runner] run start', { runId, mode, displayMode })
     const concurrency = Math.max(1, Math.min(15, payload.options?.concurrency ?? 2))
     const keepOpen = payload.options?.keepBrowserOpen ?? false
     const retryFailed = payload.options?.retryFailed ?? false
@@ -86,14 +88,18 @@ export class ScenariosRunner {
         executeWithRetry: null as any,
         isStopped: false,
         activeBrowsers: new Map(),
-        cancelledItems: new Set()
+        cancelledItems: new Set(),
+        displayMode,
+        windowInfos: new Map()
       }
 
       const browserTracker = createBrowserTracker(runContext)
+      const { createWindowTracker } = await import('./WindowTracker')
+      const windowTracker = createWindowTracker(runContext)
       const { finalizeRun, checkCompletion } = makeFinalizer(runContext, send)
       const { executeWithRetry } = makeTaskExecutor(runContext, {
         send,
-        onTrackBrowser: (id, b, c) => browserTracker.track(id, b, c),
+        onTrackBrowser: (id, b, c) => { browserTracker.track(id, b, c); windowTracker.track(id, b, c) },
         onUntrackBrowser: (id) => browserTracker.untrack(id),
         checkCompletion
       })
@@ -178,6 +184,39 @@ export class ScenariosRunner {
     }
 
     return { success: true, message: 'Item en cours d\'annulation' }
+  }
+
+  async minimizeItemWindow(runId: string, itemId: string): Promise<{ success: boolean; message: string }> {
+    const runContext = this.activeRuns.get(runId)
+    if (!runContext) return { success: false, message: 'Run introuvable' }
+    try {
+      const { createWindowTracker } = await import('./WindowTracker')
+      const w = createWindowTracker(runContext)
+      const ok = await w.minimize(itemId)
+      return { success: ok, message: ok ? 'Fenêtre minimisée' : 'Impossible de minimiser' }
+    } catch (e:any) { return { success: false, message: e?.message || 'Erreur' } }
+  }
+
+  async restoreItemWindow(runId: string, itemId: string): Promise<{ success: boolean; message: string }> {
+    const runContext = this.activeRuns.get(runId)
+    if (!runContext) return { success: false, message: 'Run introuvable' }
+    try {
+      const { createWindowTracker } = await import('./WindowTracker')
+      const w = createWindowTracker(runContext)
+      const ok = await w.restore(itemId)
+      return { success: ok, message: ok ? 'Fenêtre restaurée' : 'Impossible de restaurer' }
+    } catch (e:any) { return { success: false, message: e?.message || 'Erreur' } }
+  }
+
+  async getItemWindowState(runId: string, itemId: string): Promise<{ success: boolean; state?: string; message?: string }> {
+    const runContext = this.activeRuns.get(runId)
+    if (!runContext) return { success: false, message: 'Run introuvable' }
+    try {
+      const { createWindowTracker } = await import('./WindowTracker')
+      const w = createWindowTracker(runContext)
+      const state = await w.getState(itemId)
+      return { success: true, state: state || undefined }
+    } catch (e:any) { return { success: false, message: e?.message || 'Erreur' } }
   }
 
   requeueItem(runId: string, itemId: string): { success: boolean; message: string } {

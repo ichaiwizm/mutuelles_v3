@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react'
-import { Eye, RotateCcw, Square } from 'lucide-react'
+import { Eye, RotateCcw, Square, Minimize2, Maximize2 } from 'lucide-react'
 import type { ExecutionItem } from '../../../hooks/useAutomation'
 import { useNow } from '../../../hooks/useNow'
 import { getExecutionStatusConfig } from '../../../utils/statusStyles'
@@ -41,6 +41,38 @@ export default function ExecutionItemCard({
 
   const StatusIcon = config.icon
 
+  // Window state (best-effort, only for headed modes)
+  const [winState, setWinState] = React.useState<'visible' | 'minimized' | null>(null)
+  React.useEffect(() => {
+    let canceled = false
+    const fetchState = async () => {
+      if (!isRunning) return
+      try {
+        const resp = await window.api.scenarios.window.getState(item.runId, item.id)
+        if (!canceled && resp?.success) {
+          const s = resp.state === 'minimized' ? 'minimized' : resp.state ? 'visible' : null
+          setWinState(s)
+        }
+      } catch {}
+    }
+    fetchState()
+    const t = setInterval(fetchState, 2500)
+    return () => { canceled = true; clearInterval(t) }
+  }, [item.id, item.runId, isRunning])
+
+  const minimizeWin = async () => {
+    try {
+      const r = await window.api.scenarios.window.minimize(item.runId, item.id)
+      if (r?.success) setWinState('minimized')
+    } catch {}
+  }
+  const restoreWin = async () => {
+    try {
+      const r = await window.api.scenarios.window.restore(item.runId, item.id)
+      if (r?.success) setWinState('visible')
+    } catch {}
+  }
+
   const progress = useMemo(
     () =>
       item.currentStep && item.totalSteps
@@ -79,6 +111,23 @@ export default function ExecutionItemCard({
 
         {/* Actions */}
         <div className="flex items-center gap-1 flex-shrink-0">
+          {/* Window toggle (headed modes only): one button on/off */}
+          {isRunning && winState !== null && (item.status === 'running' || item.status === 'pending') && (
+            <button
+              onClick={async () => {
+                console.log('[UI] toggle window', { itemId: item.id, from: winState })
+                if (winState === 'minimized') await restoreWin(); else await minimizeWin()
+              }}
+              title={winState === 'minimized' ? 'Afficher la fenêtre' : 'Réduire la fenêtre'}
+              className="p-1.5 rounded hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors group"
+            >
+              {winState === 'minimized' ? (
+                <Maximize2 size={16} className="text-neutral-600 dark:text-neutral-400 group-hover:text-blue-600 dark:group-hover:text-blue-400" />
+              ) : (
+                <Minimize2 size={16} className="text-neutral-600 dark:text-neutral-400 group-hover:text-blue-600 dark:group-hover:text-blue-400" />
+              )}
+            </button>
+          )}
           {/* Stop single item - visible for pending/running during active run */}
           {(isRunning && onStopItem && (item.status === 'pending' || item.status === 'running')) && (
             <button
@@ -137,6 +186,9 @@ export default function ExecutionItemCard({
           <div className="text-xs text-amber-600 dark:text-amber-400 font-medium">
             En attente de démarrage...
           </div>
+          {winState && (
+            <div className="text-xs text-neutral-500">Fenêtre: {winState === 'minimized' ? 'minimisée' : 'visible'}</div>
+          )}
           {estimatedDurationMs && (
             <TimeEstimator durationMs={estimatedDurationMs} />
           )}
@@ -144,6 +196,9 @@ export default function ExecutionItemCard({
       ) : duration ? (
         <div className="text-xs text-neutral-500">
           Durée: {duration}
+          {winState && (
+            <span className="ml-2">• Fenêtre: {winState === 'minimized' ? 'minimisée' : 'visible'}</span>
+          )}
         </div>
       ) : null}
 

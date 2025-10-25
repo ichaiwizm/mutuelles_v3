@@ -291,7 +291,8 @@ export function useExecution(
           concurrency: settings.concurrency,
           keepBrowserOpen: settings.keepBrowserOpen,
           retryFailed: settings.retryFailed,
-          maxRetries: settings.maxRetries
+          maxRetries: settings.maxRetries,
+          displayMode: settings.mode
         }
       }
 

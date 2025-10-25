@@ -176,11 +176,28 @@ contextBridge.exposeInMainWorld('api', {
       error?: string
       requeuedCount?: number
     }>,
-    stopItem: (runId: string, itemId: string) => ipcRenderer.invoke('scenarios:stopItem', runId, itemId) as Promise<{
-      success: boolean
-      message?: string
-      error?: string
-    }>
+    stopItem: (runId: string, itemId: string) => {
+      console.log('[preload] scenarios.stopItem', { runId, itemId })
+      return ipcRenderer.invoke('scenarios:stopItem', runId, itemId) as Promise<{
+        success: boolean
+        message?: string
+        error?: string
+      }>
+    },
+    window: {
+      getState: async (runId: string, itemId: string) => {
+        // noisy in UI; keep silent
+        return ipcRenderer.invoke('scenarios:window:getState', runId, itemId) as Promise<{ success: boolean; state?: string; message?: string }>
+      },
+      minimize: async (runId: string, itemId: string) => {
+        console.log('[preload] scenarios.window.minimize', { runId, itemId })
+        return ipcRenderer.invoke('scenarios:window:minimize', runId, itemId) as Promise<{ success: boolean; message?: string }>
+      },
+      restore: async (runId: string, itemId: string) => {
+        console.log('[preload] scenarios.window.restore', { runId, itemId })
+        return ipcRenderer.invoke('scenarios:window:restore', runId, itemId) as Promise<{ success: boolean; message?: string }>
+      }
+    }
   }
 })
 
@@ -328,6 +345,11 @@ declare global {
           message?: string
           error?: string
         }>
+        window: {
+          getState: (runId: string, itemId: string) => Promise<{ success: boolean; state?: string; message?: string }>
+          minimize: (runId: string, itemId: string) => Promise<{ success: boolean; message?: string }>
+          restore: (runId: string, itemId: string) => Promise<{ success: boolean; message?: string }>
+        }
       }
       adminHL: {
         listHLFlows: () => Promise<Array<{ platform:string; slug:string; name:string; file:string }>>
