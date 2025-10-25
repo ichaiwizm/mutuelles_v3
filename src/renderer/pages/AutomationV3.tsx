@@ -140,6 +140,7 @@ export default function AutomationV3() {
         onPrepareReplayFromErrors={automation.prepareReplayFromErrors}
         onRetryItem={automation.requeueItem}
         onRetryFailedItems={automation.requeueItems}
+        onStopItem={automation.stopItem}
       />
 
       {/* Settings Modal */}

@@ -11,6 +11,7 @@ interface ExecutionDashboardProps {
   runHistory: RunHistoryItem[]
   isRunning: boolean
   onStopExecution?: () => void
+  onClearCompletedExecutions?: () => void
   onRerunHistory?: (runId: string) => void
   onRerunHistoryItem?: (item: ExecutionHistoryItem) => void
   onDeleteHistory?: (runId: string) => void
@@ -23,6 +24,7 @@ interface ExecutionDashboardProps {
   // For requeue
   onRetryItem?: (itemId: string) => void
   onRetryFailedItems?: (itemIds: string[]) => void
+  onStopItem?: (itemId: string) => void
 }
 
 export default function ExecutionDashboard({
@@ -39,7 +41,8 @@ export default function ExecutionDashboard({
   onPrepareReplayFromErrors,
   onEditLead,
   onRetryItem,
-  onRetryFailedItems
+  onRetryFailedItems,
+  onStopItem
 }: ExecutionDashboardProps) {
   const items = executionItems
   const [groupingMode, setGroupingMode] = useState<'flow' | 'platform' | 'status'>('flow')
@@ -69,6 +72,7 @@ export default function ExecutionDashboard({
           onEditLead={onEditLead}
           onRetryItem={onRetryItem}
           onRetryFailedItems={onRetryFailedItems}
+          onStopItem={onStopItem}
         />
       )}
 

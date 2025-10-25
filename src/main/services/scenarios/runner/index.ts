@@ -85,7 +85,8 @@ export class ScenariosRunner {
         runId,
         executeWithRetry: null as any,
         isStopped: false,
-        activeBrowsers: new Map()
+        activeBrowsers: new Map(),
+        cancelledItems: new Set()
       }
 
       const browserTracker = createBrowserTracker(runContext)
@@ -153,6 +154,30 @@ export class ScenariosRunner {
 
     const totalCancelled = queueCancelledCount + dbCancelledCount
     return { success: true, message: `Run arrêté avec succès (${totalCancelled} tâches annulées)`, cancelledCount: totalCancelled }
+  }
+
+  async stopItem(runId: string, itemId: string): Promise<{ success: boolean; message: string }> {
+    const runContext = this.activeRuns.get(runId)
+    if (!runContext) {
+      return { success: false, message: 'Run introuvable ou déjà terminée' }
+    }
+    if (!itemId) {
+      return { success: false, message: 'Item ID manquant' }
+    }
+
+    // Mark item as cancelled-requested; executor will honor it even if pending
+    runContext.cancelledItems.add(itemId)
+
+    // If running, try to close its browser/context immediately
+    try {
+      const { createBrowserTracker } = await import('./BrowserTracker')
+      const tracker = createBrowserTracker(runContext)
+      await tracker.closeOne(itemId)
+    } catch (err) {
+      console.debug('[Runner] stopItem closeOne error:', err instanceof Error ? err.message : err)
+    }
+
+    return { success: true, message: 'Item en cours d\'annulation' }
   }
 
   requeueItem(runId: string, itemId: string): { success: boolean; message: string } {

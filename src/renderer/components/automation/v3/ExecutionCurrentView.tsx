@@ -40,6 +40,7 @@ interface ExecutionCurrentViewProps {
   // Optional props for requeue
   onRetryItem?: (itemId: string) => void
   onRetryFailedItems?: (itemIds: string[]) => void
+  onStopItem?: (itemId: string) => void
 }
 
 /**
@@ -59,7 +60,8 @@ export default function ExecutionCurrentView({
   onReplayFailures,
   onEditLead,
   onRetryItem,
-  onRetryFailedItems
+  onRetryFailedItems,
+  onStopItem
 }: ExecutionCurrentViewProps) {
   const { selectedRunDetails, handleViewDetails, clearDetails } = useRunDetails()
   const [showReplayModal, setShowReplayModal] = useState(false)
@@ -233,6 +235,7 @@ export default function ExecutionCurrentView({
           onViewDetails={handleViewDetails}
           onRetryItem={onRetryItem}
           isRunning={isRunning}
+          onStopItem={onStopItem}
         />
       )}
 

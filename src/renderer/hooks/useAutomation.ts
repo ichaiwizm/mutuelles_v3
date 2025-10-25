@@ -263,6 +263,7 @@ export function useAutomation() {
     totalExecutions: selection.totalExecutions,
     startRun,
     stopRun: execution.stopRun,
+    stopItem: execution.stopItem,
     clearExecution: execution.clearExecution,
     requeueItem: execution.requeueItem,
     requeueItems: execution.requeueItems,

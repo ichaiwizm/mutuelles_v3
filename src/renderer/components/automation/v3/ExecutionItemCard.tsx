@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react'
-import { Eye, RotateCcw } from 'lucide-react'
+import { Eye, RotateCcw, Square } from 'lucide-react'
 import type { ExecutionItem } from '../../../hooks/useAutomation'
 import { useNow } from '../../../hooks/useNow'
 import { getExecutionStatusConfig } from '../../../utils/statusStyles'
@@ -12,6 +12,7 @@ interface ExecutionItemCardProps {
   onRetryItem?: (itemId: string) => void
   isRunning?: boolean
   estimatedDurationMs?: number // Optional estimated duration for pending items
+  onStopItem?: (itemId: string) => void
 }
 
 export default function ExecutionItemCard({
@@ -19,7 +20,8 @@ export default function ExecutionItemCard({
   onViewDetails,
   onRetryItem,
   isRunning = false,
-  estimatedDurationMs
+  estimatedDurationMs,
+  onStopItem
 }: ExecutionItemCardProps) {
   // Use useNow hook to update timestamp every second (instead of forcing re-render every 200ms)
   const now = useNow(
@@ -77,6 +79,16 @@ export default function ExecutionItemCard({
 
         {/* Actions */}
         <div className="flex items-center gap-1 flex-shrink-0">
+          {/* Stop single item - visible for pending/running during active run */}
+          {(isRunning && onStopItem && (item.status === 'pending' || item.status === 'running')) && (
+            <button
+              onClick={() => onStopItem(item.id)}
+              title="Arrêter l'exécution de cet item"
+              className="p-1.5 rounded hover:bg-red-50 dark:hover:bg-red-950 transition-colors group"
+            >
+              <Square size={16} className="text-red-600 dark:text-red-400 group-hover:text-red-700 dark:group-hover:text-red-300 transition-colors" />
+            </button>
+          )}
           {/* Retry button - visible only for errors during active run */}
   {(item.status === 'error') && isRunning && onRetryItem && (
             <button

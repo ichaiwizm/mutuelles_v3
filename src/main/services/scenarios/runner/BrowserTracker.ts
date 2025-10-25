@@ -25,9 +25,27 @@ export function createBrowserTracker(runContext: RunContext) {
     runContext.activeBrowsers.clear()
   }
 
+  async function closeOne(itemId: string) {
+    const entry = runContext.activeBrowsers.get(itemId)
+    if (!entry) return
+    const { browser, context } = entry
+    try {
+      if (context && typeof context.close === 'function') {
+        await context.close().catch((err: any) => console.debug('[Runner] Context close error (one):', err?.message))
+      }
+      if (browser && typeof browser.close === 'function') {
+        await browser.close().catch((err: any) => console.debug('[Runner] Browser close error (one):', err?.message))
+      }
+    } catch (err) {
+      console.debug(`[Runner] Failed to close browser for ${itemId}:`, err instanceof Error ? err.message : err)
+    } finally {
+      runContext.activeBrowsers.delete(itemId)
+    }
+  }
+
   function untrack(itemId: string) {
     runContext.activeBrowsers.delete(itemId)
   }
 
-  return { track, closeAll, untrack }
+  return { track, closeAll, closeOne, untrack }
 }

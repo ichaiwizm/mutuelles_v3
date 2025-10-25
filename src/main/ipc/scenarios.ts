@@ -383,6 +383,27 @@ export function registerScenariosIpc() {
     }
   })
 
+  // Stop a single item within a running execution
+  ipcMain.handle('scenarios:stopItem', async (_e, runId: string, itemId: string) => {
+    try {
+      if (!runId || !itemId) {
+        return {
+          success: false,
+          message: 'Run ID et Item ID requis'
+        }
+      }
+
+      const result = await runner.stopItem(runId, itemId)
+      return result
+    } catch (error) {
+      console.error('Error stopping item:', error)
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Failed to stop item'
+      }
+    }
+  })
+
   // Requeue multiple failed items
   ipcMain.handle('scenarios:requeueItems', async (_e, runId: string, itemIds: string[]) => {
     try {

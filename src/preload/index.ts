@@ -175,6 +175,11 @@ contextBridge.exposeInMainWorld('api', {
       message?: string
       error?: string
       requeuedCount?: number
+    }>,
+    stopItem: (runId: string, itemId: string) => ipcRenderer.invoke('scenarios:stopItem', runId, itemId) as Promise<{
+      success: boolean
+      message?: string
+      error?: string
     }>
   }
 })
@@ -261,6 +266,21 @@ declare global {
           }>
           error?: string
         }>
+        getActiveRun: (runId: string) => Promise<{
+          success: boolean
+          data?: any
+          error?: string
+        }>
+        getRunItems: (runId: string) => Promise<{
+          success: boolean
+          data?: Array<any>
+          error?: string
+        }>
+        getRunSteps: (itemId: string) => Promise<{
+          success: boolean
+          data?: Array<any>
+          error?: string
+        }>
       getRunDetails: (runDir: string) => Promise<{
         success: boolean
         data?: any
@@ -302,6 +322,11 @@ declare global {
           message?: string
           error?: string
           requeuedCount?: number
+        }>
+        stopItem: (runId: string, itemId: string) => Promise<{
+          success: boolean
+          message?: string
+          error?: string
         }>
       }
       adminHL: {

@@ -333,6 +333,19 @@ export function useExecution(
   }, [runId, pollRunState])
 
   /**
+   * Stop a single execution item (pending or running)
+   */
+  const stopItem = useCallback(async (itemId: string) => {
+    if (!runId) {
+      throw new Error('Aucune exécution en cours')
+    }
+    const result = await window.api.scenarios.stopItem(runId, itemId)
+    // Light poll to reflect cancellation quickly
+    try { await pollRunState(runId) } catch {}
+    return result
+  }, [runId, pollRunState])
+
+  /**
    * Requeue a single failed item
    */
   const requeueItem = useCallback(async (itemId: string) => {
@@ -406,6 +419,7 @@ export function useExecution(
     stopRun,
     requeueItem,
     requeueItems,
+    stopItem,
     clearExecution,
 
     // Helpers

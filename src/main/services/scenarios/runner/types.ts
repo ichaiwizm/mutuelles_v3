@@ -73,5 +73,7 @@ export type RunContext = {
   // For stopping execution
   isStopped: boolean
   activeBrowsers: Map<string, { browser: any; context: any; itemId: string }>
+  // For per-item cancellation
+  cancelledItems: Set<string>
 }
 

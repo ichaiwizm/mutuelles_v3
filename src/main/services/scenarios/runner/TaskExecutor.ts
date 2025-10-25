@@ -13,7 +13,7 @@ export function makeTaskExecutor(runContext: RunContext, deps: {
   const { runId, retryFailed, maxRetries, mode, keepOpen } = runContext
 
   const executeWithRetry = async (def: TaskDef, attempt: number = 0): Promise<void> => {
-    if (runContext.isStopped) {
+    if (runContext.isStopped || runContext.cancelledItems.has(def.itemId)) {
       // Run was stopped before this item started: mark as cancelled and fix counters
       const completedAt = new Date().toISOString()
       try {
@@ -99,11 +99,11 @@ export function makeTaskExecutor(runContext: RunContext, deps: {
       const msg = e instanceof Error ? e.message : String(e)
       if (e && typeof e === 'object' && 'runDir' in e) runDir = (e as any).runDir
 
-      // Detect user-initiated stop or browser/context-closed errors during stop
-      const isStopTriggered = runContext.isStopped
-      const isClosedError = typeof msg === 'string' && /Target .* (has been closed|closed)|context .*closed|Execution context was destroyed|Protocol error|Task cancelled: queue stopped|ENOENT: no such file or directory, open .*trace/i.test(msg)
+      // Detect user-initiated stop (run) or per-item cancellation
+      const isRunStop = runContext.isStopped
+      const isItemCancelled = runContext.cancelledItems.has(def.itemId)
 
-      if (!isStopTriggered && retryFailed && attempt < maxRetries) {
+      if (!isRunStop && !isItemCancelled && retryFailed && attempt < maxRetries) {
         try {
           const completedAt = new Date().toISOString()
           const durationMs = Date.parse(completedAt) - Date.parse(startedAt)
@@ -118,7 +118,7 @@ export function makeTaskExecutor(runContext: RunContext, deps: {
         const completedAt = new Date().toISOString()
         const durationMs = Date.parse(completedAt) - Date.parse(startedAt)
 
-        if (isStopTriggered || isClosedError) {
+        if (isRunStop || isItemCancelled) {
           // Treat as user cancellation, not a real error
           deps.send({ type:'item-error', runId, itemId: def.itemId, leadId: def.leadId, platform: def.platform, flowSlug: def.flowSlug, message: 'Annulé par l’utilisateur', runDir })
           Db.updateItem(def.itemId, { status: 'cancelled', error_message: 'Annulé par l’utilisateur', run_dir: runDir || undefined, completed_at: completedAt, duration_ms: durationMs })

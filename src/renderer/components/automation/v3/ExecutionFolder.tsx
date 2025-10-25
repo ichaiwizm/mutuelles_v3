@@ -17,6 +17,7 @@ interface ExecutionFolderProps {
   ) => void
   onRetryItem?: (itemId: string) => void
   isRunning?: boolean
+  onStopItem?: (itemId: string) => void
 }
 
 export default function ExecutionFolder({
@@ -24,7 +25,8 @@ export default function ExecutionFolder({
   defaultExpanded = false,
   onViewDetails,
   onRetryItem,
-  isRunning
+  isRunning,
+  onStopItem
 }: ExecutionFolderProps) {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded)
   const colorConfig = getGroupColorConfig(group)
@@ -86,6 +88,7 @@ export default function ExecutionFolder({
                 onViewDetails={onViewDetails}
                 onRetryItem={onRetryItem}
                 isRunning={isRunning}
+                onStopItem={onStopItem}
               />
             </div>
           ))}
