@@ -60,6 +60,8 @@ interface AdvancedModeTabProps {
   onRetryFailedItems?: (itemIds: string[]) => void
   onStopItem?: (itemId: string) => void
   onTogglePauseItem?: (itemId: string) => void
+  // Active run mode to control headed/headless UI
+  activeRunMode?: string
 }
 
 export default function AdvancedModeTab({
@@ -94,7 +96,8 @@ export default function AdvancedModeTab({
   onRetryItem,
   onRetryFailedItems,
   onStopItem,
-  onTogglePauseItem
+  onTogglePauseItem,
+  activeRunMode
 }: AdvancedModeTabProps) {
   const [showAutoPreview, setShowAutoPreview] = useState(false)
   const [selectedDetailsFlow, setSelectedDetailsFlow] = useState<Flow | null>(null)
@@ -272,6 +275,8 @@ export default function AdvancedModeTab({
         onRetryFailedItems={onRetryFailedItems}
         onStopItem={onStopItem}
         onTogglePauseItem={onTogglePauseItem}
+        activeRunMode={activeRunMode}
+        settingsMode={settings.mode}
       />
 
       {/* Modals */}

@@ -26,6 +26,10 @@ interface ExecutionDashboardProps {
   onRetryFailedItems?: (itemIds: string[]) => void
   onStopItem?: (itemId: string) => void
   onTogglePauseItem?: (itemId: string) => void
+  // Active run mode (to hide window controls in headless)
+  activeRunMode?: string
+  // Current settings.mode as fallback before activeRun is available
+  settingsMode?: 'headless' | 'headless-minimized' | 'visible'
 }
 
 export default function ExecutionDashboard({
@@ -44,11 +48,16 @@ export default function ExecutionDashboard({
   onRetryItem,
   onRetryFailedItems,
   onStopItem,
-  onTogglePauseItem
+  onTogglePauseItem,
+  activeRunMode,
+  settingsMode
 }: ExecutionDashboardProps) {
   const items = executionItems
-  const [groupingMode, setGroupingMode] = useState<'flow' | 'platform' | 'status'>('flow')
+  const [groupingMode, setGroupingMode] = useState<'flow' | 'platform' | 'status'>('status')
   const currentStats = useMemo(() => calculateExecutionStats(items), [items])
+  const fallbackExecMode = settingsMode === 'headless' ? 'headless' : 'dev'
+  const effectiveMode = activeRunMode || fallbackExecMode
+  const headedMode = effectiveMode !== 'headless'
   // Show current view ONLY while a run is actually running.
   // Finished runs basculent directement dans l'historique (Option A).
   const showCurrent = isRunning
@@ -76,6 +85,7 @@ export default function ExecutionDashboard({
           onRetryFailedItems={onRetryFailedItems}
           onStopItem={onStopItem}
           onTogglePauseItem={onTogglePauseItem}
+          headedMode={headedMode}
         />
       )}
 

@@ -42,6 +42,8 @@ interface ExecutionCurrentViewProps {
   onRetryFailedItems?: (itemIds: string[]) => void
   onStopItem?: (itemId: string) => void
   onTogglePauseItem?: (itemId: string) => void
+  // Hide window controls when headless
+  headedMode?: boolean
 }
 
 /**
@@ -63,7 +65,8 @@ export default function ExecutionCurrentView({
   onRetryItem,
   onRetryFailedItems,
   onStopItem,
-  onTogglePauseItem
+  onTogglePauseItem,
+  headedMode = true
 }: ExecutionCurrentViewProps) {
   const { selectedRunDetails, handleViewDetails, clearDetails } = useRunDetails()
   const [showReplayModal, setShowReplayModal] = useState(false)
@@ -239,6 +242,7 @@ export default function ExecutionCurrentView({
           isRunning={isRunning}
           onStopItem={onStopItem}
           onTogglePauseItem={onTogglePauseItem}
+          headedMode={headedMode}
         />
       )}
 

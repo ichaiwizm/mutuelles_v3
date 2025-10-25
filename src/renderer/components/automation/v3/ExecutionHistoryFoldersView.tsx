@@ -35,10 +35,10 @@ export default function ExecutionHistoryFoldersView({
   // Track if initial setup has been done
   const initializedRef = useRef(false)
 
-  // Initialize expanded groups only once (open most recent by default)
+  // Initialize expanded groups only once (default: keep all collapsed)
   useEffect(() => {
-    if (!initializedRef.current && dateGroups.length > 0) {
-      setExpandedGroups(new Set([dateGroups[0].key]))
+    if (!initializedRef.current) {
+      setExpandedGroups(new Set())
       initializedRef.current = true
     }
   }, [dateGroups])

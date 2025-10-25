@@ -21,6 +21,8 @@ interface ExecutionFoldersViewProps {
   isRunning?: boolean
   onStopItem?: (itemId: string) => void
   onTogglePauseItem?: (itemId: string) => void
+  // Hide window controls when headless
+  headedMode?: boolean
 }
 
 export default function ExecutionFoldersView({
@@ -31,7 +33,8 @@ export default function ExecutionFoldersView({
   onRetryItem,
   isRunning,
   onStopItem,
-  onTogglePauseItem
+  onTogglePauseItem,
+  headedMode = true
 }: ExecutionFoldersViewProps) {
   const groups = groupExecutionItems(items, groupingMode)
 
@@ -40,9 +43,10 @@ export default function ExecutionFoldersView({
     label: string
     icon: typeof LayoutGrid
   }> = [
-    { value: 'flow', label: 'Par Flow', icon: LayoutGrid },
+    // Place "Par Statut" first (far left)
+    { value: 'status', label: 'Par Statut', icon: Activity },
     { value: 'platform', label: 'Par Plateforme', icon: Server },
-    { value: 'status', label: 'Par Statut', icon: Activity }
+    { value: 'flow', label: 'Par Flow', icon: LayoutGrid }
   ]
 
   return (
@@ -85,18 +89,23 @@ export default function ExecutionFoldersView({
             Aucune exécution à afficher
           </div>
         ) : (
-          groups.map(group => (
-            <ExecutionFolder
-              key={group.key}
-              group={group}
-              defaultExpanded={false}
-              onViewDetails={onViewDetails}
-              onRetryItem={onRetryItem}
-              isRunning={isRunning}
-              onStopItem={onStopItem}
-              onTogglePauseItem={onTogglePauseItem}
-            />
-          ))
+          groups.map(group => {
+            // When viewing current run grouped by status, auto-open the "running" group
+            const shouldDefaultExpand = Boolean(isRunning) && groupingMode === 'status' && group.key === 'running'
+            return (
+              <ExecutionFolder
+                key={`${group.key}-${shouldDefaultExpand ? 'open' : 'closed'}`}
+                group={group}
+                defaultExpanded={shouldDefaultExpand}
+                onViewDetails={onViewDetails}
+                onRetryItem={onRetryItem}
+                isRunning={isRunning}
+                onStopItem={onStopItem}
+                onTogglePauseItem={onTogglePauseItem}
+                showWindowControls={headedMode}
+              />
+            )
+          })
         )}
       </div>
     </div>

@@ -19,6 +19,8 @@ interface ExecutionFolderProps {
   isRunning?: boolean
   onStopItem?: (itemId: string) => void
   onTogglePauseItem?: (itemId: string) => void
+  // Propagate window-controls visibility
+  showWindowControls?: boolean
 }
 
 export default function ExecutionFolder({
@@ -28,7 +30,8 @@ export default function ExecutionFolder({
   onRetryItem,
   isRunning,
   onStopItem,
-  onTogglePauseItem
+  onTogglePauseItem,
+  showWindowControls = true
 }: ExecutionFolderProps) {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded)
   const colorConfig = getGroupColorConfig(group)
@@ -92,6 +95,7 @@ export default function ExecutionFolder({
                 isRunning={isRunning}
                 onStopItem={onStopItem}
                 onTogglePauseItem={onTogglePauseItem}
+                showWindowControls={showWindowControls}
               />
             </div>
           ))}

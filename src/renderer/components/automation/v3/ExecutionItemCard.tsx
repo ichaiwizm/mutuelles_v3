@@ -14,6 +14,8 @@ interface ExecutionItemCardProps {
   estimatedDurationMs?: number // Optional estimated duration for pending items
   onStopItem?: (itemId: string) => void
   onTogglePauseItem?: (itemId: string) => void
+  // Hide window controls (minimize/restore) in headless runs
+  showWindowControls?: boolean
 }
 
 export default function ExecutionItemCard({
@@ -23,7 +25,8 @@ export default function ExecutionItemCard({
   isRunning = false,
   estimatedDurationMs,
   onStopItem,
-  onTogglePauseItem
+  onTogglePauseItem,
+  showWindowControls = true
 }: ExecutionItemCardProps) {
   // Use useNow hook to update timestamp every second (instead of forcing re-render every 200ms)
   const now = useNow(
@@ -43,9 +46,10 @@ export default function ExecutionItemCard({
 
   const StatusIcon = config.icon
 
-  // Window state (best-effort, only for headed modes)
+  // Window state (best-effort, only when window controls are enabled)
   const [winState, setWinState] = React.useState<'visible' | 'minimized' | null>(null)
   React.useEffect(() => {
+    if (!showWindowControls) { setWinState(null); return }
     let canceled = false
     const fetchState = async () => {
       if (!isRunning) return
@@ -128,7 +132,7 @@ export default function ExecutionItemCard({
             </button>
           )}
           {/* Window toggle (headed modes only): one button on/off */}
-          {isRunning && winState !== null && (item.status === 'running' || item.status === 'pending') && (
+          {showWindowControls && isRunning && winState !== null && (item.status === 'running' || item.status === 'pending') && (
             <button
               onClick={async () => {
                 if (winState === 'minimized') await restoreWin(); else await minimizeWin()
@@ -201,7 +205,7 @@ export default function ExecutionItemCard({
           <div className="text-xs text-amber-600 dark:text-amber-400 font-medium">
             En attente de démarrage...
           </div>
-          {winState && (
+          {showWindowControls && winState && (
             <div className="text-xs text-neutral-500">Fenêtre: {winState === 'minimized' ? 'minimisée' : 'visible'}</div>
           )}
           {estimatedDurationMs && (
@@ -211,7 +215,7 @@ export default function ExecutionItemCard({
       ) : duration ? (
         <div className="text-xs text-neutral-500">
           Durée: {duration}
-          {winState && (
+          {showWindowControls && winState && (
             <span className="ml-2">• Fenêtre: {winState === 'minimized' ? 'minimisée' : 'visible'}</span>
           )}
           {item.isPaused && (
