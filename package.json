@@ -50,6 +50,7 @@
     "@types/react-window": "^1.8.8",
     "better-sqlite3": "^12.4.1",
     "dotenv": "^16.4.5",
+    "googleapis": "^164.1.0",
     "lucide-react": "^0.441.0",
     "minimist": "^1.2.8",
     "playwright-core": "^1.48.2",

@@ -2,11 +2,19 @@ import { defineConfig, externalizeDepsPlugin } from 'electron-vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { resolve } from 'path'
+import dotenv from 'dotenv'
+
+// Charger les variables d'environnement depuis .env
+dotenv.config()
 
 export default defineConfig({
   main: {
     plugins: [externalizeDepsPlugin()],
-    build: { sourcemap: true }
+    build: { sourcemap: true },
+    define: {
+      'process.env.GOOGLE_CLIENT_ID': JSON.stringify(process.env.GOOGLE_CLIENT_ID),
+      'process.env.GOOGLE_CLIENT_SECRET': JSON.stringify(process.env.GOOGLE_CLIENT_SECRET)
+    }
   },
   preload: {
     plugins: [externalizeDepsPlugin()],

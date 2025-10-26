@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { FileEdit } from 'lucide-react'
+import { FileEdit, Mail } from 'lucide-react'
 import { useToastContext } from '../contexts/ToastContext'
 import type { LeadStats, Lead, LeadFilters } from '../../shared/types/leads'
 import LeadsTable from '../components/leads/LeadsTable'
 import LeadsFilters from '../components/leads/LeadsFilters'
 import ConfirmModal from '../components/ConfirmModal'
 import LeadModal from '@renderer/components/leads/LeadModal'
+import { ImportEmailPanel } from '../components/leads/ImportEmailPanel'
 
 export default function Leads() {
   const [stats, setStats] = useState<LeadStats | null>(null)
@@ -20,6 +21,9 @@ export default function Leads() {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null)
   const [leadModalMode, setLeadModalMode] = useState<'create' | 'view' | 'edit'>('create')
   const [showLeadModal, setShowLeadModal] = useState(false)
+
+  // Import email panel state
+  const [showImportPanel, setShowImportPanel] = useState(false)
 
   const toast = useToastContext()
 
@@ -133,6 +137,14 @@ export default function Leads() {
         <h1 className="text-xl font-semibold">Leads</h1>
         <div className="flex gap-2">
           <button
+            onClick={() => setShowImportPanel(true)}
+            className="flex items-center gap-2 px-3 py-2 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 text-sm transition-colors border border-gray-300 dark:border-gray-600"
+            title="Importer des leads par email"
+          >
+            <Mail size={16} />
+            Importer
+          </button>
+          <button
             onClick={handleAddLead}
             className="flex items-center gap-2 px-3 py-2 rounded-md bg-blue-600 dark:bg-blue-500 text-white hover:bg-blue-700 dark:hover:bg-blue-600 text-sm transition-colors"
           >
@@ -213,6 +225,12 @@ export default function Leads() {
           setShowLeadModal(false)
           setSelectedLead(null)
         }}
+      />
+
+      {/* Panneau d'import par email */}
+      <ImportEmailPanel
+        isOpen={showImportPanel}
+        onClose={() => setShowImportPanel(false)}
       />
     </section>
   )

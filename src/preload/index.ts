@@ -72,8 +72,22 @@ contextBridge.exposeInMainWorld('api', {
     stats: () => ipcRenderer.invoke('leads:stats') as Promise<{ success: boolean; data?: any; error?: string }>,
     search: (query: string) => ipcRenderer.invoke('leads:search', query) as Promise<{ success: boolean; data?: any; error?: string }>,
     deleteMany: (ids: string[]) => ipcRenderer.invoke('leads:deleteMany', ids) as Promise<{ success: boolean; data?: any; error?: string }>
-  }
-  ,
+  },
+  email: {
+    startAuth: () => ipcRenderer.invoke('email:startAuth') as Promise<{ success: boolean; data?: any; error?: string }>,
+    handleCallback: (data: { code: string }) => ipcRenderer.invoke('email:handleCallback', data) as Promise<{ success: boolean; data?: any; error?: string }>,
+    listConfigs: () => ipcRenderer.invoke('email:listConfigs') as Promise<{ success: boolean; data?: any; error?: string }>,
+    getConfig: (configId: number) => ipcRenderer.invoke('email:getConfig', configId) as Promise<{ success: boolean; data?: any; error?: string }>,
+    revokeAccess: (data: { configId: number }) => ipcRenderer.invoke('email:revokeAccess', data) as Promise<{ success: boolean; data?: any; error?: string }>,
+    fetchMessages: (data: any) => ipcRenderer.invoke('email:fetchMessages', data) as Promise<{ success: boolean; data?: any; error?: string }>,
+    getImportedEmails: (params?: { configId?: number; limit?: number }) => ipcRenderer.invoke('email:getImportedEmails', params) as Promise<{ success: boolean; data?: any; error?: string }>,
+    getAuthStatus: () => ipcRenderer.invoke('email:getAuthStatus') as Promise<{ success: boolean; data?: any; error?: string }>,
+    onImportProgress: (cb: (e: any) => void) => {
+      const handler = (_: any, data: any) => cb(data)
+      ipcRenderer.on('email:import-progress', handler)
+      return () => ipcRenderer.removeListener('email:import-progress', handler)
+    }
+  },
   scenarios: {
     run: (payload: { scenarioId?: string; platformSlugs?: string[]; leadIds: string[]; options?: { mode?: 'headless'|'dev'|'dev_private'; concurrency?: number } }) =>
       ipcRenderer.invoke('scenarios:run', payload) as Promise<{ runId: string }>,
@@ -165,6 +179,17 @@ declare global {
         stats: () => Promise<{ success: boolean; data?: any; error?: string }>
         search: (query: string) => Promise<{ success: boolean; data?: any; error?: string }>
         deleteMany: (ids: string[]) => Promise<{ success: boolean; data?: any; error?: string }>
+      }
+      email: {
+        startAuth: () => Promise<{ success: boolean; data?: any; error?: string }>
+        handleCallback: (data: { code: string }) => Promise<{ success: boolean; data?: any; error?: string }>
+        listConfigs: () => Promise<{ success: boolean; data?: any; error?: string }>
+        getConfig: (configId: number) => Promise<{ success: boolean; data?: any; error?: string }>
+        revokeAccess: (data: { configId: number }) => Promise<{ success: boolean; data?: any; error?: string }>
+        fetchMessages: (data: any) => Promise<{ success: boolean; data?: any; error?: string }>
+        getImportedEmails: (params?: { configId?: number; limit?: number }) => Promise<{ success: boolean; data?: any; error?: string }>
+        getAuthStatus: () => Promise<{ success: boolean; data?: any; error?: string }>
+        onImportProgress: (cb: (e: any) => void) => (() => void)
       }
       scenarios: {
         run: (payload: { scenarioId?: string; platformSlugs?: string[]; leadIds: string[]; options?: { mode?: 'headless'|'dev'|'dev_private'; concurrency?: number } }) => Promise<{ runId: string }>

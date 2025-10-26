@@ -1,7 +1,19 @@
 import { app, BrowserWindow, ipcMain } from 'electron'
 import path from 'node:path'
+import dotenv from 'dotenv'
 import { installMainErrorHandlers } from './errors'
 import { initDatabase, getDb } from './db/connection'
+
+// Charger les variables d'environnement depuis .env
+// En mode dev, le CWD peut être différent, donc on spécifie le chemin explicitement
+const envPath = app.isPackaged
+  ? path.join(process.resourcesPath, '.env')
+  : path.join(__dirname, '../../.env')
+
+dotenv.config({ path: envPath })
+
+console.log('📁 Chargement .env depuis:', envPath)
+console.log('🔑 GOOGLE_CLIENT_ID chargé:', process.env.GOOGLE_CLIENT_ID ? 'Oui ✓' : 'Non ✗')
 import { registerSettingsIpc } from './ipc/settings'
 import { registerProfilesIpc } from './ipc/profiles'
 import { registerCatalogIpc } from './ipc/catalog'
@@ -10,6 +22,7 @@ import { registerBrowsersIpc } from './ipc/browsers'
 import { registerAdminCliIpc } from './ipc/admin_cli'
 import { registerLeadsIPC } from './ipc/leads'
 import { registerScenariosIpc } from './ipc/scenarios'
+import { registerEmailIpc } from './ipc/email'
 import { sendFailureNotification } from './services/notificationService'
 
 let mainWindow: BrowserWindow | null = null
@@ -54,6 +67,7 @@ app.whenReady().then(() => {
   registerAdminCliIpc()
   registerLeadsIPC()
   registerScenariosIpc()
+  registerEmailIpc()
 
   // Register notification handler
   ipcMain.handle('notifications:sendFailure', async (event, failures) => {
