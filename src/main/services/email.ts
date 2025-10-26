@@ -179,11 +179,6 @@ export class EmailService {
 
       // Ouvrir le navigateur
       const authUrl = this.getAuthUrl()
-      console.log('=== DEBUG OAuth ===')
-      console.log('Client ID:', GOOGLE_CLIENT_ID)
-      console.log('Redirect URI:', `http://localhost:${OAUTH_CALLBACK_PORT}`)
-      console.log('Auth URL:', authUrl)
-      console.log('==================')
       await shell.openExternal(authUrl)
 
       // Attendre le code (avec timeout de 5 minutes)
@@ -198,6 +193,8 @@ export class EmailService {
       const result = await this.handleCallback(code)
       return result
     } catch (error) {
+      console.error('Erreur lors de l\'authentification OAuth:', error)
+
       // Fermer le serveur en cas d'erreur
       if (oauthServer) {
         oauthServer.close()
@@ -234,9 +231,9 @@ export class EmailService {
         provider: 'gmail',
         email: data.email,
         displayName: data.name || undefined,
-        accessToken: tokens.access_token,
-        refreshToken: tokens.refresh_token,
-        expiryDate: tokens.expiry_date
+        accessToken: tokens.access_token || undefined,
+        refreshToken: tokens.refresh_token || undefined,
+        expiryDate: tokens.expiry_date || undefined
       })
 
       return { success: true, config }
@@ -266,13 +263,14 @@ export class EmailService {
       : null
 
     const stmt = this.db.prepare(`
-      INSERT INTO email_configs (provider, email, display_name, encrypted_access_token, encrypted_refresh_token, expiry_date, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
+      INSERT INTO email_configs (provider, email, display_name, encrypted_access_token, encrypted_refresh_token, expiry_date, is_active, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, 1, datetime('now'))
       ON CONFLICT(email) DO UPDATE SET
         display_name = excluded.display_name,
         encrypted_access_token = excluded.encrypted_access_token,
         encrypted_refresh_token = excluded.encrypted_refresh_token,
         expiry_date = excluded.expiry_date,
+        is_active = 1,
         updated_at = excluded.updated_at
     `)
 
@@ -286,7 +284,13 @@ export class EmailService {
     )
 
     // Récupérer la config avec l'ID
-    return this.getConfigByEmail(config.email)!
+    const savedConfig = this.getConfigByEmail(config.email)
+
+    if (!savedConfig) {
+      throw new Error(`Impossible de récupérer la config pour ${config.email}`)
+    }
+
+    return savedConfig
   }
 
   /**
@@ -467,16 +471,17 @@ export class EmailService {
       // Classifier les emails
       const classifiedMessages = emailClassifier.classifyBatch(messages)
 
-      // Sauvegarder dans la DB
-      await this.saveImportedEmails(configId, classifiedMessages)
+      // Filtrer pour garder SEULEMENT les leads potentiels
+      const leadsOnly = classifiedMessages.filter(m => m.hasLeadPotential)
 
-      const leadsDetected = classifiedMessages.filter(m => m.hasLeadPotential).length
+      // Sauvegarder dans la DB (seulement les leads)
+      await this.saveImportedEmails(configId, leadsOnly)
 
       return {
         success: true,
         totalFetched: classifiedMessages.length,
-        leadsDetected,
-        messages: classifiedMessages
+        leadsDetected: leadsOnly.length,
+        messages: leadsOnly  // Retourner seulement les leads
       }
     } catch (error) {
       console.error('Erreur lors de la récupération des emails:', error)

@@ -62,6 +62,7 @@ export function registerEmailIpc() {
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Erreur inconnue'
+      console.error('Erreur IPC startAuth:', message)
       return { success: false, error: message }
     }
   })

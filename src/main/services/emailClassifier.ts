@@ -21,77 +21,59 @@ const KNOWN_SENDERS = [
   'assurance-sante'
 ]
 
-// Mots-clés indiquant un lead potentiel
+// Mots-clés indiquant un lead potentiel (réduit aux termes spécifiques)
 const LEAD_KEYWORDS = [
-  // Demande de devis
-  'devis',
+  // Demande de devis (expressions spécifiques uniquement)
   'demande de devis',
   'demande devis',
-  'tarif',
-  'tarification',
-  'simulation',
+  'devis mutuelle',
+  'devis complémentaire',
+  'devis complementaire',
+  'tarification mutuelle',
+  'simulation mutuelle',
   'cotisation',
-  'prix',
 
-  // Mutuelle et santé
+  // Mutuelle et santé (termes spécifiques)
   'mutuelle',
   'complémentaire santé',
   'complementaire sante',
   'assurance santé',
   'assurance sante',
-  'protection santé',
-  'couverture santé',
   'prévoyance',
   'prevoyance',
 
-  // Actions
-  'souscrire',
+  // Actions (uniquement actions d'engagement)
   'souscription',
+  'souscrire',
   'adhésion',
   'adhesion',
-  'inscription',
   'résiliation',
   'resiliation',
 
-  // Types de personnes
+  // Types de personnes (professions spécifiques)
   'tns',
   'travailleur non salarié',
   'profession libérale',
   'auto-entrepreneur',
   'indépendant',
-  'salarié',
-  'salarie',
-  'retraité',
-  'retraite',
-  'étudiant',
-  'etudiant',
 
-  // Informations lead
+  // Informations lead (termes explicites)
   'prospect',
   'client potentiel',
   'nouvelle demande',
-  'nouveau contact',
-  'formulaire',
-  'coordonnées',
-  'coordonnees',
 
-  // Plateformes
+  // Plateformes (sources connues)
   'assurprospect',
   'assurlead',
   'lelynx',
   'assurland',
   'hyperassur',
 
-  // Spécifique assurance
-  'régime obligatoire',
-  'regime obligatoire',
-  'ij',
+  // Termes techniques spécifiques
   'indemnités journalières',
-  'indemnites journalieres',
-  'hospitalisation',
-  'dentaire',
-  'optique',
-  'lunettes'
+  'indemnites journalieres'
+  // Note: 'ij' retiré car trop court (2 lettres)
+  // Causait des faux positifs dans URLs, tokens JWT/base64, et mots aléatoires
 ]
 
 // Mots-clés à exclure (emails promotionnels, newsletters, etc.)
@@ -114,7 +96,22 @@ const EXCLUSION_KEYWORDS = [
   'facture',
   'paiement',
   'reçu',
-  'recu'
+  'recu',
+  'publicité',
+  'publicite',
+  'pub',
+  'annonce',
+  'découvrez',
+  'decouvrez',
+  'profitez',
+  'économisez',
+  'economisez',
+  'ne pas répondre',
+  'ne pas repondre',
+  'no-reply',
+  'noreply',
+  'automatic',
+  'automatique'
 ]
 
 /**
@@ -129,74 +126,123 @@ function normalize(text: string): string {
 }
 
 /**
- * Vérifie si l'expéditeur est connu
+ * Scoring : Points pour la détection
  */
-function isKnownSender(from: string): boolean {
-  const normalizedFrom = normalize(from)
-  return KNOWN_SENDERS.some(sender => normalizedFrom.includes(normalize(sender)))
+const SCORING = {
+  KNOWN_SENDER: 50,
+  KEYWORD_IN_SUBJECT: 30,
+  KEYWORD_IN_CONTENT: 15,
+  THRESHOLD: 70 // Seuil minimum pour considérer un email comme lead
 }
 
 /**
- * Vérifie si le texte contient des mots-clés de lead
+ * Vérifie si l'expéditeur est connu et retourne le score
  */
-function containsLeadKeywords(text: string): boolean {
+function checkKnownSender(from: string): { isKnown: boolean; score: number } {
+  const normalizedFrom = normalize(from)
+  const isKnown = KNOWN_SENDERS.some(sender => normalizedFrom.includes(normalize(sender)))
+  return { isKnown, score: isKnown ? SCORING.KNOWN_SENDER : 0 }
+}
+
+/**
+ * Compte les mots-clés de lead dans le texte et retourne le score
+ */
+function countLeadKeywords(text: string, scorePerKeyword: number): { count: number; score: number; keywords: string[] } {
   const normalizedText = normalize(text)
-  return LEAD_KEYWORDS.some(keyword => normalizedText.includes(normalize(keyword)))
+  const foundKeywords: string[] = []
+
+  LEAD_KEYWORDS.forEach(keyword => {
+    if (normalizedText.includes(normalize(keyword))) {
+      foundKeywords.push(keyword)
+    }
+  })
+
+  return {
+    count: foundKeywords.length,
+    score: foundKeywords.length * scorePerKeyword,
+    keywords: foundKeywords
+  }
 }
 
 /**
  * Vérifie si le texte contient des mots-clés d'exclusion
  */
-function containsExclusionKeywords(text: string): boolean {
+function containsExclusionKeywords(text: string): { hasExclusion: boolean; keywords: string[] } {
   const normalizedText = normalize(text)
-  return EXCLUSION_KEYWORDS.some(keyword => normalizedText.includes(normalize(keyword)))
+  const foundKeywords: string[] = []
+
+  EXCLUSION_KEYWORDS.forEach(keyword => {
+    if (normalizedText.includes(normalize(keyword))) {
+      foundKeywords.push(keyword)
+    }
+  })
+
+  return {
+    hasExclusion: foundKeywords.length > 0,
+    keywords: foundKeywords
+  }
 }
 
 /**
- * Détecte si un email contient potentiellement un lead
+ * Détecte si un email contient potentiellement un lead avec système de scoring
  *
  * @param email - Message email à analyser
- * @returns Résultat de la détection avec raisons
+ * @returns Résultat de la détection avec raisons et score
  */
 export function detectLeadPotential(email: {
   from: string
   subject: string
   content: string
   snippet?: string
-}): { hasLead: boolean; reasons: string[] } {
+}): { hasLead: boolean; reasons: string[]; score?: number } {
   const reasons: string[] = []
+  let totalScore = 0
 
   // 1. Vérifier l'expéditeur
-  if (isKnownSender(email.from)) {
-    reasons.push(`Expéditeur connu : ${email.from}`)
+  const senderCheck = checkKnownSender(email.from)
+  if (senderCheck.isKnown) {
+    totalScore += senderCheck.score
+    reasons.push(`Expéditeur connu : ${email.from} (+${senderCheck.score} pts)`)
   }
 
   // 2. Vérifier le sujet
-  if (containsLeadKeywords(email.subject)) {
-    reasons.push('Mots-clés de lead détectés dans le sujet')
+  const subjectCheck = countLeadKeywords(email.subject, SCORING.KEYWORD_IN_SUBJECT)
+  if (subjectCheck.count > 0) {
+    totalScore += subjectCheck.score
+    reasons.push(`${subjectCheck.count} mot(s)-clé(s) dans le sujet : ${subjectCheck.keywords.slice(0, 3).join(', ')}${subjectCheck.keywords.length > 3 ? '...' : ''} (+${subjectCheck.score} pts)`)
   }
 
   // 3. Vérifier le contenu (snippet d'abord pour performance)
   const textToCheck = email.snippet || email.content
-  if (containsLeadKeywords(textToCheck)) {
-    reasons.push('Mots-clés de lead détectés dans le contenu')
+  const contentCheck = countLeadKeywords(textToCheck, SCORING.KEYWORD_IN_CONTENT)
+  if (contentCheck.count > 0) {
+    totalScore += contentCheck.score
+    reasons.push(`${contentCheck.count} mot(s)-clé(s) dans le contenu (+${contentCheck.score} pts)`)
   }
 
   // 4. Exclure si contient des mots-clés d'exclusion
   const fullText = `${email.subject} ${textToCheck}`
-  if (containsExclusionKeywords(fullText)) {
+  const exclusionCheck = containsExclusionKeywords(fullText)
+  if (exclusionCheck.hasExclusion) {
     // Si on avait détecté un lead mais qu'il y a des mots d'exclusion
     if (reasons.length > 0) {
-      reasons.push('⚠️ Contient des mots-clés d\'exclusion (newsletter/promo)')
+      reasons.push(`⚠️ Mots d'exclusion détectés : ${exclusionCheck.keywords.slice(0, 2).join(', ')}${exclusionCheck.keywords.length > 2 ? '...' : ''} (score annulé)`)
     }
     // Ne retourne pas de lead si exclusion keywords présents
-    return { hasLead: false, reasons: [] }
+    return { hasLead: false, reasons: [], score: 0 }
   }
 
-  // 5. Décision finale
-  const hasLead = reasons.length > 0
+  // 5. Décision finale basée sur le score
+  const hasLead = totalScore >= SCORING.THRESHOLD
 
-  return { hasLead, reasons }
+  // Ajouter le score total dans les raisons si c'est un lead
+  if (hasLead) {
+    reasons.push(`✓ Score total : ${totalScore}/${SCORING.THRESHOLD} (seuil atteint)`)
+  } else if (totalScore > 0) {
+    reasons.push(`✗ Score insuffisant : ${totalScore}/${SCORING.THRESHOLD}`)
+  }
+
+  return { hasLead, reasons, score: totalScore }
 }
 
 /**

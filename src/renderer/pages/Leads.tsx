@@ -6,7 +6,7 @@ import LeadsTable from '../components/leads/LeadsTable'
 import LeadsFilters from '../components/leads/LeadsFilters'
 import ConfirmModal from '../components/ConfirmModal'
 import LeadModal from '@renderer/components/leads/LeadModal'
-import { ImportEmailPanel } from '../components/leads/ImportEmailPanel'
+import { ImportPanel } from '../components/import-panel/ImportPanel'
 
 export default function Leads() {
   const [stats, setStats] = useState<LeadStats | null>(null)
@@ -227,8 +227,8 @@ export default function Leads() {
         }}
       />
 
-      {/* Panneau d'import par email */}
-      <ImportEmailPanel
+      {/* Panneau d'import */}
+      <ImportPanel
         isOpen={showImportPanel}
         onClose={() => setShowImportPanel(false)}
       />

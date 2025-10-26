@@ -18,6 +18,8 @@ import type {
   AuthStatus
 } from '../../shared/types/email'
 
+const DEFAULT_EMAIL_LIMIT = 100
+
 interface UseEmailImportReturn {
   // État d'authentification
   authStatus: AuthStatus
@@ -27,7 +29,6 @@ interface UseEmailImportReturn {
   // État d'import
   isImporting: boolean
   importProgress: EmailImportProgress | null
-  importResult: EmailImportResult | null
   error: string | null
 
   // Emails importés
@@ -49,7 +50,6 @@ export function useEmailImport(): UseEmailImportReturn {
   const [isAuthenticating, setIsAuthenticating] = useState(false)
   const [isImporting, setIsImporting] = useState(false)
   const [importProgress, setImportProgress] = useState<EmailImportProgress | null>(null)
-  const [importResult, setImportResult] = useState<EmailImportResult | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [emails, setEmails] = useState<EmailMessage[]>([])
 
@@ -62,6 +62,35 @@ export function useEmailImport(): UseEmailImportReturn {
   useEffect(() => {
     checkAuthStatus()
   }, [])
+
+  /**
+   * Charge les emails depuis la DB
+   */
+  const loadCachedEmails = useCallback(async () => {
+    if (!emailConfig?.id) return
+
+    try {
+      const result = await window.api.email.getImportedEmails({
+        configId: emailConfig.id,
+        limit: DEFAULT_EMAIL_LIMIT
+      })
+
+      if (result.success && result.data) {
+        setEmails(result.data)
+      }
+    } catch (err) {
+      console.error('Erreur chargement emails depuis DB:', err)
+    }
+  }, [emailConfig?.id])
+
+  /**
+   * Charge les emails depuis la DB si authentifié (Phase 5)
+   */
+  useEffect(() => {
+    if (authStatus === 'authenticated' && emailConfig?.id) {
+      loadCachedEmails()
+    }
+  }, [authStatus, emailConfig?.id, loadCachedEmails])
 
   /**
    * Écoute les événements de progression
@@ -137,7 +166,6 @@ export function useEmailImport(): UseEmailImportReturn {
       })
 
       if (result.success && result.data) {
-        setImportResult(result.data)
         setEmails(result.data.messages || [])
         setImportProgress({
           phase: 'completed',
@@ -188,7 +216,6 @@ export function useEmailImport(): UseEmailImportReturn {
    * Réinitialise l'état
    */
   const reset = useCallback(() => {
-    setImportResult(null)
     setImportProgress(null)
     setEmails([])
     setError(null)
@@ -203,7 +230,6 @@ export function useEmailImport(): UseEmailImportReturn {
     // État d'import
     isImporting,
     importProgress,
-    importResult,
     error,
 
     // Emails
