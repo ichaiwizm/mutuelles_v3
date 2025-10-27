@@ -26,6 +26,7 @@ let oauthResolve: ((code: string) => void) | null = null
 
 export class EmailService {
   private oauth2Client: OAuth2Client
+  private currentConfigId: number | null = null
 
   constructor() {
     const redirectUri = `http://localhost:${OAUTH_CALLBACK_PORT}`
@@ -34,6 +35,15 @@ export class EmailService {
       GOOGLE_CLIENT_SECRET,
       redirectUri
     )
+
+    this.oauth2Client.on('tokens', (tokens) => {
+      console.log('📝 Nouveaux tokens reçus après refresh automatique')
+      if (this.currentConfigId && tokens.access_token) {
+        this.updateStoredTokens(this.currentConfigId, tokens).catch(error => {
+          console.error('❌ Erreur mise à jour tokens après refresh:', error)
+        })
+      }
+    })
   }
 
   private get db() {
@@ -356,6 +366,63 @@ export class EmailService {
     return { accessToken, refreshToken }
   }
 
+  private async updateStoredTokens(configId: number, tokens: any): Promise<void> {
+    const config = this.getConfigById(configId)
+    if (!config) {
+      console.error(`⚠️ Config ${configId} introuvable pour mise à jour tokens`)
+      return
+    }
+
+    console.log(`🔄 Mise à jour tokens pour ${config.email}`)
+
+    const updatedConfig: EmailConfig = {
+      ...config,
+      accessToken: tokens.access_token || config.accessToken,
+      refreshToken: tokens.refresh_token || config.refreshToken,
+      expiryDate: tokens.expiry_date || config.expiryDate
+    }
+
+    await this.saveConfig(updatedConfig)
+    console.log(`✅ Tokens mis à jour avec succès pour ${config.email}`)
+  }
+
+  async refreshTokens(configId: number): Promise<boolean> {
+    const config = this.getConfigById(configId)
+    if (!config) {
+      console.error(`⚠️ Config ${configId} introuvable pour refresh`)
+      return false
+    }
+
+    const tokens = this.getDecryptedTokens(configId)
+    if (!tokens?.refreshToken) {
+      console.error(`⚠️ Aucun refresh token pour ${config.email}`)
+      return false
+    }
+
+    try {
+      console.log(`🔄 Refresh proactif des tokens pour ${config.email}`)
+
+      this.oauth2Client.setCredentials({
+        refresh_token: tokens.refreshToken
+      })
+
+      const { credentials } = await this.oauth2Client.refreshAccessToken()
+
+      await this.saveConfig({
+        ...config,
+        accessToken: credentials.access_token || undefined,
+        refreshToken: credentials.refresh_token || tokens.refreshToken,
+        expiryDate: credentials.expiry_date || undefined
+      })
+
+      console.log(`✅ Tokens refreshés avec succès pour ${config.email}`)
+      return true
+    } catch (error: any) {
+      console.error(`❌ Erreur refresh tokens pour ${config.email}:`, error.message)
+      return false
+    }
+  }
+
   async revokeAccess(configId: number): Promise<boolean> {
     const tokens = this.getDecryptedTokens(configId)
     if (tokens?.accessToken) {
@@ -382,6 +449,8 @@ export class EmailService {
       if (!tokens?.refreshToken) {
         throw new Error('Aucun refresh token disponible')
       }
+
+      this.currentConfigId = configId
 
       this.oauth2Client.setCredentials({
         access_token: tokens.accessToken,
@@ -444,8 +513,22 @@ export class EmailService {
         leadsDetected: leadsOnly.length,
         messages: leadsOnly
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erreur lors de la récupération des emails:', error)
+
+      if (error.code === 401 || error.message?.includes('invalid_grant')) {
+        console.error('❌ Erreur authentification OAuth - token révoqué ou invalide')
+        await this.revokeAccess(configId)
+
+        return {
+          success: false,
+          totalFetched: 0,
+          leadsDetected: 0,
+          messages: [],
+          error: 'Session expirée ou révoquée. Veuillez vous reconnecter.'
+        }
+      }
+
       return {
         success: false,
         totalFetched: 0,
@@ -453,6 +536,8 @@ export class EmailService {
         messages: [],
         error: error instanceof Error ? error.message : 'Erreur inconnue'
       }
+    } finally {
+      this.currentConfigId = null
     }
   }
 

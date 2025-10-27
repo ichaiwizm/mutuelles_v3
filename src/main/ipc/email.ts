@@ -186,6 +186,22 @@ export function registerEmailIpc() {
 
       // Vérifier si le token est expiré
       if (config.expiryDate && config.expiryDate < Date.now()) {
+        console.log(`⏰ Token expiré pour ${config.email}, tentative de refresh automatique...`)
+
+        try {
+          const refreshed = await getEmailService().refreshTokens(config.id!)
+          if (refreshed) {
+            const updatedConfig = getEmailService().getConfigById(config.id!)
+            console.log(`✅ Token refreshé automatiquement pour ${config.email}`)
+            return {
+              success: true,
+              data: { status: 'authenticated', config: updatedConfig }
+            }
+          }
+        } catch (error) {
+          console.error('❌ Échec du refresh automatique:', error)
+        }
+
         return {
           success: true,
           data: { status: 'expired', config }
