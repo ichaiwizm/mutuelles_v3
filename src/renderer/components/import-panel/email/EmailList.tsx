@@ -38,6 +38,33 @@ export function EmailList({
     onSelectionChange(newSelection)
   }, [selectedEmailIds, onSelectionChange])
 
+  const handleSelectAll = useCallback(() => {
+    if (!onSelectionChange) return
+
+    if (selectedEmailIds.length === emails.length) {
+      // Tout désélectionner
+      onSelectionChange([])
+    } else {
+      // Tout sélectionner
+      onSelectionChange(emails.map(e => e.id))
+    }
+  }, [emails, selectedEmailIds, onSelectionChange])
+
+  const handleCopyEmails = useCallback(() => {
+    const emailsText = emails.map(email => {
+      return `From: ${email.from}\nSubject: ${email.subject}\nDate: ${email.date}\nContent:\n${email.content}\n\n---\n`
+    }).join('\n')
+
+    navigator.clipboard.writeText(emailsText).then(() => {
+      alert(`✓ ${emails.length} email(s) copié(s) dans le presse-papier`)
+    }).catch(err => {
+      console.error('Erreur copie:', err)
+      alert('Erreur lors de la copie')
+    })
+  }, [emails])
+
+  const allSelected = emails.length > 0 && selectedEmailIds.length === emails.length
+
   if (emails.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
@@ -68,17 +95,49 @@ export function EmailList({
 
   return (
     <div>
-      {/* Header avec compteur */}
+      {/* Header avec compteur et actions */}
       <div className="px-6 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
         <div className="flex items-center justify-between text-sm">
-          <span className="text-gray-700 dark:text-gray-300">
-            <span className="font-semibold text-blue-600">{emails.length}</span>
-            {' '}lead{emails.length > 1 ? 's' : ''} potentiel{emails.length > 1 ? 's' : ''}
-          </span>
-          {selectedEmailIds.length > 0 && (
-            <span className="text-gray-600 dark:text-gray-400">
-              {selectedEmailIds.length} sélectionné{selectedEmailIds.length > 1 ? 's' : ''}
+          <div className="flex items-center gap-4">
+            {/* Checkbox Tout sélectionner */}
+            {onSelectionChange && emails.length > 0 && (
+              <label className="flex items-center gap-2 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={allSelected}
+                  onChange={handleSelectAll}
+                  className="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                />
+                <span className="text-gray-700 dark:text-gray-300 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                  Tout sélectionner
+                </span>
+              </label>
+            )}
+
+            <span className="text-gray-700 dark:text-gray-300">
+              <span className="font-semibold text-blue-600">{emails.length}</span>
+              {' '}lead{emails.length > 1 ? 's' : ''} potentiel{emails.length > 1 ? 's' : ''}
             </span>
+
+            {selectedEmailIds.length > 0 && (
+              <span className="text-gray-600 dark:text-gray-400">
+                • {selectedEmailIds.length} sélectionné{selectedEmailIds.length > 1 ? 's' : ''}
+              </span>
+            )}
+          </div>
+
+          {/* Bouton Debug: Copier */}
+          {emails.length > 0 && (
+            <button
+              onClick={handleCopyEmails}
+              className="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors flex items-center gap-1.5"
+              title="Debug: Copier tous les emails"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              </svg>
+              Debug: Copier
+            </button>
           )}
         </div>
       </div>
