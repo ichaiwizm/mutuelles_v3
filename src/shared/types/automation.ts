@@ -3,10 +3,6 @@
  * Covers execution matrix, settings, progress tracking, and run history
  */
 
-// ============================================================================
-// Execution Matrix Types
-// ============================================================================
-
 export interface ExecutionMatrix {
   items: ExecutionMatrixItem[]
   createdAt: string
@@ -24,17 +20,13 @@ export interface ExecutionMatrixItem {
   priority?: number
 }
 
-// ============================================================================
-// Execution Settings
-// ============================================================================
-
 export type ExecutionMode = 'headless' | 'dev' | 'dev_private'
 export type ScreenshotFrequency = 'all' | 'errors' | 'none'
 
 export interface ExecutionSettings {
   mode: ExecutionMode
   concurrency: number
-  timeout: number // in milliseconds
+  timeout: number
   keepBrowserOpen: boolean
   screenshotFrequency: ScreenshotFrequency
   retryFailed: boolean
@@ -44,22 +36,18 @@ export interface ExecutionSettings {
 export const DEFAULT_EXECUTION_SETTINGS: ExecutionSettings = {
   mode: 'headless',
   concurrency: 2,
-  timeout: 300000, // 5 minutes
+  timeout: 300000,
   keepBrowserOpen: false,
   screenshotFrequency: 'all',
   retryFailed: false,
   maxRetries: 1
 }
 
-// ============================================================================
-// Execution Progress & State
-// ============================================================================
-
 export type ExecutionItemStatus = 'pending' | 'running' | 'success' | 'error' | 'cancelled'
 
 export interface ExecutionItem {
   id: string
-  runId: string  // Parent run ID
+  runId: string
   leadId: string
   leadName: string
   platform: string
@@ -67,7 +55,6 @@ export interface ExecutionItem {
   flowSlug?: string
   flowName?: string
   status: ExecutionItemStatus
-  // Renderer-only, transient UI flag (not persisted):
   isPaused?: boolean
   runDir?: string
   message?: string
@@ -86,10 +73,6 @@ export interface ExecutionItemProgress {
   percentage: number
 }
 
-// ============================================================================
-// Execution Run
-// ============================================================================
-
 export interface ExecutionRun {
   runId: string
   status: 'starting' | 'running' | 'completed' | 'error' | 'stopped'
@@ -102,13 +85,9 @@ export interface ExecutionRun {
   successItems: number
   errorItems: number
   skippedItems: number
-  progress: number // 0-100
+  progress: number
   durationMs?: number
 }
-
-// ============================================================================
-// Progress Events
-// ============================================================================
 
 export type ProgressEventType =
   | 'run-start'
@@ -141,10 +120,6 @@ export interface ProgressEvent {
   }>
 }
 
-// ============================================================================
-// Flow Types
-// ============================================================================
-
 export interface FlowInfo {
   slug: string
   name: string
@@ -159,10 +134,6 @@ export interface PlatformFlows {
   platformName: string
   flows: FlowInfo[]
 }
-
-// ============================================================================
-// Run History Types
-// ============================================================================
 
 export interface FlowRun {
   id: string
@@ -227,10 +198,6 @@ export interface RunStepResult {
   }
 }
 
-// ============================================================================
-// Run History (localStorage persistence)
-// ============================================================================
-
 export type RunHistoryStatus = 'completed' | 'partial' | 'failed' | 'stopped'
 
 export interface ExecutionHistoryItem {
@@ -264,10 +231,6 @@ export interface RunHistoryItem {
   items: ExecutionHistoryItem[]
 }
 
-// ============================================================================
-// Validation & Compatibility
-// ============================================================================
-
 export interface ValidationResult {
   isValid: boolean
   errors: ValidationError[]
@@ -288,10 +251,6 @@ export interface ValidationWarning {
   platform: string
   message: string
 }
-
-// ============================================================================
-// IPC Response Types
-// ============================================================================
 
 export interface IpcResponse<T = any> {
   success: boolean
@@ -325,10 +284,6 @@ export interface MakeVisibleResponse {
   message: string
 }
 
-// ============================================================================
-// Statistics
-// ============================================================================
-
 export interface ExecutionStats {
   totalRuns: number
   successRate: number
@@ -345,10 +300,6 @@ export interface PlatformStats {
   averageDuration: number
 }
 
-// ============================================================================
-// Progress Calculation
-// ============================================================================
-
 export interface ProgressSummary {
   completed: number
   total: number
@@ -359,11 +310,7 @@ export interface ProgressSummary {
   runningCount: number
 }
 
-// ============================================================================
-// Utility Types
-// ============================================================================
-
-export type FlowOverrides = Map<string, string> // platformSlug -> flowSlug
+export type FlowOverrides = Map<string, string>
 
 export interface AutomationState {
   leads: any[]

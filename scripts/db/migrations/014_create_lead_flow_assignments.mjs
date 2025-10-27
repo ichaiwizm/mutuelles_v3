@@ -6,7 +6,6 @@ export default {
 
   up(db) {
     db.exec(`
-      -- Create table to manage lead + flow + platform assignments
       CREATE TABLE IF NOT EXISTS lead_flow_assignments (
         id TEXT PRIMARY KEY,
         clean_lead_id TEXT NOT NULL REFERENCES clean_leads(id) ON DELETE CASCADE,
@@ -22,23 +21,18 @@ export default {
         UNIQUE(clean_lead_id, flow_id, platform_id)
       );
 
-      -- Index for querying assignments by status (to find pending work)
       CREATE INDEX IF NOT EXISTS idx_assignments_status
         ON lead_flow_assignments(status);
 
-      -- Index for querying assignments by lead (to see all flows for a lead)
       CREATE INDEX IF NOT EXISTS idx_assignments_lead
         ON lead_flow_assignments(clean_lead_id);
 
-      -- Index for querying assignments by platform (to see all work for a platform)
       CREATE INDEX IF NOT EXISTS idx_assignments_platform
         ON lead_flow_assignments(platform_id);
 
-      -- Index for querying assignments by flow (to see which leads use a flow)
       CREATE INDEX IF NOT EXISTS idx_assignments_flow
         ON lead_flow_assignments(flow_id);
 
-      -- Index for priority-based processing (pending work ordered by priority)
       CREATE INDEX IF NOT EXISTS idx_assignments_priority
         ON lead_flow_assignments(status, priority DESC, assigned_at);
     `)
@@ -50,14 +44,12 @@ export default {
 
   down(db) {
     db.exec(`
-      -- Drop all indexes
       DROP INDEX IF EXISTS idx_assignments_priority;
       DROP INDEX IF EXISTS idx_assignments_flow;
       DROP INDEX IF EXISTS idx_assignments_platform;
       DROP INDEX IF EXISTS idx_assignments_lead;
       DROP INDEX IF EXISTS idx_assignments_status;
 
-      -- Drop table
       DROP TABLE IF EXISTS lead_flow_assignments;
     `)
 

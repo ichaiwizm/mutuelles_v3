@@ -11,10 +11,8 @@ export function useToast() {
     setToasts(prev => {
       const next = [...prev, toast]
       if (next.length <= MAX) return next
-      // supprime l'ancien toast non-persistant si possible
       const idx = next.findIndex(t => t.duration !== 0 && t.type !== 'info')
       if (idx !== -1) next.splice(idx, 1)
-      // si toujours trop long, supprime le plus ancien
       while (next.length > MAX) next.shift()
       return next
     })
@@ -26,7 +24,6 @@ export function useToast() {
     setToasts(prev => prev.map(t => {
       if (t.id !== id) return t
 
-      // Si on passe d'un loading (info avec duration=0) à un autre type, ajouter une duration par défaut
       const needsDefaultDuration = t.type === 'info' && t.duration === 0 && patch.type && patch.type !== 'info' && patch.duration === undefined
 
       return {

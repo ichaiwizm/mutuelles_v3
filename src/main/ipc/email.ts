@@ -1,9 +1,3 @@
-/**
- * IPC Handlers pour le service Email
- *
- * Expose les fonctionnalités d'import email au renderer via IPC
- */
-
 import { ipcMain, BrowserWindow } from 'electron'
 import { z } from 'zod'
 import { EmailService } from '../services/email'
@@ -18,7 +12,6 @@ function getEmailService() {
   return emailService
 }
 
-// Schémas de validation
 const EmailFiltersSchema = z.object({
   dateRange: z.object({
     from: z.date().or(z.string().transform(s => new Date(s))),
@@ -44,13 +37,7 @@ const RevokeAccessSchema = z.object({
   configId: z.number().int().positive()
 })
 
-/**
- * Enregistre tous les handlers IPC pour le service email
- */
 export function registerEmailIpc() {
-  /**
-   * Démarre le flow OAuth complet (ouvre le navigateur + attend le callback)
-   */
   ipcMain.handle('email:startAuth', async () => {
     try {
       const result = await getEmailService().startAuth()
@@ -67,9 +54,6 @@ export function registerEmailIpc() {
     }
   })
 
-  /**
-   * Gère le callback OAuth (échange code contre tokens)
-   */
   ipcMain.handle('email:handleCallback', async (_, data: { code: string }) => {
     try {
       const validated = HandleCallbackSchema.parse(data)
@@ -86,9 +70,6 @@ export function registerEmailIpc() {
     }
   })
 
-  /**
-   * Liste toutes les configurations email
-   */
   ipcMain.handle('email:listConfigs', async () => {
     try {
       const configs = getEmailService().listConfigs()
@@ -99,9 +80,6 @@ export function registerEmailIpc() {
     }
   })
 
-  /**
-   * Récupère une configuration par ID
-   */
   ipcMain.handle('email:getConfig', async (_, configId: number) => {
     try {
       const config = getEmailService().getConfigById(configId)
@@ -115,9 +93,6 @@ export function registerEmailIpc() {
     }
   })
 
-  /**
-   * Révoque l'accès et supprime une configuration
-   */
   ipcMain.handle('email:revokeAccess', async (_, data: { configId: number }) => {
     try {
       const validated = RevokeAccessSchema.parse(data)
@@ -133,14 +108,10 @@ export function registerEmailIpc() {
     }
   })
 
-  /**
-   * Lance l'import d'emails
-   */
   ipcMain.handle('email:fetchMessages', async (event, data: StartImportParams) => {
     try {
       const validated = StartImportSchema.parse(data)
 
-      // Si pas de configId, demander l'authentification
       if (!validated.configId) {
         const configs = getEmailService().listConfigs()
         if (configs.length === 0) {
@@ -149,17 +120,14 @@ export function registerEmailIpc() {
             error: 'Aucune configuration trouvée. Veuillez vous authentifier d\'abord.'
           }
         }
-        // Utiliser la première config par défaut
         validated.configId = configs[0].id!
       }
 
-      // Envoyer événement de progression : démarrage
       event.sender.send('email:import-progress', {
         phase: 'authenticating',
         message: 'Authentification en cours...'
       })
 
-      // Lancer la récupération
       event.sender.send('email:import-progress', {
         phase: 'fetching',
         message: 'Récupération des emails...'
@@ -168,7 +136,6 @@ export function registerEmailIpc() {
       const result = await getEmailService().fetchEmails(validated.configId, validated.filters)
 
       if (result.success) {
-        // Envoyer événement de progression : traitement
         event.sender.send('email:import-progress', {
           phase: 'processing',
           message: `Traitement de ${result.totalFetched} emails...`,
@@ -176,7 +143,6 @@ export function registerEmailIpc() {
           current: result.totalFetched
         })
 
-        // Envoyer événement de progression : terminé
         event.sender.send('email:import-progress', {
           phase: 'completed',
           message: `Import terminé : ${result.leadsDetected} leads potentiels détectés`,
@@ -206,9 +172,6 @@ export function registerEmailIpc() {
     }
   })
 
-  /**
-   * Récupère l'historique des emails importés
-   */
   ipcMain.handle('email:getImportedEmails', async (_, params?: { configId?: number; limit?: number }) => {
     try {
       const emails = getEmailService().getImportedEmails(
@@ -222,9 +185,6 @@ export function registerEmailIpc() {
     }
   })
 
-  /**
-   * Vérifie le statut d'authentification
-   */
   ipcMain.handle('email:getAuthStatus', async () => {
     try {
       const configs = getEmailService().listConfigs()

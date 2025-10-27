@@ -1,4 +1,3 @@
-// Command registry for step executors
 export class CommandRegistry {
   constructor() {
     this.commands = new Map()

@@ -101,7 +101,6 @@ async function main() {
   }
 }
 
-// Run the script
 main().catch(err => {
   console.error('[ERROR] Unexpected error:', err.message)
   process.exit(1)

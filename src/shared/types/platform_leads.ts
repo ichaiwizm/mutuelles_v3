@@ -1,19 +1,15 @@
-// Types pour le système de génération de leads spécifiques par plateforme
-
 import type { CleanLead } from './leads'
 
-// Statut d'un assignment flow
 export type FlowAssignmentStatus = 'pending' | 'running' | 'completed' | 'failed'
 
-// Assignment d'un flow à un lead pour une plateforme
 export interface FlowAssignment {
   id: string
   cleanLeadId: string
   flowId: number
   platformId: number
   platformLeadId: string | null
-  platformLeadData: Record<string, any> | null // Payload JSON complet pour automation
-  cleanLeadVersion: number | null // Version du lead utilisée
+  platformLeadData: Record<string, any> | null
+  cleanLeadVersion: number | null
   status: FlowAssignmentStatus
   priority: number
   assignedAt: string
@@ -22,7 +18,6 @@ export interface FlowAssignment {
   errorMessage: string | null
 }
 
-// Données d'un assignment avec informations jointes (platform, flow)
 export interface FlowAssignmentWithDetails extends FlowAssignment {
   platformSlug: string
   platformName: string
@@ -30,7 +25,6 @@ export interface FlowAssignmentWithDetails extends FlowAssignment {
   flowName: string
 }
 
-// Paramètres pour créer un assignment
 export interface CreateFlowAssignmentParams {
   cleanLeadId: string
   flowId: number
@@ -40,7 +34,6 @@ export interface CreateFlowAssignmentParams {
   priority?: number
 }
 
-// Paramètres pour mettre à jour un assignment
 export interface UpdateFlowAssignmentParams {
   status?: FlowAssignmentStatus
   startedAt?: string
@@ -49,7 +42,6 @@ export interface UpdateFlowAssignmentParams {
   platformLeadData?: Record<string, any>
 }
 
-// Filtres pour rechercher des assignments
 export interface FlowAssignmentFilters {
   cleanLeadId?: string
   platformId?: number
@@ -58,46 +50,41 @@ export interface FlowAssignmentFilters {
   priority?: number
 }
 
-// Données générées pour une plateforme spécifique
 export interface PlatformLeadData {
   platformId: number
   platformSlug: string
   cleanLeadId: string
   cleanLeadVersion: number
-  data: Record<string, any> // Payload complet mappé
+  data: Record<string, any>
   generatedAt: string
   isValid: boolean
   validationErrors: ValidationError[]
 }
 
-// Erreur de validation
 export interface ValidationError {
-  field: string // Chemin du champ (ex: "adherent.date_naissance")
-  domainKey?: string // Clé dans le domaine (ex: "subscriber.birthDate")
-  message: string // Message d'erreur
-  severity: 'error' | 'warning' // Sévérité
-  value?: any // Valeur qui a causé l'erreur
+  field: string
+  domainKey?: string
+  message: string
+  severity: 'error' | 'warning'
+  value?: any
 }
 
-// Résultat de validation d'un lead pour une plateforme
 export interface ValidationResult {
   isValid: boolean
   errors: ValidationError[]
   warnings: ValidationError[]
-  missingFields: string[] // Champs requis manquants
-  incompatibleFields: string[] // Champs incompatibles
+  missingFields: string[]
+  incompatibleFields: string[]
 }
 
-// Options pour générer un platform lead
 export interface GeneratePlatformLeadOptions {
   cleanLeadId: string
   platformId: number
-  validate?: boolean // Valider les données générées (default: true)
-  throwOnError?: boolean // Throw si validation échoue (default: false)
-  forceRegenerate?: boolean // Forcer la regénération si existe déjà (default: false)
+  validate?: boolean
+  throwOnError?: boolean
+  forceRegenerate?: boolean
 }
 
-// Résultat de génération d'un platform lead
 export interface GeneratePlatformLeadResult {
   success: boolean
   data?: PlatformLeadData
@@ -105,13 +92,12 @@ export interface GeneratePlatformLeadResult {
   validationResult?: ValidationResult
 }
 
-// Définition d'un champ dans field-definitions
 export interface FieldDefinition {
-  key: string // Clé du champ côté plateforme (ex: "date_naissance_adherent")
-  domainKey: string // Clé dans le domaine (ex: "subscriber.birthDate")
-  type: string // Type de champ (text, date, select, etc.)
+  key: string
+  domainKey: string
+  type: string
   label?: string
-  selector?: string // Sélecteur pour automation
+  selector?: string
   required?: boolean
   defaultValue?: any
   validation?: FieldValidation
@@ -120,23 +106,21 @@ export interface FieldDefinition {
     [platformSlug: string]: {
       [domainValue: string]: string
     }
-  } // Mappings de valeurs par plateforme (ex: {"swisslifeone": {"1": "CLIENT"}})
+  }
 }
 
-// Validation d'un champ
 export interface FieldValidation {
-  pattern?: string // Regex pattern
-  min?: number // Valeur minimum (nombre/longueur)
-  max?: number // Valeur maximum (nombre/longueur)
+  pattern?: string
+  min?: number
+  max?: number
   minLength?: number
   maxLength?: number
-  enum?: any[] // Valeurs autorisées
-  custom?: string // Nom d'une validation custom
+  enum?: any[]
+  custom?: string
 }
 
-// Définitions des champs pour une plateforme
 export interface PlatformFieldDefinitions {
-  platform: string // Slug de la plateforme
+  platform: string
   fields: FieldDefinition[]
   metadata?: {
     version?: string
@@ -145,42 +129,37 @@ export interface PlatformFieldDefinitions {
   }
 }
 
-// Règle de sélection de flow
 export interface FlowSelectionRule {
   id: number
   name: string
   platformId: number
   flowId: number
-  conditions: FlowConditions | null // Conditions JSON pour matcher le lead
+  conditions: FlowConditions | null
   priority: number
   active: boolean
   createdAt: string
   updatedAt: string
 }
 
-// Conditions pour sélectionner un flow
 export interface FlowConditions {
   [fieldPath: string]: FieldCondition
 }
 
-// Condition sur un champ
 export type FieldCondition =
   | { equals: any }
   | { oneOf: any[] }
   | { greaterThan: number }
   | { lessThan: number }
   | { contains: string }
-  | { matches: string } // Regex pattern
+  | { matches: string }
 
-// Options pour assigner automatiquement des flows
 export interface AutoAssignFlowsOptions {
   cleanLeadId: string
-  platformIds?: number[] // Limiter à certaines plateformes (default: toutes les selected)
-  generateLeadData?: boolean // Générer les platform_lead_data (default: true)
-  priority?: number // Priorité des assignments créés (default: 0)
+  platformIds?: number[]
+  generateLeadData?: boolean
+  priority?: number
 }
 
-// Résultat d'auto-assignment de flows
 export interface AutoAssignFlowsResult {
   success: boolean
   assignmentsCreated: FlowAssignment[]
@@ -188,7 +167,6 @@ export interface AutoAssignFlowsResult {
   warnings: string[]
 }
 
-// Statistiques sur les assignments
 export interface AssignmentStats {
   total: number
   byStatus: Record<FlowAssignmentStatus, number>
@@ -197,20 +175,18 @@ export interface AssignmentStats {
   runningCount: number
   completedCount: number
   failedCount: number
-  averageDuration?: number // Durée moyenne en ms
+  averageDuration?: number
 }
 
-// Options pour lister les assignments
 export interface ListAssignmentsOptions {
   filters?: FlowAssignmentFilters
-  includeDetails?: boolean // Inclure platform/flow details (default: false)
+  includeDetails?: boolean
   orderBy?: 'priority' | 'assigned_at' | 'status'
   order?: 'ASC' | 'DESC'
   limit?: number
   offset?: number
 }
 
-// Résultat paginé d'assignments
 export interface PaginatedAssignments {
   items: FlowAssignment[] | FlowAssignmentWithDetails[]
   total: number
@@ -219,15 +195,13 @@ export interface PaginatedAssignments {
   hasMore: boolean
 }
 
-// Options pour régénérer un platform lead
 export interface RegeneratePlatformLeadOptions {
   cleanLeadId: string
   platformId: number
-  updateAssignments?: boolean // Mettre à jour les assignments existants (default: true)
-  reason?: string // Raison de la regénération (pour logs)
+  updateAssignments?: boolean
+  reason?: string
 }
 
-// Résultat de regénération
 export interface RegeneratePlatformLeadResult {
   success: boolean
   data?: PlatformLeadData
@@ -236,7 +210,6 @@ export interface RegeneratePlatformLeadResult {
   validationResult?: ValidationResult
 }
 
-// Informations sur une plateforme avec ses field definitions
 export interface PlatformInfo {
   id: number
   slug: string
@@ -247,17 +220,14 @@ export interface PlatformInfo {
   hasCredentials: boolean
 }
 
-// Mapping d'une valeur (pour value_mappings)
 export interface ValueMapping {
-  [domainValue: string]: string // Valeur domaine → Valeur plateforme
+  [domainValue: string]: string
 }
 
-// Mappings de valeurs pour une plateforme
 export interface PlatformValueMappings {
   [fieldKey: string]: ValueMapping
 }
 
-// Contexte de génération (utilisé en interne)
 export interface GenerationContext {
   lead: CleanLead
   platform: PlatformInfo
@@ -267,17 +237,15 @@ export interface GenerationContext {
   warnings: ValidationError[]
 }
 
-// Options pour valider un lead
 export interface ValidateLeadOptions {
   cleanLeadId: string
   platformId: number
-  strict?: boolean // Mode strict: warnings deviennent errors (default: false)
+  strict?: boolean
 }
 
-// Résultat de validation standalone
 export interface ValidateLeadResult {
   isValid: boolean
-  canGenerate: boolean // Peut générer malgré warnings
+  canGenerate: boolean
   validationResult: ValidationResult
   missingDataSummary: string[]
 }

@@ -21,54 +21,33 @@ function parseDateToDDMMYYYY(value: any): string | undefined {
   return value
 }
 
-// Note: We no longer map values here. Values are stored as-is from the form.
-// This aligns with base.domain.json philosophy: single source of truth with raw domain values.
-
-/**
- * Extrait toutes les données du formulaire pour les stocker brutes
- * Le backend fera la transformation selon la plateforme cible
- */
 function extractAllFormData(formData: FormData): Record<string, any> {
   const allData: Record<string, any> = {}
 
   Object.keys(formData).forEach(key => {
-    // Ignorer les champs complètement vides
     if (formData[key] === undefined || formData[key] === null) return
 
-    // Stocker tout le reste tel quel
     allData[key] = formData[key]
   })
 
   return allData
 }
 
-// Reverse mapping functions removed - no longer needed as we store raw domain values
-
-/**
- * Transform a Lead back into FormData format for editing
- * Priority: Use platformData if available (contains original form data)
- * Fallback: Reconstruct from normalized data structure
- */
 export function transformFromCleanLead(lead: any): Record<string, any> {
-  // Priority 1: If platformData exists and has content, use it directly
   if (lead.data?.platformData && Object.keys(lead.data.platformData).length > 0) {
     return { ...lead.data.platformData }
   }
 
-  // Priority 2: Reconstruct from normalized structure (now using domain keys)
   const formData: Record<string, any> = {}
 
-  // Reconstruct subscriber
   if (lead.data?.subscriber) {
     const subscriber = lead.data.subscriber
 
-    // Identity
     if (subscriber.civility) formData['subscriber.civility'] = subscriber.civility
     if (subscriber.lastName) formData['subscriber.lastName'] = subscriber.lastName
     if (subscriber.firstName) formData['subscriber.firstName'] = subscriber.firstName
     if (subscriber.birthDate) formData['subscriber.birthDate'] = subscriber.birthDate
 
-    // Contact
     if (subscriber.telephone) formData['subscriber.telephone'] = subscriber.telephone
     if (subscriber.email) formData['subscriber.email'] = subscriber.email
     if (subscriber.address) formData['subscriber.address'] = subscriber.address
@@ -76,18 +55,15 @@ export function transformFromCleanLead(lead: any): Record<string, any> {
     if (subscriber.city) formData['subscriber.city'] = subscriber.city
     if (subscriber.departmentCode) formData['subscriber.departmentCode'] = subscriber.departmentCode
 
-    // Professional
     if (subscriber.regime) formData['subscriber.regime'] = subscriber.regime
     if (subscriber.category) formData['subscriber.category'] = subscriber.category
     if (subscriber.status) formData['subscriber.status'] = subscriber.status
     if (subscriber.profession) formData['subscriber.profession'] = subscriber.profession
     if (subscriber.workFramework) formData['subscriber.workFramework'] = subscriber.workFramework
 
-    // Children
     if (subscriber.childrenCount !== undefined) formData['children.count'] = subscriber.childrenCount
   }
 
-  // Reconstruct spouse
   if (lead.data?.spouse) {
     formData['conjoint'] = true
     const spouse = lead.data.spouse
@@ -103,7 +79,6 @@ export function transformFromCleanLead(lead: any): Record<string, any> {
     if (spouse.workFramework) formData['spouse.workFramework'] = spouse.workFramework
   }
 
-  // Reconstruct children
   if (lead.data?.children && lead.data.children.length > 0) {
     formData['enfants'] = true
     formData['children.count'] = lead.data.children.length
@@ -116,7 +91,6 @@ export function transformFromCleanLead(lead: any): Record<string, any> {
     })
   }
 
-  // Reconstruct project
   if (lead.data?.project) {
     const project = lead.data.project
 
@@ -143,21 +117,14 @@ export function transformFromCleanLead(lead: any): Record<string, any> {
   return formData
 }
 
-/**
- * Transform FormData to Clean Lead structure
- * Now using domain keys directly - aligned with base.domain.json
- */
 export function transformToCleanLead(formData: FormData): CreateLeadData {
-  // Build subscriber info (combines identity, contact, and professional info)
   const subscriber: SubscriberInfo = {}
 
-  // Identity
   if (formData['subscriber.civility']) subscriber.civility = formData['subscriber.civility']
   if (formData['subscriber.lastName']) subscriber.lastName = formData['subscriber.lastName']
   if (formData['subscriber.firstName']) subscriber.firstName = formData['subscriber.firstName']
   if (formData['subscriber.birthDate']) subscriber.birthDate = parseDateToDDMMYYYY(formData['subscriber.birthDate'])
 
-  // Contact
   if (formData['subscriber.telephone']) subscriber.telephone = formData['subscriber.telephone']
   if (formData['subscriber.email']) subscriber.email = formData['subscriber.email']
   if (formData['subscriber.address']) subscriber.address = formData['subscriber.address']
@@ -165,17 +132,14 @@ export function transformToCleanLead(formData: FormData): CreateLeadData {
   if (formData['subscriber.city']) subscriber.city = formData['subscriber.city']
   if (formData['subscriber.departmentCode']) subscriber.departmentCode = formData['subscriber.departmentCode']
 
-  // Professional - NO MAPPING, store raw values
   if (formData['subscriber.regime']) subscriber.regime = formData['subscriber.regime']
   if (formData['subscriber.category']) subscriber.category = formData['subscriber.category']
   if (formData['subscriber.status']) subscriber.status = formData['subscriber.status']
   if (formData['subscriber.profession']) subscriber.profession = formData['subscriber.profession']
   if (formData['subscriber.workFramework']) subscriber.workFramework = formData['subscriber.workFramework']
 
-  // Children count
   if (formData['children.count'] !== undefined) subscriber.childrenCount = formData['children.count']
 
-  // Build spouse info
   let spouse: SpouseInfo | undefined = undefined
   if (formData['conjoint']) {
     spouse = {}
@@ -192,7 +156,6 @@ export function transformToCleanLead(formData: FormData): CreateLeadData {
     if (formData['spouse.workFramework']) spouse.workFramework = formData['spouse.workFramework']
   }
 
-  // Build children array
   const children: ChildInfo[] = []
   const childrenCount = formData['children.count'] || 0
   for (let i = 0; i < childrenCount; i++) {
@@ -211,7 +174,6 @@ export function transformToCleanLead(formData: FormData): CreateLeadData {
     children.push(child)
   }
 
-  // Build project info
   const project: ProjectInfo = {}
 
   if (formData['project.name']) project.name = formData['project.name']
@@ -226,7 +188,6 @@ export function transformToCleanLead(formData: FormData): CreateLeadData {
   if (formData['project.currentlyInsured'] !== undefined) project.currentlyInsured = formData['project.currentlyInsured']
   if (formData['project.ranges']) project.ranges = formData['project.ranges']
 
-  // Coverage levels
   const levels: any = {}
   if (formData['project.medicalCareLevel'] !== undefined) levels.medicalCare = formData['project.medicalCareLevel']
   if (formData['project.hospitalizationLevel'] !== undefined) levels.hospitalization = formData['project.hospitalizationLevel']
@@ -235,7 +196,6 @@ export function transformToCleanLead(formData: FormData): CreateLeadData {
 
   if (Object.keys(levels).length > 0) project.levels = levels
 
-  // Store ALL raw form data in platformData (unchanged)
   const platformData = extractAllFormData(formData)
 
   return {

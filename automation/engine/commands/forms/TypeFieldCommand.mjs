@@ -1,4 +1,3 @@
-// TypeField command - type text sequentially with delays
 import { BaseCommand } from '../BaseCommand.mjs'
 
 export class TypeFieldCommand extends BaseCommand {
@@ -11,7 +10,6 @@ export class TypeFieldCommand extends BaseCommand {
       value = this.parseTemplates(value)
     }
 
-    // Validate optional value
     const validation = this.validateOptionalValue(step, value, 'typeField')
     if (validation.skip) return
 

@@ -26,7 +26,6 @@ export default function LeadsFilters({ filters, onFiltersChange, onReset }: Lead
 
   return (
     <div className="space-y-4">
-      {/* Recherche principale */}
       <div className="flex gap-3">
         <div className="flex-1 relative">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
@@ -50,7 +49,6 @@ export default function LeadsFilters({ filters, onFiltersChange, onReset }: Lead
         )}
       </div>
 
-      {/* Filtre provider simplifié */}
       <div className="flex items-center gap-2">
         <span className="text-sm text-neutral-600 dark:text-neutral-400">Provider:</span>
         <div className="flex gap-1">

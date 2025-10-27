@@ -114,7 +114,6 @@ export function generateRandomTestData(schema: FormSchema): Record<string, any> 
     return randomChoice(field.options).value
   }
 
-  // STEP 1: Basic identity
   const civility = randomChoice(['MONSIEUR', 'MADAME'])
   const firstName = civility === 'MONSIEUR'
     ? randomChoice(FIRST_NAMES_MALE)
@@ -125,10 +124,8 @@ export function generateRandomTestData(schema: FormSchema): Record<string, any> 
   testData['subscriber.firstName'] = firstName
   testData['subscriber.lastName'] = lastName
 
-  // STEP 2: Subscriber birth date
   testData['subscriber.birthDate'] = generateBirthDate(25, 65)
 
-  // STEP 3: Determine which fields are available (carrier-specific)
   const allFields = [
     ...schema.common,
     ...schema.platformSpecific.alptis,
@@ -138,20 +135,16 @@ export function generateRandomTestData(schema: FormSchema): Record<string, any> 
   const hasAlptisFields = schema.platformSpecific.alptis.length > 0
   const hasSwissLifeFields = schema.platformSpecific.swisslifeone.length > 0
 
-  // Helper to find field definition
   const findField = (domainKey: string): FormFieldDefinition | undefined => {
     return allFields.find(f => f.domainKey === domainKey)
   }
 
-  // STEP 4: Carrier-specific fields for subscriber
   if (hasAlptisFields) {
-    // Category
     const categoryField = findField('subscriber.category')
     if (categoryField?.options) {
       const category = randomChoice(categoryField.options).value
       testData['subscriber.category'] = category
 
-      // Conditional: workFramework (only for certain categories)
       const workFrameworkField = findField('subscriber.workFramework')
       if (workFrameworkField) {
         const categoriesRequiringWorkFramework = [
@@ -167,14 +160,10 @@ export function generateRandomTestData(schema: FormSchema): Record<string, any> 
       }
     }
 
-    // Regime (Alptis) — handled later with SwissLife to avoid overrides
-
-    // Postal code
     const dept = randomChoice(DEPARTMENTS)
     testData['subscriber.postalCode'] = randomChoice(dept.postalCodes)
   }
 
-  // STEP 4a: Unified selection for subscriber.regime (must be done BEFORE status for SwissLife)
   let subscriberRegime: string | undefined
   {
     const regimeFieldAlptis = findFieldInPlatform('subscriber.regime', 'alptis')
@@ -196,23 +185,18 @@ export function generateRandomTestData(schema: FormSchema): Record<string, any> 
   }
 
   if (hasSwissLifeFields) {
-    // Status - MUST be compatible with the selected regime AND age
     const statusField = findField('subscriber.status')
     let status: string | undefined
 
     if (statusField?.options && subscriberRegime) {
-      // Calculate subscriber's age from birth date
       const subscriberAge = calculateAgeFromBirthDate(testData['subscriber.birthDate'])
 
-      // Filter status options to only those compatible with the selected regime
       const compatibleStatuses = REGIME_STATUS_COMPATIBILITY[subscriberRegime] || []
       const availableStatuses = statusField.options
         .map(o => o.value)
         .filter(s => {
-          // Check regime compatibility
           const isRegimeCompatible = compatibleStatuses.includes(s)
 
-          // Check age compatibility
           const ageRule = AGE_STATUS_RULES[s]
           const isAgeCompatible = !ageRule ||
             ((!ageRule.minAge || subscriberAge >= ageRule.minAge) &&
@@ -225,7 +209,6 @@ export function generateRandomTestData(schema: FormSchema): Record<string, any> 
         status = randomChoice(availableStatuses)
         testData['subscriber.status'] = status
       } else {
-        // Error: no compatible status found - this indicates a configuration issue
         throw new Error(
           `Impossible de générer des données de test valides:\n` +
           `- Régime: "${subscriberRegime}"\n` +
@@ -236,7 +219,6 @@ export function generateRandomTestData(schema: FormSchema): Record<string, any> 
         )
       }
     } else if (statusField?.options) {
-      // No regime selected, use any age-compatible status
       const subscriberAge = calculateAgeFromBirthDate(testData['subscriber.birthDate'])
       const ageCompatibleStatuses = statusField.options
         .map(o => o.value)
@@ -253,7 +235,6 @@ export function generateRandomTestData(schema: FormSchema): Record<string, any> 
       }
     }
 
-    // Conditional: madelin (only for TNS or EXPLOITANT_AGRICOLE)
     if (status) {
       const madelinField = findField('project.madelin')
       if (madelinField && (status === 'TNS' || status === 'EXPLOITANT_AGRICOLE')) {
@@ -261,55 +242,43 @@ export function generateRandomTestData(schema: FormSchema): Record<string, any> 
       }
     }
 
-    // Profession - skip for agricultural workers
     const professionField = findField('subscriber.profession')
     if (professionField?.options) {
-      // Agricultural workers don't have medical professions
       const agriculturalStatuses = ['SALARIE_AGRICOLE', 'EXPLOITANT_AGRICOLE', 'RETRAITE_ANCIEN_EXPLOITANT']
       if (status && agriculturalStatuses.includes(status)) {
-        // Skip profession for agricultural workers (field will be hidden in UI)
       } else {
         testData['subscriber.profession'] = randomChoice(professionField.options).value
       }
     }
 
-    // Department code
     const dept = randomChoice(DEPARTMENTS)
     testData['subscriber.departmentCode'] = dept.code
 
-    // Project name (auto-generated)
     testData['project.name'] = `Simulation ${lastName} ${firstName}`
 
-    // Project plan (fixed)
     testData['project.plan'] = 'SwissLife Santé'
 
-    // Project toggles
     testData['project.couverture'] = true
     testData['project.ij'] = false
     testData['project.resiliation'] = randomBoolean(0.2)
     testData['project.reprise'] = randomBoolean(0.15)
   }
 
-  // STEP 5: Project date
   testData['project.dateEffet'] = generateFirstOfNextMonth()
 
-  // STEP 6: Spouse (60% chance)
   const hasSpouse = randomBoolean(0.6)
   testData['conjoint'] = hasSpouse
 
   if (hasSpouse) {
-    // Spouse birth date (±5 years from subscriber)
-    const subscriberAge = 45 // approximate middle age
+    const subscriberAge = 45
     testData['spouse.birthDate'] = generateBirthDate(subscriberAge - 5, subscriberAge + 5)
 
     if (hasAlptisFields) {
-      // Spouse category
       const spouseCategoryField = findField('spouse.category')
       if (spouseCategoryField?.options) {
         const spouseCategory = randomChoice(spouseCategoryField.options).value
         testData['spouse.category'] = spouseCategory
 
-        // Conditional: spouse workFramework
         const spouseWorkFrameworkField = findField('spouse.workFramework')
         if (spouseWorkFrameworkField) {
           const categoriesRequiringWorkFramework = [
@@ -324,11 +293,8 @@ export function generateRandomTestData(schema: FormSchema): Record<string, any> 
           }
         }
       }
-
-      // Spouse regime (Alptis) — handled later with SwissLife to avoid overrides
     }
 
-    // Unified selection for spouse.regime (must be done BEFORE status for SwissLife)
     let spouseRegime: string | undefined
     {
       const spouseRegimeFieldAlptis = findFieldInPlatform('spouse.regime', 'alptis')
@@ -350,22 +316,17 @@ export function generateRandomTestData(schema: FormSchema): Record<string, any> 
     }
 
     if (hasSwissLifeFields) {
-      // Spouse status - MUST be compatible with the selected regime AND age
       const spouseStatusField = findField('spouse.status')
 
       if (spouseStatusField?.options && spouseRegime) {
-        // Calculate spouse's age from birth date
         const spouseAge = calculateAgeFromBirthDate(testData['spouse.birthDate'])
 
-        // Filter status options to only those compatible with the selected regime
         const compatibleStatuses = REGIME_STATUS_COMPATIBILITY[spouseRegime] || []
         const availableStatuses = spouseStatusField.options
           .map(o => o.value)
           .filter(s => {
-            // Check regime compatibility
             const isRegimeCompatible = compatibleStatuses.includes(s)
 
-            // Check age compatibility
             const ageRule = AGE_STATUS_RULES[s]
             const isAgeCompatible = !ageRule ||
               ((!ageRule.minAge || spouseAge >= ageRule.minAge) &&
@@ -377,7 +338,6 @@ export function generateRandomTestData(schema: FormSchema): Record<string, any> 
         if (availableStatuses.length > 0) {
           testData['spouse.status'] = randomChoice(availableStatuses)
         } else {
-          // Error: no compatible status found - this indicates a configuration issue
           throw new Error(
             `Impossible de générer des données de test valides pour le conjoint:\n` +
             `- Régime: "${spouseRegime}"\n` +
@@ -388,7 +348,6 @@ export function generateRandomTestData(schema: FormSchema): Record<string, any> 
           )
         }
       } else if (spouseStatusField?.options) {
-        // No regime selected, use any age-compatible status
         const spouseAge = calculateAgeFromBirthDate(testData['spouse.birthDate'])
         const ageCompatibleStatuses = spouseStatusField.options
           .map(o => o.value)
@@ -404,22 +363,18 @@ export function generateRandomTestData(schema: FormSchema): Record<string, any> 
         }
       }
 
-      // Spouse profession - skip for agricultural workers
       const spouseProfessionField = findField('spouse.profession')
       if (spouseProfessionField?.options) {
-        // Agricultural workers don't have medical professions
         const agriculturalStatuses = ['SALARIE_AGRICOLE', 'EXPLOITANT_AGRICOLE', 'RETRAITE_ANCIEN_EXPLOITANT']
         const spouseStatus = testData['spouse.status']
         if (spouseStatus && agriculturalStatuses.includes(spouseStatus)) {
-          // Skip profession for agricultural workers (field will be hidden in UI)
-        } else {
+        } else{
           testData['spouse.profession'] = randomChoice(spouseProfessionField.options).value
         }
       }
     }
   }
 
-  // STEP 7: Children (probabilities: 30%/30%/25%/15% for 0/1/2/3)
   const rand = Math.random()
   let nbChildren = 0
   if (rand < 0.30) {
@@ -437,11 +392,9 @@ export function generateRandomTestData(schema: FormSchema): Record<string, any> 
 
   if (nbChildren > 0) {
     for (let i = 0; i < nbChildren; i++) {
-      // Birth date for each child
       testData[`children[${i}].birthDate`] = generateBirthDate(0, 25)
 
       if (hasAlptisFields) {
-        // Children regime (Alptis) — choose from Alptis-specific variant
         const childRegimeFieldAlptis = findFieldInPlatform('children[].regime', 'alptis')
         const chosenChildRegimeAlptis = pickOptionValue(childRegimeFieldAlptis) || pickOptionValue(findField('children[].regime'))
         if (chosenChildRegimeAlptis) {
@@ -450,8 +403,6 @@ export function generateRandomTestData(schema: FormSchema): Record<string, any> 
       }
 
       if (hasSwissLifeFields) {
-        // Children ayantDroit (SwissLife)
-        // 80% assuré principal (1), 20% conjoint (2) if spouse present
         const childAyantDroitField = findField('children[].ayantDroit')
         if (childAyantDroitField?.options) {
           if (hasSpouse && randomBoolean(0.2)) {

@@ -1,4 +1,3 @@
-// PressKey command - press keyboard key
 import { BaseCommand } from '../BaseCommand.mjs'
 
 export class PressKeyCommand extends BaseCommand {

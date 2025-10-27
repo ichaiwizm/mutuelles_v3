@@ -43,7 +43,6 @@ export class DomCollector {
    */
   async collectDom(activeContext, index, step, domDir) {
     try {
-      // Vérifier que le contexte existe et n'est pas fermé
       if (!activeContext || activeContext.isClosed?.()) {
         console.warn(`[DomCollector] Contexte fermé pour step ${index + 1}`)
         return

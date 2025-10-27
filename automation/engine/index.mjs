@@ -1,4 +1,3 @@
-// Main entry point for the automation engine (refactored)
 export { runHighLevelFlow } from './core/FlowRunner.mjs'
 
 /*

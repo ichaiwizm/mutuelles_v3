@@ -18,7 +18,6 @@ function colorize(text, color) {
   return `${colors[color]}${text}${colors.reset}`
 }
 
-// Normalise un objet JSON pour comparaison
 function normalizeJson(obj) {
   return JSON.stringify(obj, Object.keys(obj).sort(), 2)
 }
@@ -28,13 +27,11 @@ function areJsonEqual(obj1, obj2) {
   return normalizeJson(obj1) === normalizeJson(obj2)
 }
 
-// Vérification des flows
 function verifyFlows(db) {
   console.log(colorize('\n━━━ FLOWS ━━━', 'bold'))
 
   const stats = { synced: 0, different: 0, onlyInFiles: 0, onlyInDb: 0 }
 
-  // Récupérer tous les flows depuis les fichiers
   const flowFiles = listFlowFiles()
   const flowsFromFiles = new Map()
 
@@ -47,7 +44,6 @@ function verifyFlows(db) {
     }
   }
 
-  // Récupérer tous les flows depuis la DB
   const flowsFromDb = new Map()
   const dbRows = db.prepare(`
     SELECT f.slug, f.flow_json
@@ -64,7 +60,6 @@ function verifyFlows(db) {
     }
   }
 
-  // Comparer
   for (const [slug, fileData] of flowsFromFiles) {
     if (flowsFromDb.has(slug)) {
       const fileFlow = fileData.flow
@@ -95,7 +90,6 @@ function verifyFlows(db) {
   return stats
 }
 
-// Vérification des field definitions
 function verifyFieldDefinitions(db) {
   console.log(colorize('\n━━━ FIELD DEFINITIONS ━━━', 'bold'))
 
@@ -103,7 +97,6 @@ function verifyFieldDefinitions(db) {
 
   const fieldDefsDir = path.join(getProjectRoot(), 'admin', 'field-definitions')
 
-  // Récupérer tous les field definitions depuis les fichiers
   const fieldDefsFromFiles = new Map()
 
   if (fs.existsSync(fieldDefsDir)) {
@@ -121,7 +114,6 @@ function verifyFieldDefinitions(db) {
     }
   }
 
-  // Récupérer tous les field definitions depuis la DB
   const fieldDefsFromDb = new Map()
   const dbRows = db.prepare(`
     SELECT slug, field_definitions_json
@@ -138,7 +130,6 @@ function verifyFieldDefinitions(db) {
     }
   }
 
-  // Comparer
   for (const [platform, fileData] of fieldDefsFromFiles) {
     if (fieldDefsFromDb.has(platform)) {
       const dbData = fieldDefsFromDb.get(platform)
@@ -177,7 +168,6 @@ async function main() {
     const flowsStats = verifyFlows(db)
     const fieldsStats = verifyFieldDefinitions(db)
 
-    // Résumé global
     const flowsIssues = flowsStats.different + flowsStats.onlyInFiles + flowsStats.onlyInDb
     const fieldsIssues = fieldsStats.different + fieldsStats.onlyInFiles + fieldsStats.onlyInDb
     const totalIssues = flowsIssues + fieldsIssues

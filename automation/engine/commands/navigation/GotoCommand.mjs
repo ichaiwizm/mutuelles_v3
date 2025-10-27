@@ -1,4 +1,3 @@
-// Goto command - navigate to URL
 import { BaseCommand } from '../BaseCommand.mjs'
 
 export class GotoCommand extends BaseCommand {

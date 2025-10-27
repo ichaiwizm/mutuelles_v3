@@ -50,13 +50,11 @@ export async function runSeeders(db = null, options = {}) {
     const allSeeders = await loadSeeders()
     let seedersToRun = allSeeders
 
-    // Filter by 'only' option
     if (only) {
       const onlyList = Array.isArray(only) ? only : only.split(',').map(s => s.trim())
       seedersToRun = seedersToRun.filter(s => onlyList.includes(s.name))
     }
 
-    // Filter out skipped seeders
     if (skip.length > 0) {
       const skipList = Array.isArray(skip) ? skip : skip.split(',').map(s => s.trim())
       seedersToRun = seedersToRun.filter(s => !skipList.includes(s.name))
@@ -111,7 +109,6 @@ export async function runSeeders(db = null, options = {}) {
 
   } finally {
     if (!db) {
-      // Only close if we opened the connection
       database?.close()
     }
   }

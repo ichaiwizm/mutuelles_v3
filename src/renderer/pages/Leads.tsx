@@ -17,17 +17,14 @@ export default function Leads() {
   const [confirmDelete, setConfirmDelete] = useState<Lead | null>(null)
   const [deleteLoading, setDeleteLoading] = useState(false)
 
-  // Lead modal state
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null)
   const [leadModalMode, setLeadModalMode] = useState<'create' | 'view' | 'edit'>('create')
   const [showLeadModal, setShowLeadModal] = useState(false)
 
-  // Import email panel state
   const [showImportPanel, setShowImportPanel] = useState(false)
 
   const toast = useToastContext()
 
-  // Charger les statistiques
   const loadStats = useCallback(async () => {
     setLoading(prev => ({ ...prev, stats: true }))
     try {
@@ -44,7 +41,6 @@ export default function Leads() {
     }
   }, [toast])
 
-  // Charger les leads
   const loadLeads = useCallback(async () => {
     setLoading(prev => ({ ...prev, leads: true }))
     try {
@@ -69,7 +65,6 @@ export default function Leads() {
     loadLeads()
   }, [loadLeads])
 
-  // Handlers pour les actions de la table
   const handleAddLead = () => {
     setSelectedLead(null)
     setLeadModalMode('create')
@@ -122,7 +117,7 @@ export default function Leads() {
 
   const handleFiltersChange = (newFilters: LeadFilters) => {
     setFilters(newFilters)
-    setPagination(prev => ({ ...prev, page: 1 })) // Reset to first page when filtering
+    setPagination(prev => ({ ...prev, page: 1 }))
   }
 
   const handleResetFilters = () => {
@@ -132,7 +127,6 @@ export default function Leads() {
 
   return (
     <section className="space-y-4">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Leads</h1>
         <div className="flex gap-2">
@@ -154,7 +148,6 @@ export default function Leads() {
         </div>
       </div>
 
-      {/* Stats Cards */}
       <div className="grid grid-cols-4 gap-3">
         <div className="rounded-md border border-neutral-200 dark:border-neutral-800 p-3">
           <div className="text-2xl font-bold">
@@ -182,14 +175,12 @@ export default function Leads() {
         </div>
       </div>
 
-      {/* Filtres */}
       <LeadsFilters
         filters={filters}
         onFiltersChange={handleFiltersChange}
         onReset={handleResetFilters}
       />
 
-      {/* Table des leads */}
       <LeadsTable
         leads={leads}
         loading={loading.leads}
@@ -199,7 +190,6 @@ export default function Leads() {
         onDeleteLead={handleDeleteLead}
       />
 
-      {/* Modal de confirmation de suppression */}
       <ConfirmModal
         isOpen={!!confirmDelete}
         onClose={closeModals}
@@ -210,7 +200,6 @@ export default function Leads() {
         confirmText="Supprimer"
       />
 
-      {/* Modal de lead (view/edit/create) */}
       <LeadModal
         mode={leadModalMode}
         lead={selectedLead || undefined}
@@ -227,7 +216,6 @@ export default function Leads() {
         }}
       />
 
-      {/* Panneau d'import */}
       <ImportPanel
         isOpen={showImportPanel}
         onClose={() => setShowImportPanel(false)}

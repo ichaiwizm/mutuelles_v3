@@ -1,13 +1,3 @@
-/**
- * Email Service - Gestion OAuth et récupération d'emails Gmail
- *
- * Fonctionnalités :
- * - Authentification OAuth 2.0 Google
- * - Récupération d'emails via Gmail API
- * - Stockage sécurisé des tokens (chiffrement Electron)
- * - Classification des emails avec détection de leads
- */
-
 import { google } from 'googleapis'
 import { OAuth2Client } from 'google-auth-library'
 import { safeStorage, shell, BrowserWindow } from 'electron'
@@ -22,25 +12,18 @@ import type {
   OAuthResult
 } from '../../shared/types/email'
 
-// Configuration OAuth Google depuis les variables d'environnement
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || ''
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || ''
-// Utiliser localhost avec un port aléatoire pour les apps desktop
 const OAUTH_CALLBACK_PORT = 3000
 
-// Scopes nécessaires
 const SCOPES = [
   'https://www.googleapis.com/auth/gmail.readonly',
   'https://www.googleapis.com/auth/userinfo.email'
 ]
 
-// Serveur HTTP temporaire pour le callback OAuth
 let oauthServer: http.Server | null = null
 let oauthResolve: ((code: string) => void) | null = null
 
-/**
- * Service de gestion des emails
- */
 export class EmailService {
   private oauth2Client: OAuth2Client
 
@@ -57,12 +40,8 @@ export class EmailService {
     return getDb()
   }
 
-  /**
-   * Démarre le serveur HTTP local pour le callback OAuth
-   */
   private startOAuthServer(): Promise<string> {
     return new Promise((resolve, reject) => {
-      // Si un serveur existe déjà, le fermer
       if (oauthServer) {
         oauthServer.close()
       }
@@ -72,7 +51,6 @@ export class EmailService {
         const code = url.searchParams.get('code')
 
         if (code) {
-          // Afficher une page de succès
           res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' })
           res.end(`
             <!DOCTYPE html>
@@ -101,13 +79,11 @@ export class EmailService {
             </html>
           `)
 
-          // Résoudre avec le code
           if (oauthResolve) {
             oauthResolve(code)
             oauthResolve = null
           }
 
-          // Fermer le serveur après un court délai
           setTimeout(() => {
             if (oauthServer) {
               oauthServer.close()
@@ -115,7 +91,6 @@ export class EmailService {
             }
           }, 1000)
         } else {
-          // Pas de code, afficher une erreur
           res.writeHead(400, { 'Content-Type': 'text/html; charset=utf-8' })
           res.end(`
             <!DOCTYPE html>
@@ -153,35 +128,25 @@ export class EmailService {
         reject(error)
       })
 
-      // Stocker le resolve pour l'utiliser dans le callback
       oauthResolve = resolve
     })
   }
 
-  /**
-   * Génère l'URL d'authentification OAuth Google
-   */
   getAuthUrl(): string {
     return this.oauth2Client.generateAuthUrl({
       access_type: 'offline',
       scope: SCOPES,
-      prompt: 'consent' // Force pour obtenir refresh token
+      prompt: 'consent'
     })
   }
 
-  /**
-   * Lance le flow OAuth complet avec serveur local
-   */
   async startAuth(): Promise<OAuthResult> {
     try {
-      // Démarrer le serveur local en arrière-plan
       const codePromise = this.startOAuthServer()
 
-      // Ouvrir le navigateur
       const authUrl = this.getAuthUrl()
       await shell.openExternal(authUrl)
 
-      // Attendre le code (avec timeout de 5 minutes)
       const code = await Promise.race([
         codePromise,
         new Promise<string>((_, reject) =>
@@ -189,13 +154,11 @@ export class EmailService {
         )
       ])
 
-      // Échanger le code contre des tokens
       const result = await this.handleCallback(code)
       return result
     } catch (error) {
       console.error('Erreur lors de l\'authentification OAuth:', error)
 
-      // Fermer le serveur en cas d'erreur
       if (oauthServer) {
         oauthServer.close()
         oauthServer = null
@@ -209,16 +172,11 @@ export class EmailService {
     }
   }
 
-  /**
-   * Échange le code d'autorisation contre des tokens
-   */
   async handleCallback(code: string): Promise<OAuthResult> {
     try {
-      // Échange code → tokens
       const { tokens } = await this.oauth2Client.getToken(code)
       this.oauth2Client.setCredentials(tokens)
 
-      // Récupérer l'email de l'utilisateur
       const oauth2 = google.oauth2({ version: 'v2', auth: this.oauth2Client })
       const { data } = await oauth2.userinfo.get()
 
@@ -226,7 +184,6 @@ export class EmailService {
         throw new Error('Impossible de récupérer l\'email de l\'utilisateur')
       }
 
-      // Sauvegarder la configuration
       const config = await this.saveConfig({
         provider: 'gmail',
         email: data.email,
@@ -246,9 +203,6 @@ export class EmailService {
     }
   }
 
-  /**
-   * Sauvegarde une configuration email avec chiffrement des tokens
-   */
   async saveConfig(config: EmailConfig): Promise<EmailConfig> {
     if (!safeStorage.isEncryptionAvailable()) {
       throw new Error('Chiffrement indisponible sur ce système')
@@ -283,7 +237,6 @@ export class EmailService {
       config.expiryDate || null
     )
 
-    // Récupérer la config avec l'ID
     const savedConfig = this.getConfigByEmail(config.email)
 
     if (!savedConfig) {
@@ -293,9 +246,6 @@ export class EmailService {
     return savedConfig
   }
 
-  /**
-   * Récupère une configuration par email
-   */
   getConfigByEmail(email: string): EmailConfig | null {
     const row = this.db
       .prepare('SELECT * FROM email_configs WHERE email = ? AND is_active = 1')
@@ -314,9 +264,6 @@ export class EmailService {
     }
   }
 
-  /**
-   * Récupère une configuration par ID
-   */
   getConfigById(id: number): EmailConfig | null {
     const row = this.db
       .prepare('SELECT * FROM email_configs WHERE id = ? AND is_active = 1')
@@ -335,9 +282,6 @@ export class EmailService {
     }
   }
 
-  /**
-   * Liste toutes les configurations actives
-   */
   listConfigs(): EmailConfig[] {
     const rows = this.db
       .prepare('SELECT * FROM email_configs WHERE is_active = 1 ORDER BY created_at DESC')
@@ -354,9 +298,6 @@ export class EmailService {
     }))
   }
 
-  /**
-   * Déchiffre et retourne les tokens pour une configuration
-   */
   private getDecryptedTokens(configId: number): { accessToken?: string; refreshToken?: string } | null {
     const row = this.db
       .prepare('SELECT encrypted_access_token, encrypted_refresh_token FROM email_configs WHERE id = ?')
@@ -379,9 +320,6 @@ export class EmailService {
     return { accessToken, refreshToken }
   }
 
-  /**
-   * Révoque l'accès et supprime la configuration
-   */
   async revokeAccess(configId: number): Promise<boolean> {
     const tokens = this.getDecryptedTokens(configId)
     if (tokens?.accessToken) {
@@ -392,15 +330,11 @@ export class EmailService {
       }
     }
 
-    // Marquer comme inactif (soft delete)
     const stmt = this.db.prepare('UPDATE email_configs SET is_active = 0, updated_at = datetime(\'now\') WHERE id = ?')
     const result = stmt.run(configId)
     return result.changes > 0
   }
 
-  /**
-   * Récupère les emails depuis Gmail
-   */
   async fetchEmails(configId: number, filters: EmailFilters): Promise<EmailImportResult> {
     try {
       const config = this.getConfigById(configId)
@@ -413,7 +347,6 @@ export class EmailService {
         throw new Error('Aucun refresh token disponible')
       }
 
-      // Configurer les credentials OAuth
       this.oauth2Client.setCredentials({
         access_token: tokens.accessToken,
         refresh_token: tokens.refreshToken,
@@ -422,7 +355,6 @@ export class EmailService {
 
       const gmail = google.gmail({ version: 'v1', auth: this.oauth2Client })
 
-      // Construire la query Gmail
       let query = ''
       if (filters.days) {
         query = `newer_than:${filters.days}d`
@@ -435,7 +367,6 @@ export class EmailService {
         query += ` ${filters.query}`
       }
 
-      // Liste les messages
       const listResponse = await gmail.users.messages.list({
         userId: 'me',
         q: query,
@@ -445,7 +376,6 @@ export class EmailService {
       const messageIds = listResponse.data.messages || []
       const messages: EmailMessage[] = []
 
-      // Récupérer chaque message (batch de 10 en parallèle)
       const batchSize = 10
       for (let i = 0; i < messageIds.length; i += batchSize) {
         const batch = messageIds.slice(i, i + batchSize)
@@ -468,20 +398,17 @@ export class EmailService {
         messages.push(...batchMessages.filter(Boolean) as EmailMessage[])
       }
 
-      // Classifier les emails
       const classifiedMessages = emailClassifier.classifyBatch(messages)
 
-      // Filtrer pour garder SEULEMENT les leads potentiels
       const leadsOnly = classifiedMessages.filter(m => m.hasLeadPotential)
 
-      // Sauvegarder dans la DB (seulement les leads)
       await this.saveImportedEmails(configId, leadsOnly)
 
       return {
         success: true,
         totalFetched: classifiedMessages.length,
         leadsDetected: leadsOnly.length,
-        messages: leadsOnly  // Retourner seulement les leads
+        messages: leadsOnly
       }
     } catch (error) {
       console.error('Erreur lors de la récupération des emails:', error)
@@ -495,9 +422,6 @@ export class EmailService {
     }
   }
 
-  /**
-   * Parse un message Gmail en EmailMessage
-   */
   private parseGmailMessage(gmailMessage: any): EmailMessage {
     const headers = gmailMessage.payload?.headers || []
     const getHeader = (name: string) => headers.find((h: any) => h.name.toLowerCase() === name.toLowerCase())?.value || ''
@@ -507,14 +431,12 @@ export class EmailService {
     const to = getHeader('To')
     const date = getHeader('Date')
 
-    // Extraire le contenu
     let content = ''
     let htmlContent = ''
 
     if (gmailMessage.payload?.body?.data) {
       content = Buffer.from(gmailMessage.payload.body.data, 'base64').toString('utf-8')
     } else if (gmailMessage.payload?.parts) {
-      // Multipart
       for (const part of gmailMessage.payload.parts) {
         if (part.mimeType === 'text/plain' && part.body?.data) {
           content = Buffer.from(part.body.data, 'base64').toString('utf-8')
@@ -524,7 +446,6 @@ export class EmailService {
       }
     }
 
-    // Si pas de texte brut, convertir HTML (simpliste)
     if (!content && htmlContent) {
       content = htmlContent.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
     }
@@ -545,9 +466,6 @@ export class EmailService {
     }
   }
 
-  /**
-   * Sauvegarde les emails importés dans la DB
-   */
   private async saveImportedEmails(configId: number, messages: EmailMessage[]): Promise<void> {
     const stmt = this.db.prepare(`
       INSERT OR IGNORE INTO imported_emails (
@@ -575,9 +493,6 @@ export class EmailService {
     }
   }
 
-  /**
-   * Récupère l'historique des emails importés
-   */
   getImportedEmails(configId?: number, limit = 100): EmailMessage[] {
     let query = 'SELECT * FROM imported_emails'
     const params: any[] = []

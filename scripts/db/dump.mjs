@@ -127,7 +127,6 @@ async function main() {
     return
   }
 
-  // Validation
   if (options.schemaOnly && options.dataOnly) {
     console.error('[ERROR] Cannot use --schema-only and --data-only together')
     process.exit(1)
@@ -140,7 +139,6 @@ async function main() {
     process.exit(1)
   }
 
-  // Determine output file
   const root = getProjectRoot()
   const devDir = process.env.MUTUELLES_DB_DIR || path.join(root, 'dev-data')
   const defaultFilename = `dump_${getTimestamp()}.sql`
@@ -159,7 +157,6 @@ async function main() {
 
   const dumpLines = []
 
-  // Header
   dumpLines.push('-- SQLite Database Dump')
   dumpLines.push(`-- Generated: ${new Date().toISOString()}`)
   dumpLines.push(`-- Database: ${dbPath}`)
@@ -169,7 +166,6 @@ async function main() {
   dumpLines.push('BEGIN TRANSACTION;')
   dumpLines.push('')
 
-  // Schema
   if (!options.dataOnly) {
     dumpLines.push('-- =====================')
     dumpLines.push('-- SCHEMA')
@@ -185,7 +181,6 @@ async function main() {
       }
     }
 
-    // Indexes
     dumpLines.push('-- Indexes')
     for (const table of tables) {
       const indexes = getIndexes(db, table)
@@ -196,7 +191,6 @@ async function main() {
     dumpLines.push('')
   }
 
-  // Data
   if (!options.schemaOnly) {
     dumpLines.push('-- =====================')
     dumpLines.push('-- DATA')
@@ -217,13 +211,11 @@ async function main() {
     console.log(`Total rows exported: ${totalRows}`)
   }
 
-  // Footer
   dumpLines.push('COMMIT;')
   dumpLines.push('PRAGMA foreign_keys=ON;')
 
   db.close()
 
-  // Write to file
   fs.writeFileSync(outputFile, dumpLines.join('\n'), 'utf-8')
 
   const stats = fs.statSync(outputFile)

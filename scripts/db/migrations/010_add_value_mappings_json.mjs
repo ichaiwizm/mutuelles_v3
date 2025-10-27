@@ -13,7 +13,6 @@ export default {
   },
 
   down(db) {
-    // Recréer la table sans la colonne (SQLite)
     db.exec(`
       CREATE TABLE platforms_catalog_backup (
         id INTEGER PRIMARY KEY AUTOINCREMENT,

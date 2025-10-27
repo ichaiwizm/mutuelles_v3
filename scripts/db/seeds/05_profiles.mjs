@@ -3,7 +3,6 @@ import fs from 'node:fs'
 import path from 'node:path'
 import os from 'node:os'
 
-// Conditional Electron import - only available when running in Electron context
 let app = null
 try {
   if (process.env.ELECTRON_RUN_AS_NODE !== '1') {
@@ -11,7 +10,6 @@ try {
     app = electron.app
   }
 } catch (err) {
-  // Running in Node.js context, app not available
 }
 
 export default {
@@ -22,7 +20,6 @@ export default {
   async run(db, options = {}) {
     const { skipExisting = true } = options
 
-    // Check if profiles already exist
     if (skipExisting) {
       const existingCount = db.prepare('SELECT COUNT(*) as c FROM profiles').get().c
       if (existingCount > 0) {
@@ -36,7 +33,6 @@ export default {
       VALUES(?, ?, ?, datetime('now'), datetime('now'))
     `)
 
-    // Create only one profile for the app
     const profile = {
       name: 'Profil Test',
       browser_channel: 'chrome'
@@ -46,7 +42,6 @@ export default {
 
     const transaction = db.transaction(() => {
       try {
-        // Create user data directory
         const userDataDir = createProfileDir(profile.name)
 
         insertProfile.run(
@@ -71,19 +66,16 @@ export default {
 }
 
 function createProfileDir(profileName) {
-  // Get profiles base directory - use Windows AppData when Electron not available
   let profilesBaseDir
   if (app && app.getPath) {
     profilesBaseDir = path.join(app.getPath('userData'), 'profiles')
   } else {
-    // Use the same path structure that Electron would use
     const appDataPath = process.env.APPDATA || path.join(os.homedir(), 'AppData', 'Roaming')
     profilesBaseDir = path.join(appDataPath, 'mutuelles_v3', 'profiles')
   }
 
   fs.mkdirSync(profilesBaseDir, { recursive: true })
 
-  // Create unique slug for profile directory
   const slug = profileName
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
@@ -92,14 +84,11 @@ function createProfileDir(profileName) {
   const timestamp = Date.now()
   const profileDir = path.join(profilesBaseDir, `${slug}-${timestamp}`)
 
-  // Create profile directory
   fs.mkdirSync(profileDir, { recursive: true })
 
-  // Create basic Chrome profile structure
   const defaultDir = path.join(profileDir, 'Default')
   fs.mkdirSync(defaultDir, { recursive: true })
 
-  // Create minimal Local State file
   const localState = {
     profile: {
       info_cache: {
@@ -116,7 +105,6 @@ function createProfileDir(profileName) {
     JSON.stringify(localState, null, 2)
   )
 
-  // Create minimal Preferences file
   const preferences = {
     profile: {
       name: profileName,

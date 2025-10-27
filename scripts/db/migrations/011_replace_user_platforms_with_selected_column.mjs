@@ -43,7 +43,6 @@ export default {
 
   down(db) {
     db.exec(`
-      -- Recréer la table user_platforms
       CREATE TABLE IF NOT EXISTS user_platforms (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         platform_id INTEGER NOT NULL UNIQUE REFERENCES platforms_catalog(id) ON DELETE CASCADE,
@@ -51,19 +50,14 @@ export default {
         created_at TEXT DEFAULT (datetime('now'))
       );
 
-      -- Recréer l'index
       CREATE INDEX IF NOT EXISTS idx_user_platforms_platform_id 
         ON user_platforms(platform_id);
 
-      -- Migrer les données de platforms_catalog vers user_platforms
       INSERT INTO user_platforms (platform_id, selected)
       SELECT id, selected
       FROM platforms_catalog
       WHERE selected = 1;
 
-      -- Note: On ne supprime pas la colonne selected de platforms_catalog
-      -- car SQLite ne supporte pas ALTER TABLE DROP COLUMN facilement
-      -- L'application devra gérer les deux colonnes si rollback
     `)
 
     console.log('  ✓ Table user_platforms recréée')

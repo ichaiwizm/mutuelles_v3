@@ -8,7 +8,6 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
 export function getProjectRoot() {
-  // scripts/db/core -> project root is three levels up
   return path.resolve(__dirname, '../../../')
 }
 
@@ -43,7 +42,6 @@ export function openDb() {
 }
 
 export function initializeDbBasics(db) {
-  // Créer la table de suivi des migrations
   db.exec(`
     CREATE TABLE IF NOT EXISTS _migrations (
       id INTEGER PRIMARY KEY AUTOINCREMENT,

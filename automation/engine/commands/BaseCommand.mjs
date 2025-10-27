@@ -1,4 +1,3 @@
-// Base command class for all step executors
 export class BaseCommand {
   constructor(context) {
     this.context = context
@@ -12,7 +11,6 @@ export class BaseCommand {
   }
 
   validate(step) {
-    // Optional: pre-execution validation
     return true
   }
 
@@ -20,7 +18,6 @@ export class BaseCommand {
     return step.type
   }
 
-  // Helper methods available to all commands
   getActiveContext() {
     return this.context.getCurrentContext()
   }
@@ -45,12 +42,10 @@ export class BaseCommand {
     return this.templateResolver.parseTemplates(value, this.context.ctx)
   }
 
-  // Get field name for logging (domainField or field)
   getFieldName(step) {
     return step.domainField || step.field || 'unknown'
   }
 
-  // Validate optional field value - returns { skip: boolean }
   validateOptionalValue(step, value, commandName) {
     if (value === undefined || value === null || value === '') {
       if (step.optional === true) {

@@ -87,7 +87,6 @@ export function registerAdminCliIpc() {
       try { wnd.webContents.send(channel, { type:'stderr', data: buf.toString() }) } catch {}
     })
     child.on('close', (code) => {
-      // Try to find the latest run dir for this slug
       const runsDir = path.join(root, 'data', 'runs', item.slug)
       let latest: string | null = null
       try {

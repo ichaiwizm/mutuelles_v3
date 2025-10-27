@@ -1,4 +1,3 @@
-// Comment command - for flow documentation
 import { BaseCommand } from '../BaseCommand.mjs'
 
 export class CommentCommand extends BaseCommand {

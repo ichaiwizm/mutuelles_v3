@@ -22,7 +22,6 @@ export function setSelected(payload: unknown) {
   return { selected: parsed.selected }
 }
 
-// Récupère les UI forms stockés en DB (platforms_catalog.ui_form_json)
 export function getUiFormsFromDb(): Array<{ slug: string; ui: any | null }> {
   const rows = getDb().prepare(`
     SELECT slug, ui_form_json

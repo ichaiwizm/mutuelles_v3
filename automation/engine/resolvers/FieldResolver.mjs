@@ -59,7 +59,6 @@ export class FieldResolver {
 
     if (clone.selector) clone.selector = apply(clone.selector)
     if (clone?.options?.open_selector) clone.options.open_selector = apply(clone.options.open_selector)
-    // Apply to all items if they have selectors with placeholders
     if (clone?.options?.items) {
       for (const item of clone.options.items) {
         if (item.option_selector) item.option_selector = apply(item.option_selector)

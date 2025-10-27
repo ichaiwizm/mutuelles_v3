@@ -5,8 +5,6 @@
 
 import type Database from 'better-sqlite3'
 
-// ==================== TYPES ====================
-
 export interface ExecutionRun {
   id: string
   status: 'running' | 'completed' | 'failed' | 'stopped'
@@ -80,8 +78,6 @@ export interface HistoryFilters {
   offset?: number
 }
 
-// ==================== EXECUTION RUNS ====================
-
 /**
  * Create a new execution run
  */
@@ -125,7 +121,6 @@ export function updateRun(
   const fields: string[] = []
   const values: any[] = []
 
-  // Build dynamic UPDATE query
   Object.entries(updates).forEach(([key, value]) => {
     fields.push(`${key} = ?`)
     values.push(value)
@@ -133,7 +128,6 @@ export function updateRun(
 
   if (fields.length === 0) return
 
-  // Always update updated_at
   fields.push('updated_at = CURRENT_TIMESTAMP')
   values.push(runId)
 
@@ -176,11 +170,6 @@ export function incrementRunCounter(
   const query = `UPDATE execution_runs SET ${counter} = ${counter} + ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`
   db.prepare(query).run(amount, runId)
 }
-
-/**
- * Decrement run counters (usually for pending_items)
- */
-// ==================== EXECUTION ITEMS ====================
 
 /**
  * Create a new execution item
@@ -273,8 +262,6 @@ export function getItemById(db: Database.Database, itemId: string): any {
   return row
 }
 
-// ==================== EXECUTION STEPS ====================
-
 /**
  * Create a new execution step
  */
@@ -354,8 +341,6 @@ export function updateStep(
   stmt.run(...values, itemId, stepIndex)
 }
 
-// ==================== EXECUTION ATTEMPTS ====================
-
 /**
  * Create a new execution attempt (for retry tracking)
  */
@@ -433,8 +418,6 @@ export function updateAttempt(
   stmt.run(...values, itemId, attemptNumber)
 }
 
-// ==================== HISTORY ====================
-
 /**
  * Get execution history with optional filtering and pagination
  */
@@ -490,8 +473,6 @@ export function getRunHistory(db: Database.Database, filters?: HistoryFilters): 
   return rows
 }
 
-// ==================== CANCELLATION ====================
-
 /**
  * Cancel all pending AND running items in a run (set status to 'cancelled')
  * Returns the number of items cancelled
@@ -510,13 +491,10 @@ export function cancelPendingItems(db: Database.Database, runId: string): number
   return result.changes || 0
 }
 
-// ==================== DELETION ====================
-
 /**
  * Delete an execution run (cascade deletes items, steps, attempts)
  */
 export function deleteRun(db: Database.Database, runId: string): void {
-  // Foreign key cascade will handle deletion of items, steps, and attempts
   db.prepare('DELETE FROM execution_runs WHERE id = ?').run(runId)
 }
 

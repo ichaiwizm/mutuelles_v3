@@ -95,7 +95,6 @@ async function main() {
   console.log('=' .repeat(50))
 
   try {
-    // Database file information
     const dbPath = getDbPath()
     console.log('Database File:')
 
@@ -105,7 +104,6 @@ async function main() {
       console.log(`   Size: ${formatBytes(stats.size)}`)
       console.log(`   Modified: ${stats.mtime.toISOString()}`)
 
-      // Check for WAL files
       const walPath = dbPath + '-wal'
       const shmPath = dbPath + '-shm'
 
@@ -125,7 +123,6 @@ async function main() {
 
     console.log()
 
-    // Migration status
     console.log('Migration Status:')
     const migrationStatus = await getMigrationStatus()
     console.log(`   Total migrations: ${migrationStatus.total}`)
@@ -143,13 +140,11 @@ async function main() {
 
     console.log()
 
-    // Data statistics
     console.log('Data Statistics:')
     const db = openDb()
     try {
       const tableStats = getTableStats(db)
 
-      // Group stats by category
       const categories = {
         'Platforms': ['platforms_catalog', 'user_platforms', 'platform_credentials'],
         'Profiles': ['profiles'],
@@ -172,7 +167,6 @@ async function main() {
 
     console.log()
 
-    // Seeder information
     if (options.verbose) {
       console.log('Available Seeders:')
       const seedersInfo = await getSeedersInfo()
@@ -185,7 +179,6 @@ async function main() {
       console.log()
     }
 
-    // Quick actions
     console.log('Quick Actions:')
     console.log('   Reset database: npm run db:reset')
     console.log('   Reset with data: npm run db:reset --seed')
@@ -202,7 +195,6 @@ async function main() {
   }
 }
 
-// Run the script
 main().catch(err => {
   console.error('[ERROR] Unexpected error:', err.message)
   process.exit(1)

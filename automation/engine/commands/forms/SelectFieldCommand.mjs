@@ -1,4 +1,3 @@
-// SelectField command - select option from dropdown
 import { BaseCommand } from '../BaseCommand.mjs'
 import { buildOptionSelectorFromTemplate } from '../../utils/selectorBuilder.mjs'
 
@@ -7,10 +6,8 @@ export class SelectFieldCommand extends BaseCommand {
     const activeContext = this.getActiveContext()
     const fieldDef = this.resolveField(step)
 
-    // Use resolveValueWithMappings to apply field-level value mappings
     let value = this.resolveValueWithMappings(step, fieldDef)
 
-    // Validate optional value
     const validation = this.validateOptionalValue(step, value, 'selectField')
     if (validation.skip) return
 

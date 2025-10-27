@@ -1,4 +1,3 @@
-// Selector template builder utility
 export function buildOptionSelectorFromTemplate(template, value) {
   const strValue = String(value)
   return template

@@ -27,19 +27,16 @@ export function registerScenariosIpc() {
     try { return fs.existsSync(target) } catch { return false }
   })
 
-  // List all available flows grouped by platform
   ipcMain.handle('scenarios:listFlows', async () => {
     try {
       const projectRoot = process.cwd()
       const allFlows = listHLFlows(projectRoot)
 
-      // Get platform names from database
       const db = getDb()
       const platformsMap = new Map<string, string>()
       const platforms = db.prepare('SELECT slug, name FROM platforms_catalog').all() as Array<{ slug: string; name: string }>
       platforms.forEach(p => platformsMap.set(p.slug, p.name))
 
-      // Group flows by platform
       const flowsByPlatform = new Map<string, any[]>()
 
       for (const flow of allFlows) {
@@ -47,7 +44,6 @@ export function registerScenariosIpc() {
           flowsByPlatform.set(flow.platform, [])
         }
 
-        // Count steps by reading the flow file
         let stepsCount = 0
         try {
           const flowData = JSON.parse(fs.readFileSync(flow.file, 'utf-8'))
@@ -62,7 +58,6 @@ export function registerScenariosIpc() {
         })
       }
 
-      // Convert to array format
       const result = Array.from(flowsByPlatform.entries()).map(([platform, flows]) => ({
         platform,
         platformName: platformsMap.get(platform) || platform,
@@ -76,7 +71,6 @@ export function registerScenariosIpc() {
     }
   })
 
-  // Get execution history from database
   ipcMain.handle('scenarios:getHistory', async (_e, filters?: execQueries.HistoryFilters) => {
     try {
       const db = getDb()
@@ -88,7 +82,6 @@ export function registerScenariosIpc() {
     }
   })
 
-  // Debug: dump basic DB state for executions (runs + items per status)
   ipcMain.handle('scenarios:debugDump', async () => {
     try {
       const db = getDb()
@@ -113,7 +106,6 @@ export function registerScenariosIpc() {
     }
   })
 
-  // Repair: finalize runs stuck in 'running' when they have no pending/running items
   ipcMain.handle('scenarios:repairFinalize', async () => {
     try {
       const db = getDb()
@@ -156,7 +148,6 @@ export function registerScenariosIpc() {
     }
   })
 
-  // Get active run details (for polling)
   ipcMain.handle('scenarios:getActiveRun', async (_e, runId: string) => {
     try {
       if (!runId) {
@@ -177,7 +168,6 @@ export function registerScenariosIpc() {
     }
   })
 
-  // Get execution items for a run (for polling)
   ipcMain.handle('scenarios:getRunItems', async (_e, runId: string) => {
     try {
       if (!runId) {
@@ -194,7 +184,6 @@ export function registerScenariosIpc() {
     }
   })
 
-  // Get execution steps for an item
   ipcMain.handle('scenarios:getRunSteps', async (_e, itemId: string) => {
     try {
       if (!itemId) {
@@ -211,7 +200,6 @@ export function registerScenariosIpc() {
     }
   })
 
-  // Delete a run from database (cascade deletes items, steps, attempts)
   ipcMain.handle('scenarios:deleteRun', async (_e, runId: string) => {
     try {
       if (!runId) {
@@ -226,14 +214,11 @@ export function registerScenariosIpc() {
         return { success: false, error: 'Run not found' }
       }
 
-      // Get all items to find their run_dirs
       const items = execQueries.getRunItems(db, runId)
       const runDirs = new Set(items.map(item => item.run_dir).filter(Boolean))
 
-      // Delete from database (cascade will handle items, steps, attempts)
       execQueries.deleteRun(db, runId)
 
-      // Delete filesystem artifacts (screenshots, DOM, traces)
       for (const runDir of runDirs) {
         if (runDir && fs.existsSync(runDir)) {
           try {
@@ -251,7 +236,6 @@ export function registerScenariosIpc() {
     }
   })
 
-  // Get detailed info about a specific run (from database)
   ipcMain.handle('scenarios:getRunDetails', async (_e, runId: unknown) => {
     try {
       if (typeof runId !== 'string') {
@@ -267,7 +251,6 @@ export function registerScenariosIpc() {
 
       const items = execQueries.getRunItems(db, runId)
 
-      // Fetch steps & attempts for each item
       const itemsWithDetails = items.map((item: any) => ({
         ...item,
         steps: execQueries.getItemSteps(db, item.id),
@@ -287,7 +270,6 @@ export function registerScenariosIpc() {
     }
   })
 
-  // Get detailed info about a specific execution item (from database)
   ipcMain.handle('scenarios:getItemDetails', async (_e, itemId: unknown) => {
     try {
       if (typeof itemId !== 'string') {
@@ -318,7 +300,6 @@ export function registerScenariosIpc() {
     }
   })
 
-  // Read screenshot as base64
   ipcMain.handle('scenarios:readScreenshot', async (_e, screenshotPath: unknown) => {
     try {
       if (typeof screenshotPath !== 'string') {
@@ -341,7 +322,6 @@ export function registerScenariosIpc() {
     }
   })
 
-  // Stop a running execution (gracefully)
   ipcMain.handle('scenarios:stop', async (_e, runId: string) => {
     try {
       if (!runId) {
@@ -362,7 +342,6 @@ export function registerScenariosIpc() {
     }
   })
 
-  // Requeue a single failed item
   ipcMain.handle('scenarios:requeueItem', async (_e, runId: string, itemId: string) => {
     try {
       if (!runId || !itemId) {
@@ -383,7 +362,6 @@ export function registerScenariosIpc() {
     }
   })
 
-  // Stop a single item within a running execution
   ipcMain.handle('scenarios:stopItem', async (_e, runId: string, itemId: string) => {
     try {
       if (!runId || !itemId) {
@@ -404,7 +382,6 @@ export function registerScenariosIpc() {
     }
   })
 
-  // Pause a single item
   ipcMain.handle('scenarios:pauseItem', async (_e, runId: string, itemId: string) => {
     try {
       if (!runId || !itemId) {
@@ -421,7 +398,6 @@ export function registerScenariosIpc() {
     }
   })
 
-  // Resume a single item
   ipcMain.handle('scenarios:resumeItem', async (_e, runId: string, itemId: string) => {
     try {
       if (!runId || !itemId) {
@@ -438,7 +414,6 @@ export function registerScenariosIpc() {
     }
   })
 
-  // Window controls for a single item
   ipcMain.handle('scenarios:window:getState', async (_e, runId: string, itemId: string) => {
     try { return await runner.getItemWindowState(runId, itemId) }
     catch (error) { return { success: false, message: error instanceof Error ? error.message : 'Failed to get window state' } }
@@ -451,9 +426,7 @@ export function registerScenariosIpc() {
     try { return await runner.restoreItemWindow(runId, itemId) }
     catch (error) { return { success: false, message: 'Failed to restore' } }
   })
-  // optional: bringToFront could be exposed later
 
-  // Requeue multiple failed items
   ipcMain.handle('scenarios:requeueItems', async (_e, runId: string, itemIds: string[]) => {
     try {
       if (!runId || !itemIds || !Array.isArray(itemIds)) {

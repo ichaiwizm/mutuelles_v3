@@ -46,7 +46,6 @@ export function getExecutedMigrations(db) {
       executed_at: r.executed_at
     }))
   } catch (err) {
-    // Table doesn't exist yet
     return []
   }
 }
@@ -56,7 +55,6 @@ export async function runMigrations(db = null, options = {}) {
   const { dryRun = false, target = null } = options
 
   try {
-    // Initialize migration tracking table
     initializeDbBasics(database)
 
     const allMigrations = await loadMigrations()
@@ -96,7 +94,6 @@ export async function runMigrations(db = null, options = {}) {
         try {
           migration.up(database)
 
-          // Record migration as executed
           database.prepare('INSERT INTO _migrations (version, name) VALUES (?, ?)')
             .run(migration.version, migration.name)
 
@@ -115,7 +112,6 @@ export async function runMigrations(db = null, options = {}) {
 
   } finally {
     if (!db) {
-      // Only close if we opened the connection
       database?.close()
     }
   }

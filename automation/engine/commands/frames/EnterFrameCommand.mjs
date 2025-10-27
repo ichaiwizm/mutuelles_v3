@@ -1,4 +1,3 @@
-// EnterFrame command - enter iframe/frame context
 import { BaseCommand } from '../BaseCommand.mjs'
 
 export class EnterFrameCommand extends BaseCommand {

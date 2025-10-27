@@ -1,4 +1,3 @@
-// High-level flow runner (refactor of engine.mjs) – no behavior change
 import fs from 'node:fs'
 import path from 'node:path'
 import os from 'node:os'

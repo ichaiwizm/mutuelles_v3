@@ -26,13 +26,11 @@ export default function ConfirmModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/50"
         onClick={onClose}
       />
 
-      {/* Modal */}
       <div className="relative bg-white dark:bg-neutral-900 rounded-lg border border-neutral-200 dark:border-neutral-800 p-6 max-w-md w-full mx-4 shadow-lg">
         <h3 className="text-lg font-semibold mb-3">{title}</h3>
         <p className="text-neutral-600 dark:text-neutral-400 mb-6">{message}</p>

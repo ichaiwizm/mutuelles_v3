@@ -14,7 +14,6 @@ export default {
   async run(db, options = {}) {
     const { skipExisting = true } = options
 
-    // Check if already seeded
     if (skipExisting) {
       const count = db.prepare('SELECT COUNT(*) as c FROM platforms_catalog').get().c
       if (count > 0) {
@@ -23,10 +22,8 @@ export default {
       }
     }
 
-    // Get project root
     const projectRoot = path.resolve(__dirname, '../../../')
 
-    // Platform configurations
     const platforms = [
       {
         slug: 'alptis',
@@ -60,7 +57,6 @@ export default {
     const transaction = db.transaction(() => {
       for (const platform of platforms) {
         try {
-          // Load field definitions JSON
           let fieldDefinitionsJson = null
           if (platform.field_definitions_file) {
             const fieldDefPath = path.join(projectRoot, platform.field_definitions_file)
@@ -72,7 +68,6 @@ export default {
             }
           }
 
-          // Load UI form JSON
           let uiFormJson = null
           if (platform.ui_form_file) {
             const uiFormPath = path.join(projectRoot, platform.ui_form_file)
@@ -84,12 +79,9 @@ export default {
             }
           }
 
-          // Prepare value mappings for platform
           let valueMappingsJson = null
           if (platform.slug === 'swisslifeone') {
-            // SwissLife specific value mappings
             const valueMappings = {
-              // Map ayantDroit field values from domain (1/2) to platform (CLIENT/CONJOINT)
               'slsis_enfant_0_ayant_droit': { '1': 'CLIENT', '2': 'CONJOINT' },
               'slsis_enfant_1_ayant_droit': { '1': 'CLIENT', '2': 'CONJOINT' },
               'slsis_enfant_2_ayant_droit': { '1': 'CLIENT', '2': 'CONJOINT' },
@@ -106,14 +98,13 @@ export default {
             console.log(`       Added value mappings for ${platform.slug}`)
           }
 
-          // Insert platform with selected=1 (selected by default)
           insertPlatform.run(
             platform.slug,
             platform.name,
             platform.status,
             platform.base_url,
             platform.website_url,
-            1, // selected = true
+            1,
             fieldDefinitionsJson,
             uiFormJson,
             valueMappingsJson

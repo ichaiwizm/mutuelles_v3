@@ -56,16 +56,13 @@ export function revealPassword(platformId: unknown) {
   if (!row?.password_encrypted) throw new Error('Aucun mot de passe enregistré')
   if (!safeStorage.isEncryptionAvailable()) throw new Error('Chiffrement indisponible')
 
-  // Check if this is a CLI-encoded password that needs re-encryption
   const passwordBuffer = row.password_encrypted
   const passwordStr = passwordBuffer.toString('utf8')
 
   if (passwordStr.startsWith('CLI_ENCODED:')) {
-    // Extract the original password and re-encrypt it properly
     const originalPassword = passwordStr.substring('CLI_ENCODED:'.length)
     const properlyEncrypted = safeStorage.encryptString(originalPassword)
 
-    // Update the database with the properly encrypted password
     getDb().prepare(`UPDATE platform_credentials
                      SET password_encrypted = ?, updated_at = datetime('now')
                      WHERE platform_id = ?`)

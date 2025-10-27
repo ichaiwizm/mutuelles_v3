@@ -1,8 +1,3 @@
-/**
- * Notification Service (Main Process)
- * Handles desktop notifications for execution failures
- */
-
 import { Notification, BrowserWindow } from 'electron'
 
 export interface FailureNotification {
@@ -11,9 +6,6 @@ export interface FailureNotification {
   error?: string
 }
 
-/**
- * Send grouped failure notification
- */
 export function sendFailureNotification(
   failures: FailureNotification[],
   window?: BrowserWindow
@@ -22,10 +14,8 @@ export function sendFailureNotification(
     return
   }
 
-  // Check if app is focused
   const isAppFocused = window?.isFocused() ?? false
 
-  // Build notification body
   const body = failures
     .slice(0, 5) // Limit to 5 items
     .map(f => `• ${f.leadName} (${f.platform})`)
@@ -35,7 +25,6 @@ export function sendFailureNotification(
     ? '⚠️ Échec détecté'
     : `⚠️ ${failures.length} échecs détectés`
 
-  // Create notification
   const notification = new Notification({
     title,
     body: failures.length > 5
@@ -46,10 +35,8 @@ export function sendFailureNotification(
     timeoutType: 'default'
   })
 
-  // Show notification
   notification.show()
 
-  // Focus window on click
   notification.on('click', () => {
     if (window) {
       if (window.isMinimized()) {
@@ -58,6 +45,4 @@ export function sendFailureNotification(
       window.focus()
     }
   })
-
-  // silent
 }

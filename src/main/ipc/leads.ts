@@ -8,7 +8,6 @@ import type {
 } from '../../shared/types/leads'
 import { z } from 'zod'
 
-// Instanciation paresseuse du service pour éviter l'erreur de DB non initialisée
 let leadsService: LeadsService | null = null
 
 function getLeadsService() {
@@ -18,32 +17,23 @@ function getLeadsService() {
   return leadsService
 }
 
-// Validation schemas using domain keys (aligned with base.domain.json)
 const CreateLeadSchema = z.object({
   subscriber: z.object({
-    // Identity
     civility: z.string().optional(),
     lastName: z.string().optional(),
     firstName: z.string().optional(),
     birthDate: z.string().optional(),
-
-    // Contact
     telephone: z.string().optional(),
     email: z.string().email().optional(),
     address: z.string().optional(),
     postalCode: z.string().optional(),
     city: z.string().optional(),
-    // Accepte number ou string pour rester aligné avec le champ UI (number)
     departmentCode: z.union([z.string(), z.number()]).optional(),
-
-    // Professional
     regime: z.string().optional(),
     category: z.string().optional(),
     status: z.string().optional(),
     profession: z.string().optional(),
     workFramework: z.string().optional(),
-
-    // Children
     childrenCount: z.number().int().min(0).optional()
   }),
 
@@ -101,18 +91,15 @@ const PaginationSchema = z.object({
 }).optional()
 
 export function registerLeadsIPC() {
-  // Créer un lead manuellement
   ipcMain.handle('leads:create', async (_, data: CreateLeadData) => {
     try {
       const validated = CreateLeadSchema.parse(data)
 
-      // VÉRIFICATION DES DOUBLONS (using domain keys)
       const duplicates = await getLeadsService().checkForDuplicates(
         validated.subscriber
       )
 
       if (duplicates.length > 0) {
-        // Retourner un avertissement avec les doublons trouvés
         return {
           success: false,
           error: 'Lead en doublon',
@@ -127,7 +114,6 @@ export function registerLeadsIPC() {
         }
       }
 
-      // Créer le lead avec métadonnées
       const lead = await getLeadsService().createLead(
         validated,
         { createdManually: true }
@@ -140,7 +126,6 @@ export function registerLeadsIPC() {
     }
   })
 
-  // Obtenir un lead par ID
   ipcMain.handle('leads:get', async (_, id: string) => {
     try {
       if (!id || typeof id !== 'string') {
@@ -159,7 +144,6 @@ export function registerLeadsIPC() {
     }
   })
 
-  // Mettre à jour un lead
   ipcMain.handle('leads:update', async (_, id: string, data: UpdateLeadData) => {
     try {
       if (!id || typeof id !== 'string') {
@@ -181,7 +165,6 @@ export function registerLeadsIPC() {
     }
   })
 
-  // Supprimer un lead
   ipcMain.handle('leads:delete', async (_, id: string) => {
     try {
       if (!id || typeof id !== 'string') {
@@ -200,7 +183,6 @@ export function registerLeadsIPC() {
     }
   })
 
-  // Lister les leads avec filtres et pagination
   ipcMain.handle('leads:list', async (_, filters?: LeadFilters, pagination?: PaginationParams) => {
     try {
       const validatedFilters = LeadFiltersSchema.parse(filters)
@@ -218,7 +200,6 @@ export function registerLeadsIPC() {
     }
   })
 
-  // Obtenir les statistiques des leads
   ipcMain.handle('leads:stats', async () => {
     try {
       const stats = await getLeadsService().getLeadStats()
@@ -229,7 +210,6 @@ export function registerLeadsIPC() {
     }
   })
 
-  // Recherche simple de leads
   ipcMain.handle('leads:search', async (_, query: string) => {
     try {
       if (!query || typeof query !== 'string') {
@@ -248,7 +228,6 @@ export function registerLeadsIPC() {
     }
   })
 
-  // Supprimer plusieurs leads
   ipcMain.handle('leads:deleteMany', async (_, ids: string[]) => {
     try {
       if (!Array.isArray(ids) || ids.length === 0) {

@@ -1,4 +1,3 @@
-// WaitNetworkIdle command - wait for network to be idle
 import { BaseCommand } from '../BaseCommand.mjs'
 
 export class WaitNetworkIdleCommand extends BaseCommand {

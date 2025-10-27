@@ -11,7 +11,6 @@ export function createBrowserTracker(runContext: RunContext) {
     const entries = Array.from(runContext.activeBrowsers.entries())
     for (const [itemId, { browser, context }] of entries) {
       try {
-      // silent
         if (context && typeof context.close === 'function') {
           await context.close().catch((err: any) => console.debug('[Runner] Context close error:', err?.message))
         }

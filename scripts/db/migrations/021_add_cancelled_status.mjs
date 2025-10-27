@@ -12,7 +12,6 @@ export default {
   description: 'Add cancelled status to execution_items table',
 
   up(db) {
-    // SQLite doesn't support ALTER TABLE ... DROP CONSTRAINT directly
     // We need to recreate the table with the new constraint
 
     console.log('[Migration 021] Adding cancelled status to execution_items...')

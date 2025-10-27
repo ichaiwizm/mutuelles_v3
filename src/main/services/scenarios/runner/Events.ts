@@ -10,7 +10,6 @@ export function makeProgressSender(window: BrowserWindow | undefined, runId: str
         evt.currentStep !== undefined && evt.totalSteps !== undefined
           ? ` (step ${evt.currentStep}/${evt.totalSteps})`
           : ''
-      // silent
     } catch (err) {
       console.error('[Runner] ❌ IPC send failed:', err, 'Event:', evt.type)
     }

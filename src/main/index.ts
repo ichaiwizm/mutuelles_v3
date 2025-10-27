@@ -4,8 +4,6 @@ import dotenv from 'dotenv'
 import { installMainErrorHandlers } from './errors'
 import { initDatabase, getDb } from './db/connection'
 
-// Charger les variables d'environnement depuis .env
-// En mode dev, le CWD peut être différent, donc on spécifie le chemin explicitement
 const envPath = app.isPackaged
   ? path.join(process.resourcesPath, '.env')
   : path.join(__dirname, '../../.env')
@@ -69,7 +67,6 @@ app.whenReady().then(() => {
   registerScenariosIpc()
   registerEmailIpc()
 
-  // Register notification handler
   ipcMain.handle('notifications:sendFailure', async (event, failures) => {
     const window = BrowserWindow.fromWebContents(event.sender)
     sendFailureNotification(failures, window ?? undefined)
@@ -87,7 +84,6 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit()
 })
 
-// IPC minimal
 ipcMain.handle('app:getVersion', async () => {
   try {
     return app.getVersion()

@@ -13,7 +13,6 @@ export default {
   up(db) {
     console.log('[Migration 023] Adding cancelled status to execution_attempts...')
 
-    // SQLite doesn't support ALTER TABLE ... DROP CONSTRAINT
     // We need to recreate the table with the new constraint
 
     // Step 1: Create new table with updated constraint

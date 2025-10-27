@@ -1,4 +1,3 @@
-// ClickField command - click on field or radio option
 import { BaseCommand } from '../BaseCommand.mjs'
 
 export class ClickFieldCommand extends BaseCommand {
@@ -6,11 +5,9 @@ export class ClickFieldCommand extends BaseCommand {
     const activeContext = this.getActiveContext()
     const fieldDef = this.resolveField(step)
 
-    // Support pour radio-group : chercher l'option basée sur la valeur du lead
     if (fieldDef.type === 'radio-group' && fieldDef.options) {
       const value = this.resolveValue(step)
 
-      // Validate optional value for radio-group
       const validation = this.validateOptionalValue(step, value, 'clickField (radio)')
       if (validation.skip) return
 
@@ -23,7 +20,6 @@ export class ClickFieldCommand extends BaseCommand {
 
     if (!fieldDef.selector) throw new Error(`Selector manquant pour ${this.getFieldName(step)}`)
 
-    // Si optional, vérifier d'abord si l'élément existe
     if (step.optional === true) {
       try {
         await activeContext.waitForSelector(fieldDef.selector, { state: 'attached', timeout: 1000 })

@@ -3,7 +3,6 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-// Conditional Electron import - only available when running in Electron context
 let safeStorage = null
 try {
   if (process.env.ELECTRON_RUN_AS_NODE !== '1') {
@@ -11,13 +10,11 @@ try {
     safeStorage = electron.safeStorage
   }
 } catch (err) {
-  // Running in Node.js context, safeStorage not available
 }
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
-// Load .env function with robust parsing
 function loadDotEnv() {
   try {
     const projectRoot = path.resolve(__dirname, '../../../')
@@ -36,29 +33,23 @@ function loadDotEnv() {
       const line = raw.trim()
       if (!line || line.startsWith('#')) continue
 
-      // More robust parsing that handles special characters
       const equalIndex = line.indexOf('=')
       if (equalIndex === -1) continue
 
       const key = line.substring(0, equalIndex).trim()
       let val = line.substring(equalIndex + 1).trim()
 
-      // Remove quotes if present
       if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
         val = val.slice(1, -1)
       }
 
-      // Store in our env object
       env[key] = val
-
-      // Force update process.env even if it exists
       process.env[key] = val
       loadedCount++
     }
 
     console.log(`     Loaded .env file successfully (${loadedCount} variables)`)
 
-    // Debug: Show what we loaded for credentials
     const credKeys = ['ALPTIS_USERNAME', 'ALPTIS_PASSWORD', 'SWISSLIFE_USERNAME', 'SWISSLIFE_PASSWORD']
     for (const key of credKeys) {
       if (env[key]) {
@@ -81,10 +72,8 @@ export default {
   async run(db, options = {}) {
     const { skipExisting = true, force = false } = options
 
-    // Load .env file first
     loadDotEnv()
 
-    // Check if credentials already exist
     if (skipExisting && !force) {
       const existingCount = db.prepare('SELECT COUNT(*) as c FROM platform_credentials').get().c
       if (existingCount > 0) {
@@ -93,14 +82,12 @@ export default {
       }
     }
 
-    // Check if safeStorage is available, if not use basic encoding for CLI mode
     const useBasicEncoding = !safeStorage || !safeStorage.isEncryptionAvailable()
 
     if (useBasicEncoding) {
       console.log('     Using basic encoding for CLI mode (passwords will need re-encryption in app)')
     }
 
-    // Get platform mappings
     const platformRows = db.prepare('SELECT id, slug FROM platforms_catalog').all()
     const platformBySlug = Object.fromEntries(platformRows.map(p => [p.slug, p.id]))
 
@@ -115,7 +102,6 @@ export default {
 
     let inserted = 0
 
-    // Credential mappings from environment variables
     const credentialMappings = [
       {
         platform: 'alptis',
@@ -147,8 +133,6 @@ export default {
               let encryptedPassword
 
               if (useBasicEncoding) {
-                // For CLI mode, use base64 encoding as placeholder
-                // The app will need to re-encrypt these on first use
                 encryptedPassword = Buffer.from(`CLI_ENCODED:${password}`, 'utf8')
               } else {
                 encryptedPassword = safeStorage.encryptString(password)
@@ -173,7 +157,6 @@ export default {
       }
     })
 
-    // Always execute the transaction
     transaction()
 
     if (inserted === 0) {

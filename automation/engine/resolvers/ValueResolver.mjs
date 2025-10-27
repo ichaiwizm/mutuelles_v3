@@ -1,4 +1,3 @@
-// Value resolution with template parsing and value mappings
 import { TemplateResolver } from './TemplateResolver.mjs'
 
 export class ValueResolver {
@@ -17,12 +16,10 @@ export class ValueResolver {
   resolveWithMappings(step, ctx, fieldDef) {
     let value = this.resolve(step, ctx)
 
-    // Parse templates in value if it's a string
     if (typeof value === 'string') {
       value = this.templateResolver.parseTemplates(value, ctx)
     }
 
-    // Apply valueMappings if configured
     if (fieldDef?.valueMappings && ctx.platform) {
       const platformMappings = fieldDef.valueMappings[ctx.platform]
       if (platformMappings && platformMappings[String(value)] !== undefined) {

@@ -9,17 +9,12 @@ export default {
     db.exec('PRAGMA foreign_keys = OFF;')
 
     db.exec(`
-      -- Remove completely unused platform_leads table
-      -- This table was created but never used, replaced by clean_leads.platform_data JSON
       DROP INDEX IF EXISTS idx_platform_leads_version;
       DROP INDEX IF EXISTS idx_platform_leads_status;
       DROP INDEX IF EXISTS idx_platform_leads_platform_id;
       DROP INDEX IF EXISTS idx_platform_leads_clean_lead_id;
       DROP TABLE IF EXISTS platform_leads;
 
-      -- Complete migration 008: Remove legacy relational structure
-      -- These tables were replaced by JSON architecture in platforms_catalog
-      -- (field_definitions_json, ui_form_json columns)
       DROP INDEX IF EXISTS idx_platform_fields_page_id;
       DROP TABLE IF EXISTS platform_fields;
 
@@ -102,7 +97,6 @@ export default {
   down(db) {
     // Recreate tables for rollback
     db.exec(`
-      -- Recreate platform_pages
       CREATE TABLE IF NOT EXISTS platform_pages (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         platform_id INTEGER NOT NULL REFERENCES platforms_catalog(id) ON DELETE CASCADE,
@@ -116,7 +110,6 @@ export default {
         UNIQUE(platform_id, slug)
       );
 
-      -- Recreate platform_fields
       CREATE TABLE IF NOT EXISTS platform_fields (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         page_id INTEGER NOT NULL REFERENCES platform_pages(id) ON DELETE CASCADE,
@@ -129,7 +122,6 @@ export default {
         UNIQUE(page_id, key)
       );
 
-      -- Recreate platform_leads (with versioning columns from migration 013)
       CREATE TABLE IF NOT EXISTS platform_leads (
         id TEXT PRIMARY KEY,
         clean_lead_id TEXT NOT NULL REFERENCES clean_leads(id) ON DELETE CASCADE,
@@ -143,7 +135,6 @@ export default {
         result_data TEXT DEFAULT NULL
       );
 
-      -- Recreate indexes
       CREATE INDEX IF NOT EXISTS idx_platform_pages_platform_id
         ON platform_pages(platform_id);
 

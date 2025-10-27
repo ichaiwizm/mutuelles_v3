@@ -1,19 +1,12 @@
 export type Theme = 'light' | 'dark'
 
 export type AdvancedSettings = {
-  // EXECUTION
   mode: 'headless' | 'headless-minimized' | 'visible'
   keepBrowserOpen: boolean
   concurrency: number
-
-  // PREVIEW
   showPreviewBeforeRun: boolean
-
-  // RETRY
   retryFailed: boolean
   maxRetries: number
-
-  // VISIBILITY
   enableVisibilityFiltering: boolean
   hiddenPlatforms: string[]
   hiddenFlows: string[]

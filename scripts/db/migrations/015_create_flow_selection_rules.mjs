@@ -6,7 +6,6 @@ export default {
 
   up(db) {
     db.exec(`
-      -- Create table to define rules for automatic flow selection
       CREATE TABLE IF NOT EXISTS flow_selection_rules (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
@@ -19,15 +18,12 @@ export default {
         updated_at TEXT DEFAULT (datetime('now'))
       );
 
-      -- Index for querying active rules by platform (most common query)
       CREATE INDEX IF NOT EXISTS idx_selection_rules_platform_active
         ON flow_selection_rules(platform_id, active, priority DESC);
 
-      -- Index for querying rules by flow
       CREATE INDEX IF NOT EXISTS idx_selection_rules_flow
         ON flow_selection_rules(flow_id);
 
-      -- Index for querying active rules ordered by priority
       CREATE INDEX IF NOT EXISTS idx_selection_rules_priority
         ON flow_selection_rules(active, priority DESC);
     `)
@@ -39,12 +35,10 @@ export default {
 
   down(db) {
     db.exec(`
-      -- Drop all indexes
       DROP INDEX IF EXISTS idx_selection_rules_priority;
       DROP INDEX IF EXISTS idx_selection_rules_flow;
       DROP INDEX IF EXISTS idx_selection_rules_platform_active;
 
-      -- Drop table
       DROP TABLE IF EXISTS flow_selection_rules;
     `)
 

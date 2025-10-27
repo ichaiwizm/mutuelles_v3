@@ -15,7 +15,6 @@ let db: Database.Database | null = null
  * Works from any location in the project
  */
 export function getProjectRoot(): string {
-  // For TypeScript/Electron context
   return process.cwd()
 }
 

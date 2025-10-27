@@ -1,4 +1,3 @@
-// ExitFrame command - exit current frame context
 import { BaseCommand } from '../BaseCommand.mjs'
 
 export class ExitFrameCommand extends BaseCommand {

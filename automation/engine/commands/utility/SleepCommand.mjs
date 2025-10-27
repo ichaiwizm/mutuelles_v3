@@ -1,4 +1,3 @@
-// Sleep command - pause execution
 import { BaseCommand } from '../BaseCommand.mjs'
 
 export class SleepCommand extends BaseCommand {

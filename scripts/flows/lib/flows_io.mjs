@@ -17,9 +17,6 @@ export function getDbPath() {
   return path.join(devDir, 'mutuelles.sqlite3')
 }
 
-// ---------- Schema avec support High-Level ----------
-
-// Low-Level step types (originaux)
 export const StepGoto = z.object({
   type: z.literal('goto'),
   url: z.string().min(1),
@@ -82,7 +79,6 @@ export const StepDebugAxeptio = z.object({
   timeout_ms: z.number().int().nonnegative().optional()
 })
 
-// High-Level step types (NOUVEAUX)
 export const StepWaitForField = z.object({
   type: z.literal('waitForField'),
   field: z.string().min(1).optional(),
@@ -204,9 +200,7 @@ export const StepComment = z.object({
   label: z.string().optional()
 })
 
-// Union de tous les types (Low-Level + High-Level)
 export const StepSchema = z.discriminatedUnion('type', [
-  // Low-level
   StepGoto,
   StepWaitFor,
   StepFill,
@@ -216,7 +210,6 @@ export const StepSchema = z.discriminatedUnion('type', [
   StepScreenshot,
   StepSleep,
   StepDebugAxeptio,
-  // High-level
   StepWaitForField,
   StepFillField,
   StepClickField,
@@ -259,7 +252,6 @@ export function writeJsonFile(file, data) {
 }
 
 export function normalizeFlowObject(obj) {
-  // Version par défaut + normalisation simple
   const parsed = FlowSchema.parse(obj)
   return parsed
 }
@@ -283,11 +275,8 @@ export function listFlowFiles(base = getFlowsDir()) {
   return out
 }
 
-// ---------- DB helpers (SIMPLIFIÉS pour JSON) ----------
 export function openDbRW() {
-  // Dynamically require better-sqlite3 to avoid import-time failures in mixed envs
   const require = createRequire(import.meta.url)
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
   const Database = require('better-sqlite3')
   const db = new Database(getDbPath())
   try { db.pragma('journal_mode = WAL') } catch {}
@@ -310,13 +299,11 @@ export function getFlowFromDb(db, slug) {
   `).get(slug)
   if (!row) return null
 
-  // Si flow_json existe, l'utiliser directement
   if (row.flow_json) {
     const flow = JSON.parse(row.flow_json)
     return normalizeFlowObject(flow)
   }
 
-  // Sinon, fallback sur l'ancienne méthode (flow_steps)
   const flowId = db.prepare('SELECT id FROM flows_catalog WHERE slug = ?').get(slug)?.id
   if (!flowId) return null
 
@@ -394,14 +381,12 @@ export function upsertFlowInDb(db, flow, { mode = 'upsert' } = {}) {
   const stepsCount = f.steps.length
 
   if (existing) {
-    // UPDATE avec flow_json
     db.prepare(`
       UPDATE flows_catalog
       SET platform_id = ?, name = ?, active = ?, flow_json = ?, steps_count = ?, updated_at = datetime('now')
       WHERE id = ?
     `).run(plat.id, f.name, f.active ? 1 : 0, flowJson, stepsCount, existing.id)
   } else {
-    // INSERT avec flow_json
     db.prepare(`
       INSERT INTO flows_catalog (platform_id, slug, name, active, flow_json, steps_count)
       VALUES (?, ?, ?, ?, ?, ?)

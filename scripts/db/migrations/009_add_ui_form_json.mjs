@@ -6,11 +6,9 @@ export default {
 
   up(db) {
     db.exec(`
-      -- Ajouter une colonne JSON pour stocker la définition de formulaire UI par plateforme
       ALTER TABLE platforms_catalog
       ADD COLUMN ui_form_json TEXT DEFAULT NULL;
 
-      -- Index optionnel si on filtre sur plateformes ayant une UI
       CREATE INDEX IF NOT EXISTS idx_platforms_catalog_ui_form
         ON platforms_catalog(ui_form_json);
     `)
@@ -19,9 +17,7 @@ export default {
   },
 
   down(db) {
-    // SQLite ne supporte pas DROP COLUMN directement : recréer la table sans la colonne
     db.exec(`
-      -- Sauvegarder la structure sans ui_form_json
       CREATE TABLE platforms_catalog_backup (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         slug TEXT NOT NULL UNIQUE,

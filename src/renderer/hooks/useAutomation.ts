@@ -56,30 +56,20 @@ export type Flow = {
  * @returns Unified automation API
  */
 export function useAutomation() {
-  // ============================================================
-  // DATA LOADING
-  // ============================================================
-
   const [leads, setLeads] = useState<Lead[]>([])
   const [platforms, setPlatforms] = useState<Platform[]>([])
   const [flows, setFlows] = useState<Flow[]>([])
 
-  /**
-   * Load initial data from IPC APIs
-   */
   const loadData = useCallback(async () => {
     try {
-      // Load platforms (only selected ones)
       const platformsList = await window.api.catalog.list()
       setPlatforms(platformsList.filter(p => p.selected))
 
-      // Load leads
       const leadsResponse = await window.api.leads.list({}, { limit: 100 })
       if (leadsResponse.success) {
         setLeads(leadsResponse.data.items || [])
       }
 
-      // Load flows
       const flowsList = await window.api.adminHL.listHLFlows()
       setFlows(flowsList)
     } catch (error) {
@@ -87,42 +77,30 @@ export function useAutomation() {
     }
   }, [])
 
-  // Load data on mount
   useEffect(() => {
     loadData()
   }, [loadData])
 
-  // ============================================================
-  // SUB-HOOKS (SPECIALIZED RESPONSIBILITIES)
-  // ============================================================
-
-  // Settings management
   const { settings, updateSettings: updateSettingsBase, resetSettings } = useSettings()
 
-  // Selection management
   const selection = useSelection({
     leads,
     flows,
     settings
   })
 
-  // History management
   const history = useHistory()
 
-  // Execution management (with callback to refresh history when run completes)
   const execution = useExecution(
     leads,
     flows,
     platforms,
     settings,
     (runId: string) => {
-      // Reload history from database when run completes
-      // The backend has written results to execution_runs/items/steps tables
       history.loadHistory()
     }
   )
 
-  // Toggle pause/resume for a given item (based on current status)
   const toggleItemPause = useCallback(async (itemId: string) => {
     const item = execution.items.find(i => i.id === itemId)
     if (!item) return
@@ -130,20 +108,10 @@ export function useAutomation() {
     else await execution.pauseItem(itemId)
   }, [execution.items, execution])
 
-  // Load history on mount
   useEffect(() => {
     history.loadHistory()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // ============================================================
-  // COORDINATED ACTIONS
-  // ============================================================
-
-  /**
-   * Start automation run
-   * Delegates to execution hook with selected items
-   */
   const startRun = useCallback(async (mode: 'headless' | 'dev' | 'dev_private' = 'headless') => {
     return execution.startRun(
       selection.selectedLeadIds,
@@ -152,25 +120,17 @@ export function useAutomation() {
     )
   }, [execution, selection.selectedLeadIds, selection.selectedFlows])
 
-  /**
-   * Update settings with side effects
-   * Deselects newly hidden flows
-   */
   const updateSettings = useCallback((
     partial: Partial<import('../../shared/settings').AdvancedSettings>,
     newlyHiddenFlows?: string[]
   ) => {
     updateSettingsBase(partial)
 
-    // Clean selection: deselect newly hidden flows
     if (newlyHiddenFlows && newlyHiddenFlows.length > 0) {
       selection.deselectFlows(newlyHiddenFlows)
     }
   }, [updateSettingsBase, selection])
 
-  /**
-   * Helper to get formatted lead name
-   */
   const getLeadName = useCallback((leadId: string): string => {
     const lead = leads.find(l => l.id === leadId)
     if (!lead) return leadId.slice(0, 8)
@@ -179,78 +139,52 @@ export function useAutomation() {
     return `${firstName} ${lastName}`.trim() || leadId.slice(0, 8)
   }, [leads])
 
-  /**
-   * Rerun a historical run
-   * Loads run items from DB, updates selections and starts new run
-   */
   const rerunHistoryRun = useCallback(async (historyRunId: string) => {
     const historyRun = history.runHistory.find(r => r.runId === historyRunId)
     if (!historyRun) {
       throw new Error(`Run ${historyRunId} not found in history`)
     }
 
-    // Get items for this run from database
     const items = await history.getRunItems(historyRunId)
 
-    // Extract unique lead IDs and flow slugs
     const leadIds = [...new Set(items.map((i: any) => i.lead_id).filter(Boolean))]
     const flowSlugs = [...new Set(items.map((i: any) => i.flow_slug).filter(Boolean))]
 
-    // Update selections
     selection.updateLeadSelection(new Set(leadIds))
     selection.updateFlowSelection(new Set(flowSlugs))
 
-    // Start run with same mode as original
     const mode = historyRun.mode as 'headless' | 'dev' | 'dev_private'
     await startRun(mode)
 
   }, [history, selection, startRun])
 
-  /**
-   * Rerun a single execution item
-   */
   const rerunSingleItem = useCallback(async (item: import('../../shared/types/automation').ExecutionHistoryItem) => {
-    // Set selections for this single item
     selection.updateLeadSelection(new Set([item.leadId]))
     selection.updateFlowSelection(new Set([item.flowSlug]))
 
-    // Convert settings.mode to execution mode
     const mode: 'headless' | 'dev' | 'dev_private' =
       settings.mode === 'visible' ? 'dev' :
       settings.mode === 'headless-minimized' ? 'headless' :
       'headless'
 
-    // Start run with current settings
     await startRun(mode)
 
   }, [selection, settings.mode, startRun])
 
-  /**
-   * Prepare replay from failed items
-   * Pre-selects leads and flows from failed items without starting immediately
-   */
   const prepareReplayFromErrors = useCallback((failedItems: ExecutionItem[]) => {
-    // Extract unique lead IDs and flow slugs
     const leadIds = [...new Set(failedItems.map(i => i.leadId))]
     const flowSlugs = [...new Set(failedItems.map(i => i.flowSlug).filter(Boolean) as string[])]
 
-    // Update selections
     selection.updateLeadSelection(new Set(leadIds))
     selection.updateFlowSelection(new Set(flowSlugs))
 
   }, [selection])
 
-  // ============================================================
-  // UNIFIED API (BACKWARD COMPATIBLE)
-  // ============================================================
-
   return {
-    // Data
     leads,
     platforms,
     flows,
 
-    // Selection (from useSelection)
     selectedLeadIds: selection.selectedLeadIds,
     selectedFlowIds: selection.selectedFlowIds,
     selectedLeads: selection.selectedLeads,
@@ -263,9 +197,8 @@ export function useAutomation() {
     selectAllFlows: selection.selectAllFlows,
     clearFlowSelection: selection.clearFlowSelection,
 
-    // Execution (from useExecution)
     activeRun: execution.activeRun,
-    executionItems: execution.items, // For backward compatibility, expose items as executionItems
+    executionItems: execution.items,
     runId: execution.runId,
     isRunning: execution.isRunning,
     totalExecutions: selection.totalExecutions,
@@ -278,22 +211,18 @@ export function useAutomation() {
     requeueItems: execution.requeueItems,
     getErrorItems: execution.getErrorItems,
 
-    // Helpers
     getLeadName,
 
-    // Settings (from useSettings)
     settings,
     updateSettings,
     resetSettings,
 
-    // History (from useHistory)
     runHistory: history.runHistory,
     rerunHistoryRun,
     rerunSingleItem,
     deleteHistoryRun: history.deleteHistoryRun,
     loadHistory: history.loadHistory,
 
-    // Replay
     prepareReplayFromErrors
   }
 }

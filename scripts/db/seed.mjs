@@ -9,7 +9,6 @@ function parseArgs() {
     skip: [],
     list: false,
     help: false,
-    // Seeder-specific options
     skipExisting: true,
     force: false
   }
@@ -129,7 +128,6 @@ async function main() {
   }
 }
 
-// Run the script
 main().catch(err => {
   console.error('[ERROR] Unexpected error:', err.message)
   process.exit(1)

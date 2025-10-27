@@ -58,22 +58,17 @@ export function detectDuplicates(
   const thirtyDaysAgo = new Date()
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
 
-  // Flatten all history items
-  // Defensive: filter out runs without items array
   const allItems: ExecutionHistoryItem[] = runHistory
     .filter(run => Array.isArray(run.items))
     .flatMap(run => run.items)
 
-  // Find duplicates
   const duplicates: DuplicateInfo[] = []
   const affectedLeadIds = new Set<string>()
   const affectedFlowSlugs = new Set<string>()
 
   for (const leadId of selectedLeadIds) {
     for (const flowSlug of selectedFlowSlugs) {
-      // Find submissions for this Lead × Flow in last 30 days
       const submissions = allItems.filter(item => {
-        // Defensive: skip items without startedAt
         if (!item.startedAt) return false
 
         const itemDate = new Date(item.startedAt)
@@ -85,14 +80,11 @@ export function detectDuplicates(
       })
 
       if (submissions.length > 0) {
-        // Get most recent submission
         const mostRecent = submissions.reduce((latest, item) => {
-          // Defensive: ensure both have startedAt before comparing
           if (!item.startedAt || !latest.startedAt) return latest
           return new Date(item.startedAt) > new Date(latest.startedAt) ? item : latest
         })
 
-        // Defensive: ensure mostRecent has startedAt
         if (!mostRecent.startedAt) continue
 
         const elapsedMs = Date.now() - new Date(mostRecent.startedAt).getTime()
@@ -124,9 +116,6 @@ export function detectDuplicates(
   }
 }
 
-/**
- * Format duplicate summary text
- */
 export function formatDuplicateSummary(duplicates: DuplicateInfo[]): string {
   if (duplicates.length === 0) {
     return ''
@@ -137,7 +126,6 @@ export function formatDuplicateSummary(duplicates: DuplicateInfo[]): string {
     return `1 doublon détecté : ${dup.leadName} sur ${dup.flowName} (il y a ${dup.timeAgo})`
   }
 
-  // Find most recent duplicate
   const mostRecent = duplicates.reduce((latest, dup) => {
     return dup.daysAgo < latest.daysAgo ? dup : latest
   })
@@ -145,10 +133,6 @@ export function formatDuplicateSummary(duplicates: DuplicateInfo[]): string {
   return `${duplicates.length} doublons détectés (dernière soumission il y a ${mostRecent.timeAgo})`
 }
 
-/**
- * Exclude duplicates from selection
- * Returns new selectedLeadIds and selectedFlowSlugs without duplicates
- */
 export function excludeDuplicates(
   selectedLeadIds: Set<string>,
   selectedFlowSlugs: Set<string>,
@@ -161,11 +145,8 @@ export function excludeDuplicates(
   const newLeadIds = new Set(selectedLeadIds)
   const newFlowSlugs = new Set(selectedFlowSlugs)
 
-  // Remove Lead × Flow combinations that are duplicates
-  // Strategy: Remove the lead from selection if ALL its selected flows are duplicates
   const leadFlowMap = new Map<string, Set<string>>()
 
-  // Build map of leadId -> flowSlugs
   for (const dup of duplicates) {
     if (!leadFlowMap.has(dup.leadId)) {
       leadFlowMap.set(dup.leadId, new Set())
@@ -175,13 +156,11 @@ export function excludeDuplicates(
 
   let excludedCount = 0
 
-  // For each lead, check if all selected flows are duplicates
   for (const [leadId, duplicateFlows] of leadFlowMap.entries()) {
     const leadSelectedFlows = Array.from(selectedFlowSlugs).filter(flowSlug =>
       duplicateFlows.has(flowSlug)
     )
 
-    // If all selected flows for this lead are duplicates, remove the lead
     if (leadSelectedFlows.length === selectedFlowSlugs.size) {
       newLeadIds.delete(leadId)
       excludedCount++

@@ -25,7 +25,6 @@ export default {
   down(db) {
     console.log('[Migration 022] Removing cancelled_items counter...')
 
-    // SQLite doesn't support DROP COLUMN directly, need to recreate table
     db.exec(`
       CREATE TABLE execution_runs_new (
         id TEXT PRIMARY KEY,

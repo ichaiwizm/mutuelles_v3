@@ -77,18 +77,12 @@ Environment Variables:
 `)
 }
 
-/**
- * Escapes a string value for SQL insertion
- */
 function escapeString(str) {
   if (str === null || str === undefined) return 'NULL'
   if (typeof str === 'number') return String(str)
   return `'${String(str).replace(/'/g, "''")}'`
 }
 
-/**
- * Checks if a table exists in the database
- */
 function tableExists(db, tableName) {
   const result = db.prepare(`
     SELECT name FROM sqlite_master 
@@ -97,9 +91,6 @@ function tableExists(db, tableName) {
   return !!result
 }
 
-/**
- * Backs up data from specified tables
- */
 function backupTables(db, tableNames) {
   const backups = {}
 
@@ -109,7 +100,6 @@ function backupTables(db, tableNames) {
       continue
     }
 
-    // Get all rows from the table
     const rows = db.prepare(`SELECT * FROM ${tableName}`).all()
     
     if (rows.length === 0) {
@@ -125,9 +115,6 @@ function backupTables(db, tableNames) {
   return backups
 }
 
-/**
- * Restores data to specified tables
- */
 function restoreTables(db, backups) {
   for (const [tableName, rows] of Object.entries(backups)) {
     if (!tableExists(db, tableName)) {
@@ -140,15 +127,12 @@ function restoreTables(db, backups) {
       continue
     }
 
-    // Get column names from the first row
     const columns = Object.keys(rows[0])
     const columnList = columns.join(', ')
     const placeholders = columns.map(() => '?').join(', ')
 
-    // Prepare insert statement
     const stmt = db.prepare(`INSERT INTO ${tableName} (${columnList}) VALUES (${placeholders})`)
 
-    // Insert all rows in a transaction
     const insertMany = db.transaction((rows) => {
       for (const row of rows) {
         const values = columns.map(col => row[col])
@@ -184,7 +168,6 @@ async function main() {
 
     let backups = {}
 
-    // Step 0: Backup tables if requested
     if (options.preserveTables.length > 0) {
       console.log('Step 0: Backing up specified tables...')
       console.log(`   Tables to preserve: ${options.preserveTables.join(', ')}`)
@@ -202,7 +185,6 @@ async function main() {
       console.log()
     }
 
-    // Step 1: Delete existing database
     console.log('Step 1: Deleting existing database...')
     if (!options.dryRun) {
       deleteDatabase()
@@ -212,7 +194,6 @@ async function main() {
     }
     console.log()
 
-    // Step 2: Create new database and run migrations
     console.log('Step 2: Creating new database and running migrations...')
     if (!options.dryRun) {
       const db = openDb()
@@ -227,7 +208,6 @@ async function main() {
     }
     console.log()
 
-    // Step 2.5: Restore backed up tables
     if (options.preserveTables.length > 0 && Object.keys(backups).length > 0) {
       console.log('Step 2.5: Restoring preserved tables...')
       
@@ -244,7 +224,6 @@ async function main() {
       console.log()
     }
 
-    // Step 3: Run seeders (if requested)
     if (options.seed) {
       console.log('Step 3: Running seeders...')
       await runSeeders(null, {
@@ -279,7 +258,6 @@ async function main() {
   }
 }
 
-// Run the script
 main().catch(err => {
   console.error('[ERROR] Unexpected error:', err.message)
   process.exit(1)

@@ -48,10 +48,8 @@ export class ScenariosRunner {
         console.error('[Runner] Failed to create run in DB:', err)
       }
 
-      // items-queued
       send({ type:'items-queued', runId, items: taskDefs.map(def => ({ itemId: def.itemId, leadId: def.leadId, platform: def.platform, flowSlug: def.flowSlug })) })
 
-      // Create pending items + early errors
       try {
         await Promise.all(taskDefs.map(async (def) => {
           const lead = await leadsSvc.getLead(def.leadId)
@@ -124,33 +122,23 @@ export class ScenariosRunner {
       return { success: false, message: 'Run introuvable ou déjà terminé' }
     }
 
-    // silent
     runContext.isStopped = true
-    // silent
 
-    // Stop queue first to prevent new tasks from starting
     const queueCancelledCount = runContext.queue.stop()
-    // silent
 
-    // Force-close browsers (best-effort)
     const { createBrowserTracker } = await import('./BrowserTracker')
     const tracker = createBrowserTracker(runContext)
     await tracker.closeAll()
-    // silent
 
     const { pending, running } = Db.getCountsForStop(runId)
-    // silent
     const dbCancelledCount = Db.cancelPendingItems(runId)
-    // silent
 
     try {
       const completedAt = new Date().toISOString()
       const durationMs = runContext.startedAt ? Date.now() - runContext.startedAt.getTime() : null
       Db.updateRun(runId, { status: 'stopped', completed_at: completedAt, duration_ms: durationMs })
       Db.incrementRunCounter(runId, 'pending_items', -pending)
-      // Count cancelled separately
       Db.incrementRunCounter(runId, 'cancelled_items', dbCancelledCount)
-      // silent
     } catch (err) {
       console.error('[Runner] Failed to update run status on stop:', err)
     }

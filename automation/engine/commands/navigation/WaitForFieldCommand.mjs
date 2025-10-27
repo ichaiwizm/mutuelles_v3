@@ -1,4 +1,3 @@
-// WaitForField command - wait for field selector
 import { BaseCommand } from '../BaseCommand.mjs'
 
 export class WaitForFieldCommand extends BaseCommand {

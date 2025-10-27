@@ -10,7 +10,6 @@ import { runHighLevelFlow } from '../engine/index.mjs'
 import { getDb } from '../../src/shared/db/connection.mjs'
 import { getLeadById, getLeadDisplayName } from '../../src/shared/db/queries/leads.mjs'
 
-// Load .env file
 loadDotEnv()
 
 function usage() {
@@ -83,13 +82,10 @@ async function main() {
 
   const rootDir = process.cwd()
 
-  // Resolve flow file path
   let flowFile
   if (flowSlug.includes('/') || flowSlug.includes('\\')) {
-    // Full path provided
     flowFile = path.resolve(flowSlug)
   } else {
-    // Slug provided - scan data/flows for matching slug
     const flowsDir = path.join(rootDir, 'data', 'flows')
     const found = findFlowFileBySlug(flowsDir, flowSlug)
     if (!found) {
@@ -105,7 +101,6 @@ async function main() {
     process.exit(1)
   }
 
-  // Load flow to get platform
   const flow = JSON.parse(fs.readFileSync(flowFile, 'utf-8'))
   const platform = flow.platform
   if (!platform) {
@@ -113,14 +108,12 @@ async function main() {
     process.exit(1)
   }
 
-  // Resolve field-definitions
   const fieldsFile = path.join(rootDir, 'data', 'field-definitions', `${platform}.json`)
   if (!fs.existsSync(fieldsFile)) {
     console.error(`Error: Field definitions not found: ${fieldsFile}`)
     process.exit(1)
   }
 
-  // Load lead from database
   const db = getDb()
   const lead = getLeadById(db, leadId)
   if (!lead) {
@@ -129,7 +122,6 @@ async function main() {
     process.exit(1)
   }
 
-  // Resolve credentials from .env (2 levels only)
   const platformUpper = platform.toUpperCase().replace(/[^A-Z0-9]/g, '_')
   const username = process.env[`${platformUpper}_USERNAME`] || process.env.FLOW_USERNAME
   const password = process.env[`${platformUpper}_PASSWORD`] || process.env.FLOW_PASSWORD
@@ -145,7 +137,6 @@ async function main() {
     process.exit(1)
   }
 
-  // Determine mode and keepOpen
   const mode = headless ? 'headless' : 'dev_private'
   const keepOpen = !headless
 
@@ -181,9 +172,6 @@ async function main() {
   }
 }
 
-/**
- * Recursively search for a flow file by slug in the flows directory
- */
 function findFlowFileBySlug(dir, slug) {
   if (!fs.existsSync(dir)) return null
 

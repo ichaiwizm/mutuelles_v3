@@ -1,4 +1,3 @@
-// ScrollIntoView command - scroll element into view
 import { BaseCommand } from '../BaseCommand.mjs'
 
 export class ScrollIntoViewCommand extends BaseCommand {

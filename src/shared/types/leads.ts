@@ -1,33 +1,23 @@
-// Types partagés pour le système de leads
-// Structure alignée sur base.domain.json - Source de vérité unique
-
 /**
  * Subscriber (Main Insured Person)
  * Combines contact and subscriber information
  */
 export interface SubscriberInfo {
-  // Identity
   civility?: string;
   lastName?: string;
   firstName?: string;
-  birthDate?: string;  // DD/MM/YYYY
-
-  // Contact
+  birthDate?: string;
   telephone?: string;
   email?: string;
   address?: string;
   postalCode?: string;
   city?: string;
   departmentCode?: string | number;
-
-  // Professional Status
-  regime?: string;           // Social security regime
-  category?: string;         // Alptis: Socio-professional category
-  status?: string;           // SwissLife: Employment status
-  profession?: string;       // SwissLife: Profession
-  workFramework?: string;    // Employee vs Independent
-
-  // Children
+  regime?: string;
+  category?: string;
+  status?: string;
+  profession?: string;
+  workFramework?: string;
   childrenCount?: number;
 }
 
@@ -35,17 +25,14 @@ export interface SubscriberInfo {
  * Spouse Information
  */
 export interface SpouseInfo {
-  // Identity
   civility?: string;
   firstName?: string;
   lastName?: string;
-  birthDate?: string;  // DD/MM/YYYY
-
-  // Professional Status
+  birthDate?: string;
   regime?: string;
-  category?: string;         // Alptis
-  status?: string;           // SwissLife
-  profession?: string;       // SwissLife
+  category?: string;
+  status?: string;
+  profession?: string;
   workFramework?: string;
 }
 
@@ -53,41 +40,32 @@ export interface SpouseInfo {
  * Child Information
  */
 export interface ChildInfo {
-  birthDate?: string;  // DD/MM/YYYY
+  birthDate?: string;
   gender?: string;
-  regime?: string;          // Alptis: Social regime
-  ayantDroit?: string;      // SwissLife: Beneficiary parent (1 or 2)
+  regime?: string;
+  ayantDroit?: string;
 }
 
 /**
  * Project/Insurance Needs
  */
 export interface ProjectInfo {
-  // Project identification
   name?: string;
-  dateEffet?: string;  // DD/MM/YYYY - Effective date
-
-  // Product selection (SwissLife)
-  plan?: string;               // Gamme (Basic, Confort, etc.)
-  couverture?: boolean;        // Individual coverage
-  ij?: boolean;                // Daily allowances (Indemnités Journalières)
-  simulationType?: string;     // "individual" | "couple"
-
-  // Legal/Fiscal
-  madelin?: boolean;           // Madelin law applicable
-  resiliation?: boolean;       // Contract termination
-  reprise?: boolean;           // Competitor takeover
-
-  // Current situation
+  dateEffet?: string;
+  plan?: string;
+  couverture?: boolean;
+  ij?: boolean;
+  simulationType?: string;
+  madelin?: boolean;
+  resiliation?: boolean;
+  reprise?: boolean;
   currentlyInsured?: boolean;
-  ranges?: string[];           // Gammes
-
-  // Coverage levels (1-5 scale)
+  ranges?: string[];
   levels?: {
-    medicalCare?: number;      // Soins médicaux
-    hospitalization?: number;  // Hospitalisation
-    optics?: number;           // Optique
-    dental?: number;           // Dentaire
+    medicalCare?: number;
+    hospitalization?: number;
+    optics?: number;
+    dental?: number;
   };
 }
 
@@ -105,7 +83,6 @@ export interface LeadData {
   platformData?: PlatformData;
 }
 
-// Lead (structure simplifiée)
 export interface Lead {
   id: string;
   data: LeadData;
@@ -113,11 +90,9 @@ export interface Lead {
   createdAt: string;
 }
 
-// Alias pour compatibilité
 export type CleanLead = Lead;
 export type FullLead = Lead;
 
-// Lead adapté pour une plateforme
 export interface PlatformLead {
   id: string;
   cleanLeadId: string;
@@ -129,7 +104,6 @@ export interface PlatformLead {
   errorMessage?: string;
 }
 
-// Configuration Gmail
 export interface GmailConfig {
   id?: number;
   name: string;
@@ -140,7 +114,6 @@ export interface GmailConfig {
   createdAt?: string;
 }
 
-// Platform-specific data
 export interface SwissLifeOneData {
   projet: {
     nom: string
@@ -153,35 +126,30 @@ export interface SwissLifeOneData {
 }
 
 export interface PlatformData {
-  swisslifeone?: Record<string, any>  // Données platform-specific SwissLife
-  alptis?: Record<string, any>         // Données platform-specific Alptis
-  [key: string]: Record<string, any> | undefined  // Permet d'ajouter d'autres plateformes
+  swisslifeone?: Record<string, any>
+  alptis?: Record<string, any>
+  [key: string]: Record<string, any> | undefined
 }
 
-// Données pour créer un lead (même structure que LeadData)
 export interface CreateLeadData extends Partial<LeadData> {
   subscriber: SubscriberInfo;
   project: ProjectInfo;
 }
 
-// Données pour mettre à jour un lead
 export interface UpdateLeadData extends Partial<LeadData> {
   subscriber?: Partial<SubscriberInfo>;
   project?: Partial<ProjectInfo>;
 }
 
-// Filtres pour la recherche de leads
 export interface LeadFilters {
   search?: string;
 }
 
-// Pagination
 export interface PaginationParams {
   page?: number;
   limit?: number;
 }
 
-// Résultat paginé
 export interface PaginatedResult<T> {
   items: T[];
   total: number;
@@ -190,7 +158,6 @@ export interface PaginatedResult<T> {
   totalPages: number;
 }
 
-// Statistiques des leads
 export interface LeadStats {
   total: number;
   new: number;
@@ -198,14 +165,12 @@ export interface LeadStats {
   processing: number;
 }
 
-// Configuration d'extraction Gmail
 export interface GmailExtractionConfig {
   configId: number;
   daysBack?: number;
   query?: string;
 }
 
-// Résultat d'extraction
 export interface ExtractionResult {
   success: boolean;
   rawLeadsCreated: number;
@@ -214,7 +179,6 @@ export interface ExtractionResult {
   errors: string[];
 }
 
-// Résultat d'import de fichier
 export interface ImportResult {
   success: boolean;
   leadsCreated: number;
@@ -222,7 +186,6 @@ export interface ImportResult {
   errors: string[];
 }
 
-// Progress pour les opérations longues
 export interface OperationProgress {
   current: number;
   total: number;
@@ -231,18 +194,16 @@ export interface OperationProgress {
   error?: string;
 }
 
-// Informations sur un doublon détecté
 export interface DuplicateInfo {
   leadId: string;
   subscriber: SubscriberInfo;
-  reasons: string[]; // Ex: ["Email identique", "Téléphone identique"]
+  reasons: string[];
 }
 
-// Réponse de création de lead avec informations sur les doublons
 export interface CreateLeadResult {
   success: boolean;
   data?: CleanLead;
   error?: string;
-  duplicates?: DuplicateInfo[]; // Liste des doublons potentiels détectés
-  warning?: string; // Message d'avertissement si des doublons ont été trouvés
+  duplicates?: DuplicateInfo[];
+  warning?: string;
 }

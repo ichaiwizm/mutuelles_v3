@@ -18,7 +18,6 @@ export default function ThemeToggle() {
   const [theme, setTheme] = React.useState<Theme>(() => readSavedTheme())
 
   React.useEffect(() => {
-    // Load from settings DB, fallback to current
     window.api.settings
       .getTheme()
       .then((t) => t && setTheme(t))
@@ -27,7 +26,6 @@ export default function ThemeToggle() {
   React.useEffect(() => {
     applyTheme(theme)
     localStorage.setItem('theme', theme)
-    // Persist to settings DB; let overlay capture any error
     window.api.settings.setTheme(theme)
   }, [theme])
 
