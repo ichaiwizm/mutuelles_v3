@@ -80,10 +80,9 @@ contextBridge.exposeInMainWorld('api', {
     getConfig: (configId: number) => ipcRenderer.invoke('email:getConfig', configId) as Promise<{ success: boolean; data?: any; error?: string }>,
     revokeAccess: (data: { configId: number }) => ipcRenderer.invoke('email:revokeAccess', data) as Promise<{ success: boolean; data?: any; error?: string }>,
     fetchMessages: (data: any) => ipcRenderer.invoke('email:fetchMessages', data) as Promise<{ success: boolean; data?: any; error?: string }>,
-    getImportedEmails: (params?: { configId?: number; limit?: number }) => ipcRenderer.invoke('email:getImportedEmails', params) as Promise<{ success: boolean; data?: any; error?: string }>,
     getAuthStatus: () => ipcRenderer.invoke('email:getAuthStatus') as Promise<{ success: boolean; data?: any; error?: string }>,
     updateKnownSenders: (data: { configId: number; knownSenders: any[] }) => ipcRenderer.invoke('email:updateKnownSenders', data) as Promise<{ success: boolean; data?: any; error?: string }>,
-    analyzeSenders: (configId: number) => ipcRenderer.invoke('email:analyzeSenders', configId) as Promise<{ success: boolean; data?: any; error?: string }>,
+    analyzeSenders: (data: { configId: number; filters: any }) => ipcRenderer.invoke('email:analyzeSenders', data) as Promise<{ success: boolean; data?: any; error?: string }>,
     onImportProgress: (cb: (e: any) => void) => {
       const handler = (_: any, data: any) => cb(data)
       ipcRenderer.on('email:import-progress', handler)
@@ -189,8 +188,9 @@ declare global {
         getConfig: (configId: number) => Promise<{ success: boolean; data?: any; error?: string }>
         revokeAccess: (data: { configId: number }) => Promise<{ success: boolean; data?: any; error?: string }>
         fetchMessages: (data: any) => Promise<{ success: boolean; data?: any; error?: string }>
-        getImportedEmails: (params?: { configId?: number; limit?: number }) => Promise<{ success: boolean; data?: any; error?: string }>
         getAuthStatus: () => Promise<{ success: boolean; data?: any; error?: string }>
+        updateKnownSenders: (data: { configId: number; knownSenders: any[] }) => Promise<{ success: boolean; data?: any; error?: string }>
+        analyzeSenders: (data: { configId: number; filters: any }) => Promise<{ success: boolean; data?: any; error?: string }>
         onImportProgress: (cb: (e: any) => void) => (() => void)
       }
       scenarios: {

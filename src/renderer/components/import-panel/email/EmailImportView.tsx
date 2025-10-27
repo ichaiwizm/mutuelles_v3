@@ -31,7 +31,7 @@ interface EmailImportViewProps {
   isImporting: boolean
   importProgress: EmailImportProgress | null
 
-  // Données (seulement leads potentiels)
+  // Données
   potentialLeads: EmailMessage[]
 
   // Actions

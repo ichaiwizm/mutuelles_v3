@@ -6,12 +6,8 @@ export type EmailProvider = 'gmail' | 'outlook'
 
 export type AuthStatus = 'not_authenticated' | 'authenticated' | 'expired' | 'error'
 
-export type SenderPatternType = 'domain' | 'email' | 'contains'
-
 export interface KnownSender {
-  pattern: string
-  type: SenderPatternType
-  bonus: number
+  email: string
 }
 
 export interface EmailConfig {

@@ -172,19 +172,6 @@ export function registerEmailIpc() {
     }
   })
 
-  ipcMain.handle('email:getImportedEmails', async (_, params?: { configId?: number; limit?: number }) => {
-    try {
-      const emails = getEmailService().getImportedEmails(
-        params?.configId,
-        params?.limit
-      )
-      return { success: true, data: emails }
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Erreur inconnue'
-      return { success: false, error: message }
-    }
-  })
-
   ipcMain.handle('email:getAuthStatus', async () => {
     try {
       const configs = getEmailService().listConfigs()
@@ -229,9 +216,14 @@ export function registerEmailIpc() {
     }
   })
 
-  ipcMain.handle('email:analyzeSenders', async (_, configId: number) => {
+  ipcMain.handle('email:analyzeSenders', async (_, data: { configId: number; filters: EmailFilters }) => {
     try {
-      const suggestions = getEmailService().analyzeSendersFromLeads(configId)
+      const validated = z.object({
+        configId: z.number().int().positive(),
+        filters: EmailFiltersSchema
+      }).parse(data)
+
+      const suggestions = await getEmailService().analyzeSendersFromLeads(validated.configId, validated.filters)
       return { success: true, data: suggestions }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Erreur inconnue'

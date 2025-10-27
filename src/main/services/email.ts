@@ -438,8 +438,6 @@ export class EmailService {
 
       const leadsOnly = classifiedMessages.filter(m => m.hasLeadPotential)
 
-      await this.saveImportedEmails(configId, leadsOnly)
-
       return {
         success: true,
         totalFetched: classifiedMessages.length,
@@ -502,33 +500,6 @@ export class EmailService {
     }
   }
 
-  private async saveImportedEmails(configId: number, messages: EmailMessage[]): Promise<void> {
-    const stmt = this.db.prepare(`
-      INSERT OR IGNORE INTO imported_emails (
-        id, config_id, thread_id, subject, sender, recipient, email_date,
-        snippet, content, html_content, has_lead_potential, detection_reasons, labels
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `)
-
-    for (const msg of messages) {
-      stmt.run(
-        msg.id,
-        configId,
-        msg.threadId || null,
-        msg.subject,
-        msg.from,
-        msg.to || null,
-        msg.date,
-        msg.snippet || null,
-        msg.content,
-        msg.htmlContent || null,
-        msg.hasLeadPotential ? 1 : 0,
-        msg.detectionReasons ? JSON.stringify(msg.detectionReasons) : null,
-        msg.labels ? JSON.stringify(msg.labels) : null
-      )
-    }
-  }
-
   updateKnownSenders(configId: number, knownSenders: any[]): boolean {
     const knownSendersJson = JSON.stringify(knownSenders)
     const stmt = this.db.prepare(`
@@ -540,83 +511,26 @@ export class EmailService {
     return result.changes > 0
   }
 
-  analyzeSendersFromLeads(configId: number): { pattern: string; type: string; occurrences: number; examples: string[] }[] {
-    const query = `
-      SELECT sender FROM imported_emails
-      WHERE config_id = ? AND has_lead_potential = 1
-      ORDER BY email_date DESC
-    `
-    const rows = this.db.prepare(query).all(configId) as { sender: string }[]
+  async analyzeSendersFromLeads(configId: number, filters: EmailFilters): Promise<{ email: string; occurrences: number }[]> {
+    // Récupérer les emails en temps réel
+    const result = await this.fetchEmails(configId, filters)
 
-    const senderStats = new Map<string, { count: number; emails: Set<string> }>()
+    if (!result.success || !result.messages) {
+      return []
+    }
 
-    rows.forEach(row => {
-      const sender = row.sender
+    // Extraire les expéditeurs des leads détectés
+    const senderCounts = new Map<string, number>()
 
-      const domainMatch = sender.match(/@([\w.-]+)$/i)
-      if (domainMatch) {
-        const domain = domainMatch[1]
-        if (!senderStats.has(domain)) {
-          senderStats.set(domain, { count: 0, emails: new Set() })
-        }
-        const stats = senderStats.get(domain)!
-        stats.count++
-        stats.emails.add(sender)
-      }
-
-      const localMatch = sender.match(/^([^@]+)@/i)
-      if (localMatch) {
-        const localPart = localMatch[1].toLowerCase()
-        const genericPrefixes = ['leads', 'lead', 'contact', 'prospects', 'devis', 'info', 'hello', 'commercial']
-        if (genericPrefixes.includes(localPart)) {
-          const pattern = `${localPart}@`
-          if (!senderStats.has(pattern)) {
-            senderStats.set(pattern, { count: 0, emails: new Set() })
-          }
-          const stats = senderStats.get(pattern)!
-          stats.count++
-          stats.emails.add(sender)
-        }
-      }
+    result.messages.forEach(message => {
+      const email = message.from.toLowerCase().trim()
+      senderCounts.set(email, (senderCounts.get(email) || 0) + 1)
     })
 
-    return Array.from(senderStats.entries())
-      .filter(([_, stats]) => stats.count >= 2)
-      .map(([pattern, stats]) => ({
-        pattern,
-        type: pattern.includes('@') ? 'contains' : 'domain',
-        occurrences: stats.count,
-        examples: Array.from(stats.emails).slice(0, 3)
-      }))
+    return Array.from(senderCounts.entries())
+      .filter(([_, count]) => count >= 1)
+      .map(([email, occurrences]) => ({ email, occurrences }))
       .sort((a, b) => b.occurrences - a.occurrences)
   }
 
-  getImportedEmails(configId?: number, limit = 100): EmailMessage[] {
-    let query = 'SELECT * FROM imported_emails'
-    const params: any[] = []
-
-    if (configId) {
-      query += ' WHERE config_id = ?'
-      params.push(configId)
-    }
-
-    query += ' ORDER BY email_date DESC LIMIT ?'
-    params.push(limit)
-
-    const rows = this.db.prepare(query).all(...params) as any[]
-
-    return rows.map(row => ({
-      id: row.id,
-      threadId: row.thread_id,
-      subject: row.subject,
-      from: row.sender,
-      to: row.recipient,
-      date: row.email_date,
-      snippet: row.snippet,
-      content: row.content,
-      htmlContent: row.html_content,
-      hasLeadPotential: !!row.has_lead_potential,
-      detectionReasons: row.detection_reasons ? JSON.parse(row.detection_reasons) : []
-    }))
-  }
 }

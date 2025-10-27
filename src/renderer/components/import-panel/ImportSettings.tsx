@@ -12,6 +12,8 @@ import { EmailDateRangePicker } from './email/EmailDateRangePicker'
 import { KnownSendersManager } from './email/KnownSendersManager'
 import type { KnownSender } from '../../../shared/types/email'
 
+const STORAGE_KEY_DAYS = 'email_import_days'
+
 interface ImportSettingsProps {
   // Date range
   selectedDays: number
@@ -33,6 +35,24 @@ export function ImportSettings({
   isDisconnecting = false
 }: ImportSettingsProps) {
   const [knownSenders, setKnownSenders] = useState<KnownSender[]>([])
+  const [isAnalyzing, setIsAnalyzing] = useState(false)
+  const [analyzeProgress, setAnalyzeProgress] = useState('')
+
+  // Charger la période depuis localStorage au démarrage
+  useEffect(() => {
+    const savedDays = localStorage.getItem(STORAGE_KEY_DAYS)
+    if (savedDays) {
+      const days = parseInt(savedDays, 10)
+      if ([7, 30, 60].includes(days)) {
+        onDaysChange(days)
+      }
+    }
+  }, [])
+
+  // Sauvegarder la période dans localStorage quand elle change
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY_DAYS, selectedDays.toString())
+  }, [selectedDays])
 
   useEffect(() => {
     if (emailConfigId) {
@@ -68,24 +88,63 @@ export function ImportSettings({
 
   const handleAnalyze = async () => {
     if (!emailConfigId) return
+
+    setIsAnalyzing(true)
+    setAnalyzeProgress('Connexion à Gmail...')
+
+    // Préparer les filtres pour la récupération
+    const filters = {
+      days: selectedDays
+    }
+
     try {
-      const result = await window.api.email.analyzeSenders(emailConfigId)
+      setAnalyzeProgress(`Récupération des emails des ${selectedDays} derniers jours...`)
+
+      const result = await window.api.email.analyzeSenders({
+        configId: emailConfigId,
+        filters
+      })
+
+      console.log('[DEBUG] Analyze result:', result)
+
       if (result.success && result.data && result.data.length > 0) {
-        // Ajouter directement tous les expéditeurs avec ≥2 occurrences
-        const newSenders = result.data.map((s: any) => ({
-          pattern: s.pattern,
-          type: s.type,
-          bonus: 50
-        }))
-        const allSenders = [...knownSenders, ...newSenders]
-        await handleUpdateSenders(allSenders)
-        alert(`✓ ${result.data.length} expéditeur(s) ajouté(s) automatiquement`)
+        console.log('[DEBUG] Found senders:', result.data)
+
+        setAnalyzeProgress('Analyse des expéditeurs...')
+
+        // Filtrer les emails déjà existants
+        const existingEmails = new Set(knownSenders.map(s => s.email.toLowerCase()))
+        const newSenders = result.data
+          .filter((s: any) => !existingEmails.has(s.email.toLowerCase()))
+          .map((s: any) => ({ email: s.email }))
+
+        console.log('[DEBUG] New senders after filter:', newSenders)
+
+        if (newSenders.length > 0) {
+          setAnalyzeProgress('Ajout des expéditeurs...')
+          const allSenders = [...knownSenders, ...newSenders]
+          await handleUpdateSenders(allSenders)
+
+          setAnalyzeProgress('')
+          setIsAnalyzing(false)
+
+          alert(`✅ Analyse terminée !\n\n${newSenders.length} expéditeur(s) ajouté(s) automatiquement.\n\nCes emails seront automatiquement détectés comme leads lors des prochains imports.`)
+        } else {
+          setAnalyzeProgress('')
+          setIsAnalyzing(false)
+          alert('✓ Analyse terminée\n\nTous les expéditeurs fréquents sont déjà configurés.')
+        }
       } else {
-        alert('Aucun expéditeur fréquent trouvé')
+        console.log('[DEBUG] No data found or empty result')
+        setAnalyzeProgress('')
+        setIsAnalyzing(false)
+        alert(`ℹ️ Aucun lead détecté\n\nAucun email avec structure de lead trouvé dans les ${selectedDays} derniers jours.\n\nEssayez d'augmenter la période ou vérifiez que vous avez des emails de leads dans votre boîte.`)
       }
     } catch (error) {
       console.error('Erreur analyse:', error)
-      alert('Erreur lors de l\'analyse')
+      setAnalyzeProgress('')
+      setIsAnalyzing(false)
+      alert('❌ Erreur lors de l\'analyse\n\n' + (error instanceof Error ? error.message : 'Erreur inconnue'))
     }
   }
 
@@ -100,6 +159,9 @@ export function ImportSettings({
           selectedDays={selectedDays}
           onDaysChange={onDaysChange}
         />
+        <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+          Cette période sera utilisée pour l'analyse automatique
+        </p>
       </div>
 
       {/* Expéditeurs connus */}
@@ -113,8 +175,34 @@ export function ImportSettings({
               knownSenders={knownSenders}
               onUpdate={handleUpdateSenders}
               onAnalyze={handleAnalyze}
+              isAnalyzing={isAnalyzing}
             />
           </div>
+
+          {/* Loader avec progression */}
+          {isAnalyzing && (
+            <div className="border-t border-gray-200 dark:border-gray-700 pt-5">
+              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                <div className="flex items-center gap-3">
+                  {/* Spinner animé */}
+                  <div className="flex-shrink-0">
+                    <svg className="animate-spin h-5 w-5 text-blue-600 dark:text-blue-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                      Analyse en cours...
+                    </p>
+                    <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                      {analyzeProgress}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </>
       )}
 

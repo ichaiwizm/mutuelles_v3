@@ -63,34 +63,7 @@ export function useEmailImport(): UseEmailImportReturn {
     checkAuthStatus()
   }, [])
 
-  /**
-   * Charge les emails depuis la DB
-   */
-  const loadCachedEmails = useCallback(async () => {
-    if (!emailConfig?.id) return
-
-    try {
-      const result = await window.api.email.getImportedEmails({
-        configId: emailConfig.id,
-        limit: DEFAULT_EMAIL_LIMIT
-      })
-
-      if (result.success && result.data) {
-        setEmails(result.data)
-      }
-    } catch (err) {
-      console.error('Erreur chargement emails depuis DB:', err)
-    }
-  }, [emailConfig?.id])
-
-  /**
-   * Charge les emails depuis la DB si authentifié (Phase 5)
-   */
-  useEffect(() => {
-    if (authStatus === 'authenticated' && emailConfig?.id) {
-      loadCachedEmails()
-    }
-  }, [authStatus, emailConfig?.id, loadCachedEmails])
+  // Les emails ne sont plus chargés depuis la DB - ils sont récupérés à la demande
 
   /**
    * Écoute les événements de progression

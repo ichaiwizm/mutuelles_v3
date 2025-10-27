@@ -13,24 +13,15 @@ const SCORING = {
   STRUCTURED_THRESHOLD: 2  // Score V1 minimum pour considérer comme lead
 }
 
-function checkKnownSender(from: string, customSenders?: KnownSender[]): { isKnown: boolean; score: number; matchedPattern?: string } {
+function checkKnownSender(from: string, customSenders?: KnownSender[]): { isKnown: boolean; score: number; matchedEmail?: string } {
   const normalizedFrom = normalize(from)
 
   if (customSenders && customSenders.length > 0) {
     for (const sender of customSenders) {
-      const normalizedPattern = normalize(sender.pattern)
+      const normalizedEmail = normalize(sender.email)
 
-      let matches = false
-      if (sender.type === 'email') {
-        matches = normalizedFrom === normalizedPattern
-      } else if (sender.type === 'domain') {
-        matches = normalizedFrom.includes(normalizedPattern)
-      } else if (sender.type === 'contains') {
-        matches = normalizedFrom.includes(normalizedPattern)
-      }
-
-      if (matches) {
-        return { isKnown: true, score: sender.bonus, matchedPattern: sender.pattern }
+      if (normalizedFrom === normalizedEmail) {
+        return { isKnown: true, score: 50, matchedEmail: sender.email }
       }
     }
   }
@@ -176,7 +167,7 @@ function canParseAsGeneric(content: string): number {
  * Retourne le premier score > 0 trouvé
  */
 function detectStructuredContent(email: { subject: string; content: string; snippet?: string }): number {
-  const fullContent = `${email.subject}\n${email.snippet || email.content}`
+  const fullContent = `${email.subject}\n${email.content}`
 
   // Essayer AssurProspect (le plus spécifique)
   const assurProspectScore = canParseAsAssurProspect(fullContent)
@@ -203,10 +194,10 @@ export function detectLeadPotential(
 
   // Logique OR hybride: Known Sender OU Détection structurée V1
 
-  // 1. Check Known Senders (V3) - prioritaire
+  // 1. Check Known Senders - prioritaire
   const senderCheck = checkKnownSender(email.from, customSenders)
   if (senderCheck.isKnown) {
-    const matchInfo = senderCheck.matchedPattern ? ` (${senderCheck.matchedPattern})` : ''
+    const matchInfo = senderCheck.matchedEmail ? ` (${senderCheck.matchedEmail})` : ''
     reasons.push(`✓ Expéditeur connu${matchInfo}`)
     return { hasLead: true, reasons, score: 50 }
   }
