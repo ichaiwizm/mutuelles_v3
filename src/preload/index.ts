@@ -82,6 +82,8 @@ contextBridge.exposeInMainWorld('api', {
     fetchMessages: (data: any) => ipcRenderer.invoke('email:fetchMessages', data) as Promise<{ success: boolean; data?: any; error?: string }>,
     getImportedEmails: (params?: { configId?: number; limit?: number }) => ipcRenderer.invoke('email:getImportedEmails', params) as Promise<{ success: boolean; data?: any; error?: string }>,
     getAuthStatus: () => ipcRenderer.invoke('email:getAuthStatus') as Promise<{ success: boolean; data?: any; error?: string }>,
+    updateKnownSenders: (data: { configId: number; knownSenders: any[] }) => ipcRenderer.invoke('email:updateKnownSenders', data) as Promise<{ success: boolean; data?: any; error?: string }>,
+    analyzeSenders: (configId: number) => ipcRenderer.invoke('email:analyzeSenders', configId) as Promise<{ success: boolean; data?: any; error?: string }>,
     onImportProgress: (cb: (e: any) => void) => {
       const handler = (_: any, data: any) => cb(data)
       ipcRenderer.on('email:import-progress', handler)

@@ -215,5 +215,29 @@ export function registerEmailIpc() {
     }
   })
 
+  ipcMain.handle('email:updateKnownSenders', async (_, data: { configId: number; knownSenders: any[] }) => {
+    try {
+      const success = getEmailService().updateKnownSenders(data.configId, data.knownSenders)
+      if (success) {
+        return { success: true, data: { updated: true } }
+      } else {
+        return { success: false, error: 'Échec de la mise à jour' }
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Erreur inconnue'
+      return { success: false, error: message }
+    }
+  })
+
+  ipcMain.handle('email:analyzeSenders', async (_, configId: number) => {
+    try {
+      const suggestions = getEmailService().analyzeSendersFromLeads(configId)
+      return { success: true, data: suggestions }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Erreur inconnue'
+      return { success: false, error: message }
+    }
+  })
+
   console.log('[IPC] ✓ Email handlers registered')
 }

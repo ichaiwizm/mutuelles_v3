@@ -216,14 +216,17 @@ export class EmailService {
       ? safeStorage.encryptString(config.refreshToken)
       : null
 
+    const knownSendersJson = JSON.stringify(config.knownSenders || [])
+
     const stmt = this.db.prepare(`
-      INSERT INTO email_configs (provider, email, display_name, encrypted_access_token, encrypted_refresh_token, expiry_date, is_active, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, 1, datetime('now'))
+      INSERT INTO email_configs (provider, email, display_name, encrypted_access_token, encrypted_refresh_token, expiry_date, known_senders_json, is_active, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, 1, datetime('now'))
       ON CONFLICT(email) DO UPDATE SET
         display_name = excluded.display_name,
         encrypted_access_token = excluded.encrypted_access_token,
         encrypted_refresh_token = excluded.encrypted_refresh_token,
         expiry_date = excluded.expiry_date,
+        known_senders_json = excluded.known_senders_json,
         is_active = 1,
         updated_at = excluded.updated_at
     `)
@@ -234,7 +237,8 @@ export class EmailService {
       config.displayName || null,
       encryptedAccessToken,
       encryptedRefreshToken,
-      config.expiryDate || null
+      config.expiryDate || null,
+      knownSendersJson
     )
 
     const savedConfig = this.getConfigByEmail(config.email)
@@ -253,12 +257,22 @@ export class EmailService {
 
     if (!row) return null
 
+    let knownSenders = []
+    if (row.known_senders_json) {
+      try {
+        knownSenders = JSON.parse(row.known_senders_json)
+      } catch (error) {
+        console.error('Erreur parsing known_senders_json:', error)
+      }
+    }
+
     return {
       id: row.id,
       provider: row.provider,
       email: row.email,
       displayName: row.display_name || undefined,
       expiryDate: row.expiry_date || undefined,
+      knownSenders,
       createdAt: row.created_at,
       updatedAt: row.updated_at
     }
@@ -271,12 +285,22 @@ export class EmailService {
 
     if (!row) return null
 
+    let knownSenders = []
+    if (row.known_senders_json) {
+      try {
+        knownSenders = JSON.parse(row.known_senders_json)
+      } catch (error) {
+        console.error('Erreur parsing known_senders_json:', error)
+      }
+    }
+
     return {
       id: row.id,
       provider: row.provider,
       email: row.email,
       displayName: row.display_name || undefined,
       expiryDate: row.expiry_date || undefined,
+      knownSenders,
       createdAt: row.created_at,
       updatedAt: row.updated_at
     }
@@ -287,15 +311,27 @@ export class EmailService {
       .prepare('SELECT * FROM email_configs WHERE is_active = 1 ORDER BY created_at DESC')
       .all() as any[]
 
-    return rows.map(row => ({
-      id: row.id,
-      provider: row.provider,
-      email: row.email,
-      displayName: row.display_name || undefined,
-      expiryDate: row.expiry_date || undefined,
-      createdAt: row.created_at,
-      updatedAt: row.updated_at
-    }))
+    return rows.map(row => {
+      let knownSenders = []
+      if (row.known_senders_json) {
+        try {
+          knownSenders = JSON.parse(row.known_senders_json)
+        } catch (error) {
+          console.error('Erreur parsing known_senders_json:', error)
+        }
+      }
+
+      return {
+        id: row.id,
+        provider: row.provider,
+        email: row.email,
+        displayName: row.display_name || undefined,
+        expiryDate: row.expiry_date || undefined,
+        knownSenders,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at
+      }
+    })
   }
 
   private getDecryptedTokens(configId: number): { accessToken?: string; refreshToken?: string } | null {
@@ -398,7 +434,7 @@ export class EmailService {
         messages.push(...batchMessages.filter(Boolean) as EmailMessage[])
       }
 
-      const classifiedMessages = emailClassifier.classifyBatch(messages)
+      const classifiedMessages = emailClassifier.classifyBatch(messages, config.knownSenders)
 
       const leadsOnly = classifiedMessages.filter(m => m.hasLeadPotential)
 
@@ -491,6 +527,68 @@ export class EmailService {
         msg.labels ? JSON.stringify(msg.labels) : null
       )
     }
+  }
+
+  updateKnownSenders(configId: number, knownSenders: any[]): boolean {
+    const knownSendersJson = JSON.stringify(knownSenders)
+    const stmt = this.db.prepare(`
+      UPDATE email_configs
+      SET known_senders_json = ?, updated_at = datetime('now')
+      WHERE id = ?
+    `)
+    const result = stmt.run(knownSendersJson, configId)
+    return result.changes > 0
+  }
+
+  analyzeSendersFromLeads(configId: number): { pattern: string; type: string; occurrences: number; examples: string[] }[] {
+    const query = `
+      SELECT sender FROM imported_emails
+      WHERE config_id = ? AND has_lead_potential = 1
+      ORDER BY email_date DESC
+    `
+    const rows = this.db.prepare(query).all(configId) as { sender: string }[]
+
+    const senderStats = new Map<string, { count: number; emails: Set<string> }>()
+
+    rows.forEach(row => {
+      const sender = row.sender
+
+      const domainMatch = sender.match(/@([\w.-]+)$/i)
+      if (domainMatch) {
+        const domain = domainMatch[1]
+        if (!senderStats.has(domain)) {
+          senderStats.set(domain, { count: 0, emails: new Set() })
+        }
+        const stats = senderStats.get(domain)!
+        stats.count++
+        stats.emails.add(sender)
+      }
+
+      const localMatch = sender.match(/^([^@]+)@/i)
+      if (localMatch) {
+        const localPart = localMatch[1].toLowerCase()
+        const genericPrefixes = ['leads', 'lead', 'contact', 'prospects', 'devis', 'info', 'hello', 'commercial']
+        if (genericPrefixes.includes(localPart)) {
+          const pattern = `${localPart}@`
+          if (!senderStats.has(pattern)) {
+            senderStats.set(pattern, { count: 0, emails: new Set() })
+          }
+          const stats = senderStats.get(pattern)!
+          stats.count++
+          stats.emails.add(sender)
+        }
+      }
+    })
+
+    return Array.from(senderStats.entries())
+      .filter(([_, stats]) => stats.count >= 2)
+      .map(([pattern, stats]) => ({
+        pattern,
+        type: pattern.includes('@') ? 'contains' : 'domain',
+        occurrences: stats.count,
+        examples: Array.from(stats.emails).slice(0, 3)
+      }))
+      .sort((a, b) => b.occurrences - a.occurrences)
   }
 
   getImportedEmails(configId?: number, limit = 100): EmailMessage[] {
