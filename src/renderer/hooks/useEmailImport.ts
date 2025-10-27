@@ -6,6 +6,7 @@
  * - Récupération des emails
  * - Progression de l'import
  * - État des emails et détection de leads
+ * - Cache localStorage des emails
  */
 
 import { useState, useEffect, useCallback } from 'react'
@@ -19,6 +20,13 @@ import type {
 } from '../../shared/types/email'
 
 const DEFAULT_EMAIL_LIMIT = 100
+const STORAGE_KEY_EMAILS = 'email_leads_cache'
+const STORAGE_KEY_TIMESTAMP = 'email_leads_cache_timestamp'
+
+interface EmailCache {
+  emails: EmailMessage[]
+  timestamp: number
+}
 
 interface UseEmailImportReturn {
   // État d'authentification
@@ -35,12 +43,74 @@ interface UseEmailImportReturn {
   emails: EmailMessage[]
   leadsDetected: EmailMessage[]
 
+  // Cache info
+  cacheTimestamp: number | null
+
   // Actions
   startAuth: () => Promise<void>
   fetchEmails: (filters: EmailFilters) => Promise<void>
   revokeAccess: () => Promise<void>
   clearError: () => void
   reset: () => void
+  clearCache: () => void
+}
+
+/**
+ * Charge les emails depuis localStorage
+ */
+function loadEmailsFromCache(): EmailMessage[] {
+  try {
+    const cached = localStorage.getItem(STORAGE_KEY_EMAILS)
+    if (cached) {
+      const data = JSON.parse(cached) as EmailMessage[]
+      console.log(`[Cache] ${data.length} emails chargés depuis localStorage`)
+      return data
+    }
+  } catch (err) {
+    console.error('[Cache] Erreur chargement emails:', err)
+  }
+  return []
+}
+
+/**
+ * Charge le timestamp du cache
+ */
+function loadCacheTimestamp(): number | null {
+  try {
+    const timestamp = localStorage.getItem(STORAGE_KEY_TIMESTAMP)
+    if (timestamp) {
+      return parseInt(timestamp, 10)
+    }
+  } catch (err) {
+    console.error('[Cache] Erreur chargement timestamp:', err)
+  }
+  return null
+}
+
+/**
+ * Sauvegarde les emails dans localStorage
+ */
+function saveEmailsToCache(emails: EmailMessage[]): void {
+  try {
+    localStorage.setItem(STORAGE_KEY_EMAILS, JSON.stringify(emails))
+    localStorage.setItem(STORAGE_KEY_TIMESTAMP, Date.now().toString())
+    console.log(`[Cache] ${emails.length} emails sauvegardés dans localStorage`)
+  } catch (err) {
+    console.error('[Cache] Erreur sauvegarde emails:', err)
+  }
+}
+
+/**
+ * Efface le cache localStorage
+ */
+function clearEmailCache(): void {
+  try {
+    localStorage.removeItem(STORAGE_KEY_EMAILS)
+    localStorage.removeItem(STORAGE_KEY_TIMESTAMP)
+    console.log('[Cache] Cache effacé')
+  } catch (err) {
+    console.error('[Cache] Erreur effacement cache:', err)
+  }
 }
 
 export function useEmailImport(): UseEmailImportReturn {
@@ -52,9 +122,24 @@ export function useEmailImport(): UseEmailImportReturn {
   const [importProgress, setImportProgress] = useState<EmailImportProgress | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [emails, setEmails] = useState<EmailMessage[]>([])
+  const [cacheTimestamp, setCacheTimestamp] = useState<number | null>(null)
 
   // Emails détectés comme leads potentiels
   const leadsDetected = emails.filter(email => email.hasLeadPotential)
+
+  /**
+   * Charge les emails depuis le cache au démarrage
+   */
+  useEffect(() => {
+    const cachedEmails = loadEmailsFromCache()
+    const timestamp = loadCacheTimestamp()
+
+    if (cachedEmails.length > 0) {
+      setEmails(cachedEmails)
+      setCacheTimestamp(timestamp)
+      console.log(`[Init] ${cachedEmails.length} emails restaurés depuis le cache`)
+    }
+  }, [])
 
   /**
    * Vérifie le statut d'authentification au chargement
@@ -62,8 +147,6 @@ export function useEmailImport(): UseEmailImportReturn {
   useEffect(() => {
     checkAuthStatus()
   }, [])
-
-  // Les emails ne sont plus chargés depuis la DB - ils sont récupérés à la demande
 
   /**
    * Écoute les événements de progression
@@ -139,7 +222,13 @@ export function useEmailImport(): UseEmailImportReturn {
       })
 
       if (result.success && result.data) {
-        setEmails(result.data.messages || [])
+        const fetchedEmails = result.data.messages || []
+
+        // Sauvegarder dans localStorage
+        saveEmailsToCache(fetchedEmails)
+        setCacheTimestamp(Date.now())
+
+        setEmails(fetchedEmails)
         setImportProgress({
           phase: 'completed',
           message: `Import terminé : ${result.data.totalFetched} emails récupérés, ${result.data.leadsDetected} leads détectés`
@@ -170,6 +259,7 @@ export function useEmailImport(): UseEmailImportReturn {
         setAuthStatus('not_authenticated')
         setEmailConfig(null)
         reset()
+        clearEmailCache()
       } else {
         setError(result.error || 'Erreur lors de la révocation')
       }
@@ -192,6 +282,16 @@ export function useEmailImport(): UseEmailImportReturn {
     setImportProgress(null)
     setEmails([])
     setError(null)
+    setCacheTimestamp(null)
+  }, [])
+
+  /**
+   * Efface le cache localStorage
+   */
+  const clearCache = useCallback(() => {
+    clearEmailCache()
+    setEmails([])
+    setCacheTimestamp(null)
   }, [])
 
   return {
@@ -209,11 +309,15 @@ export function useEmailImport(): UseEmailImportReturn {
     emails,
     leadsDetected,
 
+    // Cache
+    cacheTimestamp,
+
     // Actions
     startAuth,
     fetchEmails,
     revokeAccess,
     clearError,
-    reset
+    reset,
+    clearCache
   }
 }

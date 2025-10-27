@@ -25,6 +25,7 @@ export function ImportPanel({ isOpen, onClose }: ImportPanelProps) {
     isImporting,
     importProgress,
     leadsDetected,
+    cacheTimestamp,
     error,
     startAuth,
     fetchEmails,
@@ -167,6 +168,7 @@ export function ImportPanel({ isOpen, onClose }: ImportPanelProps) {
               isImporting={isImporting}
               importProgress={importProgress}
               potentialLeads={leadsDetected}
+              cacheTimestamp={cacheTimestamp}
               onStartAuth={startAuth}
               onRefresh={handleFetchLeads}
             />
