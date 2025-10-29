@@ -81,29 +81,29 @@ export function computeDefaultValue(field: FormFieldDefinition, currentValues?: 
 
 /**
  * Generates all default values for a complete form schema
+ *
+ * For carrier-specific fields that appear in multiple platforms with different defaults,
+ * all defaults are collected and the most compatible value is chosen. This is done by
+ * applying defaults in order: SwissLife → Alptis → Common, so that more universal
+ * defaults override platform-specific ones in case of conflicts.
  */
 export function getAllDefaults(schema: FormSchema, currentValues?: Record<string, any>): Record<string, any> {
   const defaults: Record<string, any> = {}
 
-  // Collect all fields from schema
+  // Collect all fields in reverse priority order: SwissLife → Alptis → Common
+  // This ensures that when a field appears in multiple platforms with different defaults,
+  // the more universal default (usually from Alptis or Common) wins
+  // For example: subscriber.regime defaults to "SECURITE_SOCIALE" (valid in both platforms)
+  // rather than "TNS" (only valid in SwissLife)
   const allFields = [
-    ...schema.common,
+    ...schema.platformSpecific.swisslifeone,
     ...schema.platformSpecific.alptis,
-    ...schema.platformSpecific.swisslifeone
+    ...schema.common
   ]
 
-  // Use a Map to deduplicate by domainKey, keeping the first occurrence
-  const seenKeys = new Set<string>()
-
-  // Compute defaults for each field
+  // Process ALL fields without strict deduplication to ensure carrier-specific defaults
+  // from all platforms are considered. The order ensures the most compatible value is used.
   allFields.forEach(field => {
-    // Skip if we've already processed this domainKey
-    if (seenKeys.has(field.domainKey)) {
-      return
-    }
-
-    seenKeys.add(field.domainKey)
-
     const defaultValue = computeDefaultValue(field, defaults)
     if (defaultValue !== undefined) {
       // Handle repeatable children fields with [] notation
@@ -176,14 +176,17 @@ export function applyDefaultsToForm(
 
 /**
  * Gets default values for spouse fields specifically
+ * Uses the same priority order as getAllDefaults to ensure consistency
  */
 export function getSpouseDefaults(schema: FormSchema): Record<string, any> {
   const defaults: Record<string, any> = {}
 
+  // Use reverse priority order: SwissLife → Alptis → Common
+  // This ensures carrier-specific defaults are compatible across platforms
   const allFields = [
-    ...schema.common,
+    ...schema.platformSpecific.swisslifeone,
     ...schema.platformSpecific.alptis,
-    ...schema.platformSpecific.swisslifeone
+    ...schema.common
   ]
 
   const spouseFields = allFields.filter(f => f.domainKey.startsWith('spouse.'))
@@ -203,14 +206,17 @@ export function getSpouseDefaults(schema: FormSchema): Record<string, any> {
 
 /**
  * Gets default values for a child at a specific index
+ * Uses the same priority order as getAllDefaults to ensure consistency
  */
 export function getChildDefaults(schema: FormSchema, childIndex: number): Record<string, any> {
   const defaults: Record<string, any> = {}
 
+  // Use reverse priority order: SwissLife → Alptis → Common
+  // This ensures carrier-specific defaults are compatible across platforms
   const allFields = [
-    ...schema.common,
+    ...schema.platformSpecific.swisslifeone,
     ...schema.platformSpecific.alptis,
-    ...schema.platformSpecific.swisslifeone
+    ...schema.common
   ]
 
   const childFields = allFields.filter(f => f.domainKey.startsWith('children[].'))
