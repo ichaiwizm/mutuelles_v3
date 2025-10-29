@@ -18,6 +18,7 @@ export interface LeadModalProps {
   submitBehavior?: 'db' | 'local'
   submitLabelOverride?: string
   onLocalSubmit?: (payload: { cleanLead: any; formValues: Record<string, any> }) => void
+  titleOverride?: string
 }
 
 export default function LeadModal({
@@ -28,7 +29,8 @@ export default function LeadModal({
   onSuccess,
   submitBehavior = 'db',
   submitLabelOverride,
-  onLocalSubmit
+  onLocalSubmit,
+  titleOverride
 }: LeadModalProps) {
   const { schema, loading: schemaLoading, error: schemaError } = useFormSchema()
   const toast = useToastContext()
@@ -160,7 +162,7 @@ export default function LeadModal({
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
-      title={getModalTitle()}
+      title={titleOverride || getModalTitle()}
       size="large"
       headerActions={
         <div className="flex gap-2">

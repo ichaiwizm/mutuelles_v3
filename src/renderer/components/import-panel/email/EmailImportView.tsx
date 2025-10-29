@@ -240,9 +240,14 @@ export function EmailImportView({
       })
     }
 
+    const leadId = editingLead.parsedData.metadata.sourceEmailId
     setPreviewLeads(prev => prev.map(l =>
-      l.parsedData.metadata.sourceEmailId === editingLead.parsedData.metadata.sourceEmailId ? updatedLead : l
+      l.parsedData.metadata.sourceEmailId === leadId ? updatedLead : l
     ))
+    // Auto-sélection si le lead devient complet
+    if (newStatus === 'valid' && !selection.isSelected(leadId)) {
+      selection.toggle(leadId)
+    }
     handleEditSuccess()
   }
 
@@ -290,7 +295,7 @@ export function EmailImportView({
       )}
 
       {/* Bouton rafraîchir + indicateur cache (si connecté) */}
-      {isAuthenticated && !isImporting && (
+      {isAuthenticated && !isImporting && previewLeads.length === 0 && (
         <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between">
             <button
@@ -359,13 +364,15 @@ export function EmailImportView({
       )}
 
       {/* Liste des emails (leads uniquement) */}
-      <div className="flex-1 overflow-y-auto">
-        <EmailList
-          emails={potentialLeads}
-          selectedEmailIds={selectedEmailIds}
-          onSelectionChange={setSelectedEmailIds}
-        />
-      </div>
+      {previewLeads.length === 0 && (
+        <div className="flex-1 overflow-y-auto">
+          <EmailList
+            emails={potentialLeads}
+            selectedEmailIds={selectedEmailIds}
+            onSelectionChange={setSelectedEmailIds}
+          />
+        </div>
+      )}
 
       {/* Action bar sticky (si sélection) */}
       {selectedEmailIds.length > 0 && previewLeads.length === 0 && (
@@ -463,6 +470,7 @@ export function EmailImportView({
           mode="edit"
           submitBehavior="local"
           submitLabelOverride="Enregistrer"
+          titleOverride="Compléter le lead"
           onLocalSubmit={applyLocalEdits}
           lead={{
             id: editingLead.parsedData.metadata.sourceEmailId,
