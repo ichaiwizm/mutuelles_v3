@@ -132,27 +132,61 @@ export function EmailImportView({
       telephone: l.parsedData.subscriber?.telephone?.value
     }))
 
-    try {
-      const dupRes = await window.api.leads.checkDuplicatesBatch(items)
-      if (dupRes.success && dupRes.data) {
-        const mapped: EnrichedLeadData[] = validOrPartial.map((lead, idx) => ({
-          ...lead,
-          duplicate: {
-            isDuplicate: dupRes.data!.results[idx]?.isDuplicate || false,
-            reasons: dupRes.data!.results[idx]?.reasons || []
-          }
-        }))
-        setPreviewLeads(mapped)
-        // Pré-sélectionner les leads complets
-        selection.selectAll()
-      } else {
-        setPreviewLeads(validOrPartial)
-        selection.selectAll()
-      }
-    } catch (e) {
-      setPreviewLeads(validOrPartial)
-      selection.selectAll()
+    const withDbDupInfo = await (async () => {
+      try {
+        const dupRes = await window.api.leads.checkDuplicatesBatch(items)
+        if (dupRes.success && dupRes.data) {
+          return validOrPartial.map((lead, idx) => ({
+            ...lead,
+            duplicate: {
+              isDuplicate: dupRes.data!.results[idx]?.isDuplicate || false,
+              reasons: dupRes.data!.results[idx]?.reasons || []
+            }
+          }))
+        }
+      } catch {}
+      return validOrPartial
+    })()
+
+    // Marquer les duplicata internes
+    const withLocalDup = computeLocalDupFlags(withDbDupInfo)
+    setPreviewLeads(withLocalDup)
+    selection.selectAll()
+  }
+
+  const identityKey = (l: EnrichedLeadData) => {
+    const s = l.parsedData.subscriber || {}
+    const ln = (s.lastName?.value || '').toString().trim().toLowerCase()
+    const fn = (s.firstName?.value || '').toString().trim().toLowerCase()
+    const bd = (s.birthDate?.value || '').toString().trim()
+    return `${ln}|${fn}|${bd}`
+  }
+
+  const computeLocalDupFlags = (leadsIn: EnrichedLeadData[]): EnrichedLeadData[] => {
+    const seen = new Set<string>()
+    return leadsIn.map(l => {
+      const key = identityKey(l)
+      if (!key || key === '||') return { ...l, localDuplicate: false }
+      if (seen.has(key)) return { ...l, localDuplicate: true }
+      seen.add(key)
+      return { ...l, localDuplicate: false }
+    })
+  }
+
+  const removeLocalDuplicates = () => {
+    const seen = new Set<string>()
+    const kept: EnrichedLeadData[] = []
+    for (const l of previewLeads) {
+      const key = identityKey(l)
+      if (!key || key === '||') { kept.push(l); continue }
+      if (seen.has(key)) continue
+      seen.add(key)
+      kept.push({ ...l, localDuplicate: false })
     }
+    // Conserver sélection uniquement pour les éléments gardés
+    const keptIds = new Set(kept.map(k => k.parsedData.metadata.sourceEmailId))
+    selection.updateSelected(new Set(Array.from(selection.selectedIds).filter(id => keptIds.has(id))))
+    setPreviewLeads(kept)
   }
 
   const handleConfirmCreation = async () => {
@@ -426,6 +460,8 @@ export function EmailImportView({
             onDeselectAll={selection.deselectAll}
             leads={previewLeads}
             emails={[]}
+            duplicateCount={previewLeads.filter(l => l.localDuplicate).length}
+            onRemoveDuplicates={removeLocalDuplicates}
           />
 
           <LeadPreviewList

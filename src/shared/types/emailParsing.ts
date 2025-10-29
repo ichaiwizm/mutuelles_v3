@@ -149,6 +149,9 @@ export interface EnrichedLeadData {
     isDuplicate: boolean
     reasons: string[]
   }
+
+  // Internal preview duplicate flag (dedupe within parsed list)
+  localDuplicate?: boolean
 }
 
 /**

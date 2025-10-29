@@ -14,6 +14,7 @@ export default function Leads() {
   const [loading, setLoading] = useState({ stats: false, leads: false })
   const [filters, setFilters] = useState<LeadFilters>({})
   const [pagination, setPagination] = useState({ page: 1, limit: 20 })
+  const [meta, setMeta] = useState({ total: 0, totalPages: 1 })
   const [confirmDelete, setConfirmDelete] = useState<Lead | null>(null)
   const [deleteLoading, setDeleteLoading] = useState(false)
 
@@ -50,6 +51,7 @@ export default function Leads() {
       const result = await window.api.leads.list(filters, pagination)
       if (result.success) {
         setLeads(result.data.items)
+        setMeta({ total: result.data.total, totalPages: result.data.totalPages })
       } else {
         throw new Error(result.error)
       }
@@ -166,6 +168,10 @@ export default function Leads() {
     setPagination(prev => ({ ...prev, page: 1 }))
   }
 
+  const goToPage = (p: number) => {
+    setPagination(prev => ({ ...prev, page: Math.max(1, Math.min(p, meta.totalPages)) }))
+  }
+
   return (
     <section className="space-y-4">
       <div className="flex items-center justify-between">
@@ -234,6 +240,52 @@ export default function Leads() {
         onToggleAll={toggleSelectAll}
         onDeleteSelected={handleDeleteSelected}
       />
+
+      {/* Pagination */}
+      {meta.totalPages > 1 && (
+        <div className="flex items-center justify-between mt-3">
+          <div className="text-xs text-neutral-500">
+            Total {meta.total} leads
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => goToPage(1)}
+              disabled={pagination.page === 1}
+              className="px-2 py-1 text-xs rounded border border-neutral-300 dark:border-neutral-700 disabled:opacity-50"
+              title="Première page"
+            >
+              «
+            </button>
+            <button
+              onClick={() => goToPage(pagination.page - 1)}
+              disabled={pagination.page === 1}
+              className="px-2 py-1 text-xs rounded border border-neutral-300 dark:border-neutral-700 disabled:opacity-50"
+              title="Page précédente"
+            >
+              Préc.
+            </button>
+            <span className="text-xs">
+              Page {pagination.page} / {meta.totalPages}
+            </span>
+            <button
+              onClick={() => goToPage(pagination.page + 1)}
+              disabled={pagination.page >= meta.totalPages}
+              className="px-2 py-1 text-xs rounded border border-neutral-300 dark:border-neutral-700 disabled:opacity-50"
+              title="Page suivante"
+            >
+              Suiv.
+            </button>
+            <button
+              onClick={() => goToPage(meta.totalPages)}
+              disabled={pagination.page >= meta.totalPages}
+              className="px-2 py-1 text-xs rounded border border-neutral-300 dark:border-neutral-700 disabled:opacity-50"
+              title="Dernière page"
+            >
+              »
+            </button>
+          </div>
+        </div>
+      )}
 
       <ConfirmModal
         isOpen={!!confirmDelete}

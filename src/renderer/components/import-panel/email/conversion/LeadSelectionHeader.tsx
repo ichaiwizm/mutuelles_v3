@@ -9,6 +9,8 @@ interface LeadSelectionHeaderProps {
   onDeselectAll: () => void
   leads: EnrichedLeadData[]
   emails: EmailMessage[]
+  duplicateCount?: number
+  onRemoveDuplicates?: () => void
 }
 
 /**
@@ -22,7 +24,9 @@ export function LeadSelectionHeader({
   onSelectAll,
   onDeselectAll,
   leads,
-  emails
+  emails,
+  duplicateCount = 0,
+  onRemoveDuplicates
 }: LeadSelectionHeaderProps) {
   const incompleteCount = totalCount - completeCount
 
@@ -36,6 +40,11 @@ export function LeadSelectionHeader({
         {incompleteCount > 0 && (
           <span className="ml-2 text-amber-600 dark:text-amber-400">
             · {incompleteCount} incomplet{incompleteCount > 1 ? 's' : ''}
+          </span>
+        )}
+        {duplicateCount > 0 && (
+          <span className="ml-2 text-red-600 dark:text-red-400">
+            · {duplicateCount} doublon{duplicateCount > 1 ? 's' : ''}
           </span>
         )}
         {selectedCount > 0 && (
@@ -65,6 +74,16 @@ export function LeadSelectionHeader({
         >
           Tout désélectionner
         </button>
+
+        {duplicateCount > 0 && (
+          <button
+            type="button"
+            onClick={onRemoveDuplicates}
+            className="px-3 py-1.5 text-xs font-medium text-white bg-red-600 rounded hover:bg-red-700 transition-colors"
+          >
+            Supprimer les doublons
+          </button>
+        )}
       </div>
     </div>
   )

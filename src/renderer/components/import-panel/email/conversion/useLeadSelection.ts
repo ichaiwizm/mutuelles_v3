@@ -61,6 +61,11 @@ export function useLeadSelection(leads: EnrichedLeadData[]) {
     )
   }, [leads, selectedIds])
 
+  // Permet de remplacer entièrement la sélection (utile après déduplication)
+  const updateSelected = useCallback((ids: Set<string>) => {
+    setSelectedIds(new Set(ids))
+  }, [])
+
   return {
     selectedIds,
     selectedCount: selectedIds.size,
@@ -71,6 +76,7 @@ export function useLeadSelection(leads: EnrichedLeadData[]) {
     toggle,
     isSelected,
     isComplete,
-    getSelectedLeads
+    getSelectedLeads,
+    updateSelected
   }
 }

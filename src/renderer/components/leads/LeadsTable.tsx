@@ -62,7 +62,7 @@ export default function LeadsTable({
     )
   }
 
-  const allSelected = leads.length > 0 && selectedIds.size === leads.length
+  const allSelected = leads.length > 0 && leads.every(l => selectedIds.has(l.id))
   const anySelected = selectedIds.size > 0
 
   return (
@@ -82,13 +82,15 @@ export default function LeadsTable({
             <th className="text-left px-3 py-2">Contact</th>
             <th className="text-left px-3 py-2">Souscripteur</th>
             <th className="text-left px-3 py-2">Date</th>
-            <th className="px-3 py-2 w-[180px] text-right">
+            <th className="px-3 py-2 w-[120px] text-right">
               {anySelected && (
                 <button
                   onClick={onDeleteSelected}
-                  className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded border border-red-300 text-red-600 hover:bg-red-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/20"
+                  className="inline-flex items-center p-1 text-xs rounded border border-red-300 text-red-600 hover:bg-red-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/20"
+                  title="Supprimer la sélection"
+                  aria-label="Supprimer la sélection"
                 >
-                  <Trash2 size={14} /> Supprimer la sélection
+                  <Trash2 size={14} />
                 </button>
               )}
             </th>

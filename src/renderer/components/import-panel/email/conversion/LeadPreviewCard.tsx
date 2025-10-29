@@ -107,7 +107,7 @@ export function LeadPreviewCard({
       <div className="flex-1 min-w-0">
         <div className="font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
           {fullName || 'Sans nom'}
-          {lead.duplicate?.isDuplicate && (
+          {(lead.duplicate?.isDuplicate || lead.localDuplicate) && (
             <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300">
               Doublon
             </span>
