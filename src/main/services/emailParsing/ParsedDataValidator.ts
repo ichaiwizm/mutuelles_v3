@@ -20,7 +20,6 @@ export class ParsedDataValidator {
   private static readonly CRITICAL_FIELDS = [
     'subscriber.lastName',
     'subscriber.firstName',
-    'subscriber.email',
     'subscriber.telephone'
   ]
 
@@ -35,6 +34,7 @@ export class ParsedDataValidator {
 
   // Optional but useful fields
   private static readonly OPTIONAL_FIELDS = [
+    'subscriber.email',
     'subscriber.address',
     'subscriber.city',
     'subscriber.departmentCode',

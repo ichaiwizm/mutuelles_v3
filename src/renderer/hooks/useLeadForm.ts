@@ -83,9 +83,9 @@ export function useLeadForm({ schema, mode, initialLead, onSuccess, onError, onL
     }
   }
 
-  // Initialize from lead when in edit mode
+  // Initialize from lead when in edit mode OR when in create mode with prefilled data
   useEffect(() => {
-    if (mode === 'edit' && initialLead) {
+    if (initialLead && (mode === 'edit' || mode === 'create')) {
       initializeFromLead(initialLead)
     }
   }, [mode, initialLead])

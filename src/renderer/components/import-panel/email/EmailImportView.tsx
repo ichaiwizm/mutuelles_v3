@@ -11,7 +11,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { EmailList } from './EmailList'
-import { EmailToLeadPreviewModal } from './EmailToLeadPreviewModal'
+import { LeadConversionModal } from './conversion/LeadConversionModal'
 import { useEmailToLead } from '../../../hooks/useEmailToLead'
 import type { EmailMessage, EmailImportProgress, AuthStatus } from '../../../../shared/types/email'
 
@@ -54,6 +54,7 @@ export function EmailImportView({
 }: EmailImportViewProps) {
   const [selectedEmailIds, setSelectedEmailIds] = useState<string[]>([])
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false)
+  const [selectedEmailsForModal, setSelectedEmailsForModal] = useState<EmailMessage[]>([])
 
   const isAuthenticated = authStatus === 'authenticated'
 
@@ -102,6 +103,9 @@ export function EmailImportView({
       alert('Aucun email sélectionné')
       return
     }
+
+    // Store selected emails for modal (for debug button)
+    setSelectedEmailsForModal(selectedEmails)
 
     // Parse emails
     await parseEmails(selectedEmails)
@@ -282,21 +286,21 @@ export function EmailImportView({
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>
-                Convertir en {selectedEmailIds.length} lead{selectedEmailIds.length > 1 ? 's' : ''}
+                Convertir en leads
               </>
             )}
           </button>
         </div>
       )}
 
-      {/* Email to Lead Preview Modal */}
-      <EmailToLeadPreviewModal
+      {/* Lead Conversion Modal */}
+      <LeadConversionModal
         isOpen={isPreviewModalOpen}
-        onClose={handleClosePreviewModal}
-        enrichedLeads={enrichedLeads}
-        originalEmails={potentialLeads}
-        onConfirm={handleConfirmCreation}
+        leads={enrichedLeads}
+        emails={selectedEmailsForModal}
         isCreating={isCreating}
+        onClose={handleClosePreviewModal}
+        onCreate={handleConfirmCreation}
       />
     </div>
   )
