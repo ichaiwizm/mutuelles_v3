@@ -1,5 +1,5 @@
 import { AlertCircle } from 'lucide-react'
-import type { EnrichedLeadData } from '@renderer/hooks/useEmailToLead'
+import type { EnrichedLeadData } from '../../../../../shared/types/emailParsing'
 import { LeadEditButton } from './LeadEditButton'
 
 interface LeadPreviewCardProps {
@@ -105,8 +105,13 @@ export function LeadPreviewCard({
 
       {/* Contenu principal */}
       <div className="flex-1 min-w-0">
-        <div className="font-semibold text-gray-900 dark:text-gray-100">
+        <div className="font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
           {fullName || 'Sans nom'}
+          {lead.duplicate?.isDuplicate && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300">
+              Doublon
+            </span>
+          )}
         </div>
         {summary && (
           <div className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
@@ -123,15 +128,6 @@ export function LeadPreviewCard({
 
       {/* Actions */}
       <div className="flex-shrink-0 flex items-center gap-1">
-        {!isComplete && (
-          <button
-            type="button"
-            onClick={onEdit}
-            className="px-2 py-1 text-xs font-medium text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 rounded hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors"
-          >
-            Compléter
-          </button>
-        )}
         <LeadEditButton onClick={onEdit} />
       </div>
     </div>

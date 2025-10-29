@@ -1,5 +1,5 @@
 import React from 'react'
-import { Users, Plus } from 'lucide-react'
+import { Users, Plus, Eye, Pencil, Trash2 } from 'lucide-react'
 import type { FullLead } from '@shared/types/leads'
 
 interface LeadsTableProps {
@@ -9,6 +9,10 @@ interface LeadsTableProps {
   onViewLead: (lead: FullLead) => void
   onEditLead: (lead: FullLead) => void
   onDeleteLead: (lead: FullLead) => void
+  selectedIds: Set<string>
+  onToggleLead: (id: string) => void
+  onToggleAll: () => void
+  onDeleteSelected: () => void
 }
 
 export default function LeadsTable({
@@ -17,7 +21,11 @@ export default function LeadsTable({
   onAddLead,
   onViewLead,
   onEditLead,
-  onDeleteLead
+  onDeleteLead,
+  selectedIds,
+  onToggleLead,
+  onToggleAll,
+  onDeleteSelected
 }: LeadsTableProps) {
   if (loading) {
     return (
@@ -54,15 +62,36 @@ export default function LeadsTable({
     )
   }
 
+  const allSelected = leads.length > 0 && selectedIds.size === leads.length
+  const anySelected = selectedIds.size > 0
+
   return (
     <div className="rounded-md border border-neutral-200 dark:border-neutral-800 overflow-hidden">
       <table className="w-full text-sm">
         <thead className="bg-neutral-100 dark:bg-neutral-800/60">
           <tr>
+            <th className="px-3 py-2 w-8">
+              <input
+                type="checkbox"
+                className="h-4 w-4"
+                checked={allSelected}
+                onChange={onToggleAll}
+                aria-label="Tout sélectionner"
+              />
+            </th>
             <th className="text-left px-3 py-2">Contact</th>
             <th className="text-left px-3 py-2">Souscripteur</th>
             <th className="text-left px-3 py-2">Date</th>
-            <th className="px-3 py-2 w-[180px]"></th>
+            <th className="px-3 py-2 w-[180px] text-right">
+              {anySelected && (
+                <button
+                  onClick={onDeleteSelected}
+                  className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded border border-red-300 text-red-600 hover:bg-red-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/20"
+                >
+                  <Trash2 size={14} /> Supprimer la sélection
+                </button>
+              )}
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -70,6 +99,15 @@ export default function LeadsTable({
             <tr key={lead.id} className={`border-t border-neutral-200 dark:border-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 ${
               index % 2 === 0 ? 'bg-white dark:bg-neutral-900' : 'bg-neutral-50/30 dark:bg-neutral-800/20'
             }`}>
+              <td className="px-3 py-2">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4"
+                  checked={selectedIds.has(lead.id)}
+                  onChange={() => onToggleLead(lead.id)}
+                  aria-label={`Sélectionner ${lead.data.subscriber?.firstName || ''} ${lead.data.subscriber?.lastName || ''}`}
+                />
+              </td>
               <td className="px-3 py-2">
                 <div>
                   <div className="font-medium">
@@ -116,24 +154,30 @@ export default function LeadsTable({
                 </div>
               </td>
               <td className="px-3 py-2 text-right">
-                <div className="space-x-2">
+                <div className="inline-flex items-center gap-1">
                   <button
                     onClick={() => onViewLead(lead)}
-                    className="px-2 py-1 text-xs rounded border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800"
+                    className="p-1 rounded border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800"
+                    title="Voir"
+                    aria-label="Voir"
                   >
-                    Voir
+                    <Eye size={14} />
                   </button>
                   <button
                     onClick={() => onEditLead(lead)}
-                    className="px-2 py-1 text-xs rounded border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800"
+                    className="p-1 rounded border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800"
+                    title="Modifier"
+                    aria-label="Modifier"
                   >
-                    Modifier
+                    <Pencil size={14} />
                   </button>
                   <button
                     onClick={() => onDeleteLead(lead)}
-                    className="px-2 py-1 text-xs rounded border border-red-300 text-red-600 hover:bg-red-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/20"
+                    className="p-1 rounded border border-red-300 text-red-600 hover:bg-red-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/20"
+                    title="Supprimer"
+                    aria-label="Supprimer"
                   >
-                    Supprimer
+                    <Trash2 size={14} />
                   </button>
                 </div>
               </td>

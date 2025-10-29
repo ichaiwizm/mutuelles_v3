@@ -143,6 +143,12 @@ export interface EnrichedLeadData {
     defaultedFields: string[]
     warnings: string[]
   }
+
+  // Duplicate detection (optional, UI-only)
+  duplicate?: {
+    isDuplicate: boolean
+    reasons: string[]
+  }
 }
 
 /**

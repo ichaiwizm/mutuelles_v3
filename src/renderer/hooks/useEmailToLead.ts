@@ -20,7 +20,7 @@ interface UseEmailToLeadResult {
   error: string | null
 
   // Actions
-  parseEmails: (emails: EmailMessage[]) => Promise<void>
+  parseEmails: (emails: EmailMessage[]) => Promise<EmailToLeadResponse | null>
   createLeads: (leadsToCreate: EnrichedLeadData[]) => Promise<void>
   reset: () => void
 }
@@ -57,9 +57,11 @@ export function useEmailToLead(): UseEmailToLeadResult {
 
       setParseResult(response)
       setEnrichedLeads(response.enrichedLeads)
+      return response
     } catch (err) {
       // parse error
       setError(err instanceof Error ? err.message : 'Unknown error')
+      return null
     } finally {
       setIsParsing(false)
     }

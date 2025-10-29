@@ -11,9 +11,14 @@
 
 import React, { useState, useEffect } from 'react'
 import { EmailList } from './EmailList'
-import { LeadConversionModal } from './conversion/LeadConversionModal'
 import { useEmailToLead } from '../../../hooks/useEmailToLead'
+import { LeadSelectionHeader } from './conversion/LeadSelectionHeader'
+import { LeadPreviewList } from './conversion/LeadPreviewList'
+import { useLeadSelection } from './conversion/useLeadSelection'
 import type { EmailMessage, EmailImportProgress, AuthStatus } from '../../../../shared/types/email'
+import type { EnrichedLeadData } from '../../../../shared/types/emailParsing'
+import LeadModal from '../../../components/leads/LeadModal'
+import { useToastContext } from '../../../contexts/ToastContext'
 
 const PROGRESS_MESSAGES: Record<string, string> = {
   authenticating: 'Authentification...',
@@ -40,6 +45,8 @@ interface EmailImportViewProps {
   // Actions
   onStartAuth: () => Promise<void>
   onRefresh: () => Promise<void>
+  // Callback après création réussie
+  onCreated?: () => void
 }
 
 export function EmailImportView({
@@ -50,11 +57,13 @@ export function EmailImportView({
   potentialLeads,
   cacheTimestamp,
   onStartAuth,
-  onRefresh
+  onRefresh,
+  onCreated
 }: EmailImportViewProps) {
   const [selectedEmailIds, setSelectedEmailIds] = useState<string[]>([])
-  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false)
-  const [selectedEmailsForModal, setSelectedEmailsForModal] = useState<EmailMessage[]>([])
+  const [previewLeads, setPreviewLeads] = useState<EnrichedLeadData[]>([])
+  const [editingLead, setEditingLead] = useState<EnrichedLeadData | null>(null)
+  const [showEditModal, setShowEditModal] = useState(false)
 
   const isAuthenticated = authStatus === 'authenticated'
 
@@ -67,6 +76,10 @@ export function EmailImportView({
     createLeads,
     reset: resetEmailToLead
   } = useEmailToLead()
+
+  // Gestion de la sélection des leads dans la preview inline
+  const selection = useLeadSelection(previewLeads)
+  const toast = useToastContext()
 
   // ✅ AUTO-SELECT: Sélectionner automatiquement tous les emails après refresh
   useEffect(() => {
@@ -103,35 +116,138 @@ export function EmailImportView({
       return
     }
 
-    // Store selected emails for modal (for debug button)
-    setSelectedEmailsForModal(selectedEmails)
-
     // Parse emails
-    await parseEmails(selectedEmails)
+    const resp = await parseEmails(selectedEmails)
 
-    // Open preview modal
-    setIsPreviewModalOpen(true)
+    // Filtrer les leads invalides (manque champs critiques) et marquer les doublons
+    const baseLeads = resp?.enrichedLeads || []
+    const validOrPartial = baseLeads.filter(l => l.validationStatus !== 'invalid')
+
+    // Vérifier les doublons via IPC (nom + prénom + date de naissance)
+    const items = validOrPartial.map(l => ({
+      lastName: l.parsedData.subscriber?.lastName?.value,
+      firstName: l.parsedData.subscriber?.firstName?.value,
+      birthDate: l.parsedData.subscriber?.birthDate?.value,
+      email: l.parsedData.subscriber?.email?.value,
+      telephone: l.parsedData.subscriber?.telephone?.value
+    }))
+
+    try {
+      const dupRes = await window.api.leads.checkDuplicatesBatch(items)
+      if (dupRes.success && dupRes.data) {
+        const mapped: EnrichedLeadData[] = validOrPartial.map((lead, idx) => ({
+          ...lead,
+          duplicate: {
+            isDuplicate: dupRes.data!.results[idx]?.isDuplicate || false,
+            reasons: dupRes.data!.results[idx]?.reasons || []
+          }
+        }))
+        setPreviewLeads(mapped)
+        // Pré-sélectionner les leads complets
+        selection.selectAll()
+      } else {
+        setPreviewLeads(validOrPartial)
+        selection.selectAll()
+      }
+    } catch (e) {
+      setPreviewLeads(validOrPartial)
+      selection.selectAll()
+    }
   }
 
-  const handleConfirmCreation = async (selectedLeads: any[]) => {
-    // Create leads
+  const handleConfirmCreation = async () => {
+    const selectedLeads = selection.getSelectedLeads()
+    if (selectedLeads.length === 0) return
     await createLeads(selectedLeads)
 
-    // Close modal
-    setIsPreviewModalOpen(false)
-
-    // Reset selection
+    // Reset selection mails + preview + état parsing
     setSelectedEmailIds([])
-
-    // Reset email to lead state
+    setPreviewLeads([])
+    selection.deselectAll()
     resetEmailToLead()
 
-    // Refresh emails list (optional)
-    // onRefresh()
+    // Callback parent pour rafraîchir la liste et fermer le panel
+    onCreated && onCreated()
   }
 
-  const handleClosePreviewModal = () => {
-    setIsPreviewModalOpen(false)
+  const handleEdit = (lead: EnrichedLeadData) => {
+    setEditingLead(lead)
+    setShowEditModal(true)
+  }
+
+  const handleEditClose = () => {
+    setShowEditModal(false)
+    setEditingLead(null)
+  }
+
+  const handleEditSuccess = () => {
+    handleEditClose()
+    toast.success('Modifications enregistrées')
+  }
+
+  const applyLocalEdits = (updated: { cleanLead: any; formValues: Record<string, any> }) => {
+    if (!editingLead) return
+    const { cleanLead } = updated
+    // Utiliser platformData (flat form) pour la preview
+    const newFormData = cleanLead.platformData || {}
+
+    // Recalculer la complétude minimale (critique) côté UI
+    const has = (k: string) => {
+      const v = newFormData[k]
+      return v !== undefined && v !== null && String(v).trim() !== ''
+    }
+    const critical = ['subscriber.lastName','subscriber.firstName','subscriber.telephone']
+    const important = ['subscriber.civility','subscriber.birthDate','subscriber.postalCode','subscriber.regime','project.dateEffet']
+    const missingCritical = critical.filter(k => !has(k))
+    const missingImportant = important.filter(k => !has(k))
+
+    const newStatus: 'valid'|'partial'|'invalid' = missingCritical.length > 0 ? 'invalid' : (missingImportant.length > 0 ? 'partial' : 'valid')
+    const newMissing = missingCritical.length > 0 ? missingCritical : missingImportant
+
+    // Mettre à jour un sous-ensemble du parsedData pour l’affichage (nom, ville, CP, date, tel, email)
+    const pd = { ...editingLead.parsedData }
+    pd.subscriber = pd.subscriber || {}
+    const setPF = (obj: any, key: string, value: any) => {
+      if (!value) return
+      obj[key] = { value, confidence: 'high', source: 'inferred' }
+    }
+    setPF(pd.subscriber, 'firstName', newFormData['subscriber.firstName'])
+    setPF(pd.subscriber, 'lastName', newFormData['subscriber.lastName'])
+    setPF(pd.subscriber, 'postalCode', newFormData['subscriber.postalCode'])
+    setPF(pd.subscriber, 'city', newFormData['subscriber.city'])
+    setPF(pd.subscriber, 'birthDate', newFormData['subscriber.birthDate'])
+    setPF(pd.subscriber, 'telephone', newFormData['subscriber.telephone'])
+    setPF(pd.subscriber, 'email', newFormData['subscriber.email'])
+
+    const updatedLead: EnrichedLeadData = {
+      ...editingLead,
+      parsedData: pd,
+      formData: newFormData,
+      validationStatus: newStatus,
+      missingRequiredFields: newMissing.map((f) => {
+        // Libellés comme côté main pour l’UI
+        const labels: Record<string,string> = {
+          'subscriber.civility': 'Civilité',
+          'subscriber.lastName': 'Nom',
+          'subscriber.firstName': 'Prénom',
+          'subscriber.birthDate': 'Date de naissance',
+          'subscriber.telephone': 'Téléphone',
+          'subscriber.postalCode': 'Code postal',
+          'subscriber.regime': 'Régime',
+          'project.dateEffet': "Date d'effet"
+        }
+        return labels[f] || f
+      })
+    }
+
+    setPreviewLeads(prev => prev.map(l =>
+      l.parsedData.metadata.sourceEmailId === editingLead.parsedData.metadata.sourceEmailId ? updatedLead : l
+    ))
+    handleEditSuccess()
+  }
+
+  const handleClosePreview = () => {
+    setPreviewLeads([])
     resetEmailToLead()
   }
 
@@ -252,7 +368,7 @@ export function EmailImportView({
       </div>
 
       {/* Action bar sticky (si sélection) */}
-      {selectedEmailIds.length > 0 && (
+      {selectedEmailIds.length > 0 && previewLeads.length === 0 && (
         <div className="sticky bottom-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
@@ -292,15 +408,75 @@ export function EmailImportView({
         </div>
       )}
 
-      {/* Lead Conversion Modal */}
-      <LeadConversionModal
-        isOpen={isPreviewModalOpen}
-        leads={enrichedLeads}
-        emails={selectedEmailsForModal}
-        isCreating={isCreating}
-        onClose={handleClosePreviewModal}
-        onCreate={handleConfirmCreation}
-      />
+      {/* Preview inline de conversion (sans modal) */}
+      {previewLeads.length > 0 && (
+        <div className="border-t border-gray-200 dark:border-gray-700">
+          <LeadSelectionHeader
+            totalCount={selection.totalCount}
+            selectedCount={selection.selectedCount}
+            completeCount={selection.completeCount}
+            onSelectAll={selection.selectAll}
+            onDeselectAll={selection.deselectAll}
+            leads={previewLeads}
+            emails={[]}
+          />
+
+          <LeadPreviewList
+            leads={previewLeads}
+            isSelected={selection.isSelected}
+            isComplete={selection.isComplete}
+            onToggle={selection.toggle}
+            onEdit={handleEdit}
+          />
+
+          <div className="flex items-center justify-end gap-3 p-4">
+            <button
+              type="button"
+              onClick={handleClosePreview}
+              disabled={isCreating}
+              className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              Annuler
+            </button>
+            <button
+              type="button"
+              onClick={handleConfirmCreation}
+              disabled={isCreating || selection.selectedCount === 0}
+              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+            >
+              {isCreating ? (
+                <>
+                  <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
+                  Création en cours...
+                </>
+              ) : (
+                <>Créer {selection.selectedCount} lead{selection.selectedCount > 1 ? 's' : ''}</>
+              )}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Modal d'édition/création pour compléter un lead partiel */}
+      {editingLead && (
+        <LeadModal
+          mode="edit"
+          submitBehavior="local"
+          submitLabelOverride="Enregistrer"
+          onLocalSubmit={applyLocalEdits}
+          lead={{
+            id: editingLead.parsedData.metadata.sourceEmailId,
+            data: {
+              platformData: editingLead.formData
+            },
+            metadata: editingLead.metadata,
+            createdAt: new Date().toISOString()
+          }}
+          isOpen={showEditModal}
+          onClose={handleEditClose}
+          onSuccess={handleEditSuccess}
+        />
+      )}
     </div>
   )
 }

@@ -14,12 +14,12 @@ interface EmailDateRangePickerProps {
 }
 
 const PRESET_OPTIONS = [
+  { label: '24h', value: 1 },
   { label: '7 jours', value: 7 },
   { label: '15 jours', value: 15 },
   { label: '30 jours', value: 30 },
   { label: '60 jours', value: 60 },
-  { label: '90 jours', value: 90 },
-  { label: '1 an', value: 365 }
+  { label: '90 jours', value: 90 }
 ]
 
 export function EmailDateRangePicker({

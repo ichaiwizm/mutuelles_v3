@@ -72,7 +72,9 @@ contextBridge.exposeInMainWorld('api', {
     stats: () => ipcRenderer.invoke('leads:stats') as Promise<{ success: boolean; data?: any; error?: string }>,
     search: (query: string) => ipcRenderer.invoke('leads:search', query) as Promise<{ success: boolean; data?: any; error?: string }>,
     deleteMany: (ids: string[]) => ipcRenderer.invoke('leads:deleteMany', ids) as Promise<{ success: boolean; data?: any; error?: string }>,
-    createBulk: (data: { leads: Array<{ formData: Record<string, any>; metadata: Record<string, any> }> }) => ipcRenderer.invoke('leads:createBulk', data) as Promise<{ success: boolean; data?: any; error?: string }>
+    createBulk: (data: { leads: Array<{ formData: Record<string, any>; metadata: Record<string, any> }> }) => ipcRenderer.invoke('leads:createBulk', data) as Promise<{ success: boolean; data?: any; error?: string }>,
+    checkDuplicatesBatch: (items: Array<{ lastName?: string; firstName?: string; birthDate?: string; email?: string; telephone?: string }>) =>
+      ipcRenderer.invoke('leads:checkDuplicatesBatch', { items }) as Promise<{ success: boolean; data?: { results: Array<{ index:number; isDuplicate:boolean; reasons:string[] }> }; error?: string }>
   },
   email: {
     startAuth: () => ipcRenderer.invoke('email:startAuth') as Promise<{ success: boolean; data?: any; error?: string }>,

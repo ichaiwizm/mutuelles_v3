@@ -15,9 +15,10 @@ import { SettingsModal } from './SettingsModal'
 interface ImportPanelProps {
   isOpen: boolean
   onClose: () => void
+  onCreated?: () => void
 }
 
-export function ImportPanel({ isOpen, onClose }: ImportPanelProps) {
+export function ImportPanel({ isOpen, onClose, onCreated }: ImportPanelProps) {
   const {
     authStatus,
     emailConfig,
@@ -59,6 +60,24 @@ export function ImportPanel({ isOpen, onClose }: ImportPanelProps) {
       }
     }
   }, [isOpen])
+
+  // Persister la période de récupération dans localStorage pour usage global (sans ouvrir les paramètres)
+  useEffect(() => {
+    const key = 'email_import_days'
+    // Charger au premier rendu
+    const saved = localStorage.getItem(key)
+    if (saved) {
+      const days = parseInt(saved, 10)
+      if ([1, 7, 15, 30, 60, 90].includes(days)) {
+        setSelectedDays(days)
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+    const key = 'email_import_days'
+    localStorage.setItem(key, String(selectedDays))
+  }, [selectedDays])
 
   // Handler pour récupérer les leads
   const handleFetchLeads = async () => {
@@ -171,6 +190,9 @@ export function ImportPanel({ isOpen, onClose }: ImportPanelProps) {
               cacheTimestamp={cacheTimestamp}
               onStartAuth={startAuth}
               onRefresh={handleFetchLeads}
+              onCreated={() => {
+                onCreated && onCreated()
+              }}
             />
           </div>
         </div>

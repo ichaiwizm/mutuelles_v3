@@ -3,7 +3,7 @@
  * Architecture modulaire avec composants réutilisables
  */
 
-export { LeadConversionModal } from './LeadConversionModal'
+// LeadConversionModal supprimé (preview inline)
 export { LeadPreviewList } from './LeadPreviewList'
 export { LeadPreviewCard } from './LeadPreviewCard'
 export { LeadSelectionHeader } from './LeadSelectionHeader'

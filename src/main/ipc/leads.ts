@@ -261,6 +261,37 @@ export function registerLeadsIPC() {
     }
   })
 
+  // Vérification de doublons pour une liste de prospects (batch)
+  ipcMain.handle('leads:checkDuplicatesBatch', async (_, payload: {
+    items: Array<{ lastName?: string; firstName?: string; birthDate?: string; email?: string; telephone?: string }>
+  }) => {
+    try {
+      if (!payload || !Array.isArray(payload.items)) {
+        throw new Error('Format invalide')
+      }
+
+      const results: Array<{ index: number; isDuplicate: boolean; reasons: string[] }> = []
+
+      let idx = 0
+      for (const item of payload.items) {
+        const dups = await getLeadsService().checkForDuplicates({
+          lastName: item.lastName,
+          firstName: item.firstName,
+          birthDate: item.birthDate,
+          email: item.email,
+          telephone: item.telephone
+        })
+        results.push({ index: idx, isDuplicate: dups.length > 0, reasons: dups.flatMap(d => d.reasons) })
+        idx++
+      }
+
+      return { success: true, data: { results } }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Erreur inconnue'
+      return { success: false, error: message }
+    }
+  })
+
   ipcMain.handle('leads:createBulk', async (_, data: { leads: Array<{ formData: Record<string, any>; metadata: Record<string, any> }> }) => {
     try {
       const leads = data.leads

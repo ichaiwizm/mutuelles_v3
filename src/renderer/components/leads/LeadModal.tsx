@@ -7,6 +7,7 @@ import { useFormSchema } from '@renderer/hooks/useFormSchema'
 import { useLeadForm } from '@renderer/hooks/useLeadForm'
 import { useToastContext } from '@renderer/contexts/ToastContext'
 import type { Lead } from '@shared/types/leads'
+import { transformToCleanLead } from '@renderer/utils/formDataTransformer'
 
 export interface LeadModalProps {
   mode: 'create' | 'view' | 'edit'
@@ -14,6 +15,9 @@ export interface LeadModalProps {
   isOpen: boolean
   onClose: () => void
   onSuccess: () => void
+  submitBehavior?: 'db' | 'local'
+  submitLabelOverride?: string
+  onLocalSubmit?: (payload: { cleanLead: any; formValues: Record<string, any> }) => void
 }
 
 export default function LeadModal({
@@ -21,7 +25,10 @@ export default function LeadModal({
   lead,
   isOpen,
   onClose,
-  onSuccess
+  onSuccess,
+  submitBehavior = 'db',
+  submitLabelOverride,
+  onLocalSubmit
 }: LeadModalProps) {
   const { schema, loading: schemaLoading, error: schemaError } = useFormSchema()
   const toast = useToastContext()
@@ -107,6 +114,11 @@ export default function LeadModal({
 
   // Determine if fields should be disabled (view mode only)
   const fieldsDisabled = currentMode === 'view'
+
+  const handleLocalSave = () => {
+    const cleanLead = transformToCleanLead(leadForm.formState.values)
+    onLocalSubmit?.({ cleanLead, formValues: leadForm.formState.values })
+  }
 
   if (schemaLoading) {
     return (
@@ -235,13 +247,15 @@ export default function LeadModal({
           </button>
           {currentMode !== 'view' && (
             <button
-              onClick={leadForm.handleSubmit}
+              onClick={submitBehavior === 'local' ? handleLocalSave : leadForm.handleSubmit}
               disabled={leadForm.formState.isSubmitting}
               className="px-4 py-2 text-sm font-medium text-white bg-blue-600 dark:bg-blue-500 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              {leadForm.formState.isSubmitting
-                ? (currentMode === 'create' ? 'Création...' : 'Modification...')
-                : (currentMode === 'create' ? 'Créer le lead' : 'Sauvegarder les modifications')}
+              {submitBehavior === 'local'
+                ? (submitLabelOverride || 'Enregistrer')
+                : (leadForm.formState.isSubmitting
+                    ? (currentMode === 'create' ? 'Création...' : 'Modification...')
+                    : (currentMode === 'create' ? 'Créer le lead' : 'Sauvegarder les modifications'))}
             </button>
           )}
         </div>

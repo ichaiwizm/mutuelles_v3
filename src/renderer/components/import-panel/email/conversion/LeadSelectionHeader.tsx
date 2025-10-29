@@ -1,4 +1,4 @@
-import type { EnrichedLeadData } from '@renderer/hooks/useEmailToLead'
+import type { EnrichedLeadData } from '../../../../../shared/types/emailParsing'
 import type { EmailMessage } from '../../../../../shared/types/email'
 
 interface LeadSelectionHeaderProps {

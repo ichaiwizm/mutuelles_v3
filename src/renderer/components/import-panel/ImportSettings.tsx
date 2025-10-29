@@ -38,21 +38,7 @@ export function ImportSettings({
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [analyzeProgress, setAnalyzeProgress] = useState('')
 
-  // Charger la période depuis localStorage au démarrage
-  useEffect(() => {
-    const savedDays = localStorage.getItem(STORAGE_KEY_DAYS)
-    if (savedDays) {
-      const days = parseInt(savedDays, 10)
-      if ([7, 30, 60].includes(days)) {
-        onDaysChange(days)
-      }
-    }
-  }, [])
-
-  // Sauvegarder la période dans localStorage quand elle change
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY_DAYS, selectedDays.toString())
-  }, [selectedDays])
+  // Persistance centralisée dans ImportPanel (suppression ici)
 
   useEffect(() => {
     if (emailConfigId) {

@@ -23,6 +23,9 @@ export default function Leads() {
 
   const [showImportPanel, setShowImportPanel] = useState(false)
 
+  // Sélection pour suppression multiple
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+
   const toast = useToastContext()
 
   const loadStats = useCallback(async () => {
@@ -115,6 +118,44 @@ export default function Leads() {
     setConfirmDelete(null)
   }
 
+  const toggleLeadSelection = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === leads.length) {
+      setSelectedIds(new Set())
+    } else {
+      setSelectedIds(new Set(leads.map(l => l.id)))
+    }
+  }
+
+  const clearSelection = () => setSelectedIds(new Set())
+
+  const handleDeleteSelected = async () => {
+    if (selectedIds.size === 0) return
+    if (!confirm(`Supprimer ${selectedIds.size} lead(s) ?`)) return
+    const toastId = toast.loading('Suppression des leads...')
+    try {
+      const result = await window.api.leads.deleteMany(Array.from(selectedIds))
+      if (result.success) {
+        toast.update(toastId, { type: 'success', title: 'Suppression effectuée' })
+        clearSelection()
+        loadLeads()
+        loadStats()
+      } else {
+        throw new Error(result.error)
+      }
+    } catch (error) {
+      toast.update(toastId, { type: 'error', title: 'Erreur suppression', message: String(error) })
+    }
+  }
+
   const handleFiltersChange = (newFilters: LeadFilters) => {
     setFilters(newFilters)
     setPagination(prev => ({ ...prev, page: 1 }))
@@ -188,6 +229,10 @@ export default function Leads() {
         onViewLead={handleViewLead}
         onEditLead={handleEditLead}
         onDeleteLead={handleDeleteLead}
+        selectedIds={selectedIds}
+        onToggleLead={toggleLeadSelection}
+        onToggleAll={toggleSelectAll}
+        onDeleteSelected={handleDeleteSelected}
       />
 
       <ConfirmModal
@@ -219,6 +264,11 @@ export default function Leads() {
       <ImportPanel
         isOpen={showImportPanel}
         onClose={() => setShowImportPanel(false)}
+        onCreated={() => {
+          setShowImportPanel(false)
+          loadLeads()
+          loadStats()
+        }}
       />
     </section>
   )

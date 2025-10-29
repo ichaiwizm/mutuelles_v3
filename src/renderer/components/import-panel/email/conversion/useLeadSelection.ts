@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo } from 'react'
-import type { EnrichedLeadData } from '@renderer/hooks/useEmailToLead'
+import type { EnrichedLeadData } from '../../../../../shared/types/emailParsing'
 
 /**
  * Hook pour gérer la sélection des leads dans la preview

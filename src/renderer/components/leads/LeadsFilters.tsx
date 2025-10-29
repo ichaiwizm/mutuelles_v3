@@ -17,13 +17,6 @@ export default function LeadsFilters({ filters, onFiltersChange, onReset }: Lead
     value !== undefined && value !== '' && value !== null
   )
 
-
-  const providerOptions = [
-    { value: 'assurprospect', label: 'AssurProspect' },
-    { value: 'assurlead', label: 'Assurlead' },
-    { value: 'generic', label: 'Générique' }
-  ]
-
   return (
     <div className="space-y-4">
       <div className="flex gap-3">
@@ -47,25 +40,6 @@ export default function LeadsFilters({ filters, onFiltersChange, onReset }: Lead
             Reset
           </button>
         )}
-      </div>
-
-      <div className="flex items-center gap-2">
-        <span className="text-sm text-neutral-600 dark:text-neutral-400">Provider:</span>
-        <div className="flex gap-1">
-          {providerOptions.map((option) => (
-            <button
-              key={option.value}
-              onClick={() => updateFilter('provider', filters.provider === option.value ? undefined : option.value)}
-              className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
-                filters.provider === option.value
-                  ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300'
-                  : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-700'
-              }`}
-            >
-              {option.label}
-            </button>
-          ))}
-        </div>
       </div>
     </div>
   )
