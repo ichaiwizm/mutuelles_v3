@@ -19,19 +19,37 @@ export class LeadTransformer {
       this.transformSubscriber(parsedData.subscriber, formData)
     }
 
-    // Transform spouse
-    if (parsedData.spouse && Object.keys(parsedData.spouse).length > 0) {
+    // Transform spouse - check if spouse object exists and has fields (even if empty)
+    // We preserve spouse data if the object has any fields, regardless of whether values are populated
+    // This allows DataEnricher to add defaults to detected but partially empty spouse objects
+    const hasSpouseData = parsedData.spouse && (
+      this.hasAnyFieldValue(parsedData.spouse) ||
+      this.hasAnyFields(parsedData.spouse)
+    )
+    if (hasSpouseData) {
       formData.conjoint = true
       this.transformSpouse(parsedData.spouse, formData)
     } else {
       formData.conjoint = false
     }
 
-    // Transform children
-    if (parsedData.children && parsedData.children.length > 0) {
+    // Transform children - check if has at least one child with fields (even if empty)
+    // We preserve children if they have any fields, regardless of whether values are populated
+    const hasChildrenData =
+      parsedData.children &&
+      parsedData.children.length > 0 &&
+      parsedData.children.some((child) =>
+        this.hasAnyFieldValue(child) || this.hasAnyFields(child)
+      )
+
+    if (hasChildrenData) {
       formData.enfants = true
-      formData['children.count'] = parsedData.children.length
-      this.transformChildren(parsedData.children, formData)
+      // Filter children to those with fields (either with values or empty fields)
+      const childrenWithData = parsedData.children.filter((child) =>
+        this.hasAnyFieldValue(child) || this.hasAnyFields(child)
+      )
+      formData['children.count'] = childrenWithData.length
+      this.transformChildren(childrenWithData, formData)
     } else {
       formData.enfants = false
       formData['children.count'] = 0
@@ -183,6 +201,44 @@ export class LeadTransformer {
   private static extractValue<T>(field: ParsedField<T> | undefined): T | null {
     if (!field) return null
     return field.value
+  }
+
+  /**
+   * Check if an object has at least one field with a non-null value
+   * Used to determine if spouse/children data is meaningful
+   */
+  private static hasAnyFieldValue(obj: any): boolean {
+    if (!obj || typeof obj !== 'object') return false
+
+    for (const value of Object.values(obj)) {
+      if (value && typeof value === 'object' && 'value' in value) {
+        const fieldValue = value.value
+        if (fieldValue !== null && fieldValue !== undefined && fieldValue !== '') {
+          return true
+        }
+      }
+    }
+
+    return false
+  }
+
+  /**
+   * Check if an object has any ParsedField fields (regardless of value)
+   * This is more lenient than hasAnyFieldValue and detects objects that have been
+   * created by parsers even if all field values are empty.
+   * Used to preserve detected spouse/children for enrichment.
+   */
+  private static hasAnyFields(obj: any): boolean {
+    if (!obj || typeof obj !== 'object') return false
+
+    // Check if object has any keys that look like ParsedField objects
+    for (const value of Object.values(obj)) {
+      if (value && typeof value === 'object' && 'value' in value && 'confidence' in value) {
+        return true // Found at least one ParsedField structure
+      }
+    }
+
+    return false
   }
 
   /**

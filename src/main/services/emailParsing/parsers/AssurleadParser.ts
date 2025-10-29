@@ -21,26 +21,70 @@ export class AssurleadParser extends BaseEmailParser {
 
   /**
    * Detect if email is from Assurlead/Assurland
+   * Uses scoring system to be more lenient - accepts if score >= 2
    */
   canParse(email: EmailMessage): boolean {
     const content = (email.content + ' ' + email.subject + ' ' + email.from).toLowerCase()
 
-    // Level 1: Domain detection
+    let score = 0
+    const scoreDetails: string[] = []
+
+    // Level 1: Domain detection (strongest signal) - 3 points
     const hasDomain = content.includes('assurlead') || content.includes('assurland')
+    if (hasDomain) {
+      score += 3
+      scoreDetails.push('domain(+3)')
+    }
 
-    // Level 2: Tabular structure
+    // Level 2: Tabular structure - 2 points
     const hasTableStructure = FieldExtractor.detectTabularStructure(email.content)
+    if (hasTableStructure) {
+      score += 2
+      scoreDetails.push('table(+2)')
+    }
 
-    // Level 3: Specific markers
+    // Level 3: Specific markers - 1 point
     const hasMarkers =
       content.includes('user_id') || content.includes('besoin assurance') || content.includes('devis')
+    if (hasMarkers) {
+      score += 1
+      scoreDetails.push('markers(+1)')
+    }
 
-    // Level 4: Basic markers (civilite + tel/cp + profession)
-    const hasBasicFields =
-      content.includes('civilit') && (content.includes('tel') || content.includes('postal')) && content.includes('profession')
+    // Level 4: Individual field detection (more granular) - max 2.5 points
+    if (content.includes('civilit')) {
+      score += 0.5
+      scoreDetails.push('civilite(+0.5)')
+    }
+    if (content.includes('tel') || content.includes('telephone') || content.includes('mobile')) {
+      score += 0.5
+      scoreDetails.push('phone(+0.5)')
+    }
+    if (content.includes('postal') || content.includes('code postal') || content.includes('cp')) {
+      score += 0.5
+      scoreDetails.push('postal(+0.5)')
+    }
+    if (content.includes('profession') || content.includes('metier') || content.includes('activit')) {
+      score += 0.5
+      scoreDetails.push('profession(+0.5)')
+    }
+    if (content.includes('nom') && content.includes('pr')) { // prenom or prénom
+      score += 0.5
+      scoreDetails.push('name(+0.5)')
+    }
 
-    // Need domain OR (table structure AND markers) OR all basic fields
-    return hasDomain || (hasTableStructure && hasMarkers) || hasBasicFields
+    const canParse = score >= 1.5
+    console.log(
+      `[AssurleadParser] canParse(${email.id.substring(0, 8)}): score=${score.toFixed(1)}, details=[${scoreDetails.join(', ')}], result=${canParse}`
+    )
+
+    // Accept if score >= 1.5
+    // Examples of valid combinations:
+    // - Domain alone (3 >= 1.5) ✅
+    // - Table structure alone (2 >= 1.5) ✅
+    // - 3+ individual fields (0.5*3 = 1.5 >= 1.5) ✅
+    // - Markers + 1 field (1 + 0.5 = 1.5 >= 1.5) ✅
+    return canParse
   }
 
   /**
@@ -85,18 +129,17 @@ export class AssurleadParser extends BaseEmailParser {
         parsedData.project = projectInfo
       }
 
-      // Detect spouse and children
+      // Detect spouse and children (enhanced detection, but always try to extract)
       const family = this.detectSpouseAndChildren(content)
-      if (family.hasSpouse) {
-        const spouse = this.extractSpouseInfo(content, isTabular)
-        if (spouse && Object.keys(spouse).length > 0) {
-          parsedData.spouse = spouse
-        }
-      }
-      if (family.childrenCount > 0) {
-        const children = this.extractChildrenInfo(content, family.childrenCount)
-        if (children.length > 0) parsedData.children = children
-      }
+
+      // ALWAYS try to extract spouse - don't rely solely on detection
+      const spouse = this.extractSpouseInfo(content, isTabular)
+      parsedData.spouse = spouse // Always add, even if empty
+
+      // ALWAYS try to extract children - use detected count or try up to 5
+      const childrenCount = family.childrenCount > 0 ? family.childrenCount : 5
+      const children = this.extractChildrenInfo(content, childrenCount)
+      parsedData.children = children // Always add, even if empty array
 
       // Update metadata
       parsedData.metadata = this.buildMetadata(email, parsedData.subscriber)
@@ -129,8 +172,10 @@ export class AssurleadParser extends BaseEmailParser {
       firstName: ['pr[ée]nom', 'firstname'],
       birthDate: ['date de naissance', 'n[ée] le', 'birth'],
       email: ['e-?mail', 'courriel'],
-      telephone: ['t[ée]l[ée]phone', 'portable', 'tel', 'mobile'],
-      address: ['adresse', 'address', 'rue'],
+      // Accept compound labels like "Téléphone portable" by listing both variants
+      telephone: ['t[ée]l[ée]phone\\s*portable', 't[ée]l[ée]phone', 'portable', 'tel', 'mobile'],
+      // Assurland often encodes street in a technical field "v4"
+      address: ['adresse', 'address', 'rue', 'v4'],
       postalCode: ['code postal', 'cp'],
       city: ['ville', 'city'],
       profession: ['profession', 'm[ée]tier', 'activit[ée]'],
@@ -266,7 +311,8 @@ export class AssurleadParser extends BaseEmailParser {
         firstName: 'pr[ée]nom\\s+conjoint',
         birthDate: 'date\\s+naissance\\s+conjoint',
         regime: 'r[ée]gime\\s+conjoint',
-        status: 'statut\\s+conjoint'
+        status: 'statut\\s+conjoint',
+        profession: 'profession\\s+conjoint'
       }
 
       for (const [fieldName, pattern] of Object.entries(spouseFields)) {
@@ -281,16 +327,40 @@ export class AssurleadParser extends BaseEmailParser {
         }
       }
     } else {
-      // Look for spouse-specific sections
-      const spouseSection = content.match(/Conjoint\s*:([^\n]*\n){1,10}/i)
-      const spouseContent = spouseSection ? spouseSection[0] : ''
+      // Look for spouse-specific sections with flexible separators (: or - or newline)
+      // Handles: "Conjoint:", "Conjoint-", "*Conjoint*", "Époux/Épouse:"
+      const spouseSection = content.match(/\*?Conjoint\*?\s*[\-:\n]([^\n]*\n){1,10}/i)
+      let spouseContent = spouseSection ? spouseSection[0] : ''
+
+      // Fallback: Try to extract inline spouse data if no multi-line section found
+      if (!spouseContent) {
+        const inlineMatch = content.match(/\*?Conjoint\*?\s*[\-:\n]\s*([^\n]+)/i)
+        if (inlineMatch) {
+          spouseContent = inlineMatch[0]
+        }
+      }
+
+      // Additional fallback: Look for spouse keywords
+      if (!spouseContent) {
+        const spouseKeywordSection = content.match(/[ÉéE]pou[sx]e?\s*[-:]([^\n]*\n){1,10}/i)
+        if (spouseKeywordSection) {
+          spouseContent = spouseKeywordSection[0]
+        }
+      }
 
       if (spouseContent) {
+        // Extract identity
         const identity = FieldExtractor.extractIdentity(spouseContent)
         if (identity.civility.value) spouse.civility = this.createParsedField(identity.civility)
         if (identity.lastName.value) spouse.lastName = this.createParsedField(identity.lastName)
         if (identity.firstName.value) spouse.firstName = this.createParsedField(identity.firstName)
         if (identity.birthDate.value) spouse.birthDate = this.createParsedField(identity.birthDate)
+
+        // Extract professional info
+        const professional = FieldExtractor.extractProfessionalInfo(spouseContent)
+        if (professional.regime.value) spouse.regime = this.createParsedField(professional.regime)
+        if (professional.status.value) spouse.status = this.createParsedField(professional.status)
+        if (professional.profession.value) spouse.profession = this.createParsedField(professional.profession)
       }
     }
 
@@ -329,7 +399,46 @@ export class AssurleadParser extends BaseEmailParser {
           }
         }
 
+        // Try to get regime
+        const regime = FieldExtractor.extractFromTable(content, `enfant\\s*${i}.*r[ée]gime`)
+        if (regime.value) {
+          child.regime = {
+            value: regime.value,
+            confidence: regime.confidence,
+            source: regime.source
+          }
+        }
+
         children.push(child)
+      }
+    }
+
+    // Fallback: Try explicit pattern "Date de naissance [du] 1er/2ème enfant : DD/MM/YYYY"
+    // Made "du" optional to support variations like "Date de naissance 1er enfant"
+    // Handles asterisks: "*Date de naissance du 1er enfant :* DD/MM/YYYY"
+    const childDateRegex = /\*?Date de naissance\s+(?:du\s+)?(\d+)(?:er|e|ème)?\s*enfant\s*\*?\s*:?\s*\*?\s*(\d{2}[-\/]\d{2}[-\/]\d{4})/gi
+    let m: RegExpExecArray | null
+    while ((m = childDateRegex.exec(content)) !== null) {
+      const childIndex = parseInt(m[1]) - 1
+      // Avoid duplicates - check if child at this index already exists with birthdate
+      if (!children[childIndex] || !children[childIndex].birthDate) {
+        if (childIndex < children.length && !children[childIndex].birthDate) {
+          children[childIndex].birthDate = {
+            value: m[2].replace(/-/g, '/'),
+            confidence: 'high',
+            source: 'parsed',
+            originalText: m[0]
+          }
+        } else {
+          children.push({
+            birthDate: {
+              value: m[2].replace(/-/g, '/'),
+              confidence: 'high',
+              source: 'parsed',
+              originalText: m[0]
+            }
+          })
+        }
       }
     }
 
@@ -338,14 +447,29 @@ export class AssurleadParser extends BaseEmailParser {
 
   /**
    * Isolate core Assurlead block to avoid signatures/disclaimers
+   * IMPORTANT: Preserves spouse and children sections which may appear late in email
    */
   private extractMainBlock(raw: string): string {
     if (!raw) return ''
     const lower = raw.toLowerCase()
 
     // Start near first field label
-    const startIdx =
-      lower.search(/\b(civilit|nom|pr[ée]nom|user_id|code postal|ville|telephone|t[ée]l)/i) || 0
+    // IMPORTANT: String.search() returns -1 when not found, and -1 is truthy.
+    // Avoid using "|| 0" which would keep -1 and slice from the end.
+    const firstFieldRegex = /\b(civilit[ée]?|nom|pr[ée]nom|user_id|code postal|ville|telephone|t[ée]l)/i
+    const found = lower.search(firstFieldRegex)
+    const start = found >= 0 ? found : 0
+
+    // Find the LAST occurrence of family-related sections
+    // These sections must be preserved in the extracted content
+    const familySectionMarkers = ['conjoint', 'époux', 'épouse', 'enfant']
+    let lastFamilySection = -1
+    for (const marker of familySectionMarkers) {
+      const idx = lower.lastIndexOf(marker)
+      if (idx !== -1) {
+        lastFamilySection = Math.max(lastFamilySection, idx)
+      }
+    }
 
     const endCandidates = [
       'le pôle commercial',
@@ -359,9 +483,14 @@ export class AssurleadParser extends BaseEmailParser {
     let end = raw.length
     for (const m of endCandidates) {
       const idx = lower.indexOf(m)
-      if (idx !== -1 && idx > startIdx) end = Math.min(end, idx)
+      // Only use end marker if it comes AFTER all family sections
+      // This prevents truncating spouse/children data
+      if (idx !== -1 && idx > start && idx > lastFamilySection) {
+        end = Math.min(end, idx)
+      }
     }
 
-    return raw.slice(startIdx, end)
+    const sliced = raw.slice(start, end)
+    return sliced || raw
   }
 }

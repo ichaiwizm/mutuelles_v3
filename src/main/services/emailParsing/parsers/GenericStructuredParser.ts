@@ -99,14 +99,15 @@ export class GenericStructuredParser extends BaseEmailParser {
         parsedData.project = projectInfo
       }
 
-      // Detect spouse and children
+      // Detect spouse and children (enhanced detection, but always try to extract)
       const family = this.detectSpouseAndChildren(content)
-      if (family.hasSpouse) {
-        parsedData.spouse = this.extractSpouseInfo(content)
-      }
-      if (family.childrenCount > 0) {
-        parsedData.children = this.extractChildrenInfo(content, family.childrenCount)
-      }
+
+      // ALWAYS try to extract spouse - don't rely solely on detection
+      parsedData.spouse = this.extractSpouseInfo(content) // Always add, even if empty
+
+      // ALWAYS try to extract children - use detected count or try up to 5
+      const childrenCount = family.childrenCount > 0 ? family.childrenCount : 5
+      parsedData.children = this.extractChildrenInfo(content, childrenCount) // Always add, even if empty array
 
       // Add warnings if score is low
       if (score < 3.0) {
@@ -245,31 +246,10 @@ export class GenericStructuredParser extends BaseEmailParser {
       }
     }
 
-    // Fallback: try to extract multiple birth dates
-    if (children.length === 0) {
-      const dateMatches = content.match(/\b\d{2}[-/]\d{2}[-/]\d{4}\b/g)
-      if (dateMatches && dateMatches.length > 1) {
-        // First date is likely subscriber, rest might be children
-        const potentialChildDates = dateMatches.slice(1, Math.min(count + 1, dateMatches.length))
-
-        potentialChildDates.forEach((date) => {
-          // Parse date to check if it's a valid child age (0-26 years)
-          const [day, month, year] = date.split(/[-/]/).map(Number)
-          const birthDate = new Date(year, month - 1, day)
-          const age = (Date.now() - birthDate.getTime()) / (1000 * 60 * 60 * 24 * 365.25)
-
-          if (age >= 0 && age <= 26) {
-            children.push({
-              birthDate: {
-                value: date.replace(/-/g, '/'),
-                confidence: 'low',
-                source: 'inferred'
-              }
-            })
-          }
-        })
-      }
-    }
+    // Fallback date extraction removed - was causing data corruption
+    // It was incorrectly grabbing spouse birthdates and adding them as children
+    // Better to have no children data than incorrect data
+    // If children are truly present, they should be captured by the explicit patterns above
 
     return children
   }

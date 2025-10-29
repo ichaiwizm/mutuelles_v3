@@ -17,6 +17,7 @@ export class TextCleaner {
       .replace(/&gt;/gi, '>')
       .replace(/&quot;/gi, '"')
       .replace(/&apos;/gi, "'")
+      .replace(/&ast;/gi, '*')
       // Accented characters
       .replace(/&eacute;/gi, 'é')
       .replace(/&egrave;/gi, 'è')

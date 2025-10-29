@@ -192,17 +192,65 @@ export abstract class BaseEmailParser implements IEmailParser {
 
   /**
    * Helper: Detect if email contains spouse/children information
+   * Enhanced to detect more patterns and be less restrictive
    */
   protected detectSpouseAndChildren(content: string): {
     hasSpouse: boolean
     childrenCount: number
   } {
+    // Enhanced spouse detection - check multiple patterns
     const hasSpouse =
-      content.match(/conjoint/i) !== null || content.match(/[ée]pou(se|x)/i) !== null
+      content.match(/conjoint/i) !== null ||
+      content.match(/[ée]pou(se|x)/i) !== null ||
+      content.match(/mari[ée]e?/i) !== null ||
+      content.match(/en couple/i) !== null ||
+      content.match(/pacs[ée]e?/i) !== null ||
+      content.match(/vie maritale/i) !== null ||
+      content.match(/situation\s+familiale\s*:?\s*(mari[ée]|en couple|pacs)/i) !== null ||
+      // Check for spouse-specific sections
+      content.match(/\n\s*conjoint\s*\n/i) !== null ||
+      content.match(/<h2><strong>Conjoint<\/strong><\/h2>/i) !== null
 
-    // Try to find children count
+    // Enhanced children count detection
+    let childrenCount = 0
+
+    // Method 1: Explicit count "X enfant(s)"
     const childMatch = content.match(/(\d+)\s+enfants?/i)
-    const childrenCount = childMatch ? parseInt(childMatch[1]) : 0
+    if (childMatch) {
+      childrenCount = parseInt(childMatch[1])
+    }
+
+    // Method 2: "Nombre d'enfants : X"
+    if (childrenCount === 0) {
+      const nombreMatch = content.match(/nombre\s+d['']enfants?\s*:?\s*(\d+)/i)
+      if (nombreMatch) {
+        childrenCount = parseInt(nombreMatch[1])
+      }
+    }
+
+    // Method 3: "Enfants à charge : X"
+    if (childrenCount === 0) {
+      const chargeMatch = content.match(/enfants?\s+[aà]\s+charge\s*:?\s*(\d+)/i)
+      if (chargeMatch) {
+        childrenCount = parseInt(chargeMatch[1])
+      }
+    }
+
+    // Method 4: Count individual child sections "Enfant 1:", "Enfant 2:", etc.
+    if (childrenCount === 0) {
+      const childSections = content.match(/enfant\s+\d+\s*:/gi)
+      if (childSections) {
+        childrenCount = childSections.length
+      }
+    }
+
+    // Method 5: Count "Date de naissance du Xème enfant" patterns
+    if (childrenCount === 0) {
+      const birthDateMatches = content.match(/date\s+de\s+naissance\s+du\s+\d+(?:er|e|[èé]me)?\s+enfant/gi)
+      if (birthDateMatches) {
+        childrenCount = birthDateMatches.length
+      }
+    }
 
     return { hasSpouse, childrenCount }
   }

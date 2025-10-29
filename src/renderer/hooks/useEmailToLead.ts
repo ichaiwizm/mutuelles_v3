@@ -43,7 +43,7 @@ export function useEmailToLead(): UseEmailToLeadResult {
     setEnrichedLeads([])
 
     try {
-      console.log(`[useEmailToLead] Parsing ${emails.length} emails...`)
+      // parsing started
 
       const result = await window.api.email.parseToLeads({ emails })
 
@@ -53,14 +53,12 @@ export function useEmailToLead(): UseEmailToLeadResult {
 
       const response = result.data as EmailToLeadResponse
 
-      console.log(
-        `[useEmailToLead] Parsing complete: ${response.valid} valid, ${response.partial} partial, ${response.invalid} invalid`
-      )
+      // parsing complete
 
       setParseResult(response)
       setEnrichedLeads(response.enrichedLeads)
     } catch (err) {
-      console.error('[useEmailToLead] Parse error:', err)
+      // parse error
       setError(err instanceof Error ? err.message : 'Unknown error')
     } finally {
       setIsParsing(false)
@@ -76,7 +74,7 @@ export function useEmailToLead(): UseEmailToLeadResult {
     setCreateResult(null)
 
     try {
-      console.log(`[useEmailToLead] Creating ${leadsToCreate.length} leads...`)
+      // creating leads
 
       // Prepare leads for bulk creation
       const leadsPayload = leadsToCreate.map((enrichedLead) => ({
@@ -92,22 +90,14 @@ export function useEmailToLead(): UseEmailToLeadResult {
 
       const response = result.data as BulkLeadCreationResponse
 
-      console.log(
-        `[useEmailToLead] Creation complete: ${response.successful} successful, ${response.failed} failed`
-      )
+      // creation complete
 
       setCreateResult(response)
 
       // Show notification
-      if (response.successful > 0) {
-        console.log(`✅ ${response.successful} lead(s) créé(s) avec succès`)
-      }
-
-      if (response.failed > 0) {
-        console.warn(`⚠️ ${response.failed} lead(s) ont échoué`)
-      }
+      // summarize via UI toasts elsewhere if needed
     } catch (err) {
-      console.error('[useEmailToLead] Create error:', err)
+      // create error
       setError(err instanceof Error ? err.message : 'Unknown error')
     } finally {
       setIsCreating(false)

@@ -62,18 +62,17 @@ export class AssurProspectParser extends BaseEmailParser {
         parsedData.project = projectInfo
       }
 
-      // Detect spouse and children
+      // Detect spouse and children (enhanced detection, but always try to extract)
       const family = this.detectSpouseAndChildren(content)
-      if (family.hasSpouse) {
-        const spouse = this.extractSpouseInfo(content)
-        if (spouse && Object.keys(spouse).length > 0) {
-          parsedData.spouse = spouse
-        }
-      }
-      if (family.childrenCount > 0) {
-        const children = this.extractChildrenInfo(content, family.childrenCount)
-        if (children.length > 0) parsedData.children = children
-      }
+
+      // ALWAYS try to extract spouse - don't rely solely on detection
+      const spouse = this.extractSpouseInfo(content)
+      parsedData.spouse = spouse // Always add, even if empty
+
+      // ALWAYS try to extract children - use detected count or try up to 5
+      const childrenCount = family.childrenCount > 0 ? family.childrenCount : 5
+      const children = this.extractChildrenInfo(content, childrenCount)
+      parsedData.children = children // Always add, even if empty array
 
       // Update metadata
       parsedData.metadata = this.buildMetadata(email, parsedData.subscriber)
@@ -152,13 +151,32 @@ export class AssurProspectParser extends BaseEmailParser {
   private extractSpouseInfo(content: string): ParsedLeadData['spouse'] {
     const spouse: ParsedLeadData['spouse'] = {}
 
-    // Look for spouse-specific sections
-    // "Conjoint :" or "Époux/Épouse :"
-    const spouseSection = content.match(/Conjoint\s*:([^\n]*\n){1,10}/i)
-    if (!spouseSection) {
+    // Look for spouse-specific sections with flexible separators (: or - or newline)
+    // Handles: "Conjoint:", "Conjoint-", "*Conjoint*", "Époux/Épouse:"
+    const spouseSection = content.match(/\*?Conjoint\*?\s*[\-:\n]([^\n]*\n){1,10}/i)
+    let spouseContent = spouseSection ? spouseSection[0] : ''
+
+    // Fallback: Try to extract inline spouse data if no multi-line section found
+    if (!spouseContent) {
+      // Look for inline format: "Conjoint - Field: Value" on single line or "*Conjoint*\nField: Value"
+      const inlineMatch = content.match(/\*?Conjoint\*?\s*[\-:\n]\s*([^\n]+)/i)
+      if (inlineMatch) {
+        spouseContent = inlineMatch[0]
+      }
+    }
+
+    // If still no spouse content found, try looking for spouse keywords
+    if (!spouseContent) {
+      const spouseKeywordSection = content.match(/[ÉéE]pou[sx]e?\s*[-:]([^\n]*\n){1,10}/i)
+      if (spouseKeywordSection) {
+        spouseContent = spouseKeywordSection[0]
+      }
+    }
+
+    // If no spouse content at all, return empty
+    if (!spouseContent) {
       return spouse
     }
-    const spouseContent = spouseSection[0]
 
     // Extract basic info
     const identity = FieldExtractor.extractIdentity(spouseContent)
@@ -184,6 +202,9 @@ export class AssurProspectParser extends BaseEmailParser {
     if (professional.status.value) {
       spouse.status = this.createParsedField(professional.status)
     }
+    if (professional.profession.value) {
+      spouse.profession = this.createParsedField(professional.profession)
+    }
 
     return spouse
   }
@@ -194,10 +215,10 @@ export class AssurProspectParser extends BaseEmailParser {
   private extractChildrenInfo(content: string, count: number): ParsedLeadData['children'] {
     const children: ParsedLeadData['children'] = []
 
-    // Look for "Enfant 1 :", "Enfant 2 :", etc.
+    // Look for "Enfant 1 :", "Enfant 2 :", "*Enfants*", etc.
     for (let i = 1; i <= Math.min(count, 5); i++) {
       const childSection = content.match(
-        new RegExp(`Enfant\\s*${i}\\s*:([^\\n]*\\n){1,5}`, 'i')
+        new RegExp(`\\*?Enfant\\s*${i}\\s*\\*?\\s*:([^\\n]*\\n){1,5}`, 'i')
       )
       const childContent = childSection ? childSection[0] : ''
 
@@ -222,46 +243,57 @@ export class AssurProspectParser extends BaseEmailParser {
           }
         }
 
+        // Regime
+        const regime = FieldExtractor.extractRegime(childContent)
+        if (regime.value) {
+          child.regime = this.createParsedField(regime)
+        }
+
         children.push(child)
       }
     }
 
-    // Pattern explicite: "Date de naissance du 1er/2ème enfant : DD/MM/YYYY"
-    const childDateRegex = /Date de naissance du\s*(\d+)(?:er|e|ème)?\s*enfant\s*:?\s*(\d{2}[-\/]\d{2}[-\/]\d{4})/gi
+    // Pattern explicite: "Date de naissance [du] 1er/2ème enfant : DD/MM/YYYY"
+    // Made "du" optional to support variations like "Date de naissance 1er enfant"
+    // Handles asterisks: "*Date de naissance du 1er enfant :* DD/MM/YYYY"
+    const childDateRegex = /\*?Date de naissance\s+(?:du\s+)?(\d+)(?:er|e|ème)?\s*enfant\s*\*?\s*:?\s*\*?\s*(\d{2}[-\/]\d{2}[-\/]\d{4})/gi
     let m: RegExpExecArray | null
     while ((m = childDateRegex.exec(content)) !== null) {
-      children.push({
-        birthDate: {
-          value: m[2].replace(/-/g, '/'),
-          confidence: 'high',
-          source: 'parsed',
-          originalText: m[0]
-        }
-      })
-    }
-
-    // If no individual sections found, try to extract multiple dates
-    if (children.length === 0) {
-      const dateMatches = content.match(/\b\d{2}[-/]\d{2}[-/]\d{4}\b/g)
-      if (dateMatches && dateMatches.length > 1) {
-        // First date is likely subscriber, rest might be children
-        dateMatches.slice(1, Math.min(count + 1, dateMatches.length)).forEach((date) => {
+      const childIndex = parseInt(m[1]) - 1
+      // Avoid duplicates - check if child at this index already exists with birthdate
+      if (!children[childIndex] || !children[childIndex].birthDate) {
+        // Insert at correct position or push
+        if (childIndex < children.length && !children[childIndex].birthDate) {
+          children[childIndex].birthDate = {
+            value: m[2].replace(/-/g, '/'),
+            confidence: 'high',
+            source: 'parsed',
+            originalText: m[0]
+          }
+        } else {
           children.push({
             birthDate: {
-              value: date.replace(/-/g, '/'),
-              confidence: 'low',
-              source: 'inferred'
+              value: m[2].replace(/-/g, '/'),
+              confidence: 'high',
+              source: 'parsed',
+              originalText: m[0]
             }
           })
-        })
+        }
       }
     }
+
+    // Fallback date extraction removed - was causing data corruption
+    // It was incorrectly grabbing spouse birthdates and adding them as children
+    // Better to have no children data than incorrect data
+    // If children are truly present, they should be captured by the explicit patterns above
 
     return children
   }
 
   /**
    * Isolate the core lead block to avoid signatures/disclaimers
+   * IMPORTANT: Preserves spouse and children sections which may appear late in email
    */
   private extractMainBlock(raw: string): string {
     if (!raw) return ''
@@ -269,7 +301,6 @@ export class AssurProspectParser extends BaseEmailParser {
 
     const startMarkers = [
       "transmission d'une fiche",
-      'transmission d’une fiche',
       'voici les éléments de la fiche',
       'voici les elements de la fiche',
       'contact'
@@ -281,6 +312,17 @@ export class AssurProspectParser extends BaseEmailParser {
       if (idx !== -1) {
         start = idx
         break
+      }
+    }
+
+    // Find the LAST occurrence of family-related sections
+    // These sections must be preserved in the extracted content
+    const familySectionMarkers = ['conjoint', 'époux', 'épouse', 'enfant']
+    let lastFamilySection = -1
+    for (const marker of familySectionMarkers) {
+      const idx = lower.lastIndexOf(marker)
+      if (idx !== -1) {
+        lastFamilySection = Math.max(lastFamilySection, idx)
       }
     }
 
@@ -298,7 +340,9 @@ export class AssurProspectParser extends BaseEmailParser {
     let end = raw.length
     for (const m of endMarkers) {
       const idx = lower.indexOf(m)
-      if (idx !== -1 && idx > start) {
+      // Only use end marker if it comes AFTER all family sections
+      // This prevents truncating spouse/children data
+      if (idx !== -1 && idx > start && idx > lastFamilySection) {
         end = Math.min(end, idx)
       }
     }

@@ -63,11 +63,11 @@ function loadEmailsFromCache(): EmailMessage[] {
     const cached = localStorage.getItem(STORAGE_KEY_EMAILS)
     if (cached) {
       const data = JSON.parse(cached) as EmailMessage[]
-      console.log(`[Cache] ${data.length} emails chargés depuis localStorage`)
+      // cache load
       return data
     }
   } catch (err) {
-    console.error('[Cache] Erreur chargement emails:', err)
+    // cache load error
   }
   return []
 }
@@ -82,7 +82,7 @@ function loadCacheTimestamp(): number | null {
       return parseInt(timestamp, 10)
     }
   } catch (err) {
-    console.error('[Cache] Erreur chargement timestamp:', err)
+    // cache timestamp error
   }
   return null
 }
@@ -94,9 +94,9 @@ function saveEmailsToCache(emails: EmailMessage[]): void {
   try {
     localStorage.setItem(STORAGE_KEY_EMAILS, JSON.stringify(emails))
     localStorage.setItem(STORAGE_KEY_TIMESTAMP, Date.now().toString())
-    console.log(`[Cache] ${emails.length} emails sauvegardés dans localStorage`)
+    // cache save
   } catch (err) {
-    console.error('[Cache] Erreur sauvegarde emails:', err)
+    // cache save error
   }
 }
 
@@ -107,9 +107,9 @@ function clearEmailCache(): void {
   try {
     localStorage.removeItem(STORAGE_KEY_EMAILS)
     localStorage.removeItem(STORAGE_KEY_TIMESTAMP)
-    console.log('[Cache] Cache effacé')
+    // cache cleared
   } catch (err) {
-    console.error('[Cache] Erreur effacement cache:', err)
+    // cache clear error
   }
 }
 
@@ -137,7 +137,7 @@ export function useEmailImport(): UseEmailImportReturn {
     if (cachedEmails.length > 0) {
       setEmails(cachedEmails)
       setCacheTimestamp(timestamp)
-      console.log(`[Init] ${cachedEmails.length} emails restaurés depuis le cache`)
+      // init from cache
     }
   }, [])
 
@@ -178,7 +178,7 @@ export function useEmailImport(): UseEmailImportReturn {
         setEmailConfig(result.data.config || null)
       }
     } catch (err) {
-      console.error('Erreur vérification auth status:', err)
+      // auth status error
     }
   }, [])
 

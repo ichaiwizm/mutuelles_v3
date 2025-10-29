@@ -277,13 +277,9 @@ export function registerLeadsIPC() {
         const { formData, metadata } = leads[i]
 
         try {
-          // Import formDataTransformer
-          const { transformToCleanLead } = await import('../../renderer/utils/formDataTransformer')
-
-          // Transform form data to clean lead
+          // Use shared transformer (works in main process)
+          const { transformToCleanLead } = await import('../../shared/utils/leadFormData')
           const cleanLeadData = transformToCleanLead(formData)
-
-          // Create lead
           const lead = await getLeadsService().createCleanLead(cleanLeadData, metadata)
 
           results.push({

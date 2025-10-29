@@ -397,7 +397,15 @@ export class FieldExtractor {
     const hasTableMarkers = content.match(/[\|│]\s*[^\n]+\s*[\|│]/)
     const hasMultipleColumns = content.match(/[A-Za-z]+\s*[:│\|]\s*[^\n]+/)
 
-    return !!(hasTableMarkers || hasMultipleColumns)
+    // Detect asterisk-delimited format: *Field Name* Value
+    const hasAsteriskFormat = content.match(/\*[A-Za-zÀ-ÿ\s]+\*\s+[^\n*]+/i)
+
+    const result = !!(hasTableMarkers || hasMultipleColumns || hasAsteriskFormat)
+    console.log(
+      `[FieldExtractor] detectTabularStructure: pipe=${!!hasTableMarkers}, multi=${!!hasMultipleColumns}, asterisk=${!!hasAsteriskFormat}, result=${result}`
+    )
+
+    return result
   }
 
   /**
@@ -406,8 +414,12 @@ export class FieldExtractor {
   static extractFromTable(content: string, fieldName: string): FieldExtractionResult {
     // Multiline, anchored patterns to avoid capturing inline phrases
     const patterns = [
-      new RegExp(`^\s*\*?${fieldName}\*?\s*[│\|:]\s*([^\n│\|]+)\s*$`, 'im'),
-      new RegExp(`^\s*\*?${fieldName}\*?\s*:\s*([^\n]+)\s*$`, 'im')
+      // Key | Value  OR  Key │ Value
+      new RegExp(`^\\s*${fieldName}\\s*[│\\|:]\\s*([^\\n│\\|]+)\\s*$`, 'im'),
+      // Key: Value
+      new RegExp(`^\\s*${fieldName}\\s*:\\s*([^\\n]+)\\s*$`, 'im'),
+      // *Key* Value (tolerant) — allow asterisks/spaces around key without using literal '*' outside a character class
+      new RegExp(`^\\s*[* ]*${fieldName}[* ]+([^\\n*]+)\\s*$`, 'im')
     ]
 
     for (const pattern of patterns) {

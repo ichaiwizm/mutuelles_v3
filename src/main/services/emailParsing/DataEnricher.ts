@@ -167,9 +167,15 @@ export class DataEnricher {
   ): void {
     if (!spouse) return
 
-    // Do not enrich if spouse has no parsed fields
-    const hasAny = Object.values(spouse).some((v: any) => v && typeof v === 'object' && 'value' in v && v.value)
-    if (!hasAny) return
+    // Check if spouse has any ParsedField structures (even with empty values)
+    // We now enrich if ANY field structure exists, allowing parsers to create
+    // spouse objects with empty fields that will be enriched with defaults
+    const hasAnyFields = Object.values(spouse).some(
+      (v: any) => v && typeof v === 'object' && 'value' in v && 'confidence' in v
+    )
+
+    // Only skip enrichment if spouse is completely empty (no field structures at all)
+    if (!hasAnyFields && Object.keys(spouse).length === 0) return
 
     // Civility - default to MADAME
     if (!spouse.civility || !spouse.civility.value) {

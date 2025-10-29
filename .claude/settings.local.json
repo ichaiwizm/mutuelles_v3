@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Read(//mnt/c/Users/**)"
+      "Read(//mnt/c/Users/**)",
+      "Bash(sqlite3:*)",
+      "Bash(tree:*)"
     ],
     "deny": [],
     "ask": [],

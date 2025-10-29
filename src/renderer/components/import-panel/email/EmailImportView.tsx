@@ -73,7 +73,6 @@ export function EmailImportView({
     if (potentialLeads.length > 0) {
       const allIds = potentialLeads.map((email) => email.id)
       setSelectedEmailIds(allIds)
-      console.log(`[Auto-select] ${allIds.length} emails sélectionnés automatiquement`)
     }
   }, [potentialLeads])
 

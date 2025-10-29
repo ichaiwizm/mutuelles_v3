@@ -83,25 +83,48 @@ export class ParserRegistry {
 
     const parser = this.selectParser(email)
 
-    if (!parser) {
-      return {
-        success: false,
-        emailId: email.id,
-        errors: ['No suitable parser found for this email format'],
-        warnings: ['Email may not contain structured lead data']
+    // Track usage
+    if (parser) {
+      this.stats.parserUsage[parser.name] = (this.stats.parserUsage[parser.name] || 0) + 1
+      this.stats.successRate[parser.name].total++
+    }
+
+    // Parse using selected parser or try fallbacks
+    let result: EmailParsingResult
+    if (parser) {
+      result = parser.parse(email)
+    } else {
+      // Fallback 1: if the subject/content suggests Assurlead, try AssurleadParser explicitly
+      const lc = `${email.subject}\n${email.content}`.toLowerCase()
+      const looksAssurlead = lc.includes('assurlead') || lc.includes('assurland') || lc.includes('opdata@assurland.com')
+      if (looksAssurlead) {
+        const al = new AssurleadParser()
+        result = al.parse(email)
+        if (!this.stats.parserUsage[al.name]) {
+          this.stats.parserUsage[al.name] = 0
+          this.stats.successRate[al.name] = { success: 0, total: 0 }
+        }
+        this.stats.parserUsage[al.name] += 1
+        this.stats.successRate[al.name].total += 1
+      } else {
+        // Fallback 2: force Generic parser as a last resort
+        const generic = new GenericStructuredParser()
+        result = generic.parse(email)
+        if (!this.stats.parserUsage[generic.name]) {
+          this.stats.parserUsage[generic.name] = 0
+          this.stats.successRate[generic.name] = { success: 0, total: 0 }
+        }
+        this.stats.parserUsage[generic.name] += 1
+        this.stats.successRate[generic.name].total += 1
       }
     }
 
-    // Track usage
-    this.stats.parserUsage[parser.name] = (this.stats.parserUsage[parser.name] || 0) + 1
-    this.stats.successRate[parser.name].total++
-
-    // Parse
-    const result = parser.parse(email)
-
     // Track success
     if (result.success) {
-      this.stats.successRate[parser.name].success++
+      const used = result.parsedData?.metadata?.parserUsed || parser?.name
+      if (used && this.stats.successRate[used]) {
+        this.stats.successRate[used].success++
+      }
     }
 
     return result

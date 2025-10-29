@@ -1,6 +1,5 @@
 import type { EnrichedLeadData } from '@renderer/hooks/useEmailToLead'
 import type { EmailMessage } from '../../../../../shared/types/email'
-import { CopyDebugDataButton } from './CopyDebugDataButton'
 
 interface LeadSelectionHeaderProps {
   totalCount: number
@@ -48,11 +47,7 @@ export function LeadSelectionHeader({
 
       {/* Actions */}
       <div className="flex items-center gap-2">
-        {/* Bouton de debug pour copier toutes les données */}
-        <CopyDebugDataButton leads={leads} emails={emails} />
-
-        {/* Séparateur */}
-        <div className="h-4 w-px bg-gray-300 dark:bg-gray-600" />
+        {/* debug copy removed */}
 
         <button
           type="button"

@@ -52,6 +52,11 @@ export class LeadsService {
     }
   }
 
+  // Alias for compatibility with older IPC code
+  async createCleanLead(data: CreateLeadData, metadata: Record<string, any> = {}): Promise<Lead> {
+    return this.createLead(data, metadata)
+  }
+
   async getLead(id: string): Promise<Lead | null> {
     const row = this.db.prepare(`
       SELECT id, data, metadata, created_at
