@@ -71,7 +71,8 @@ contextBridge.exposeInMainWorld('api', {
     list: (filters?: any, pagination?: any) => ipcRenderer.invoke('leads:list', filters, pagination) as Promise<{ success: boolean; data?: any; error?: string }>,
     stats: () => ipcRenderer.invoke('leads:stats') as Promise<{ success: boolean; data?: any; error?: string }>,
     search: (query: string) => ipcRenderer.invoke('leads:search', query) as Promise<{ success: boolean; data?: any; error?: string }>,
-    deleteMany: (ids: string[]) => ipcRenderer.invoke('leads:deleteMany', ids) as Promise<{ success: boolean; data?: any; error?: string }>
+    deleteMany: (ids: string[]) => ipcRenderer.invoke('leads:deleteMany', ids) as Promise<{ success: boolean; data?: any; error?: string }>,
+    createBulk: (data: { leads: Array<{ formData: Record<string, any>; metadata: Record<string, any> }> }) => ipcRenderer.invoke('leads:createBulk', data) as Promise<{ success: boolean; data?: any; error?: string }>
   },
   email: {
     startAuth: () => ipcRenderer.invoke('email:startAuth') as Promise<{ success: boolean; data?: any; error?: string }>,
@@ -83,6 +84,7 @@ contextBridge.exposeInMainWorld('api', {
     getAuthStatus: () => ipcRenderer.invoke('email:getAuthStatus') as Promise<{ success: boolean; data?: any; error?: string }>,
     updateKnownSenders: (data: { configId: number; knownSenders: any[] }) => ipcRenderer.invoke('email:updateKnownSenders', data) as Promise<{ success: boolean; data?: any; error?: string }>,
     analyzeSenders: (data: { configId: number; filters: any }) => ipcRenderer.invoke('email:analyzeSenders', data) as Promise<{ success: boolean; data?: any; error?: string }>,
+    parseToLeads: (data: { emails: any[] }) => ipcRenderer.invoke('email:parseToLeads', data) as Promise<{ success: boolean; data?: any; error?: string }>,
     onImportProgress: (cb: (e: any) => void) => {
       const handler = (_: any, data: any) => cb(data)
       ipcRenderer.on('email:import-progress', handler)

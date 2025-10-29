@@ -260,4 +260,63 @@ export function registerLeadsIPC() {
       return { success: false, error: message }
     }
   })
+
+  ipcMain.handle('leads:createBulk', async (_, data: { leads: Array<{ formData: Record<string, any>; metadata: Record<string, any> }> }) => {
+    try {
+      const leads = data.leads
+
+      if (!Array.isArray(leads) || leads.length === 0) {
+        throw new Error('Liste de leads requise')
+      }
+
+      const results: Array<{ success: boolean; leadId?: string; error?: string; metadata?: any }> = []
+      let successCount = 0
+      let failureCount = 0
+
+      for (let i = 0; i < leads.length; i++) {
+        const { formData, metadata } = leads[i]
+
+        try {
+          // Import formDataTransformer
+          const { transformToCleanLead } = await import('../../renderer/utils/formDataTransformer')
+
+          // Transform form data to clean lead
+          const cleanLeadData = transformToCleanLead(formData)
+
+          // Create lead
+          const lead = await getLeadsService().createCleanLead(cleanLeadData, metadata)
+
+          results.push({
+            success: true,
+            leadId: lead.id,
+            metadata: { index: i, emailId: metadata.emailId }
+          })
+
+          successCount++
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue'
+          results.push({
+            success: false,
+            error: errorMessage,
+            metadata: { index: i, emailId: metadata?.emailId }
+          })
+
+          failureCount++
+        }
+      }
+
+      return {
+        success: true,
+        data: {
+          total: leads.length,
+          successful: successCount,
+          failed: failureCount,
+          results
+        }
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Erreur inconnue'
+      return { success: false, error: message }
+    }
+  })
 }

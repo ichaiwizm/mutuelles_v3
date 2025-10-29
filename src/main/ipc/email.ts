@@ -247,5 +247,22 @@ export function registerEmailIpc() {
     }
   })
 
+  ipcMain.handle('email:parseToLeads', async (_, data: { emails: any[] }) => {
+    try {
+      const { EmailToLeadService } = await import('../services/emailToLead')
+
+      const validated = z.object({
+        emails: z.array(z.any())
+      }).parse(data)
+
+      const result = await EmailToLeadService.parseEmailsToLeads(validated.emails)
+      return { success: true, data: result }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Erreur inconnue'
+      console.error('[IPC] email:parseToLeads error:', error)
+      return { success: false, error: message }
+    }
+  })
+
   console.log('[IPC] ✓ Email handlers registered')
 }

@@ -565,8 +565,11 @@ export class EmailService {
       }
     }
 
+    // ✅ FIXED: Clean HTML content properly with entity decoding
     if (!content && htmlContent) {
-      content = htmlContent.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
+      // Import TextCleaner (add at top of file if not present)
+      const { TextCleaner } = require('./emailParsing/TextCleaner')
+      content = TextCleaner.cleanEmailContent(htmlContent, true)
     }
 
     return {
