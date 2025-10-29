@@ -290,6 +290,38 @@ export function EmailImportView({
     resetEmailToLead()
   }
 
+  const handleCopyDebug = async () => {
+    try {
+      // Récupérer tous les rapports de debug depuis le backend
+      const reports = await window.api.leads.getAllDebugReports()
+
+      if (!reports || reports.length === 0) {
+        toast.error('Aucun rapport de debug disponible')
+        return
+      }
+
+      // Construire le rapport complet
+      const fullReport = [
+        '# 🔍 RAPPORT COMPLET D\'ANALYSE DE PARSING',
+        `**Date**: ${new Date().toLocaleString('fr-FR')}`,
+        `**Nombre d'emails traités**: ${previewLeads.length}`,
+        '',
+        '---',
+        '',
+        ...reports.map((report, index) => {
+          return `\n\n## 📧 Email ${index + 1}\n\n${report}`
+        })
+      ].join('\n')
+
+      // Copier dans le presse-papier
+      await navigator.clipboard.writeText(fullReport)
+      toast.success('Rapport copié dans le presse-papier !')
+    } catch (error) {
+      console.error('Erreur copie debug:', error)
+      toast.error('Erreur lors de la copie du rapport')
+    }
+  }
+
   return (
     <div className="flex flex-col h-full">
       {/* Auth prompt compact (si pas connecté) */}
@@ -472,30 +504,44 @@ export function EmailImportView({
             onEdit={handleEdit}
           />
 
-          <div className="flex items-center justify-end gap-3 p-4">
+          <div className="flex items-center justify-between gap-3 p-4">
             <button
               type="button"
-              onClick={handleClosePreview}
+              onClick={handleCopyDebug}
               disabled={isCreating}
-              className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
             >
-              Annuler
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              </svg>
+              Copier l'analyse
             </button>
-            <button
-              type="button"
-              onClick={handleConfirmCreation}
-              disabled={isCreating || selection.selectedCount === 0}
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
-            >
-              {isCreating ? (
-                <>
-                  <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
-                  Création en cours...
-                </>
-              ) : (
-                <>Créer {selection.selectedCount} lead{selection.selectedCount > 1 ? 's' : ''}</>
-              )}
-            </button>
+
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={handleClosePreview}
+                disabled={isCreating}
+                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmCreation}
+                disabled={isCreating || selection.selectedCount === 0}
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+              >
+                {isCreating ? (
+                  <>
+                    <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
+                    Création en cours...
+                  </>
+                ) : (
+                  <>Créer {selection.selectedCount} lead{selection.selectedCount > 1 ? 's' : ''}</>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}

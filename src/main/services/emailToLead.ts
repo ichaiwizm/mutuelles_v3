@@ -1,25 +1,27 @@
 /**
- * Email to Lead Service
+ * Email to Lead Service - NOUVEAU avec leadParsing refactorisé
  *
- * Main orchestration service that:
- * 1. Parses emails to extract lead data
- * 2. Validates the parsed data
- * 3. Enriches with defaults
- * 4. Transforms to form data
- * 5. Prepares for preview/creation
+ * Orchestre :
+ * 1. Parsing des emails (via ParserOrchestrator)
+ * 2. Validation des données
+ * 3. Enrichissement avec defaults
+ * 4. Transformation pour formulaire
+ * 5. Génération de rapport debug
  */
 
 import type { EmailMessage } from '../shared/types/email'
 import type {
   EmailToLeadResponse,
-  EnrichedLeadData,
-  ParsedLeadData
+  EnrichedLeadData
 } from '../shared/types/emailParsing'
 
-import { parserRegistry } from './emailParsing/ParserRegistry'
-import { ParsedDataValidator } from './emailParsing/ParsedDataValidator'
-import { DataEnricher } from './emailParsing/DataEnricher'
-import { LeadTransformer } from './emailParsing/LeadTransformer'
+import { parserOrchestrator, ParsingDebugger } from './leadParsing'
+import { ParsedDataValidator } from './leadParsing/ParsedDataValidator'
+import { DataEnricher } from './leadParsing/DataEnricher'
+import { LeadTransformer } from './leadParsing/LeadTransformer'
+
+// Store debug reports globally for UI access
+const debugReports = new Map<string, string>()
 
 export class EmailToLeadService {
   /**
@@ -73,14 +75,22 @@ export class EmailToLeadService {
    * Process a single email through the complete pipeline
    */
   private static async processEmail(email: EmailMessage): Promise<EnrichedLeadData> {
-    // Step 1: Parse email to extract lead data
-    const parsingResult = parserRegistry.parse(email)
+    // Step 1: Parse email avec orchestration (nettoyage + détection + parsing + debug)
+    const orchestrationResult = parserOrchestrator.parse(
+      email.content,
+      email.id,
+      false // isHtml - détection automatique dans ContentCleaner
+    )
 
-    if (!parsingResult.success || !parsingResult.parsedData) {
-      throw new Error(parsingResult.errors.join(', ') || 'Failed to parse email')
+    // Sauvegarder le rapport de debug pour accès UI
+    const debugMarkdown = ParsingDebugger.toMarkdown(orchestrationResult.debugReport)
+    debugReports.set(email.id, debugMarkdown)
+
+    if (!orchestrationResult.finalResult.success || !orchestrationResult.finalResult.parsedData) {
+      throw new Error(orchestrationResult.finalResult.errors.join(', ') || 'Failed to parse email')
     }
 
-    let parsedData = parsingResult.parsedData
+    let parsedData = orchestrationResult.finalResult.parsedData
 
     // Step 2: Apply business rules
     DataEnricher.applyBusinessRules(parsedData)
@@ -124,16 +134,39 @@ export class EmailToLeadService {
   }
 
   /**
+   * Récupère le rapport de debug pour un email
+   */
+  static getDebugReport(emailId: string): string | undefined {
+    return debugReports.get(emailId)
+  }
+
+  /**
+   * Récupère tous les rapports de debug (pour copie globale)
+   */
+  static getAllDebugReports(): Map<string, string> {
+    return debugReports
+  }
+
+  /**
+   * Nettoie les rapports de debug
+   */
+  static clearDebugReports(): void {
+    debugReports.clear()
+  }
+
+  /**
    * Get statistics about parser performance
    */
   static getParserStats() {
-    return parserRegistry.getStats()
+    return {
+      registeredParsers: parserOrchestrator.listParsers()
+    }
   }
 
   /**
    * Reset parser statistics
    */
   static resetParserStats() {
-    parserRegistry.resetStats()
+    debugReports.clear()
   }
 }

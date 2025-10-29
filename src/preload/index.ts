@@ -74,7 +74,9 @@ contextBridge.exposeInMainWorld('api', {
     deleteMany: (ids: string[]) => ipcRenderer.invoke('leads:deleteMany', ids) as Promise<{ success: boolean; data?: any; error?: string }>,
     createBulk: (data: { leads: Array<{ formData: Record<string, any>; metadata: Record<string, any> }> }) => ipcRenderer.invoke('leads:createBulk', data) as Promise<{ success: boolean; data?: any; error?: string }>,
     checkDuplicatesBatch: (items: Array<{ lastName?: string; firstName?: string; birthDate?: string; email?: string; telephone?: string }>) =>
-      ipcRenderer.invoke('leads:checkDuplicatesBatch', { items }) as Promise<{ success: boolean; data?: { results: Array<{ index:number; isDuplicate:boolean; reasons:string[] }> }; error?: string }>
+      ipcRenderer.invoke('leads:checkDuplicatesBatch', { items }) as Promise<{ success: boolean; data?: { results: Array<{ index:number; isDuplicate:boolean; reasons:string[] }> }; error?: string }>,
+    getAllDebugReports: () => ipcRenderer.invoke('leads:getAllDebugReports') as Promise<{ success: boolean; data?: string[]; error?: string }>,
+    clearDebugReports: () => ipcRenderer.invoke('leads:clearDebugReports') as Promise<{ success: boolean; error?: string }>
   },
   email: {
     startAuth: () => ipcRenderer.invoke('email:startAuth') as Promise<{ success: boolean; data?: any; error?: string }>,
@@ -184,6 +186,10 @@ declare global {
         stats: () => Promise<{ success: boolean; data?: any; error?: string }>
         search: (query: string) => Promise<{ success: boolean; data?: any; error?: string }>
         deleteMany: (ids: string[]) => Promise<{ success: boolean; data?: any; error?: string }>
+        createBulk: (data: { leads: Array<{ formData: Record<string, any>; metadata: Record<string, any> }> }) => Promise<{ success: boolean; data?: any; error?: string }>
+        checkDuplicatesBatch: (items: Array<{ lastName?: string; firstName?: string; birthDate?: string; email?: string; telephone?: string }>) => Promise<{ success: boolean; data?: { results: Array<{ index:number; isDuplicate:boolean; reasons:string[] }> }; error?: string }>
+        getAllDebugReports: () => Promise<{ success: boolean; data?: string[]; error?: string }>
+        clearDebugReports: () => Promise<{ success: boolean; error?: string }>
       }
       email: {
         startAuth: () => Promise<{ success: boolean; data?: any; error?: string }>

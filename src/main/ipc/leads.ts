@@ -346,4 +346,36 @@ export function registerLeadsIPC() {
       return { success: false, error: message }
     }
   })
+
+  // Get all debug reports (for copy to clipboard)
+  ipcMain.handle('leads:getAllDebugReports', async () => {
+    try {
+      const { EmailToLeadService } = await import('../services/emailToLead')
+      const reports = EmailToLeadService.getAllDebugReports()
+
+      // Convert Map to Array
+      const reportsArray = Array.from(reports.values())
+
+      return {
+        success: true,
+        data: reportsArray
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Erreur inconnue'
+      return { success: false, error: message }
+    }
+  })
+
+  // Clear debug reports
+  ipcMain.handle('leads:clearDebugReports', async () => {
+    try {
+      const { EmailToLeadService } = await import('../services/emailToLead')
+      EmailToLeadService.clearDebugReports()
+
+      return { success: true }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Erreur inconnue'
+      return { success: false, error: message }
+    }
+  })
 }
