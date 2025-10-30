@@ -159,6 +159,58 @@ function valuesToParsedData(
     }
   }
 
+  // Carry carrier-specific nested slices, wrapping leaves into ParsedField with proper source
+  const carriers: Array<'alptis'|'swisslifeone'> = ['alptis','swisslifeone']
+  const wrapCarrier = (carrier: string) => {
+    const slice = (values as any)[carrier]
+    if (!slice || typeof slice !== 'object') return
+    const build: any = {}
+
+    const setNested = (obj: any, path: string, value: any) => {
+      const parts = path.split('.')
+      let cur = obj
+      for (let i = 0; i < parts.length - 1; i++) {
+        const part = parts[i]
+        const m = part.match(/^(.+)\[(\d+)\]$/)
+        if (m) {
+          const name = m[1]
+          const idx = parseInt(m[2], 10)
+          if (!cur[name]) cur[name] = []
+          if (!cur[name][idx]) cur[name][idx] = {}
+          cur = cur[name][idx]
+        } else {
+          if (!cur[part]) cur[part] = {}
+          cur = cur[part]
+        }
+      }
+      const last = parts[parts.length - 1]
+      cur[last] = value
+    }
+
+    const walk = (node: any, path: string) => {
+      if (node === null || node === undefined) return
+      if (Array.isArray(node)) {
+        node.forEach((item, idx) => walk(item, `${path}[${idx}]`))
+        return
+      }
+      if (typeof node === 'object') {
+        for (const [k, v] of Object.entries(node)) {
+          const next = path ? `${path}.${k}` : k
+          walk(v, next)
+        }
+        return
+      }
+      // Leaf value
+      const fieldPath = `${carrier}.${path}`
+      const pf = createField(node, fieldPath)
+      setNested(build, path, pf)
+    }
+
+    walk(slice, '')
+    ;(result as any)[carrier] = build
+  }
+  carriers.forEach(wrapCarrier)
+
   return result
 }
 
@@ -191,6 +243,58 @@ export function enrich(
     platform,
     overwrite: false, // Never overwrite parsed values
   })
+
+  // Apply carrier-specific defaults for both carriers under prefixed namespaces
+  const carriers: Array<'alptis'|'swisslifeone'> = ['alptis','swisslifeone']
+  const setNestedValue = (obj: any, path: string, value: any) => {
+    const parts = path.split('.')
+    let cur = obj
+    for (let i = 0; i < parts.length - 1; i++) {
+      const part = parts[i]
+      const m = part.match(/^(.+)\[(\d+)\]$/)
+      if (m) {
+        const name = m[1]
+        const idx = parseInt(m[2], 10)
+        if (!cur[name]) cur[name] = []
+        if (!cur[name][idx]) cur[name][idx] = {}
+        cur = cur[name][idx]
+      } else {
+        if (!cur[part]) cur[part] = {}
+        cur = cur[part]
+      }
+    }
+    const last = parts[parts.length - 1]
+    cur[last] = value
+  }
+  const getNestedValue = (obj: any, path: string) => {
+    const parts = path.split('.')
+    let cur = obj
+    for (const part of parts) {
+      const m = part.match(/^(.+)\[(\d+)\]$/)
+      if (m) {
+        const name = m[1]
+        const idx = parseInt(m[2], 10)
+        cur = cur?.[name]?.[idx]
+      } else {
+        cur = cur?.[part]
+      }
+      if (cur === undefined) return undefined
+    }
+    return cur
+  }
+  const isEmpty = (v: any) => v === undefined || v === null || v === ''
+
+  const extraDefaulted: string[] = []
+  for (const carrier of carriers) {
+    const defaults = getAllDefaults(schema, carrier)
+    for (const [k, v] of Object.entries(defaults)) {
+      const prefixedPath = `${carrier}.${k}`
+      if (isEmpty(getNestedValue(currentValues, prefixedPath))) {
+        setNestedValue(currentValues, prefixedPath, v)
+        extraDefaulted.push(prefixedPath)
+      }
+    }
+  }
 
   // Compute derived fields (business rules)
   const computedValues = computeDerivedFields(currentValues, {
@@ -227,13 +331,13 @@ export function enrich(
   const enrichedData = valuesToParsedData(
     currentValues,
     parsedData,
-    defaultedFields,
+    [...defaultedFields, ...extraDefaulted],
     computedFieldsList
   )
 
   return {
     enrichedData,
-    defaultedFields,
+    defaultedFields: [...defaultedFields, ...extraDefaulted],
     computedFields: computedFieldsList,
   }
 }

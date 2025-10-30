@@ -65,6 +65,15 @@ export function LeadPreviewCard({
   // Traduire les champs manquants en français
   const translateField = (field: string): string => {
     const translations: Record<string, string> = {
+      // Paths → labels
+      'subscriber.telephone': 'Téléphone',
+      'subscriber.lastName': 'Nom',
+      'subscriber.firstName': 'Prénom',
+      'subscriber.postalCode': 'Code postal',
+      'subscriber.birthDate': 'Date de naissance',
+      'subscriber.civility': 'Civilité',
+      'subscriber.regime': 'Régime',
+      'project.dateEffet': "Date d'effet",
       'Téléphone': 'Téléphone',
       'Nom': 'Nom',
       'Prénom': 'Prénom',

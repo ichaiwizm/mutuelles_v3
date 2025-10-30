@@ -28,6 +28,7 @@ export class ParsedDataValidator {
     'subscriber.civility',
     'subscriber.birthDate',
     'subscriber.postalCode',
+    // Multi-porteur: exigence "régime" satisfaite si présent sur au moins un porteur
     'subscriber.regime',
     'project.dateEffet'
   ]
@@ -117,6 +118,17 @@ export class ParsedDataValidator {
    * Check if a field exists and has a value
    */
   private static hasField(parsedData: ParsedLeadData, fieldPath: string): boolean {
+    // Multi-porteur: cas particuliers mappés vers variantes préfixées
+    if (fieldPath === 'subscriber.regime') {
+      // Satisfait si commun ou au moins un des porteurs possède un régime
+      if (this.hasField(parsedData, 'alptis.subscriber.regime' as any)) return true
+      if (this.hasField(parsedData, 'swisslifeone.subscriber.regime' as any)) return true
+      // Continue avec la vérification classique du champ commun
+    }
+    if (fieldPath === 'project.plan') {
+      // Optionnel: plan SwissLife est préfixé
+      if (this.hasField(parsedData, 'swisslifeone.project.plan' as any)) return true
+    }
     const parts = fieldPath.split('.')
     let current: any = parsedData
 
@@ -127,9 +139,15 @@ export class ParsedDataValidator {
       current = current[part]
     }
 
-    // Check if it's a ParsedField with a value
+    // Check ParsedField wrapper
     if (current && typeof current === 'object' && 'value' in current) {
       return current.value !== null && current.value !== undefined && current.value !== ''
+    }
+
+    // Accept plain primitive values (e.g., carrier-prefixed leaves stored as raw values)
+    if (current !== null && current !== undefined && typeof current !== 'object') {
+      const str = String(current)
+      return str.trim() !== ''
     }
 
     return false

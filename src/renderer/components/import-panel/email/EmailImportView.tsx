@@ -18,6 +18,7 @@ import { useLeadSelection } from './conversion/useLeadSelection'
 import type { EmailMessage, EmailImportProgress, AuthStatus } from '../../../../shared/types/email'
 import type { EnrichedLeadData } from '../../../../shared/types/emailParsing'
 import LeadModal from '../../../components/leads/LeadModal'
+import { transformToCleanLead } from '@renderer/utils/formDataTransformer'
 import { useToastContext } from '../../../contexts/ToastContext'
 
 const PROGRESS_MESSAGES: Record<string, string> = {
@@ -230,10 +231,22 @@ export function EmailImportView({
       const v = newFormData[k]
       return v !== undefined && v !== null && String(v).trim() !== ''
     }
-    const critical = ['subscriber.lastName','subscriber.firstName','subscriber.telephone']
-    const important = ['subscriber.civility','subscriber.birthDate','subscriber.postalCode','subscriber.regime','project.dateEffet']
-    const missingCritical = critical.filter(k => !has(k))
-    const missingImportant = important.filter(k => !has(k))
+    const hasAny = (keys: string[]) => keys.some(k => has(k))
+
+    const missingCritical: string[] = []
+    if (!has('subscriber.lastName')) missingCritical.push('subscriber.lastName')
+    if (!has('subscriber.firstName')) missingCritical.push('subscriber.firstName')
+    if (!has('subscriber.telephone')) missingCritical.push('subscriber.telephone')
+
+    const missingImportant: string[] = []
+    if (!has('subscriber.civility')) missingImportant.push('subscriber.civility')
+    if (!has('subscriber.birthDate')) missingImportant.push('subscriber.birthDate')
+    if (!has('subscriber.postalCode')) missingImportant.push('subscriber.postalCode')
+    // Multi-porteur: régime satisfait si présent sur au moins un porteur
+    if (!hasAny(['subscriber.regime', 'alptis.subscriber.regime', 'swisslifeone.subscriber.regime'])) {
+      missingImportant.push('subscriber.regime')
+    }
+    if (!has('project.dateEffet')) missingImportant.push('project.dateEffet')
 
     const newStatus: 'valid'|'partial'|'invalid' = missingCritical.length > 0 ? 'invalid' : (missingImportant.length > 0 ? 'partial' : 'valid')
     const newMissing = missingCritical.length > 0 ? missingCritical : missingImportant
@@ -585,7 +598,7 @@ export function EmailImportView({
             id: editingLead.metadata.emailId,
             // Transform flat formData into proper nested structure + platformData
             // This ensures both transformFromCleanLead paths work correctly
-            data: require('@renderer/utils/formDataTransformer').transformToCleanLead(editingLead.formData),
+            data: transformToCleanLead(editingLead.formData),
             metadata: editingLead.metadata,
             createdAt: new Date().toISOString()
           }}

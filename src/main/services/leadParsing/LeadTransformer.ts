@@ -60,6 +60,33 @@ export class LeadTransformer {
       this.transformProject(parsedData.project, formData)
     }
 
+    // Flatten carrier-specific slices (if present) into prefixed flat keys
+    const carriers: Array<'alptis'|'swisslifeone'> = ['alptis','swisslifeone']
+    const flatten = (obj: any, prefix: string, out: Record<string, any>) => {
+      const walk = (node: any, path: string[]) => {
+        if (node === null || node === undefined) return
+        if (Array.isArray(node)) {
+          node.forEach((item, idx) => walk(item, [...path.slice(0, -1), `${path[path.length-1]}[${idx}]`]))
+          return
+        }
+        if (typeof node === 'object') {
+          for (const [k, v] of Object.entries(node)) {
+            walk(v as any, [...path, k])
+          }
+          return
+        }
+        const key = `${prefix}.${path.join('.')}`
+        out[key] = node
+      }
+      walk(obj, [])
+    }
+    carriers.forEach((carrier) => {
+      const slice = (parsedData as any)[carrier]
+      if (slice && typeof slice === 'object') {
+        flatten(slice, carrier, formData)
+      }
+    })
+
     return formData
   }
 
