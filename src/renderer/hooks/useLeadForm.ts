@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { FormSchema } from '@renderer/utils/formSchemaGenerator'
 import { validateForm } from '@renderer/utils/formValidation'
 import { transformToCleanLead, transformFromCleanLead } from '@renderer/utils/formDataTransformer'
-import { getAllDefaults, getSpouseDefaults, getChildDefaults, applyDefaultsToForm } from '@renderer/utils/defaultValueService'
+import { getAllDefaultsWithBusinessRules, applyDefaultsToForm } from '@renderer/utils/defaultValueService'
 import { generateRandomTestData } from '@renderer/utils/testDataGenerator'
 import type { Lead } from '@shared/types/leads'
 
@@ -57,6 +57,10 @@ export function useLeadForm({ schema, mode, initialLead, onSuccess, onError, onL
   const [hasChildren, setHasChildren] = useState(false)
   const [children, setChildren] = useState<ChildItem[]>([])
 
+  // Track if form has been initialized to prevent re-initialization
+  const isInitialized = useRef(false)
+  const initializedLeadId = useRef<string | undefined>(undefined)
+
   // Initialize form from lead when in edit mode
   const initializeFromLead = (lead: Lead) => {
     const formValues = transformFromCleanLead(lead)
@@ -81,14 +85,32 @@ export function useLeadForm({ schema, mode, initialLead, onSuccess, onError, onL
       }
       setChildren(newChildren)
     }
+
+    // Mark as initialized
+    isInitialized.current = true
+    initializedLeadId.current = lead.id
   }
 
   // Initialize from lead when in edit mode OR when in create mode with prefilled data
+  // CRITICAL FIX: Only initialize once to prevent resetting after "Fill defaults"
   useEffect(() => {
-    if (initialLead && (mode === 'edit' || mode === 'create')) {
+    if (!initialLead) {
+      // No initial lead - reset initialization flags
+      isInitialized.current = false
+      initializedLeadId.current = undefined
+      return
+    }
+
+    // Don't re-initialize if already initialized with the same lead
+    if (isInitialized.current && initializedLeadId.current === initialLead.id) {
+      return
+    }
+
+    // Initialize for edit mode or create with prefilled data
+    if (mode === 'edit' || mode === 'create') {
       initializeFromLead(initialLead)
     }
-  }, [mode, initialLead])
+  }, [mode, initialLead?.id]) // Use only lead ID as dependency, not the entire object
 
   const handleFieldChange = (key: string, value: any) => {
     setFormState(prev => ({
@@ -201,7 +223,8 @@ export function useLeadForm({ schema, mode, initialLead, onSuccess, onError, onL
   const handleFillDefaults = () => {
     if (!schema) return
 
-    const defaults = getAllDefaults(schema, formState.values)
+    // Get all defaults WITH business rules (computed values like madelin, department)
+    const defaults = getAllDefaultsWithBusinessRules(schema, formState.values)
     const updatedValues = applyDefaultsToForm(formState.values, defaults, { overwrite: false })
 
     setFormState(prev => ({
@@ -295,6 +318,10 @@ export function useLeadForm({ schema, mode, initialLead, onSuccess, onError, onL
     setHasSpouse(false)
     setHasChildren(false)
     setChildren([])
+
+    // Reset initialization flags
+    isInitialized.current = false
+    initializedLeadId.current = undefined
   }
 
   return {

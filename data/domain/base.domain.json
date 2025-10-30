@@ -261,6 +261,21 @@
         "carriers": ["alptis", "swisslifeone"],
         "notes": "Toggle pour activer/désactiver la section conjoint. Pour Alptis, c'est un vrai toggle UI. Pour SwissLife, c'est déduit automatiquement (simulation individuelle vs couple)."
       },
+      "civility": {
+        "type": "radio",
+        "label": "Civilité (conjoint)",
+        "required": false,
+        "default": "MADAME",
+        "carriers": ["alptis", "swisslifeone"],
+        "showIf": {
+          "field": "conjoint",
+          "equals": true
+        },
+        "options": [
+          { "value": "MONSIEUR", "label": "Monsieur" },
+          { "value": "MADAME", "label": "Madame" }
+        ]
+      },
       "birthDate": {
         "type": "date",
         "label": "Date de naissance du conjoint",

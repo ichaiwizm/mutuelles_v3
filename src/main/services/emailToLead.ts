@@ -92,11 +92,9 @@ export class EmailToLeadService {
 
     let parsedData = orchestrationResult.finalResult.parsedData
 
-    // Step 2: Apply business rules
-    DataEnricher.applyBusinessRules(parsedData)
-
-    // Step 3: Enrich with defaults
-    const { enrichedData, defaultedFields } = DataEnricher.enrich(parsedData)
+    // Step 2: Enrich with defaults and computed values (unified)
+    // The new DataEnricher.enrich() applies both defaults and business rules
+    const { enrichedData, defaultedFields, computedFields } = DataEnricher.enrich(parsedData)
     parsedData = enrichedData
 
     // Step 4: Validate
