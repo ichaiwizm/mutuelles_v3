@@ -49,8 +49,8 @@ export function LeadPreviewCard({
     summaryParts.push(`Né(e) le ${subscriber.birthDate.value}`)
   }
 
-  // Conjoint
-  if (lead.parsedData.spouse) {
+  // Conjoint (uniquement si des données sont présentes)
+  if (lead.parsedData.spouse && Object.keys(lead.parsedData.spouse).length > 0) {
     summaryParts.push('Conjoint')
   }
 

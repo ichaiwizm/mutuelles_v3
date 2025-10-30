@@ -71,9 +71,10 @@ export class GenericStructuredParser extends BaseLeadParser {
    * Parse conjoint (best effort)
    */
   private parseSpouse(text: string): ParsedLeadData['spouse'] {
+    // Pattern: "Conjoint" ou "Époux/se" (avec ou sans deux-points) suivi de 1-8 lignes
     const keywords = [
-      /conjoint[^\n]*:([^\n]*\n){1,8}/i,
-      /[ée]pou[sx]e?[^\n]*:([^\n]*\n){1,8}/i
+      /conjoint[^\n]*\n([^\n]*\n){1,8}/i,
+      /[ée]pou[sx]e?[^\n]*\n([^\n]*\n){1,8}/i
     ]
 
     for (const regex of keywords) {
@@ -92,7 +93,7 @@ export class GenericStructuredParser extends BaseLeadParser {
       }
     }
 
-    return {}
+    return undefined
   }
 
   /**

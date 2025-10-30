@@ -141,10 +141,48 @@ export class ParsingDebugger {
   }
 
   private static getExtractedFields(result: ParserResult): string[] {
-    if (!result.parsedData?.subscriber) return []
-    return Object.keys(result.parsedData.subscriber).filter(k =>
-      (result.parsedData!.subscriber as any)[k]?.value
-    )
+    const fields: string[] = []
+    const data = result.parsedData
+
+    if (!data) return []
+
+    // Subscriber fields
+    if (data.subscriber) {
+      fields.push(...Object.keys(data.subscriber).filter(k =>
+        (data.subscriber as any)[k]?.value
+      ))
+    }
+
+    // Spouse fields (with spouse_ prefix for clarity)
+    if (data.spouse && Object.keys(data.spouse).length > 0) {
+      Object.keys(data.spouse).forEach(k => {
+        if ((data.spouse as any)[k]?.value) {
+          fields.push(`spouse_${k}`)
+        }
+      })
+    }
+
+    // Children count
+    if (data.children && data.children.length > 0) {
+      data.children.forEach((child, i) => {
+        Object.keys(child).forEach(k => {
+          if ((child as any)[k]?.value) {
+            fields.push(`child${i+1}_${k}`)
+          }
+        })
+      })
+    }
+
+    // Project fields
+    if (data.project) {
+      Object.keys(data.project).forEach(k => {
+        if ((data.project as any)[k]?.value) {
+          fields.push(`project_${k}`)
+        }
+      })
+    }
+
+    return fields
   }
 
   private static getMissingFields(result: ParserResult): string[] {
