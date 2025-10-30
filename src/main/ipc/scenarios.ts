@@ -82,30 +82,6 @@ export function registerScenariosIpc() {
     }
   })
 
-  ipcMain.handle('scenarios:debugDump', async () => {
-    try {
-      const db = getDb()
-      const runs = db.prepare(`
-        SELECT id, status, started_at, completed_at,
-               total_items, success_items, error_items, pending_items, cancelled_items
-        FROM execution_runs
-        ORDER BY started_at DESC
-        LIMIT 100
-      `).all() as any[]
-      const items = db.prepare(`
-        SELECT run_id, status, COUNT(*) as count
-        FROM execution_items
-        GROUP BY run_id, status
-        ORDER BY run_id
-      `).all() as any[]
-
-      return { success: true, data: { runs, items } }
-    } catch (error) {
-      console.error('[IPC][scenarios:debugDump] Error:', error)
-      return { success: false, error: error instanceof Error ? error.message : 'Failed to dump DB' }
-    }
-  })
-
   ipcMain.handle('scenarios:repairFinalize', async () => {
     try {
       const db = getDb()

@@ -33,8 +33,4 @@ export class ClickFieldCommand extends BaseCommand {
 
     await activeContext.click(fieldDef.selector)
   }
-
-  describe(step) {
-    return `Cliquer ${this.getFieldName(step)}`
-  }
 }

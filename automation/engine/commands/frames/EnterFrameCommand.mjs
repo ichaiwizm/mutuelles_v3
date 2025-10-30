@@ -28,8 +28,4 @@ export class EnterFrameCommand extends BaseCommand {
     contextStack.push(frame)
     console.log('[hl] enterFrame %s - contexte empilé (profondeur: %d)', step.selector || `url~${step.urlContains}`, contextStack.length)
   }
-
-  describe(step) {
-    return `Entrer dans iframe ${step.selector||('url~'+(step.urlContains||''))}`
-  }
 }

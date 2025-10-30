@@ -33,8 +33,4 @@ export class TypeFieldCommand extends BaseCommand {
 
     await new Promise(r => setTimeout(r, step.postDelay_ms || 200))
   }
-
-  describe(step) {
-    return `Saisir ${this.getFieldName(step)}`
-  }
 }

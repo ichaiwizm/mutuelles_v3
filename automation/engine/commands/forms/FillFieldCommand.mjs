@@ -92,8 +92,4 @@ export class FillFieldCommand extends BaseCommand {
       await activeContext.fill(fieldDef.selector, valueStr)
     }
   }
-
-  describe(step) {
-    return `Remplir ${step.domainField||step.field}`
-  }
 }

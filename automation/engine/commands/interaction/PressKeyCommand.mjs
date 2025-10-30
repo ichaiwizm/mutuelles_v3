@@ -16,10 +16,4 @@ export class PressKeyCommand extends BaseCommand {
       await activeContext.keyboard.press(key)
     }
   }
-
-  describe(step) {
-    const key = step.key || step.code || 'Escape'
-    const field = step.domainField || step.field
-    return field ? `Appuyer ${key} sur ${field}` : `Appuyer ${key}`
-  }
 }

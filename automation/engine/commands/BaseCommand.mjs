@@ -14,10 +14,6 @@ export class BaseCommand {
     return true
   }
 
-  describe(step) {
-    return step.type
-  }
-
   getActiveContext() {
     return this.context.getCurrentContext()
   }

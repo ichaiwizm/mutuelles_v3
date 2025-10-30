@@ -60,8 +60,4 @@ export class SelectFieldCommand extends BaseCommand {
     await activeContext.waitForSelector(item.option_selector, { state: 'visible', timeout: 5000 })
     await activeContext.click(item.option_selector)
   }
-
-  describe(step) {
-    return `Sélectionner ${step.domainField||step.field}`
-  }
 }

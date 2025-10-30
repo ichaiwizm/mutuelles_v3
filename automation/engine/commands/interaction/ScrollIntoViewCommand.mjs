@@ -14,8 +14,4 @@ export class ScrollIntoViewCommand extends BaseCommand {
 
     await new Promise(r => setTimeout(r, step.timeout_ms || 150))
   }
-
-  describe(step) {
-    return `Scroller vers ${step.domainField||step.field}`
-  }
 }

@@ -69,8 +69,4 @@ export class AcceptConsentCommand extends BaseCommand {
 
     console.log('[hl] acceptConsent: terminé (best-effort)')
   }
-
-  describe(step) {
-    return 'Consentement'
-  }
 }

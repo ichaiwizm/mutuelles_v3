@@ -9,8 +9,4 @@ export class GotoCommand extends BaseCommand {
     const page = this.getMainPage()
     await page.goto(step.url, { waitUntil: 'domcontentloaded' })
   }
-
-  describe(step) {
-    return `Aller sur ${step.url}`
-  }
 }

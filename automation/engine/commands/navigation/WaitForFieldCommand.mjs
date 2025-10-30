@@ -8,8 +8,4 @@ export class WaitForFieldCommand extends BaseCommand {
     const activeContext = this.getActiveContext()
     await activeContext.waitForSelector(f.selector, { state: 'attached' })
   }
-
-  describe(step) {
-    return `Attendre ${step.domainField||step.field}`
-  }
 }

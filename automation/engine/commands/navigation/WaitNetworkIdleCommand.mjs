@@ -6,8 +6,4 @@ export class WaitNetworkIdleCommand extends BaseCommand {
     const timeout = typeof step.timeout_ms === 'number' ? step.timeout_ms : 20000
     await page.waitForLoadState('networkidle', { timeout })
   }
-
-  describe(step) {
-    return 'Attendre network idle'
-  }
 }

@@ -3,7 +3,9 @@ import { Settings, Zap } from 'lucide-react'
 import { useAutomation } from '../hooks/useAutomation'
 import { useToastContext } from '../contexts/ToastContext'
 import { useConfirmation } from '../hooks/useConfirmation'
-import { CompactStats, AdvancedModeTab, SettingsModal } from '../components/automation/v3'
+import CompactStats from '../components/automation/v3/CompactStats'
+import AdvancedModeTab from '../components/automation/v3/AdvancedModeTab'
+import SettingsModal from '../components/automation/v3/SettingsModal'
 
 export default function AutomationV3() {
   // State

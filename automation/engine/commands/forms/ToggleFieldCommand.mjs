@@ -31,8 +31,4 @@ export class ToggleFieldCommand extends BaseCommand {
       console.log('[hl] toggleField %s - already in desired state %s', fieldName, step.state)
     }
   }
-
-  describe(step) {
-    return `Toggle ${this.getFieldName(step)} -> ${step.state}`
-  }
 }

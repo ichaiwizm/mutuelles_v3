@@ -304,34 +304,8 @@ export function getFlowFromDb(db, slug) {
     return normalizeFlowObject(flow)
   }
 
-  const flowId = db.prepare('SELECT id FROM flows_catalog WHERE slug = ?').get(slug)?.id
-  if (!flowId) return null
-
-  const steps = db.prepare(`
-    SELECT order_index, type, selector, value, url, screenshot_label, timeout_ms, assert_text
-    FROM flow_steps WHERE flow_id = ? ORDER BY order_index
-  `).all(flowId)
-
-  const cleanedSteps = steps.map(s => {
-    const step = { type: s.type }
-    if (s.selector) step.selector = s.selector
-    if (s.value) step.value = s.value
-    if (s.url) step.url = s.url
-    if (s.screenshot_label) step.label = s.screenshot_label
-    if (s.timeout_ms) step.timeout_ms = s.timeout_ms
-    if (s.assert_text) step.assert_text = s.assert_text
-    return step
-  })
-
-  const flow = {
-    version: 1,
-    platform: row.platform,
-    slug: row.slug,
-    name: row.name,
-    active: !!row.active,
-    steps: cleanedSteps
-  }
-  return normalizeFlowObject(flow)
+  // flow_json is required - legacy flow_steps table no longer exists
+  throw new Error(`Flow ${slug} has no flow_json data`)
 }
 
 export function listFlowsFromDb(db, { includeInactive = true } = {}) {

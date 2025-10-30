@@ -14,8 +14,6 @@ contextBridge.exposeInMainWorld('api', {
   catalog: {
     list: () => ipcRenderer.invoke('catalog:list') as Promise<Array<{id:number; slug:string; name:string; status:string; selected:boolean; has_creds:boolean}>>,
     setSelected: (payload: { platform_id:number; selected:boolean }) => ipcRenderer.invoke('catalog:setSelected', payload) as Promise<{selected:boolean}>,
-    listPages: (platformId: number) => ipcRenderer.invoke('catalog:listPages', platformId) as Promise<Array<{id:number; platform_id:number; slug:string; name:string; type:string; url:string|null; status:string; order_index:number}>>,
-    listFields: (pageId: number) => ipcRenderer.invoke('catalog:listFields', pageId) as Promise<Array<{id:number; page_id:number; key:string; label:string; type:string; required:boolean; secure:boolean; order_index:number}>>,
     getUiForms: () => ipcRenderer.invoke('catalog:getUiForms') as Promise<Array<{ slug:string; ui:any|null }>>
   },
   profiles: {
@@ -31,21 +29,8 @@ contextBridge.exposeInMainWorld('api', {
     setChromePath: (p: string) => ipcRenderer.invoke('browsers:setChromePath', p) as Promise<boolean>,
     pickChrome: () => ipcRenderer.invoke('browsers:pickChrome') as Promise<string|null>
   },
-  admin: {
-    listFileFlows: () => ipcRenderer.invoke('admin:listFileFlows') as Promise<Array<{ platform:string; slug:string; name:string; file:string }>>,
-    getLatestRunDir: (slug: string) => ipcRenderer.invoke('admin:getLatestRunDir', slug) as Promise<{ dir:string; report:string|null } | null>,
-    runFileFlow: (payload: { slug?: string; file?: string; mode?: 'headless'|'dev'|'dev_private'; keepOpen?: boolean }) => ipcRenderer.invoke('admin:runFileFlow', payload) as Promise<{ runKey:string; pid:number; flow:{ platform:string; slug:string; name:string; file:string } }>,
-    onRunOutput: (runKey: string, cb: (e: { type:'stdout'|'stderr'|'exit'; data?: string; code?: number|null; latestRunDir?: string|null }) => void) => {
-      const ch = `admin:runOutput:${runKey}`
-      const handler = (_: any, data: any) => cb(data)
-      ipcRenderer.on(ch, handler)
-      return () => ipcRenderer.removeListener(ch, handler)
-    },
-    openPath: (p: string) => ipcRenderer.invoke('admin:openPath', p) as Promise<string>
-  },
   adminHL: {
     listHLFlows: () => ipcRenderer.invoke('admin:listHLFlows') as Promise<Array<{ platform:string; slug:string; name:string; file:string }>>,
-    listLeads: () => ipcRenderer.invoke('admin:listLeads') as Promise<Array<{ name:string; file:string }>>,
     run: (payload: { platform:string; flowFile:string; leadFile:string; mode?: 'headless'|'dev'|'dev_private'; keepOpen?: boolean }) => ipcRenderer.invoke('admin:runHLFlow', payload) as Promise<{ runKey:string; pid:number }>,
     runWithLeadId: (payload: { platform:string; flowFile:string; leadId:string; mode?: 'headless'|'dev'|'dev_private'; keepOpen?: boolean }) => ipcRenderer.invoke('admin:runHLFlowWithLeadId', payload) as Promise<{ runKey:string; pid:number }>,
     readFlowFile: (filePath: string) => ipcRenderer.invoke('admin:readFlowFile', filePath) as Promise<any>,
@@ -121,7 +106,6 @@ contextBridge.exposeInMainWorld('api', {
     getRunSteps: (itemId: string) => ipcRenderer.invoke('scenarios:getRunSteps', itemId) as Promise<{ success: boolean; data?: Array<any>; error?: string }>,
     deleteRun: (runId: string) => ipcRenderer.invoke('scenarios:deleteRun', runId) as Promise<{ success: boolean; message?: string; error?: string }>,
     getRunDetails: (runDir: string) => ipcRenderer.invoke('scenarios:getRunDetails', runDir) as Promise<{ success: boolean; data?: any; error?: string }>,
-    debugDump: () => ipcRenderer.invoke('scenarios:debugDump') as Promise<{ success: boolean; data?: { runs: any[]; items: any[] }; error?: string }>,
     repairFinalize: () => ipcRenderer.invoke('scenarios:repairFinalize') as Promise<{ success: boolean; repaired?: number; error?: string }>,
     getItemDetails: (itemId: string) => ipcRenderer.invoke('scenarios:getItemDetails', itemId) as Promise<{ success: boolean; data?: any; error?: string }>,
     readScreenshot: (screenshotPath: string) => ipcRenderer.invoke('scenarios:readScreenshot', screenshotPath) as Promise<{ success: boolean; data?: string; error?: string }>,
@@ -154,8 +138,6 @@ declare global {
       catalog: {
         list: () => Promise<Array<{id:number; slug:string; name:string; status:string; selected:boolean; has_creds:boolean}>>
         setSelected: (payload: { platform_id:number; selected:boolean }) => Promise<{selected:boolean}>
-        listPages: (platformId: number) => Promise<Array<{id:number; platform_id:number; slug:string; name:string; type:string; url:string|null; status:string; order_index:number}>>
-        listFields: (pageId: number) => Promise<Array<{id:number; page_id:number; key:string; label:string; type:string; required:boolean; secure:boolean; order_index:number}>>
       }
       profiles: {
         list: () => Promise<Array<{id:number; name:string; user_data_dir:string; browser_channel:string|null; initialized_at:string|null}>>
@@ -257,11 +239,6 @@ declare global {
         data?: any
         error?: string
       }>
-      debugDump: () => Promise<{
-        success: boolean
-        data?: { runs: any[]; items: any[] }
-        error?: string
-      }>
       repairFinalize: () => Promise<{
         success: boolean
         repaired?: number
@@ -317,7 +294,6 @@ declare global {
       }
       adminHL: {
         listHLFlows: () => Promise<Array<{ platform:string; slug:string; name:string; file:string }>>
-        listLeads: (platform: string) => Promise<Array<{ platform:string; name:string; file:string }>>
         run: (payload: { platform:string; flowFile:string; leadFile:string; mode?: 'headless'|'dev'|'dev_private'; keepOpen?: boolean }) => Promise<{ runKey:string; pid:number }>
         runWithLeadId: (payload: { platform:string; flowFile:string; leadId:string; mode?: 'headless'|'dev'|'dev_private'; keepOpen?: boolean }) => Promise<{ runKey:string; pid:number }>
         readFlowFile: (filePath: string) => Promise<any>

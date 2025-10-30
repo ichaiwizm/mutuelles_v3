@@ -62,12 +62,9 @@ function getTableStats(db) {
     'user_platforms',
     'platform_credentials',
     'profiles',
-    'flows_catalog',
-    'flow_steps',
-    'flows_runs',
-    'raw_leads',
     'clean_leads',
-    'platform_leads'
+    'execution_runs',
+    'execution_items'
   ]
 
   const stats = {}

@@ -12,8 +12,4 @@ export class ExitFrameCommand extends BaseCommand {
     contextStack.pop()
     console.log('[hl] exitFrame - contexte dépilé (profondeur: %d)', contextStack.length)
   }
-
-  describe(step) {
-    return `Sortir de l'iframe`
-  }
 }
