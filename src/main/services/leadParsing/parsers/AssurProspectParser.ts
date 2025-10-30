@@ -70,13 +70,22 @@ export class AssurProspectParser extends BaseLeadParser {
 
   /**
    * Parse conjoint
+   * ✅ FIXED: Better section boundary detection using negative lookahead
    */
   private parseSpouse(text: string): ParsedLeadData['spouse'] {
-    // Pattern: "Conjoint" (avec ou sans deux-points) suivi de 1-8 lignes de données
-    const spouseMatch = text.match(/conjoint[^\n]*\n([^\n]*\n){1,8}/i)
+    // ✅ Pattern with negative lookahead to stop at next section (Enfant, Besoin, Projet, Contact)
+    // Captures lines that don't start with these section headers
+    const spouseMatch = text.match(
+      /conjoint[^\n]*\n((?:(?!^\s*(?:Enfant|Besoin|Projet|Contact|Souscripteur actuellement))[^\n]*\n)*?)(?=^\s*(?:Enfant|Besoin|Projet|Contact|Souscripteur actuellement)|$)/im
+    )
     if (!spouseMatch) return undefined
 
     const spouseText = spouseMatch[0]
+
+    // ✅ Validate that we actually have spouse-specific data (not just the header)
+    const hasSpouseData = spouseText.match(/(?:Date de naissance|Profession|R[ée]gime|Civilit[ée])/i)
+    if (!hasSpouseData) return undefined
+
     const identity = FieldExtractor.extractIdentity(spouseText)
     const professional = FieldExtractor.extractProfessionalInfo(spouseText)
 
@@ -87,6 +96,9 @@ export class AssurProspectParser extends BaseLeadParser {
     if (identity.birthDate.value) spouse.birthDate = this.toParsedField(identity.birthDate)
     if (professional.regime.value) spouse.regime = this.toParsedField(professional.regime)
     if (professional.profession.value) spouse.profession = this.toParsedField(professional.profession)
+
+    // ✅ Return undefined if no meaningful data was extracted
+    if (Object.keys(spouse).length === 0) return undefined
 
     return spouse
   }

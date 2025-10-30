@@ -88,15 +88,18 @@ export class FieldExtractor {
 
   /**
    * Extract civility (MONSIEUR, MADAME, etc.)
+   * ✅ FIXED: Test feminine patterns FIRST to avoid matching "M" in "Mme"
    */
   static extractCivility(content: string): FieldExtractionResult<string> {
     const patterns = [
-      /\*?Civilit[ée]\*?\s*:?\s*\*?\s*(M\.?|Monsieur|Mr|MONSIEUR)/i,
+      // ✅ TEST FEMININE FORMS FIRST to avoid "M" matching in "Mme"
       /\*?Civilit[ée]\*?\s*:?\s*\*?\s*(Mme|Madame|MADAME)/i,
-      /Genre\s*:?\s*(Homme|Masculin)/i,
+      /(Mme|Madame)\s+[A-Z]/i,
       /Genre\s*:?\s*(Femme|F[ée]minin)/i,
-      /(M\.|Monsieur|Mr)\s+[A-Z]/i, // "M. DUPONT"
-      /(Mme|Madame)\s+[A-Z]/i
+      // ✅ NOW TEST MASCULINE FORMS with negative lookahead to prevent matching "Mme"
+      /\*?Civilit[ée]\*?\s*:?\s*\*?\s*(M\.(?!me)|Monsieur|Mr|MONSIEUR)(?!\s*me)/i,
+      /(M\.(?!me)|Monsieur|Mr)\s+[A-Z]/i,
+      /Genre\s*:?\s*(Homme|Masculin)/i
     ]
 
     for (const pattern of patterns) {
@@ -105,8 +108,10 @@ export class FieldExtractor {
         const rawValue = match[1].toUpperCase()
         let normalized = 'MONSIEUR'
 
-        // Map strictly to avoid misclassifying "M." as MADAME
+        // Map strictly to avoid misclassifying
         if (rawValue.startsWith('MME') || rawValue.includes('MADAME')) {
+          normalized = 'MADAME'
+        } else if (rawValue === 'FEMME' || rawValue.includes('FÉMININ') || rawValue.includes('FEMININ')) {
           normalized = 'MADAME'
         } else {
           normalized = 'MONSIEUR'
@@ -267,12 +272,14 @@ export class FieldExtractor {
 
   /**
    * Extract profession
+   * ✅ FIXED: Added lookahead boundary to stop at next field (prevent capturing "Régime Social")
    */
   static extractProfession(content: string): FieldExtractionResult<string> {
     const patterns = [
-      /\*?Profession\*?\s*:?\s*\*?\s*([A-Z\u00C0-\u017F][a-z\u00C0-\u017F\s\-']{2,50})/i,
-      /\*?M[ée]tier\*?\s*:?\s*\*?\s*([A-Z\u00C0-\u017F][a-z\u00C0-\u017F\s\-']{2,50})/i,
-      /\*?Activit[ée]\*?\s*:?\s*\*?\s*([A-Z\u00C0-\u017F][a-z\u00C0-\u017F\s\-']{2,50})/i
+      // ✅ Stop at: double space, new field label, pipe, newline, or end of string
+      /\*?Profession\*?\s*:?\s*\*?\s*([A-Z\u00C0-\u017F][a-z\u00C0-\u017F\s\-']{2,40}?)(?=\s{2,}|\s*(?:R[ée]gime|Date|Statut|T[ée]l|Cat[ée]gorie|Nombre)|[│\|]|\n|$)/i,
+      /\*?M[ée]tier\*?\s*:?\s*\*?\s*([A-Z\u00C0-\u017F][a-z\u00C0-\u017F\s\-']{2,40}?)(?=\s{2,}|\s*(?:R[ée]gime|Date|Statut|T[ée]l)|[│\|]|\n|$)/i,
+      /\*?Activit[ée]\*?\s*:?\s*\*?\s*([A-Z\u00C0-\u017F][a-z\u00C0-\u017F\s\-']{2,40}?)(?=\s{2,}|\s*(?:R[ée]gime|Date|Statut|T[ée]l)|[│\|]|\n|$)/i
     ]
 
     return this.extractField(content, patterns, 'medium')
