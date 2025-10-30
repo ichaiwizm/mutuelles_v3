@@ -199,19 +199,20 @@ export function applyDefaults(
   for (const [sectionName, fields] of Object.entries(schema.domains)) {
     for (const [fieldName, fieldOrNested] of Object.entries(fields)) {
       // Handle nested children fields (children.[])
-      if (fieldName === '[]' && sectionName === 'children') {
+      const isChildrenSection = sectionName === 'children' || sectionName.endsWith('.children')
+      if (fieldName === '[]' && isChildrenSection) {
         // For children fields, we need to check if children exist first
-        const childrenArray = leadData.children
+        const childrenArrayPath = sectionName === 'children' ? 'children' : `${sectionName}`
+        const childrenArray = getNestedValue(leadData, childrenArrayPath)
         if (Array.isArray(childrenArray)) {
           // Apply defaults to each child
           for (let i = 0; i < childrenArray.length; i++) {
             for (const [childFieldName, childField] of Object.entries(fieldOrNested as Record<string, FieldSchema>)) {
-              const fieldPath = `children[${i}].${childFieldName}`
+              const fieldPath = `${childrenArrayPath}[${i}].${childFieldName}`
               const currentValue = getNestedValue(leadData, fieldPath)
 
               if (isEmpty(currentValue) || overwrite) {
-                const fieldSchema = childField as FieldSchema
-                if (fieldSchema.disabled) continue
+              const fieldSchema = childField as FieldSchema
 
                 const defaultValue = getFieldDefaultValue(fieldSchema, platform)
                 if (defaultValue !== undefined) {
@@ -227,7 +228,6 @@ export function applyDefaults(
 
       // Regular field processing
       const fieldSchema = fieldOrNested as FieldSchema
-      if (fieldSchema.disabled) continue
 
       // Build field path
       const fieldPath = `${sectionName}.${fieldName}`
@@ -268,15 +268,17 @@ export function getAllDefaults(
   for (const [sectionName, fields] of Object.entries(schema.domains)) {
     for (const [fieldName, fieldOrNested] of Object.entries(fields)) {
       // Handle nested children fields
-      if (fieldName === '[]' && sectionName === 'children') {
+      const isChildrenSection = sectionName === 'children' || sectionName.endsWith('.children')
+      if (fieldName === '[]' && isChildrenSection) {
         // For children, return defaults for a hypothetical child[0]
         for (const [childFieldName, childField] of Object.entries(fieldOrNested as Record<string, FieldSchema>)) {
           const fieldSchema = childField as FieldSchema
-          if (fieldSchema.disabled) continue
 
           const defaultValue = getFieldDefaultValue(fieldSchema, platform)
           if (defaultValue !== undefined) {
-            defaults[`children[0].${childFieldName}`] = defaultValue
+            const prefix = sectionName === 'children' ? '' : `${sectionName.replace(/\.children$/, '')}.`
+            const key = `${prefix}${sectionName === 'children' ? 'children' : 'children'}[0].${childFieldName}`
+            defaults[key] = defaultValue
           }
         }
         continue
@@ -284,7 +286,6 @@ export function getAllDefaults(
 
       // Regular field
       const fieldSchema = fieldOrNested as FieldSchema
-      if (fieldSchema.disabled) continue
 
       const defaultValue = getFieldDefaultValue(fieldSchema, platform)
       if (defaultValue !== undefined) {

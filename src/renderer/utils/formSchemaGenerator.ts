@@ -148,10 +148,80 @@ function extractFieldsFromCarrier(config: CarrierConfig): Set<string> {
   return fields
 }
 
+function withCarrierPrefix(domainKey: string, carrier: 'alptis' | 'swisslifeone'): string {
+  // Prefix full domainKey with carrier slug (e.g., alptis.subscriber.regime, alptis.children[].regime)
+  return `${carrier}.${domainKey}`
+}
+
+function isGlobalToggleOrCommonKey(domainKey: string): boolean {
+  // Keys that must stay unprefixed in showIf across carriers
+  return (
+    domainKey === 'conjoint' ||
+    domainKey === 'enfants' ||
+    domainKey === 'children.count' ||
+    domainKey === 'project.dateEffet' ||
+    domainKey === 'project.name' ||
+    domainKey === 'subscriber.firstName' ||
+    domainKey === 'subscriber.lastName' ||
+    domainKey === 'subscriber.birthDate'
+  )
+}
+
+function rewriteShowIf(
+  showIf: DomainConfig['showIf'] | undefined,
+  carrier: 'alptis' | 'swisslifeone' | undefined,
+  alptisFields: Set<string>,
+  swisslifeFields: Set<string>,
+  baseDomain: BaseDomain
+): DomainConfig['showIf'] | undefined {
+  if (!showIf || !carrier) return showIf
+
+  const prefixFieldIfNeeded = (fieldKey: string | undefined): string | undefined => {
+    if (!fieldKey) return fieldKey
+    if (isGlobalToggleOrCommonKey(fieldKey)) return fieldKey
+
+    // Determine if referenced field is carrier-specific
+    const parts = fieldKey.replace('[]', '').split('.')
+    const category = parts[0]
+    const name = parts[1]
+    const domainField = (baseDomain as any).domains?.[category]?.[name]
+    const carrierSpecific = domainField?.carrierSpecific === true || !!domainField?.optionSets
+
+    const inA = alptisFields.has(fieldKey)
+    const inS = swisslifeFields.has(fieldKey)
+    const onlyOneCarrier = (inA && !inS) || (!inA && inS)
+
+    if (carrierSpecific || onlyOneCarrier) {
+      return withCarrierPrefix(fieldKey, carrier)
+    }
+
+    return fieldKey
+  }
+
+  if ((showIf as any).and) {
+    return {
+      and: (showIf as any).and.map((cond: any) => ({
+        ...cond,
+        field: prefixFieldIfNeeded(cond.field)
+      }))
+    }
+  }
+
+  return {
+    ...showIf,
+    field: prefixFieldIfNeeded(showIf.field)
+  }
+}
+
 function buildFieldDefinition(
   domainKey: string,
   baseDomain: BaseDomain,
-  carrier?: 'alptis' | 'swisslifeone'
+  carrier?: 'alptis' | 'swisslifeone',
+  opts?: {
+    prefixDomainKey?: boolean
+    alptisFields?: Set<string>
+    swisslifeFields?: Set<string>
+  }
 ): FormFieldDefinition | null {
   const parts = domainKey.replace('[]', '').split('.')
   const category = parts[0]
@@ -167,8 +237,13 @@ function buildFieldDefinition(
 
   if (!domainField) return null
 
+  let effectiveDomainKey = domainKey
+  if (carrier && opts?.prefixDomainKey) {
+    effectiveDomainKey = withCarrierPrefix(domainKey, carrier)
+  }
+
   const field: FormFieldDefinition = {
-    domainKey,
+    domainKey: effectiveDomainKey,
     type: domainField.type as any,
     label: domainField.label,
     required: domainField.required || false
@@ -197,7 +272,7 @@ function buildFieldDefinition(
   }
 
   if (domainField.showIf) {
-    field.showIf = domainField.showIf
+    field.showIf = rewriteShowIf(domainField.showIf, carrier, opts?.alptisFields || new Set(), opts?.swisslifeFields || new Set(), baseDomain)
   }
 
   if (domainField.repeat) {
@@ -275,8 +350,8 @@ function classifyFields(
 
     if (inAlptis && inSwisslife) {
       if (isCarrierSpecific) {
-        const alptisField = buildFieldDefinition(domainKey, baseDomain, 'alptis')
-        const swisslifeField = buildFieldDefinition(domainKey, baseDomain, 'swisslifeone')
+        const alptisField = buildFieldDefinition(domainKey, baseDomain, 'alptis', { prefixDomainKey: true, alptisFields, swisslifeFields })
+        const swisslifeField = buildFieldDefinition(domainKey, baseDomain, 'swisslifeone', { prefixDomainKey: true, alptisFields, swisslifeFields })
         if (alptisField) alptisSpecific.push(alptisField)
         if (swisslifeField) swisslifeSpecific.push(swisslifeField)
       } else {
@@ -286,12 +361,14 @@ function classifyFields(
         }
       }
     } else if (inAlptis) {
-      const field = buildFieldDefinition(domainKey, baseDomain, 'alptis')
+      // Field only exists on Alptis UI → prefix domainKey
+      const field = buildFieldDefinition(domainKey, baseDomain, 'alptis', { prefixDomainKey: true, alptisFields, swisslifeFields })
       if (field) {
         alptisSpecific.push(field)
       }
     } else if (inSwisslife) {
-      const field = buildFieldDefinition(domainKey, baseDomain, 'swisslifeone')
+      // Field only exists on SwissLife UI → prefix domainKey
+      const field = buildFieldDefinition(domainKey, baseDomain, 'swisslifeone', { prefixDomainKey: true, alptisFields, swisslifeFields })
       if (field) {
         swisslifeSpecific.push(field)
       }

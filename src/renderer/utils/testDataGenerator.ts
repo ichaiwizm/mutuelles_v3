@@ -105,7 +105,11 @@ export function generateRandomTestData(schema: FormSchema): Record<string, any> 
     domainKey: string,
     platform: 'alptis' | 'swisslifeone'
   ): FormFieldDefinition | undefined => {
-    return schema.platformSpecific[platform].find(f => f.domainKey === domainKey)
+    const prefixed = `${platform}.${domainKey}`
+    return (
+      schema.platformSpecific[platform].find(f => f.domainKey === prefixed) ||
+      schema.platformSpecific[platform].find(f => f.domainKey === domainKey)
+    )
   }
 
   // Helper: pick a random option value from a field definition

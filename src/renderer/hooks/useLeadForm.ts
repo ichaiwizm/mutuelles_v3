@@ -57,36 +57,41 @@ export function useLeadForm({ schema, mode, initialLead, onSuccess, onError, onL
   const [hasChildren, setHasChildren] = useState(false)
   const [children, setChildren] = useState<ChildItem[]>([])
 
-  // Track selected platform for carrier-specific defaults
-  // Default to swisslifeone, or detect from lead data
-  const [selectedPlatform, setSelectedPlatform] = useState<string>('swisslifeone')
+  // No selected platform concept; lead stores all carriers simultaneously
 
   // Track if form has been initialized to prevent re-initialization
   const isInitialized = useRef(false)
   const initializedLeadId = useRef<string | undefined>(undefined)
 
   // Initialize form from lead when in edit mode
+  const migratePlatformSpecificValues = (values: Record<string, any>, schema: FormSchema | null): Record<string, any> => {
+    if (!schema) return values
+    const out = { ...values }
+    const carriers: Array<'alptis'|'swisslifeone'> = ['alptis','swisslifeone']
+    for (const carrier of carriers) {
+      const fields = schema.platformSpecific[carrier]
+      fields.forEach(f => {
+        if (!f.domainKey.startsWith(`${carrier}.`)) return
+        const restKey = f.domainKey.slice(carrier.length + 1)
+        // If old (unprefixed) value exists and new (prefixed) is absent, copy
+        if (out[restKey] !== undefined && out[f.domainKey] === undefined) {
+          out[f.domainKey] = out[restKey]
+        }
+      })
+    }
+    return out
+  }
+
   const initializeFromLead = (lead: Lead) => {
-    const formValues = transformFromCleanLead(lead)
+    let formValues = transformFromCleanLead(lead)
+    formValues = migratePlatformSpecificValues(formValues, schema)
 
     setFormState(prev => ({
       ...prev,
       values: formValues
     }))
 
-    // Detect platform from lead data (check platformData keys)
-    if (lead.data?.platformData) {
-      const platforms = Object.keys(lead.data.platformData)
-      if (platforms.length > 0) {
-        // Use first platform found, or prefer swisslifeone if available
-        const detectedPlatform = platforms.includes('swisslifeone')
-          ? 'swisslifeone'
-          : platforms.includes('alptis')
-          ? 'alptis'
-          : platforms[0]
-        setSelectedPlatform(detectedPlatform)
-      }
-    }
+    // No platform detection needed
 
     // Activate spouse toggle if conjoint present
     if (formValues['conjoint'] === true) {
@@ -154,7 +159,11 @@ export function useLeadForm({ schema, mode, initialLead, onSuccess, onError, onL
       setFormState(prev => {
         const newValues: Record<string, any> = { ...prev.values, 'conjoint': false }
         Object.keys(newValues).forEach(key => {
-          if (key.startsWith('spouse.')) {
+          if (
+            key.startsWith('spouse.') ||
+            key.startsWith('alptis.spouse.') ||
+            key.startsWith('swisslifeone.spouse.')
+          ) {
             delete newValues[key]
           }
         })
@@ -183,8 +192,9 @@ export function useLeadForm({ schema, mode, initialLead, onSuccess, onError, onL
       setChildren([])
       setFormState(prev => {
         const newValues = { ...prev.values }
+        const prefixes = ['', 'alptis.', 'swisslifeone.']
         Object.keys(newValues).forEach(key => {
-          if (key.startsWith('children[')) {
+          if (key.startsWith('children[') || key.startsWith('alptis.children[') || key.startsWith('swisslifeone.children[')) {
             delete newValues[key]
           }
         })
@@ -216,8 +226,9 @@ export function useLeadForm({ schema, mode, initialLead, onSuccess, onError, onL
 
     setFormState(prev => {
       const newValues = { ...prev.values }
+      const carriers = ['', 'alptis.', 'swisslifeone.']
       Object.keys(newValues).forEach(key => {
-        if (key.startsWith(`children[${index}]`)) {
+        if (key.startsWith(`children[${index}]`) || key.startsWith(`alptis.children[${index}]`) || key.startsWith(`swisslifeone.children[${index}]`)) {
           delete newValues[key]
         }
       })
@@ -225,10 +236,18 @@ export function useLeadForm({ schema, mode, initialLead, onSuccess, onError, onL
       // Re-index children after the removed one
       for (let i = index + 1; i < children.length; i++) {
         Object.keys(newValues).forEach(key => {
-          if (key.startsWith(`children[${i}]`)) {
-            const newKey = key.replace(`children[${i}]`, `children[${i - 1}]`)
-            newValues[newKey] = newValues[key]
-            delete newValues[key]
+          const patterns = [
+            { from: `children[${i}]`, to: `children[${i - 1}]` },
+            { from: `alptis.children[${i}]`, to: `alptis.children[${i - 1}]` },
+            { from: `swisslifeone.children[${i}]`, to: `swisslifeone.children[${i - 1}]` },
+          ]
+          for (const p of patterns) {
+            if (key.startsWith(p.from)) {
+              const newKey = key.replace(p.from, p.to)
+              newValues[newKey] = newValues[key]
+              delete newValues[key]
+              break
+            }
           }
         })
       }
@@ -242,8 +261,8 @@ export function useLeadForm({ schema, mode, initialLead, onSuccess, onError, onL
     if (!schema) return
 
     // Get all defaults WITH business rules (computed values like madelin, department)
-    // CRITICAL: Pass selectedPlatform so carrier-specific defaults (defaultsByCarrier) are applied!
-    const defaults = getAllDefaultsWithBusinessRules(schema, formState.values, selectedPlatform)
+    // Apply for ALL carriers + common (no platform filter)
+    const defaults = getAllDefaultsWithBusinessRules(schema, formState.values)
     const updatedValues = applyDefaultsToForm(formState.values, defaults, { overwrite: false })
 
     setFormState(prev => ({

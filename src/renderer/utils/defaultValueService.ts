@@ -17,11 +17,11 @@ import { computeDerivedFields } from '@shared/businessRules/computedValues'
  * DomainSchema needs { domains: { subscriber: {...}, spouse: {...}, project: {...}, children: {...} }}
  */
 function formSchemaToDomainSchema(formSchema: FormSchema): DomainSchema {
-  const domains: Record<string, any> = {
-    subscriber: {},
-    spouse: {},
-    project: {},
-    children: { '[]': {} },
+  const domains: Record<string, any> = {}
+
+  const ensureSection = (key: string) => {
+    if (!domains[key]) domains[key] = {}
+    return domains[key]
   }
 
   // Process all fields from all sources
@@ -38,25 +38,51 @@ function formSchemaToDomainSchema(formSchema: FormSchema): DomainSchema {
     if (!existing) {
       fieldsByKey.set(field.domainKey, field)
     } else {
-      // Merge fields (prefer explicit defaults over fallbacks)
       fieldsByKey.set(field.domainKey, {
         ...existing,
         ...field,
-        // Merge options arrays if both exist
         options: field.options || existing.options,
       })
     }
   }
 
-  // Convert to domain structure
+  // Convert to domain structure (supports prefixed sections like "alptis.subscriber")
   for (const [domainKey, field] of fieldsByKey.entries()) {
-    // Parse domainKey like "subscriber.firstName" or "children[].birthDate"
-    const parts = domainKey.split('.')
+    const tokens = domainKey.split('.')
+    const maybeCarrier = tokens[0]
+    const carriers = new Set(['alptis', 'swisslifeone'])
 
-    if (parts[0] === 'children[]' || domainKey.startsWith('children[].')) {
-      // Children field
-      const childFieldName = parts[1] || parts[0].replace('children[].', '')
-      domains.children['[]'][childFieldName] = {
+    let sectionKey = ''
+    let fieldName = ''
+
+    if (carriers.has(maybeCarrier)) {
+      // Prefixed key, e.g., alptis.subscriber.regime or alptis.children[].regime
+      const rest = tokens.slice(1)
+      if (rest[0] === 'children[]' || domainKey.includes('children[].')) {
+        sectionKey = `${maybeCarrier}.children`
+        fieldName = '[]'
+        if (!domains[sectionKey]) {
+          domains[sectionKey] = { '[]': {} }
+        } else if (!domains[sectionKey]['[]']) {
+          domains[sectionKey]['[]'] = {}
+        }
+        const childFieldName = rest[1] || domainKey.split('children[].')[1].replace('.', '')
+        domains[sectionKey]['[]'][childFieldName] = {
+          type: field.type,
+          default: field.default,
+          defaultExpression: field.defaultExpression,
+          defaultsByCarrier: field.defaultsByCarrier,
+          options: field.options,
+          disabled: field.disabled,
+        }
+        continue
+      }
+
+      const section = rest[0]
+      fieldName = rest[1]
+      sectionKey = `${maybeCarrier}.${section}`
+      const sect = ensureSection(sectionKey)
+      sect[fieldName] = {
         type: field.type,
         default: field.default,
         defaultExpression: field.defaultExpression,
@@ -64,19 +90,37 @@ function formSchemaToDomainSchema(formSchema: FormSchema): DomainSchema {
         options: field.options,
         disabled: field.disabled,
       }
-    } else if (parts.length === 2) {
-      // Regular field like "subscriber.firstName"
-      const [section, fieldName] = parts
-      if (!domains[section]) {
-        domains[section] = {}
-      }
-      domains[section][fieldName] = {
-        type: field.type,
-        default: field.default,
-        defaultExpression: field.defaultExpression,
-        defaultsByCarrier: field.defaultsByCarrier,
-        options: field.options,
-        disabled: field.disabled,
+    } else {
+      // Unprefixed common keys
+      if (tokens[0] === 'children[]' || domainKey.startsWith('children[].')) {
+        sectionKey = 'children'
+        fieldName = '[]'
+        if (!domains[sectionKey]) {
+          domains[sectionKey] = { '[]': {} }
+        } else if (!domains[sectionKey]['[]']) {
+          domains[sectionKey]['[]'] = {}
+        }
+        const childFieldName = tokens[1] || tokens[0].replace('children[].', '')
+        domains[sectionKey]['[]'][childFieldName] = {
+          type: field.type,
+          default: field.default,
+          defaultExpression: field.defaultExpression,
+          defaultsByCarrier: field.defaultsByCarrier,
+          options: field.options,
+          disabled: field.disabled,
+        }
+      } else if (tokens.length >= 2) {
+        const [section, name] = tokens
+        sectionKey = section
+        const sect = ensureSection(sectionKey)
+        sect[name] = {
+          type: field.type,
+          default: field.default,
+          defaultExpression: field.defaultExpression,
+          defaultsByCarrier: field.defaultsByCarrier,
+          options: field.options,
+          disabled: field.disabled,
+        }
       }
     }
   }
@@ -219,7 +263,7 @@ export function getAllDefaultsWithBusinessRules(
 
   // Get static defaults
   const domainSchema = formSchemaToDomainSchema(schema)
-  const defaults = getAllDefaultsFromSchema(domainSchema, platform)
+  const defaults = getAllDefaultsFromSchema(domainSchema)
 
   // Apply defaults to nested structure (for computing derived values)
   const withDefaults = { ...nested }

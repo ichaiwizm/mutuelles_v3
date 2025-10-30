@@ -118,9 +118,11 @@ export function computeDerivedFields(
   const { overwriteExisting = false } = options
   const computed: ComputedFieldsResult = {}
 
-  // Helper to get nested value
-  const get = (path: string): any => {
-    const parts = path.split('.')
+  const prefixes = ['', 'alptis', 'swisslifeone']
+
+  const getWithPrefix = (prefix: string, path: string): any => {
+    const fullPath = prefix ? `${prefix}.${path}` : path
+    const parts = fullPath.split('.')
     let current = leadData
     for (const part of parts) {
       if (current === undefined || current === null) return undefined
@@ -129,94 +131,83 @@ export function computeDerivedFields(
     return current
   }
 
-  // Helper to check if field is empty
-  const isEmpty = (value: any): boolean => {
-    return value === undefined || value === null || value === ''
-  }
+  const isEmpty = (value: any): boolean => value === undefined || value === null || value === ''
 
-  // Helper to set computed value (only if empty or overwrite)
-  const setComputed = (path: string, value: any): void => {
-    const currentValue = get(path)
+  const setComputedWithPrefix = (prefix: string, path: string, value: any): void => {
+    const fullPath = prefix ? `${prefix}.${path}` : path
+    const currentValue = getWithPrefix('', fullPath)
     if (isEmpty(currentValue) || overwriteExisting) {
-      computed[path] = value
+      computed[fullPath] = value
     }
   }
 
-  // === SUBSCRIBER FIELDS ===
-
-  // Department from postal code
-  const subscriberPostalCode = get('subscriber.postalCode')
-  if (subscriberPostalCode) {
-    const department = inferDepartment(subscriberPostalCode)
-    if (department) {
-      setComputed('subscriber.departmentCode', department)
-    }
-  }
-
-  // Status from regime
-  const subscriberRegime = get('subscriber.regime')
-  if (subscriberRegime && isEmpty(get('subscriber.status'))) {
-    const inferredStatus = inferStatusFromRegime(subscriberRegime)
-    if (inferredStatus) {
-      setComputed('subscriber.status', inferredStatus)
-    }
-  }
-
-  // Status from profession
-  const subscriberProfession = get('subscriber.profession')
-  if (subscriberProfession && isEmpty(get('subscriber.status'))) {
-    const inferredStatus = inferStatusFromProfession(subscriberProfession)
-    if (inferredStatus) {
-      setComputed('subscriber.status', inferredStatus)
-    }
-  }
-
-  // === PROJECT FIELDS ===
-
-  // Madelin based on status and age
-  const subscriberStatus = get('subscriber.status')
-  const subscriberBirthDate = get('subscriber.birthDate')
-  const madelinValue = computeMadelin(subscriberStatus, subscriberBirthDate)
-
-  // Always compute madelin (it's a computed field, not a default)
-  // But only set if field is empty or we're overwriting
-  if (isEmpty(get('project.madelin')) || overwriteExisting) {
-    computed['project.madelin'] = madelinValue
-  }
-
-  // === SPOUSE FIELDS ===
-
-  // Department from postal code
-  const spousePostalCode = get('spouse.postalCode')
-  if (spousePostalCode) {
-    const department = inferDepartment(spousePostalCode)
-    if (department) {
-      setComputed('spouse.departmentCode', department)
-    }
-  }
-
-  // Status from regime
-  const spouseRegime = get('spouse.regime')
-  if (spouseRegime && isEmpty(get('spouse.status'))) {
-    const inferredStatus = inferStatusFromRegime(spouseRegime)
-    if (inferredStatus) {
-      setComputed('spouse.status', inferredStatus)
-    }
-  }
-
-  // === CHILDREN FIELDS ===
-
-  const children = get('children')
-  if (Array.isArray(children)) {
-    children.forEach((child, index) => {
-      const childPostalCode = child.postalCode
-      if (childPostalCode) {
-        const department = inferDepartment(childPostalCode)
-        if (department && (isEmpty(child.departmentCode) || overwriteExisting)) {
-          computed[`children[${index}].departmentCode`] = department
-        }
+  for (const prefix of prefixes) {
+    // === SUBSCRIBER FIELDS ===
+    const subscriberPostalCode = getWithPrefix(prefix, 'subscriber.postalCode')
+    if (subscriberPostalCode) {
+      const department = inferDepartment(subscriberPostalCode)
+      if (department) {
+        setComputedWithPrefix(prefix, 'subscriber.departmentCode', department)
       }
-    })
+    }
+
+    const subscriberRegime = getWithPrefix(prefix, 'subscriber.regime')
+    if (subscriberRegime && isEmpty(getWithPrefix(prefix, 'subscriber.status'))) {
+      const inferredStatus = inferStatusFromRegime(subscriberRegime)
+      if (inferredStatus) {
+        setComputedWithPrefix(prefix, 'subscriber.status', inferredStatus)
+      }
+    }
+
+    const subscriberProfession = getWithPrefix(prefix, 'subscriber.profession')
+    if (subscriberProfession && isEmpty(getWithPrefix(prefix, 'subscriber.status'))) {
+      const inferredStatus = inferStatusFromProfession(subscriberProfession)
+      if (inferredStatus) {
+        setComputedWithPrefix(prefix, 'subscriber.status', inferredStatus)
+      }
+    }
+
+    // === PROJECT FIELDS ===
+    const subscriberStatus = getWithPrefix(prefix, 'subscriber.status')
+    const subscriberBirthDate = getWithPrefix(prefix, 'subscriber.birthDate')
+    const madelinValue = computeMadelin(subscriberStatus, subscriberBirthDate)
+    if (isEmpty(getWithPrefix(prefix, 'project.madelin')) || overwriteExisting) {
+      const key = prefix ? `${prefix}.project.madelin` : 'project.madelin'
+      computed[key] = madelinValue
+    }
+
+    // === SPOUSE FIELDS ===
+    const spousePostalCode = getWithPrefix(prefix, 'spouse.postalCode')
+    if (spousePostalCode) {
+      const department = inferDepartment(spousePostalCode)
+      if (department) {
+        setComputedWithPrefix(prefix, 'spouse.departmentCode', department)
+      }
+    }
+
+    const spouseRegime = getWithPrefix(prefix, 'spouse.regime')
+    if (spouseRegime && isEmpty(getWithPrefix(prefix, 'spouse.status'))) {
+      const inferredStatus = inferStatusFromRegime(spouseRegime)
+      if (inferredStatus) {
+        setComputedWithPrefix(prefix, 'spouse.status', inferredStatus)
+      }
+    }
+
+    // === CHILDREN FIELDS ===
+    const children = getWithPrefix(prefix, 'children')
+    if (Array.isArray(children)) {
+      children.forEach((child: any, index: number) => {
+        const childPostalCode = child?.postalCode
+        if (childPostalCode) {
+          const department = inferDepartment(childPostalCode)
+          const hasDept = child?.departmentCode
+          if (department && (isEmpty(hasDept) || overwriteExisting)) {
+            const key = prefix ? `${prefix}.children[${index}].departmentCode` : `children[${index}].departmentCode`
+            computed[key] = department
+          }
+        }
+      })
+    }
   }
 
   return computed
@@ -241,17 +232,22 @@ export function getFieldDependencies(fieldPath: string): string[] {
     'children.*.departmentCode': ['children.*.postalCode'],
   }
 
-  // Handle array notation
-  const arrayMatch = fieldPath.match(/^children\[(\d+)\]\.(.+)$/)
+  const carriers = ['alptis', 'swisslifeone']
+  const carrier = carriers.find(c => fieldPath.startsWith(c + '.'))
+  const strip = (s: string) => (carrier ? s.slice(carrier.length + 1) : s)
+  const bare = strip(fieldPath)
+
+  const arrayMatch = bare.match(/^children\[(\d+)\]\.(.+)$/)
   if (arrayMatch) {
     const index = arrayMatch[1]
     const childField = arrayMatch[2]
     const pattern = `children.*.${childField}`
     const deps = dependencies[pattern] || []
-    return deps.map((dep) => dep.replace('*', `[${index}]`))
+    return deps.map(dep => (carrier ? `${carrier}.${dep.replace('*', `[${index}]`)}` : dep.replace('*', `[${index}]`)))
   }
 
-  return dependencies[fieldPath] || []
+  const deps = dependencies[bare] || []
+  return deps.map(d => (carrier ? `${carrier}.${d}` : d))
 }
 
 /**
@@ -271,15 +267,21 @@ export function getAffectedFields(changedFieldPath: string): string[] {
     'spouse.regime': ['spouse.status'],
   }
 
-  // Handle array notation
-  const arrayMatch = changedFieldPath.match(/^children\[(\d+)\]\.(.+)$/)
+  const carriers = ['alptis', 'swisslifeone']
+  const carrier = carriers.find(c => changedFieldPath.startsWith(c + '.'))
+  const strip = (s: string) => (carrier ? s.slice(carrier.length + 1) : s)
+  const bare = strip(changedFieldPath)
+
+  const arrayMatch = bare.match(/^children\[(\d+)\]\.(.+)$/)
   if (arrayMatch) {
     const index = arrayMatch[1]
     const childField = arrayMatch[2]
     if (childField === 'postalCode') {
-      return [`children[${index}].departmentCode`]
+      const p = `children[${index}].departmentCode`
+      return [carrier ? `${carrier}.${p}` : p]
     }
   }
 
-  return affects[changedFieldPath] || []
+  const res = affects[bare] || []
+  return res.map(p => (carrier ? `${carrier}.${p}` : p))
 }

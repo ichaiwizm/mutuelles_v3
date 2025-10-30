@@ -59,7 +59,7 @@ export default function ChildrenSection({
             {commonFields.length > 0 && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {commonFields.map(field => {
-                  const childFieldKey = `children[${index}].${field.domainKey.replace('children[].', '')}`
+                  const childFieldKey = field.domainKey.replace('children[]', `children[${index}]`)
                   return (
                     <DynamicFormField
                       key={childFieldKey}
@@ -85,7 +85,7 @@ export default function ChildrenSection({
                     </div>
                     <div className="space-y-3">
                       {alptisFields.map(field => {
-                        const childFieldKey = `children[${index}].${field.domainKey.replace('children[].', '')}`
+                        const childFieldKey = field.domainKey.replace('children[]', `children[${index}]`)
                         return (
                           <DynamicFormField
                             key={`${childFieldKey}__${field.platform}`}
@@ -110,7 +110,7 @@ export default function ChildrenSection({
                     </div>
                     <div className="space-y-3">
                       {swisslifeFields.map(field => {
-                        const childFieldKey = `children[${index}].${field.domainKey.replace('children[].', '')}`
+                        const childFieldKey = field.domainKey.replace('children[]', `children[${index}]`)
                         return (
                           <DynamicFormField
                             key={`${childFieldKey}__${field.platform}`}

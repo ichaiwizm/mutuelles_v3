@@ -16,6 +16,9 @@ function validateField(
   field: FormFieldDefinition,
   value: any
 ): string | undefined {
+  const stripCarrierPrefix = (k: string) => {
+    return k.startsWith('alptis.') || k.startsWith('swisslifeone.') ? k.substring(k.indexOf('.') + 1) : k
+  }
   // Check for empty values (including empty string for number fields)
   const isEmpty = value === undefined || value === null || value === ''
 
@@ -104,27 +107,33 @@ function validateField(
     }
 
     // Validation: Adults birth date - min 18 years, max 120 years, no future dates
-    if (field.domainKey === 'subscriber.birthDate' || field.domainKey === 'spouse.birthDate') {
-      const age = calculateAge(value)
-      if (age < 0) {
-        return 'La date de naissance ne peut pas être dans le futur'
-      }
-      if (age < 18) {
-        return `Âge minimum requis : 18 ans (actuellement ${age} ans)`
-      }
-      if (age > 120) {
-        return `Âge maximum : 120 ans (actuellement ${age} ans)`
+    {
+      const bare = stripCarrierPrefix(field.domainKey)
+      if (bare === 'subscriber.birthDate' || bare === 'spouse.birthDate') {
+        const age = calculateAge(value)
+        if (age < 0) {
+          return 'La date de naissance ne peut pas être dans le futur'
+        }
+        if (age < 18) {
+          return `Âge minimum requis : 18 ans (actuellement ${age} ans)`
+        }
+        if (age > 120) {
+          return `Âge maximum : 120 ans (actuellement ${age} ans)`
+        }
       }
     }
 
     // Validation: Date d'effet - must be today or future
-    if (field.domainKey === 'project.dateEffet') {
-      const dateEffet = new Date(year, month - 1, day)
-      const today = new Date()
-      today.setHours(0, 0, 0, 0)
+    {
+      const bare = stripCarrierPrefix(field.domainKey)
+      if (bare === 'project.dateEffet') {
+        const dateEffet = new Date(year, month - 1, day)
+        const today = new Date()
+        today.setHours(0, 0, 0, 0)
 
-      if (dateEffet < today) {
-        return 'La date d\'effet doit être aujourd\'hui ou dans le futur'
+        if (dateEffet < today) {
+          return 'La date d\'effet doit être aujourd\'hui ou dans le futur'
+        }
       }
     }
   }
@@ -183,11 +192,11 @@ export function validateForm(
   })
 
   const childrenCount = values['children.count'] || 0
-  const childrenFields = allFields.filter(f => f.domainKey.startsWith('children[].'))
+  const childrenFields = allFields.filter(f => f.domainKey.includes('children[].'))
 
   for (let i = 0; i < childrenCount; i++) {
     childrenFields.forEach(field => {
-      const childFieldKey = `children[${i}].${field.domainKey.replace('children[].', '')}`
+      const childFieldKey = field.domainKey.replace('children[]', `children[${i}]`)
       const childField = { ...field, domainKey: childFieldKey }
 
       if (!shouldValidateField(childField, values)) {

@@ -37,8 +37,8 @@ export default function PlatformSpecificSection({
 
   // Only show subscriber/project-specific fields, not spouse or children
   const subscriberFields = fields.filter(f =>
-    !f.domainKey.startsWith('spouse.') &&
-    !f.domainKey.startsWith('children')
+    !f.domainKey.includes('.spouse.') &&
+    !f.domainKey.includes('children')
   )
 
   // Filter fields based on showIf conditions

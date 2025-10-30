@@ -146,16 +146,16 @@ export default function LeadModal({
 
   // Merge all spouse fields (common + platform-specific) with badges
   const allSpouseFields = [
-    ...schema.common.filter(f => f.domainKey.startsWith('spouse.')),
-    ...schema.platformSpecific.alptis.filter(f => f.domainKey.startsWith('spouse.')).map(f => ({ ...f, platform: 'alptis' as const })),
-    ...schema.platformSpecific.swisslifeone.filter(f => f.domainKey.startsWith('spouse.')).map(f => ({ ...f, platform: 'swisslifeone' as const }))
+    ...schema.common.filter(f => f.domainKey.includes('.spouse.') || f.domainKey.startsWith('spouse.')),
+    ...schema.platformSpecific.alptis.filter(f => f.domainKey.includes('.spouse.')).map(f => ({ ...f, platform: 'alptis' as const })),
+    ...schema.platformSpecific.swisslifeone.filter(f => f.domainKey.includes('.spouse.')).map(f => ({ ...f, platform: 'swisslifeone' as const }))
   ]
 
   // Merge all children fields (common + platform-specific) with badges
   const allChildrenFields = [
-    ...schema.common.filter(f => f.domainKey.startsWith('children[].')),
-    ...schema.platformSpecific.alptis.filter(f => f.domainKey.startsWith('children[].')).map(f => ({ ...f, platform: 'alptis' as const })),
-    ...schema.platformSpecific.swisslifeone.filter(f => f.domainKey.startsWith('children[].')).map(f => ({ ...f, platform: 'swisslifeone' as const }))
+    ...schema.common.filter(f => f.domainKey.includes('children[].')),
+    ...schema.platformSpecific.alptis.filter(f => f.domainKey.includes('children[].')).map(f => ({ ...f, platform: 'alptis' as const })),
+    ...schema.platformSpecific.swisslifeone.filter(f => f.domainKey.includes('children[].')).map(f => ({ ...f, platform: 'swisslifeone' as const }))
   ]
 
   return (
@@ -198,7 +198,7 @@ export default function LeadModal({
     >
       <div className="space-y-3">
         <CommonFieldsSection
-          commonFields={schema.common.filter(f => !f.domainKey.startsWith('spouse.') && !f.domainKey.startsWith('children'))}
+          commonFields={schema.common.filter(f => !f.domainKey.includes('.spouse.') && !f.domainKey.startsWith('spouse.') && !f.domainKey.includes('children'))}
           spouseFields={allSpouseFields}
           childrenFields={allChildrenFields}
           values={leadForm.formState.values}
