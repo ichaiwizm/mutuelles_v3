@@ -18,7 +18,7 @@ import { useLeadSelection } from './conversion/useLeadSelection'
 import type { EmailMessage, EmailImportProgress, AuthStatus } from '../../../../shared/types/email'
 import type { EnrichedLeadData } from '../../../../shared/types/emailParsing'
 import LeadModal from '../../../components/leads/LeadModal'
-import { transformToCleanLead } from '@renderer/utils/formDataTransformer'
+import { transformToCleanLead } from '@shared/utils/leadFormData'
 import { useToastContext } from '../../../contexts/ToastContext'
 
 const PROGRESS_MESSAGES: Record<string, string> = {
@@ -82,13 +82,7 @@ export function EmailImportView({
   const selection = useLeadSelection(previewLeads)
   const toast = useToastContext()
 
-  // ✅ AUTO-SELECT: Sélectionner automatiquement tous les emails après refresh
-  useEffect(() => {
-    if (potentialLeads.length > 0) {
-      const allIds = potentialLeads.map((email) => email.id)
-      setSelectedEmailIds(allIds)
-    }
-  }, [potentialLeads])
+  // Suppression de l'auto‑sélection après rafraîchissement pour éviter des créations non voulues
 
   // Formater le timestamp du cache
   const formatCacheTime = (timestamp: number | null): string => {

@@ -81,6 +81,7 @@ export default function LeadsTable({
             </th>
             <th className="text-left px-3 py-2">Contact</th>
             <th className="text-left px-3 py-2">Souscripteur</th>
+            <th className="text-left px-3 py-2">Qualité</th>
             <th className="text-left px-3 py-2">Date</th>
             <th className="px-3 py-2 w-[120px] text-right">
               {anySelected && (
@@ -139,6 +140,43 @@ export default function LeadsTable({
                     </div>
                   )}
                 </div>
+              </td>
+              <td className="px-3 py-2">
+                {(() => {
+                  const missing: string[] = []
+                  const s = lead.data.subscriber || {}
+                  const spouse = lead.data.spouse
+                  const children = lead.data.children || []
+                  const has = (v: any) => v !== undefined && v !== null && String(v).trim() !== ''
+
+                  if (!has(s.lastName)) missing.push('Nom')
+                  if (!has(s.firstName)) missing.push('Prénom')
+                  if (!has(s.birthDate)) missing.push('Naissance assuré')
+                  if (!has(s.telephone)) missing.push('Téléphone')
+
+                  if (spouse) {
+                    if (!has(spouse.birthDate)) missing.push('Naissance conjoint')
+                  }
+                  if (Array.isArray(children) && children.length > 0) {
+                    const idxMissing = children
+                      .map((c, i) => (!has(c?.birthDate) ? i + 1 : null))
+                      .filter(Boolean) as number[]
+                    if (idxMissing.length > 0) {
+                      missing.push(`Naissance enfant(s) ${idxMissing.join(',')}`)
+                    }
+                  }
+
+                  if (missing.length === 0) {
+                    return (
+                      <span className="text-xs px-2 py-0.5 rounded border border-green-300 text-green-700 dark:border-green-700 dark:text-green-400">Complet</span>
+                    )
+                  }
+                  return (
+                    <span className="text-xs px-2 py-0.5 rounded border border-amber-300 text-amber-700 dark:border-amber-700 dark:text-amber-400" title={`Manquant : ${missing.join(', ')}`}>
+                      Manquant: {missing.slice(0,2).join(', ')}{missing.length>2?'…':''}
+                    </span>
+                  )
+                })()}
               </td>
               <td className="px-3 py-2">
                 <div className="text-xs text-neutral-500">

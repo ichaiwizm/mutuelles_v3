@@ -49,8 +49,25 @@ export function LeadPreviewCard({
     summaryParts.push(`Né(e) le ${subscriber.birthDate.value}`)
   }
 
-  // Conjoint (uniquement si des données sont présentes)
-  if (lead.parsedData.spouse && Object.keys(lead.parsedData.spouse).length > 0) {
+  // Conjoint (si données réelles présentes)
+  const hasMeaningfulSpouse = (() => {
+    const flat = (lead as any).formData as Record<string, any> | undefined
+    if (flat && flat['conjoint'] === true) return true
+
+    const s: any = lead.parsedData.spouse || {}
+    const isGood = (k: string) => {
+      const f = s[k]
+      if (!f || typeof f !== 'object') return false
+      if (f.source === 'default') return false
+      const v = String(f.value || '').trim().toLowerCase()
+      if (!v || v === 'non renseigne' || v === 'non renseigné') return false
+      return true
+    }
+    // champs significatifs (profession exclue pour éviter les faux positifs)
+    return ['birthDate', 'lastName', 'firstName', 'regime', 'status'].some(isGood)
+  })()
+
+  if (hasMeaningfulSpouse) {
     summaryParts.push('Conjoint')
   }
 
@@ -87,6 +104,11 @@ export function LeadPreviewCard({
   }
 
   const missingFields = lead.missingRequiredFields.map(translateField)
+  const severityClass = lead.validationStatus === 'invalid'
+    ? 'text-red-600 dark:text-red-400'
+    : (lead.validationStatus === 'partial'
+        ? 'text-amber-600 dark:text-amber-400'
+        : 'text-green-600 dark:text-green-400')
 
   return (
     <div
@@ -129,7 +151,7 @@ export function LeadPreviewCard({
         )}
         {/* Afficher les champs manquants */}
         {!isComplete && missingFields.length > 0 && (
-          <div className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+          <div className={`text-xs ${severityClass} mt-1`}>
             Manquant : {missingFields.join(', ')}
           </div>
         )}

@@ -1,4 +1,6 @@
 import baseDomainJson from '../../../data/domain/base.domain.json'
+import alptisUi from '../../../data/carriers/alptis.ui.json'
+import swisslifeUi from '../../../data/carriers/swisslifeone.ui.json'
 
 export interface FormFieldDefinition {
   domainKey: string
@@ -115,19 +117,9 @@ interface CarrierConfig {
 async function loadConfigurations() {
   const baseDomain = baseDomainJson as BaseDomain
 
-  // Charger les UI forms depuis la DB (platforms_catalog.ui_form_json)
-  // On ne lit plus les fichiers admin/carriers/*.ui.json
-  const uiForms: Array<{ slug: string; ui: any | null }> = await (window as any).api.catalog.getUiForms()
-
-  const alptis = uiForms.find(f => f.slug === 'alptis')?.ui
-  const swisslife = uiForms.find(f => f.slug === 'swisslifeone')?.ui
-
-  if (!alptis || !swisslife) {
-    throw new Error('UI form manquant en DB (platforms_catalog.ui_form_json). Importez-les via scripts/platforms/import_ui_form.mjs')
-  }
-
-  const alptisConfig = alptis as CarrierConfig
-  const swisslifeConfig = swisslife as CarrierConfig
+  // Lecture exclusivement depuis les fichiers versionnés
+  const alptisConfig = alptisUi as unknown as CarrierConfig
+  const swisslifeConfig = swisslifeUi as unknown as CarrierConfig
 
   return { baseDomain, alptisConfig, swisslifeConfig }
 }

@@ -149,20 +149,45 @@ function shouldValidateField(
     return true
   }
 
-  const fieldValue = values[field.showIf.field]
+  // Conjonction de conditions
+  if ((field.showIf as any).and !== undefined) {
+    const all = (field.showIf as any).and as Array<{ field: string; equals?: any; oneOf?: any[]; notOneOf?: any[] }>
+    return all.every(cond => {
+      const v = values[cond.field]
+      if (cond.equals !== undefined) return v === cond.equals
+      if (cond.oneOf !== undefined) {
+        if (v === undefined || v === null || v === '') return false
+        return cond.oneOf.includes(v)
+      }
+      if (cond.notOneOf !== undefined) {
+        if (v === undefined || v === null || v === '') return true
+        return !cond.notOneOf.includes(v)
+      }
+      return true
+    })
+  }
 
-  // Support for 'equals' condition
+  const fieldValue = values[field.showIf.field!]
+
+  // equals
   if (field.showIf.equals !== undefined) {
     return fieldValue === field.showIf.equals
   }
 
-  // Support for 'oneOf' condition
+  // oneOf
   if (field.showIf.oneOf !== undefined) {
-    // Field must have a value AND be in the oneOf array
     if (fieldValue === undefined || fieldValue === null || fieldValue === '') {
       return false
     }
     return field.showIf.oneOf.includes(fieldValue)
+  }
+
+  // notOneOf
+  if (field.showIf.notOneOf !== undefined) {
+    if (fieldValue === undefined || fieldValue === null || fieldValue === '') {
+      return true
+    }
+    return !field.showIf.notOneOf.includes(fieldValue)
   }
 
   return true

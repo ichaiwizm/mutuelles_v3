@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Pencil } from 'lucide-react'
+import { Pencil, Bug } from 'lucide-react'
 import Modal from '../Modal'
 import CommonFieldsSection from '../forms/CommonFieldsSection'
 import PlatformSpecificSection from '../forms/PlatformSpecificSection'
@@ -7,7 +7,8 @@ import { useFormSchema } from '@renderer/hooks/useFormSchema'
 import { useLeadForm } from '@renderer/hooks/useLeadForm'
 import { useToastContext } from '@renderer/contexts/ToastContext'
 import type { Lead } from '@shared/types/leads'
-import { transformToCleanLead } from '@renderer/utils/formDataTransformer'
+import { transformToCleanLead } from '@shared/utils/leadFormData'
+import { shouldShowField } from '@renderer/utils/formSchemaGenerator'
 
 export interface LeadModalProps {
   mode: 'create' | 'view' | 'edit'
@@ -70,6 +71,17 @@ export default function LeadModal({
     }
   }, [isOpen])
 
+  // Auto-expand carrier sections if data exists for them
+  useEffect(() => {
+    const vals = leadForm.formState.values
+    if (!alptisExpanded && Object.keys(vals).some(k => k.startsWith('alptis.'))) {
+      setAlptisExpanded(true)
+    }
+    if (!swisslifeExpanded && Object.keys(vals).some(k => k.startsWith('swisslifeone.'))) {
+      setSwisslifeExpanded(true)
+    }
+  }, [leadForm.formState.values])
+
   const handleGenerateProjectName = () => {
     const lastName = leadForm.formState.values['subscriber.lastName'] || ''
     const firstName = leadForm.formState.values['subscriber.firstName'] || ''
@@ -90,6 +102,118 @@ export default function LeadModal({
 
   const handleFillTest = () => {
     leadForm.handleFillTest()
+  }
+
+  const handleDebug = () => {
+    if (!schema) {
+      toast.warning('Schema non disponible', 'Impossible de générer les informations de debug')
+      return
+    }
+
+    // Collect all fields from schema
+    const allFields = [
+      ...schema.common,
+      ...schema.platformSpecific.alptis.map(f => ({ ...f, _platform: 'alptis' })),
+      ...schema.platformSpecific.swisslifeone.map(f => ({ ...f, _platform: 'swisslifeone' }))
+    ]
+
+    const values = leadForm.formState.values
+
+    // Analyze field visibility and values
+    const visibleFields: string[] = []
+    const hiddenFields: string[] = []
+    const filledFields: string[] = []
+    const emptyFields: string[] = []
+    const requiredMissing: string[] = []
+    const fieldsWithErrors: Array<{ field: string; error: string }> = []
+
+    allFields.forEach(field => {
+      const isVisible = shouldShowField(field, values)
+      const fieldValue = values[field.domainKey]
+      const isEmpty = fieldValue === undefined || fieldValue === null || fieldValue === ''
+      const hasError = leadForm.formState.errors[field.domainKey]
+
+      if (isVisible) {
+        visibleFields.push(field.domainKey)
+        if (!isEmpty) {
+          filledFields.push(field.domainKey)
+        } else {
+          emptyFields.push(field.domainKey)
+        }
+        if (field.required && isEmpty) {
+          requiredMissing.push(field.domainKey)
+        }
+      } else {
+        hiddenFields.push(field.domainKey)
+      }
+
+      if (hasError) {
+        fieldsWithErrors.push({ field: field.domainKey, error: hasError })
+      }
+    })
+
+    // Build complete debug info
+    const debugInfo = {
+      timestamp: new Date().toISOString(),
+      mode: currentMode,
+      formState: {
+        values: leadForm.formState.values,
+        errors: leadForm.formState.errors,
+        touched: leadForm.formState.touched,
+        isSubmitting: leadForm.formState.isSubmitting
+      },
+      sections: {
+        hasSpouse: leadForm.hasSpouse,
+        hasChildren: leadForm.hasChildren,
+        childrenCount: leadForm.children.length,
+        childrenIds: leadForm.children.map(c => c.id),
+        alptisExpanded,
+        swisslifeExpanded
+      },
+      schema: {
+        totalFields: allFields.length,
+        commonFieldsCount: schema.common.length,
+        alptisFieldsCount: schema.platformSpecific.alptis.length,
+        swisslifeFieldsCount: schema.platformSpecific.swisslifeone.length
+      },
+      fieldAnalysis: {
+        totalFields: allFields.length,
+        visibleFieldsCount: visibleFields.length,
+        hiddenFieldsCount: hiddenFields.length,
+        filledFieldsCount: filledFields.length,
+        emptyFieldsCount: emptyFields.length,
+        requiredMissingCount: requiredMissing.length,
+        errorsCount: fieldsWithErrors.length,
+        visibleFields,
+        hiddenFields,
+        filledFields,
+        emptyFields,
+        requiredMissing,
+        fieldsWithErrors
+      }
+    }
+
+    // Format as pretty JSON
+    const jsonOutput = JSON.stringify(debugInfo, null, 2)
+
+    // Copy to clipboard
+    navigator.clipboard
+      .writeText(jsonOutput)
+      .then(() => {
+        toast.success('Debug info copié', 'Les informations de débogage ont été copiées dans le presse-papier')
+        console.group('🐛 Lead Form Debug State')
+        console.log('Mode:', currentMode)
+        console.log('Total Fields:', allFields.length)
+        console.log('Visible Fields:', visibleFields.length)
+        console.log('Filled Fields:', filledFields.length)
+        console.log('Required Missing:', requiredMissing.length)
+        console.log('Full Debug Info:', debugInfo)
+        console.groupEnd()
+      })
+      .catch(err => {
+        toast.error('Erreur de copie', 'Impossible de copier dans le presse-papier')
+        console.error('Failed to copy debug info:', err)
+      })
   }
 
   const handleSwitchToEdit = () => {
@@ -193,6 +317,14 @@ export default function LeadModal({
               </button>
             </>
           )}
+          <button
+            onClick={handleDebug}
+            disabled={leadForm.formState.isSubmitting || !schema}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-purple-700 dark:text-purple-300 bg-purple-100 dark:bg-purple-900/30 border border-purple-300 dark:border-purple-700 rounded-md hover:bg-purple-200 dark:hover:bg-purple-900/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            <Bug size={14} />
+            Debug État
+          </button>
         </div>
       }
     >

@@ -64,6 +64,7 @@ export function EmailList({
   }, [emails])
 
   const allSelected = emails.length > 0 && selectedEmailIds.length === emails.length
+  const leadPotentialCount = emails.filter(e => e.hasLeadPotential).length
 
   if (emails.length === 0) {
     return (
@@ -115,8 +116,8 @@ export function EmailList({
             )}
 
             <span className="text-gray-700 dark:text-gray-300">
-              <span className="font-semibold text-blue-600">{emails.length}</span>
-              {' '}lead{emails.length > 1 ? 's' : ''} potentiel{emails.length > 1 ? 's' : ''}
+              <span className="font-semibold text-blue-600">{emails.length}</span> email{emails.length > 1 ? 's' : ''}
+              <span className="ml-2 text-gray-500 dark:text-gray-400">· {leadPotentialCount} lead{leadPotentialCount > 1 ? 's' : ''} potentiel{leadPotentialCount > 1 ? 's' : ''}</span>
             </span>
 
             {selectedEmailIds.length > 0 && (

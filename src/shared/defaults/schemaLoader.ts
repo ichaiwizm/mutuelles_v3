@@ -23,14 +23,28 @@ export function loadDomainSchema(): DomainSchema {
   }
 
   // Determine schema path based on environment
-  let schemaPath: string
-
-  if (typeof window === 'undefined') {
-    // Node.js environment (backend)
-    schemaPath = path.join(process.cwd(), 'data', 'domain', 'base.domain.json')
-  } else {
+  if (typeof window !== 'undefined') {
     // Browser environment - schema should be bundled or fetched
     throw new Error('loadDomainSchema() should not be called directly in browser. Use loadDomainSchemaFromData() with preloaded data.')
+  }
+
+  // Try multiple candidates to be robust in dev and packaged app
+  const candidates = [
+    // Relative to compiled file (main process dist)
+    path.join(__dirname, '../../../data/domain/base.domain.json'),
+    // Project root (dev)
+    path.join(process.cwd(), 'data', 'domain', 'base.domain.json'),
+    // Packaged resources path if available
+    (typeof (process as any).resourcesPath === 'string'
+      ? path.join((process as any).resourcesPath, 'data', 'domain', 'base.domain.json')
+      : '')
+  ].filter(Boolean) as string[]
+
+  const schemaPath = candidates.find(p => {
+    try { return !!p && fs.existsSync(p) } catch { return false }
+  })
+  if (!schemaPath) {
+    throw new Error('Failed to locate base.domain.json in known locations')
   }
 
   try {

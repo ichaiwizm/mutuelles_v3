@@ -10,6 +10,58 @@ import { applyDefaults, getAllDefaults, type DomainSchema } from '@shared/defaul
 import { computeDerivedFields } from '@shared/businessRules/computedValues'
 import { loadDomainSchema } from '@shared/defaults/schemaLoader'
 
+// ------------------------------
+// Normalization helpers
+// ------------------------------
+function normalizeCivility(input: any): 'MONSIEUR' | 'MADAME' | undefined {
+  if (!input) return undefined
+  const s = String(input).toLowerCase().replace(/\./g, '').trim()
+  if (['m', 'mr', 'monsieur'].includes(s)) return 'MONSIEUR'
+  if (['mme', 'madame', 'mlle', 'mademoiselle'].includes(s)) return 'MADAME'
+  return undefined
+}
+
+function normalizeRegimeCommon(input: any): 'TNS' | 'SECURITE_SOCIALE' | 'AMEXA' | 'SECURITE_SOCIALE_ALSACE_MOSELLE' | 'AUTRES_REGIME_SPECIAUX' | undefined {
+  if (!input) return undefined
+  const s = String(input).toLowerCase()
+  if (s.includes('tns') || s.includes('indépendant') || s.includes('independant') || s.includes('travailleurs non salaries')) return 'TNS'
+  if (s.includes('alsace') || s.includes('moselle')) return 'SECURITE_SOCIALE_ALSACE_MOSELLE'
+  if (s.includes('msa') || s.includes('amexa') || s.includes('agric')) return 'AMEXA'
+  if (s.includes('salari')) return 'SECURITE_SOCIALE'
+  if (s.includes('regime général') || s.includes('régime général') || s.includes('sécurité sociale')) return 'SECURITE_SOCIALE'
+  if (s.includes('spécial') || s.includes('special')) return 'AUTRES_REGIME_SPECIAUX'
+  return undefined
+}
+
+function mapRegimeForCarrier(common: ReturnType<typeof normalizeRegimeCommon>, carrier: 'alptis'|'swisslifeone'): string | undefined {
+  if (!common) return undefined
+  if (carrier === 'swisslifeone') {
+    // SwissLife accepts the common codes directly
+    return common
+  }
+  // Alptis mapping
+  if (common === 'TNS') return 'SECURITE_SOCIALE_INDEPENDANTS'
+  if (common === 'SECURITE_SOCIALE') return 'SECURITE_SOCIALE'
+  if (common === 'AMEXA') return 'AMEXA'
+  if (common === 'SECURITE_SOCIALE_ALSACE_MOSELLE') return 'ALSACE_MOSELLE'
+  // Otherwise, fallback to SECURITE_SOCIALE
+  return 'SECURITE_SOCIALE'
+}
+
+function cleanPostalCode(input: any): string | undefined {
+  if (input === undefined || input === null) return undefined
+  const s = String(input).replace(/\D/g, '').slice(0, 5)
+  return s.length === 5 ? s : undefined
+}
+
+function cleanPhone(input: any): string | undefined {
+  if (!input) return undefined
+  const s = String(input).replace(/\D/g, '')
+  // Keep as-is if 10+ digits, trim to last 10 if longer
+  if (s.length >= 10) return s.slice(-10)
+  return s || undefined
+}
+
 /**
  * Convert ParsedLeadData (with ParsedField wrappers) to plain values object
  */
@@ -60,6 +112,88 @@ function parsedDataToValues(parsedData: ParsedLeadData): Record<string, any> {
   }
 
   return values
+}
+
+/** Normalize common values and seed carrier-specific branches */
+function normalizeAndSeedCarriers(values: Record<string, any>) {
+  // Civility
+  const civ = normalizeCivility(values.subscriber?.civility)
+  if (civ) {
+    values.subscriber = values.subscriber || {}
+    values.subscriber.civility = civ
+  }
+
+  // Phone / postal code cleanup
+  if (values.subscriber) {
+    const phone = cleanPhone(values.subscriber.telephone)
+    if (phone) values.subscriber.telephone = phone
+    const cp = cleanPostalCode(values.subscriber.postalCode)
+    if (cp) values.subscriber.postalCode = cp
+  }
+
+  if (values.spouse) {
+    const cp = cleanPostalCode(values.spouse.postalCode)
+    if (cp) values.spouse.postalCode = cp
+  }
+
+  // Regime normalization → seed carriers
+  const commonRegime = normalizeRegimeCommon(values.subscriber?.regime)
+  const carriers: Array<'alptis'|'swisslifeone'> = ['alptis','swisslifeone']
+  if (commonRegime) {
+    for (const c of carriers) {
+      const mapped = mapRegimeForCarrier(commonRegime, c)
+      if (mapped) {
+        values[c] = values[c] || {}
+        values[c].subscriber = values[c].subscriber || {}
+        if (!values[c].subscriber.regime) values[c].subscriber.regime = mapped
+      }
+    }
+  }
+
+  // Spouse regime
+  const spouseCommonRegime = normalizeRegimeCommon(values.spouse?.regime)
+  if (spouseCommonRegime) {
+    for (const c of carriers) {
+      const mapped = mapRegimeForCarrier(spouseCommonRegime, c)
+      if (mapped) {
+        values[c] = values[c] || {}
+        values[c].spouse = values[c].spouse || {}
+        if (!values[c].spouse.regime) values[c].spouse.regime = mapped
+      }
+    }
+  }
+
+  // Seed common contact/location to carrier slices when missing
+  // Needed so platform-specific required fields (e.g., alptis.postalCode, swisslifeone.department derivation) can be satisfied
+  const copyIf = (carrier: 'alptis'|'swisslifeone', fromPath: string, toPath: string) => {
+    // Simple getter
+    const get = (obj: any, path: string) => path.split('.').reduce((o,p)=>o?.[p], obj)
+    const set = (obj: any, path: string, v: any) => {
+      const parts = path.split('.')
+      let cur = obj
+      for (let i = 0; i < parts.length - 1; i++) {
+        const p = parts[i]
+        if (!cur[p]) cur[p] = {}
+        cur = cur[p]
+      }
+      cur[parts[parts.length-1]] = v
+    }
+
+    const src = get(values, fromPath)
+    const dst = get(values, `${carrier}.${toPath}`)
+    if (src !== undefined && src !== null && dst === undefined) {
+      values[carrier] = values[carrier] || {}
+      set(values[carrier], toPath, src)
+    }
+  }
+
+  for (const c of carriers) {
+    copyIf(c, 'subscriber.postalCode', 'subscriber.postalCode')
+    copyIf(c, 'subscriber.city', 'subscriber.city')
+    copyIf(c, 'subscriber.birthDate', 'subscriber.birthDate')
+  }
+
+  // Subscriber status (Swisslife) can be inferred from regime via computedValues, so no hard mapping here
 }
 
 /**
@@ -243,6 +377,9 @@ export function enrich(
     platform,
     overwrite: false, // Never overwrite parsed values
   })
+
+  // Normalize values and seed carrier branches before carrier defaults
+  normalizeAndSeedCarriers(currentValues)
 
   // Apply carrier-specific defaults for both carriers under prefixed namespaces
   const carriers: Array<'alptis'|'swisslifeone'> = ['alptis','swisslifeone']

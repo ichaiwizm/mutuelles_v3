@@ -22,10 +22,7 @@ export class LeadTransformer {
     // Transform spouse - check if spouse object exists and has fields (even if empty)
     // We preserve spouse data if the object has any fields, regardless of whether values are populated
     // This allows DataEnricher to add defaults to detected but partially empty spouse objects
-    const hasSpouseData = parsedData.spouse && (
-      this.hasAnyFieldValue(parsedData.spouse) ||
-      this.hasAnyFields(parsedData.spouse)
-    )
+    const hasSpouseData = parsedData.spouse && this.hasMeaningfulSpouse(parsedData.spouse)
     if (hasSpouseData) {
       formData.conjoint = true
       this.transformSpouse(parsedData.spouse, formData)
@@ -65,6 +62,14 @@ export class LeadTransformer {
     const flatten = (obj: any, prefix: string, out: Record<string, any>) => {
       const walk = (node: any, path: string[]) => {
         if (node === null || node === undefined) return
+
+        // Treat ParsedField objects as leaves and extract .value
+        if (typeof node === 'object' && 'value' in node && 'confidence' in node) {
+          const key = `${prefix}.${path.join('.')}`
+          out[key] = (node as any).value
+          return
+        }
+
         if (Array.isArray(node)) {
           node.forEach((item, idx) => walk(item, [...path.slice(0, -1), `${path[path.length-1]}[${idx}]`]))
           return
@@ -86,6 +91,25 @@ export class LeadTransformer {
         flatten(slice, carrier, formData)
       }
     })
+
+    // Normalize possible dot-index children keys to bracket notation
+    // e.g., alptis.children.0.regime -> alptis.children[0].regime
+    const childIndexKeyRegex = /^(alptis|swisslifeone)\.children\.(\d+)(\..+)$/
+    for (const key of Object.keys(formData)) {
+      const m = key.match(childIndexKeyRegex)
+      if (m) {
+        const newKey = `${m[1]}.children[${m[2]}]${m[3]}`
+        if (formData[newKey] === undefined) {
+          formData[newKey] = formData[key]
+        }
+        delete formData[key]
+      }
+    }
+
+    // Propagate common children.count to SwissLife prefixed count for UI coherence
+    if (formData['children.count'] !== undefined && formData['swisslifeone.children.count'] === undefined) {
+      formData['swisslifeone.children.count'] = formData['children.count']
+    }
 
     return formData
   }
@@ -240,7 +264,7 @@ export class LeadTransformer {
     for (const value of Object.values(obj)) {
       if (value && typeof value === 'object' && 'value' in value) {
         const fieldValue = value.value
-        if (fieldValue !== null && fieldValue !== undefined && fieldValue !== '') {
+        if (fieldValue !== null && fieldValue !== undefined && String(fieldValue).trim() !== '') {
           return true
         }
       }
@@ -258,13 +282,48 @@ export class LeadTransformer {
   private static hasAnyFields(obj: any): boolean {
     if (!obj || typeof obj !== 'object') return false
 
-    // Check if object has any keys that look like ParsedField objects
-    for (const value of Object.values(obj)) {
+    // Check if object has any meaningful ParsedField objects
+    // - 'present' with value false is NOT considered meaningful
+    // - 'present' with value true IS meaningful
+    // - any other ParsedField key is meaningful regardless of value
+    for (const [key, value] of Object.entries(obj)) {
       if (value && typeof value === 'object' && 'value' in value && 'confidence' in value) {
-        return true // Found at least one ParsedField structure
+        if (key === 'present') {
+          if ((value as any).value === true) return true
+          continue
+        }
+        return true // Found at least one ParsedField structure (non 'present')
       }
     }
 
+    return false
+  }
+
+  /**
+   * Determine if spouse slice has real (non-default) data
+   * Considered meaningful if:
+   * - present === true, or
+   * - at least one of [birthDate, lastName, firstName, regime, status] has source !== 'default' and a non-empty, non-"non renseigne" value
+   */
+  private static hasMeaningfulSpouse(spouse: any): boolean {
+    if (!spouse || typeof spouse !== 'object') return false
+
+    const norm = (v: any) => String(v || '').trim().toLowerCase()
+    const isGood = (f: any) => {
+      if (!f || typeof f !== 'object') return false
+      const val = norm(f.value)
+      const src = f.source
+      if (src === 'default') return false
+      if (!val || val === 'non renseigne' || val === 'non renseigné' || val === 'non renseigne.') return false
+      return true
+    }
+
+    if (spouse.present && spouse.present.value === true) return true
+
+    const keys = ['birthDate', 'lastName', 'firstName', 'regime', 'status']
+    for (const k of keys) {
+      if (isGood(spouse[k])) return true
+    }
     return false
   }
 
