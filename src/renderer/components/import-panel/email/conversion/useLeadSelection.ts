@@ -15,7 +15,7 @@ export function useLeadSelection(leads: EnrichedLeadData[]) {
   )
 
   const completeLeadIds = useMemo(
-    () => new Set(completeLeads.map((lead) => lead.parsedData.metadata.sourceEmailId)),
+    () => new Set(completeLeads.map((lead) => lead.metadata.emailId)),
     [completeLeads]
   )
 
@@ -57,7 +57,7 @@ export function useLeadSelection(leads: EnrichedLeadData[]) {
   // Récupère les leads sélectionnés
   const getSelectedLeads = useCallback(() => {
     return leads.filter((lead) =>
-      selectedIds.has(lead.parsedData.metadata.sourceEmailId)
+      selectedIds.has(lead.metadata.emailId)
     )
   }, [leads, selectedIds])
 

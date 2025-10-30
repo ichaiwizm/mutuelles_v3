@@ -72,7 +72,8 @@ export class AssurProspectParser extends BaseLeadParser {
    * Parse conjoint
    */
   private parseSpouse(text: string): ParsedLeadData['spouse'] {
-    const spouseMatch = text.match(/conjoint[^\n]*:([^\n]*\n){1,8}/i)
+    // Pattern: "Conjoint" (avec ou sans deux-points) suivi de 1-8 lignes de données
+    const spouseMatch = text.match(/conjoint[^\n]*\n([^\n]*\n){1,8}/i)
     if (!spouseMatch) return {}
 
     const spouseText = spouseMatch[0]

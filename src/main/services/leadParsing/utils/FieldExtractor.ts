@@ -173,11 +173,15 @@ export class FieldExtractor {
    */
   static extractEmail(content: string): FieldExtractionResult<string> {
     const patterns = [
-      // Label with optional formatting markers (single-line anchored)
-      /^\s*\*?E-?mail\*?\s*:?\s*([\w\.\-]+@[\w\.\-]+\.[a-z]{2,})\s*$/im,
-      /^\s*\*?Courriel\*?\s*:?\s*([\w\.\-]+@[\w\.\-]+\.[a-z]{2,})\s*$/im,
+      // Label with optional formatting markers (improved to handle *Email :* format)
+      // Allows any combination of spaces and asterisks around the colon
+      /^\s*\*?\s*E-?mail[\s\*]*:?[\s\*]*([\w\.\-]+@[\w\.\-]+\.[a-z]{2,})\s*$/im,
+      /^\s*\*?\s*Courriel[\s\*]*:?[\s\*]*([\w\.\-]+@[\w\.\-]+\.[a-z]{2,})\s*$/im,
       // Generic email pattern on its own line
-      /^\s*([\w\.\-]+@[\w\.\-]+\.[a-z]{2,})\s*$/im
+      /^\s*([\w\.\-]+@[\w\.\-]+\.[a-z]{2,})\s*$/im,
+      // Fallback: capture any valid email anywhere in the text
+      // This is the last resort if all structured patterns fail
+      /\b([\w\.\-]+@[\w\.\-]+\.[a-z]{2,})\b/i
     ]
 
     // Use TextCleaner to validate and normalize

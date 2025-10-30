@@ -29,15 +29,28 @@ export class ParserOrchestrator {
   parse(rawContent: string, sourceId: string, isHtml: boolean = false): OrchestrationResult {
     console.log(`[ParserOrchestrator] Starting orchestration for source: ${sourceId}`)
 
-    // Phase 1: Nettoyage
-    const cleanedContent = ContentCleaner.clean(rawContent, isHtml)
-    console.log(`[ParserOrchestrator] Cleaned content: ${cleanedContent.text.length} chars`)
+    // Phase 1: Nettoyage basique (garde les mots-clés d'introduction pour détection)
+    const basicCleaned = ContentCleaner.cleanBasic(rawContent, isHtml)
+    console.log(`[ParserOrchestrator] Basic cleaned content: ${basicCleaned.text.length} chars`)
 
-    // Phase 2: Détection du provider
-    const providerDetection = ProviderDetector.detect(cleanedContent)
+    // Phase 2: Détection du provider (sur contenu complet avec mots-clés)
+    const providerDetection = ProviderDetector.detect(basicCleaned)
     console.log(`[ParserOrchestrator] Detected provider: ${providerDetection.provider} (${providerDetection.confidence}%)`)
 
-    // Phase 3: Stratégie de parsing
+    // Phase 3: Extraction du bloc principal (maintenant qu'on connaît le provider)
+    const extractedText = ContentCleaner.extractMainBlock(basicCleaned.text)
+    const cleanedContent = {
+      text: extractedText,
+      original: basicCleaned.original,
+      metadata: {
+        ...basicCleaned.metadata,
+        linesRemoved: basicCleaned.original.split('\n').length - extractedText.split('\n').length,
+        charsRemoved: basicCleaned.original.length - extractedText.length
+      }
+    }
+    console.log(`[ParserOrchestrator] Extracted main block: ${cleanedContent.text.length} chars`)
+
+    // Phase 4: Stratégie de parsing
     const allAttempts: ParserResult[] = []
     let finalResult: ParserResult | null = null
 

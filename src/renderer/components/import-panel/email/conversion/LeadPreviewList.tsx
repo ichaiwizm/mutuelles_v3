@@ -31,7 +31,7 @@ export function LeadPreviewList({
   return (
     <div className="overflow-y-auto max-h-[60vh] p-4 space-y-2">
       {leads.map((lead) => {
-        const leadId = lead.parsedData.metadata.sourceEmailId
+        const leadId = lead.metadata.emailId
 
         return (
           <LeadPreviewCard

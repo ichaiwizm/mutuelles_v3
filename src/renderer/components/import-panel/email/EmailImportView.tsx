@@ -184,7 +184,7 @@ export function EmailImportView({
       kept.push({ ...l, localDuplicate: false })
     }
     // Conserver sélection uniquement pour les éléments gardés
-    const keptIds = new Set(kept.map(k => k.parsedData.metadata.sourceEmailId))
+    const keptIds = new Set(kept.map(k => k.metadata.emailId))
     selection.updateSelected(new Set(Array.from(selection.selectedIds).filter(id => keptIds.has(id))))
     setPreviewLeads(kept)
   }
@@ -274,9 +274,9 @@ export function EmailImportView({
       })
     }
 
-    const leadId = editingLead.parsedData.metadata.sourceEmailId
+    const leadId = editingLead.metadata.emailId
     setPreviewLeads(prev => prev.map(l =>
-      l.parsedData.metadata.sourceEmailId === leadId ? updatedLead : l
+      l.metadata.emailId === leadId ? updatedLead : l
     ))
     // Auto-sélection si le lead devient complet
     if (newStatus === 'valid' && !selection.isSelected(leadId)) {
@@ -293,9 +293,16 @@ export function EmailImportView({
   const handleCopyDebug = async () => {
     try {
       // Récupérer tous les rapports de debug depuis le backend
-      const reports = await window.api.leads.getAllDebugReports()
+      const response = await window.api.leads.getAllDebugReports()
 
-      if (!reports || reports.length === 0) {
+      if (!response?.success || !response.data) {
+        toast.error('Aucun rapport de debug disponible')
+        return
+      }
+
+      const reports = response.data
+
+      if (!Array.isArray(reports) || reports.length === 0) {
         toast.error('Aucun rapport de debug disponible')
         return
       }
@@ -313,9 +320,29 @@ export function EmailImportView({
         })
       ].join('\n')
 
-      // Copier dans le presse-papier
-      await navigator.clipboard.writeText(fullReport)
-      toast.success('Rapport copié dans le presse-papier !')
+      // Copier dans le presse-papier avec fallback
+      try {
+        await navigator.clipboard.writeText(fullReport)
+        toast.success('Rapport copié dans le presse-papier !')
+      } catch (clipboardError) {
+        // Fallback: utiliser un textarea temporaire si l'API Clipboard échoue
+        const textarea = document.createElement('textarea')
+        textarea.value = fullReport
+        textarea.style.position = 'fixed'
+        textarea.style.left = '-999999px'
+        textarea.style.top = '-999999px'
+        document.body.appendChild(textarea)
+        textarea.focus()
+        textarea.select()
+        try {
+          document.execCommand('copy')
+          textarea.remove()
+          toast.success('Rapport copié dans le presse-papier !')
+        } catch (execError) {
+          textarea.remove()
+          throw execError
+        }
+      }
     } catch (error) {
       console.error('Erreur copie debug:', error)
       toast.error('Erreur lors de la copie du rapport')
@@ -555,7 +582,7 @@ export function EmailImportView({
           titleOverride="Compléter le lead"
           onLocalSubmit={applyLocalEdits}
           lead={{
-            id: editingLead.parsedData.metadata.sourceEmailId,
+            id: editingLead.metadata.emailId,
             data: {
               platformData: editingLead.formData
             },

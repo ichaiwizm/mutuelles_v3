@@ -114,7 +114,8 @@ export class AssurleadParser extends BaseLeadParser {
    * Parse conjoint
    */
   private parseSpouse(text: string): ParsedLeadData['spouse'] {
-    const spouseMatch = text.match(/conjoint[^\n]*:([^\n]*\n){1,8}/i)
+    // Pattern: "Conjoint" (avec ou sans deux-points) suivi de 1-8 lignes de données
+    const spouseMatch = text.match(/conjoint[^\n]*\n([^\n]*\n){1,8}/i)
     if (!spouseMatch) return {}
 
     const spouseText = spouseMatch[0]
@@ -127,6 +128,7 @@ export class AssurleadParser extends BaseLeadParser {
     if (identity.firstName.value) spouse.firstName = this.toParsedField(identity.firstName)
     if (identity.birthDate.value) spouse.birthDate = this.toParsedField(identity.birthDate)
     if (professional.regime.value) spouse.regime = this.toParsedField(professional.regime)
+    if (professional.profession.value) spouse.profession = this.toParsedField(professional.profession)
 
     return spouse
   }

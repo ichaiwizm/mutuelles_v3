@@ -11,9 +11,10 @@ import type { CleanedContent } from '../types'
 
 export class ContentCleaner {
   /**
-   * Nettoie un contenu texte/HTML et extrait le bloc principal
+   * Nettoie un contenu texte/HTML SANS extraire le bloc principal
+   * Utilisé pour la détection du provider (garde les mots-clés d'introduction)
    */
-  static clean(content: string, isHtml: boolean = false): CleanedContent {
+  static cleanBasic(content: string, isHtml: boolean = false): CleanedContent {
     const original = content
     let text = content
 
@@ -22,17 +23,11 @@ export class ContentCleaner {
       isHtml = true
     }
 
-    // Phase 1: Nettoyage basique
+    // Nettoyage basique uniquement
     if (isHtml) {
       text = this.stripHtml(text)
     }
     text = this.decodeEntities(text)
-    text = this.normalizeWhitespace(text)
-
-    // Phase 2: Extraction du bloc principal
-    text = this.extractMainBlock(text)
-
-    // Phase 3: Nettoyage final
     text = this.normalizeWhitespace(text)
 
     // Métadonnées
@@ -43,6 +38,27 @@ export class ContentCleaner {
     }
 
     return { text, original, metadata }
+  }
+
+  /**
+   * Nettoie un contenu texte/HTML ET extrait le bloc principal
+   * Version complète pour la rétrocompatibilité
+   */
+  static clean(content: string, isHtml: boolean = false): CleanedContent {
+    // Étape 1: Nettoyage basique
+    const cleaned = this.cleanBasic(content, isHtml)
+
+    // Étape 2: Extraction du bloc principal
+    const extractedText = this.extractMainBlock(cleaned.text)
+
+    // Métadonnées mises à jour
+    const metadata = {
+      wasHtml: cleaned.metadata.wasHtml,
+      linesRemoved: cleaned.original.split('\n').length - extractedText.split('\n').length,
+      charsRemoved: cleaned.original.length - extractedText.length
+    }
+
+    return { text: extractedText, original: cleaned.original, metadata }
   }
 
   /**
@@ -95,8 +111,9 @@ export class ContentCleaner {
 
   /**
    * Extrait le bloc principal en supprimant signatures et disclaimers
+   * Fonction publique pour permettre l'extraction après détection du provider
    */
-  private static extractMainBlock(text: string): string {
+  static extractMainBlock(text: string): string {
     const lower = text.toLowerCase()
 
     // Marqueurs de début (premier champ de formulaire)
