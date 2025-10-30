@@ -44,6 +44,16 @@ export default function PlatformSpecificSection({
   // Filter fields based on showIf conditions
   const visibleFields = subscriberFields.filter(field => shouldShowField(field, values))
 
+  // Helper: map a carrier-prefixed key (e.g., 'swisslifeone.subscriber.status')
+  // to its engine key (unprefixed, e.g., 'subscriber.status')
+  const toEngineKey = (domainKey: string): string | null => {
+    const prefixes = ['alptis.', 'swisslifeone.']
+    for (const p of prefixes) {
+      if (domainKey.startsWith(p)) return domainKey.slice(p.length)
+    }
+    return null
+  }
+
   return (
     <div className="border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
       <button
@@ -64,16 +74,29 @@ export default function PlatformSpecificSection({
       {isExpanded && visibleFields.length > 0 && (
         <div className="p-3">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {visibleFields.map(field => (
-              <DynamicFormField
-                key={field.domainKey}
-                field={field}
-                value={values[field.domainKey]}
-                onChange={(value) => onChange(field.domainKey, value)}
-                error={errors[field.domainKey]}
-                disabled={disabled}
-              />
-            ))}
+            {visibleFields.map(field => {
+              const engineKey = toEngineKey(field.domainKey)
+              const currentVal = values[field.domainKey]
+              const engineVal = engineKey ? values[engineKey] : undefined
+              const showEngine = engineKey && engineVal !== undefined && String(engineVal) !== String(currentVal)
+
+              return (
+                <div key={field.domainKey} className="space-y-1">
+                  <DynamicFormField
+                    field={field}
+                    value={currentVal}
+                    onChange={(value) => onChange(field.domainKey, value)}
+                    error={errors[field.domainKey]}
+                    disabled={disabled}
+                  />
+                  {showEngine && (
+                    <div className="text-[11px] text-neutral-500">
+                      Valeur utilisée par l'engine: <span className="font-medium">{String(engineVal)}</span>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
           </div>
         </div>
       )}
