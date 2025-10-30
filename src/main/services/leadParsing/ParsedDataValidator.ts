@@ -5,7 +5,7 @@
  * Checks for required fields and assigns validation status.
  */
 
-import type { ParsedLeadData, ValidationStatus } from '../../shared/types/emailParsing'
+import type { ParsedLeadData, ValidationStatus } from '../../../shared/types/emailParsing'
 
 export interface ValidationResult {
   status: ValidationStatus

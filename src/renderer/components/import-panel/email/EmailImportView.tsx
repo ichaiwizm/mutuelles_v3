@@ -583,9 +583,9 @@ export function EmailImportView({
           onLocalSubmit={applyLocalEdits}
           lead={{
             id: editingLead.metadata.emailId,
-            data: {
-              platformData: editingLead.formData
-            },
+            // Transform flat formData into proper nested structure + platformData
+            // This ensures both transformFromCleanLead paths work correctly
+            data: require('@renderer/utils/formDataTransformer').transformToCleanLead(editingLead.formData),
             metadata: editingLead.metadata,
             createdAt: new Date().toISOString()
           }}

@@ -128,7 +128,7 @@ function valuesToParsedData(
   if (values.subscriber) {
     result.subscriber = {}
     for (const [key, value] of Object.entries(values.subscriber)) {
-      result.subscriber[key] = createField(value, `subscriber.${key}`)
+      ;(result.subscriber as any)[key] = createField(value, `subscriber.${key}`)
     }
   }
 
@@ -136,7 +136,7 @@ function valuesToParsedData(
   if (values.spouse) {
     result.spouse = {}
     for (const [key, value] of Object.entries(values.spouse)) {
-      result.spouse[key] = createField(value, `spouse.${key}`)
+      ;(result.spouse as any)[key] = createField(value, `spouse.${key}`)
     }
   }
 
@@ -155,7 +155,7 @@ function valuesToParsedData(
   if (values.project) {
     result.project = {}
     for (const [key, value] of Object.entries(values.project)) {
-      result.project[key] = createField(value, `project.${key}`)
+      ;(result.project as any)[key] = createField(value, `project.${key}`)
     }
   }
 

@@ -80,7 +80,7 @@ export class AssurleadParser extends BaseLeadParser {
       for (const pattern of patterns) {
         const extracted = FieldExtractor.extractFromTable(text, pattern)
         if (extracted.value) {
-          data.subscriber![field] = this.toParsedField(extracted)!
+          ;(data.subscriber as any)![field] = this.toParsedField(extracted)!
           break
         }
       }

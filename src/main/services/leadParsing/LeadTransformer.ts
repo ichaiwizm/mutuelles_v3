@@ -5,7 +5,7 @@
  * into flat form data compatible with the existing form system.
  */
 
-import type { ParsedLeadData, ParsedField } from '../../shared/types/emailParsing'
+import type { ParsedLeadData, ParsedField } from '../../../shared/types/emailParsing'
 
 export class LeadTransformer {
   /**
@@ -42,7 +42,7 @@ export class LeadTransformer {
         this.hasAnyFieldValue(child) || this.hasAnyFields(child)
       )
 
-    if (hasChildrenData) {
+    if (hasChildrenData && parsedData.children) {
       formData.enfants = true
       // Filter children to those with fields (either with values or empty fields)
       const childrenWithData = parsedData.children.filter((child) =>
@@ -91,7 +91,7 @@ export class LeadTransformer {
     }
 
     for (const [parsedKey, formKey] of Object.entries(fieldMappings)) {
-      const value = this.extractValue(subscriber[parsedKey])
+      const value = this.extractValue((subscriber as any)[parsedKey])
       if (value !== null && value !== undefined) {
         formData[formKey] = value
       }
@@ -124,7 +124,7 @@ export class LeadTransformer {
     }
 
     for (const [parsedKey, formKey] of Object.entries(fieldMappings)) {
-      const value = this.extractValue(spouse[parsedKey])
+      const value = this.extractValue((spouse as any)[parsedKey])
       if (value !== null && value !== undefined) {
         formData[formKey] = value
       }
@@ -149,7 +149,7 @@ export class LeadTransformer {
       }
 
       for (const [parsedKey, formKey] of Object.entries(fieldMappings)) {
-        const value = this.extractValue(child[parsedKey])
+        const value = this.extractValue((child as any)[parsedKey])
         if (value !== null && value !== undefined) {
           formData[formKey] = value
         }
@@ -179,7 +179,7 @@ export class LeadTransformer {
     }
 
     for (const [parsedKey, formKey] of Object.entries(fieldMappings)) {
-      const value = this.extractValue(project[parsedKey])
+      const value = this.extractValue((project as any)[parsedKey])
       if (value !== null && value !== undefined) {
         formData[formKey] = value
       }
@@ -317,7 +317,7 @@ export class LeadTransformer {
 
       for (const value of Object.values(obj)) {
         if (value && typeof value === 'object' && 'confidence' in value) {
-          scores.push(confidenceValues[value.confidence] || 1)
+          scores.push(confidenceValues[(value as any).confidence] || 1)
         }
       }
     }

@@ -6,7 +6,7 @@ import type {
   FieldExtractionResult,
   EmailContentSections,
   ConfidenceLevel
-} from './types'
+} from '../types'
 import { TextCleaner } from './TextCleaner'
 
 export class FieldExtractor {
@@ -283,16 +283,28 @@ export class FieldExtractor {
    */
   static extractRegime(content: string): FieldExtractionResult<string> {
     const patterns = [
+      // Match "Régime Social : TNS : régime des indépendants" (AssurProspect format)
+      /\*?R[ée]gime\s+Social\*?\s*:?\s*\*?\s*([^:\n]+?)(?:\s*:|$)/i,
+      // Match "Régime obligatoire : ..." (Alptis format)
+      /\*?R[ée]gime\s+obligatoire\*?\s*:?\s*\*?\s*([^\n]{5,50})/i,
+      // Match simple "Régime : value" format
       /\*?R[ée]gime\*?\s*:?\s*\*?\s*(S[ée]curit[ée]\s+Sociale|SS|RSI|TNS|Alsace[- ]Moselle|CPCAM)/i,
-      /\*?R[ée]gime obligatoire\*?\s*:?\s*\*?\s*([^\n]{5,50})/i
     ]
 
     const transform = (v: string) => {
-      const normalized = v.toUpperCase()
-      if (normalized.match(/S[ÉE]CURIT[ÉE]|^SS$/)) return 'SECURITE_SOCIALE'
-      if (normalized.match(/TNS|RSI/)) return 'TNS'
+      // Extract just the first part before any colon or extra description
+      const mainValue = v.split(':')[0].trim()
+      const normalized = mainValue.toUpperCase()
+
+      // Map various formats to standard values
+      if (normalized.match(/S[ÉE]CURIT[ÉE].*SOCIALE|^SS$|SALARI[ÉE].*RETRAIT[ÉE]/)) return 'SECURITE_SOCIALE'
+      if (normalized.match(/TNS|TRAVAILLEUR.*NON.*SALARI[ÉE]|R[ÉE]GIME.*IND[ÉE]PENDANT/)) return 'TNS'
       if (normalized.match(/ALSACE|MOSELLE/)) return 'ALSACE_MOSELLE'
-      return v
+      if (normalized.match(/AMEXA|MSA/)) return 'AMEXA'
+      if (normalized.match(/RSI|IND[ÉE]PENDANT/)) return 'SECURITE_SOCIALE_INDEPENDANTS'
+      if (normalized.match(/AGRICOLE/)) return 'REGIME_SALARIES_AGRICOLES'
+
+      return mainValue
     }
 
     return this.extractField(content, patterns, 'medium', transform)

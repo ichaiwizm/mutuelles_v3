@@ -9,11 +9,12 @@
  * 5. Génération de rapport debug
  */
 
-import type { EmailMessage } from '../shared/types/email'
+import type { EmailMessage } from '../../shared/types/email'
 import type {
   EmailToLeadResponse,
   EnrichedLeadData
-} from '../shared/types/emailParsing'
+} from '../../shared/types/emailParsing'
+import type { ParsedLeadData } from './leadParsing/types'
 
 import { parserOrchestrator, ParsingDebugger } from './leadParsing'
 import { ParsedDataValidator } from './leadParsing/ParsedDataValidator'
@@ -109,7 +110,7 @@ export class EmailToLeadService {
 
     // Step 7: Create enriched lead data
     const enrichedLead: EnrichedLeadData = {
-      parsedData,
+      parsedData: parsedData as any, // Type compatibility: both ParsedLeadData types are structurally identical
       validationStatus: validationResult.status,
       missingRequiredFields: validationResult.missingRequiredFields,
       defaultedFields,

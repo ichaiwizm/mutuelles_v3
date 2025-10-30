@@ -57,6 +57,10 @@ export function useLeadForm({ schema, mode, initialLead, onSuccess, onError, onL
   const [hasChildren, setHasChildren] = useState(false)
   const [children, setChildren] = useState<ChildItem[]>([])
 
+  // Track selected platform for carrier-specific defaults
+  // Default to swisslifeone, or detect from lead data
+  const [selectedPlatform, setSelectedPlatform] = useState<string>('swisslifeone')
+
   // Track if form has been initialized to prevent re-initialization
   const isInitialized = useRef(false)
   const initializedLeadId = useRef<string | undefined>(undefined)
@@ -69,6 +73,20 @@ export function useLeadForm({ schema, mode, initialLead, onSuccess, onError, onL
       ...prev,
       values: formValues
     }))
+
+    // Detect platform from lead data (check platformData keys)
+    if (lead.data?.platformData) {
+      const platforms = Object.keys(lead.data.platformData)
+      if (platforms.length > 0) {
+        // Use first platform found, or prefer swisslifeone if available
+        const detectedPlatform = platforms.includes('swisslifeone')
+          ? 'swisslifeone'
+          : platforms.includes('alptis')
+          ? 'alptis'
+          : platforms[0]
+        setSelectedPlatform(detectedPlatform)
+      }
+    }
 
     // Activate spouse toggle if conjoint present
     if (formValues['conjoint'] === true) {
@@ -134,7 +152,7 @@ export function useLeadForm({ schema, mode, initialLead, onSuccess, onError, onL
       }))
     } else {
       setFormState(prev => {
-        const newValues = { ...prev.values, 'conjoint': false }
+        const newValues: Record<string, any> = { ...prev.values, 'conjoint': false }
         Object.keys(newValues).forEach(key => {
           if (key.startsWith('spouse.')) {
             delete newValues[key]
@@ -224,7 +242,8 @@ export function useLeadForm({ schema, mode, initialLead, onSuccess, onError, onL
     if (!schema) return
 
     // Get all defaults WITH business rules (computed values like madelin, department)
-    const defaults = getAllDefaultsWithBusinessRules(schema, formState.values)
+    // CRITICAL: Pass selectedPlatform so carrier-specific defaults (defaultsByCarrier) are applied!
+    const defaults = getAllDefaultsWithBusinessRules(schema, formState.values, selectedPlatform)
     const updatedValues = applyDefaultsToForm(formState.values, defaults, { overwrite: false })
 
     setFormState(prev => ({
