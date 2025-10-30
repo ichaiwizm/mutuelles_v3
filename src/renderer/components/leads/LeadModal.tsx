@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { Pencil, Bug } from 'lucide-react'
 import Modal from '../Modal'
 import CommonFieldsSection from '../forms/CommonFieldsSection'
@@ -7,12 +7,14 @@ import { useFormSchema } from '@renderer/hooks/useFormSchema'
 import { useLeadForm } from '@renderer/hooks/useLeadForm'
 import { useToastContext } from '@renderer/contexts/ToastContext'
 import type { Lead } from '@shared/types/leads'
+import type { EnrichedLeadData } from '@shared/types/emailParsing'
 import { transformToCleanLead } from '@shared/utils/leadFormData'
 import { shouldShowField } from '@renderer/utils/formSchemaGenerator'
 
 export interface LeadModalProps {
   mode: 'create' | 'view' | 'edit'
   lead?: Lead
+  parsedLeadData?: EnrichedLeadData
   isOpen: boolean
   onClose: () => void
   onSuccess: () => void
@@ -25,6 +27,7 @@ export interface LeadModalProps {
 export default function LeadModal({
   mode: initialMode,
   lead,
+  parsedLeadData,
   isOpen,
   onClose,
   onSuccess,
@@ -35,6 +38,26 @@ export default function LeadModal({
 }: LeadModalProps) {
   const { schema, loading: schemaLoading, error: schemaError } = useFormSchema()
   const toast = useToastContext()
+
+  // Create a temporary lead from parsed data if provided
+  const effectiveLead = useMemo(() => {
+    if (lead) return lead
+    if (!parsedLeadData) return undefined
+
+    // Transform parsed data to Lead format
+    const cleanLeadData = transformToCleanLead(parsedLeadData.formData)
+    return {
+      id: `temp-${Date.now()}`,
+      data: {
+        ...cleanLeadData,
+        platformData: parsedLeadData.formData
+      },
+      metadata: parsedLeadData.metadata,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      status: 'new' as const
+    }
+  }, [lead, parsedLeadData])
 
   // Local state to handle VIEW → EDIT transition
   const [currentMode, setCurrentMode] = useState(initialMode)
@@ -50,7 +73,7 @@ export default function LeadModal({
   const leadForm = useLeadForm({
     schema,
     mode: currentMode === 'view' ? 'edit' : currentMode,
-    initialLead: lead,
+    initialLead: effectiveLead,
     onSuccess: () => {
       const message = currentMode === 'create' ? 'Lead créé avec succès' : 'Lead modifié avec succès'
       toast.success(message, undefined, { duration: 1000 })
@@ -81,6 +104,18 @@ export default function LeadModal({
       setSwisslifeExpanded(true)
     }
   }, [leadForm.formState.values])
+
+  // Auto-fill defaults when parsed data is provided
+  useEffect(() => {
+    if (parsedLeadData && isOpen && schema && Object.keys(leadForm.formState.values).length > 0) {
+      // Small delay to ensure form is fully initialized
+      const timer = setTimeout(() => {
+        leadForm.handleFillDefaults()
+        toast.success('Lead parsé', 'Les données ont été extraites et les valeurs par défaut appliquées', { duration: 2000 })
+      }, 100)
+      return () => clearTimeout(timer)
+    }
+  }, [parsedLeadData, isOpen, schema])
 
   const handleGenerateProjectName = () => {
     const lastName = leadForm.formState.values['subscriber.lastName'] || ''

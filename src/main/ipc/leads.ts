@@ -378,4 +378,27 @@ export function registerLeadsIPC() {
       return { success: false, error: message }
     }
   })
+
+  // Parse raw text to lead (smart add feature)
+  ipcMain.handle('leads:parseRawText', async (_, rawText: string) => {
+    try {
+      if (!rawText || typeof rawText !== 'string' || rawText.trim().length === 0) {
+        throw new Error('Texte requis')
+      }
+
+      const { EmailToLeadService } = await import('../services/emailToLead')
+      const enrichedLead = await EmailToLeadService.parseRawText(rawText)
+
+      return {
+        success: true,
+        data: enrichedLead
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Erreur inconnue'
+      return {
+        success: false,
+        error: message
+      }
+    }
+  })
 }

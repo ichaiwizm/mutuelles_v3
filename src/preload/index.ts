@@ -61,7 +61,8 @@ contextBridge.exposeInMainWorld('api', {
     checkDuplicatesBatch: (items: Array<{ lastName?: string; firstName?: string; birthDate?: string; email?: string; telephone?: string }>) =>
       ipcRenderer.invoke('leads:checkDuplicatesBatch', { items }) as Promise<{ success: boolean; data?: { results: Array<{ index:number; isDuplicate:boolean; reasons:string[] }> }; error?: string }>,
     getAllDebugReports: () => ipcRenderer.invoke('leads:getAllDebugReports') as Promise<{ success: boolean; data?: string[]; error?: string }>,
-    clearDebugReports: () => ipcRenderer.invoke('leads:clearDebugReports') as Promise<{ success: boolean; error?: string }>
+    clearDebugReports: () => ipcRenderer.invoke('leads:clearDebugReports') as Promise<{ success: boolean; error?: string }>,
+    parseRawText: (rawText: string) => ipcRenderer.invoke('leads:parseRawText', rawText) as Promise<{ success: boolean; data?: any; error?: string }>
   },
   email: {
     startAuth: () => ipcRenderer.invoke('email:startAuth') as Promise<{ success: boolean; data?: any; error?: string }>,
@@ -172,6 +173,7 @@ declare global {
         checkDuplicatesBatch: (items: Array<{ lastName?: string; firstName?: string; birthDate?: string; email?: string; telephone?: string }>) => Promise<{ success: boolean; data?: { results: Array<{ index:number; isDuplicate:boolean; reasons:string[] }> }; error?: string }>
         getAllDebugReports: () => Promise<{ success: boolean; data?: string[]; error?: string }>
         clearDebugReports: () => Promise<{ success: boolean; error?: string }>
+        parseRawText: (rawText: string) => Promise<{ success: boolean; data?: any; error?: string }>
       }
       email: {
         startAuth: () => Promise<{ success: boolean; data?: any; error?: string }>

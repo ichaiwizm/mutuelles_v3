@@ -133,6 +133,68 @@ export class EmailToLeadService {
   }
 
   /**
+   * Parse raw text to lead (for smart add feature)
+   * Reuses the same pipeline as email parsing but accepts raw text directly
+   */
+  static async parseRawText(rawText: string): Promise<EnrichedLeadData> {
+    const sourceId = `raw-text-${Date.now()}`
+
+    // Step 1: Parse text avec orchestration (nettoyage + détection + parsing + debug)
+    const orchestrationResult = parserOrchestrator.parse(
+      rawText,
+      sourceId,
+      false // isHtml - détection automatique dans ContentCleaner
+    )
+
+    // Sauvegarder le rapport de debug pour accès UI
+    const debugMarkdown = ParsingDebugger.toMarkdown(orchestrationResult.debugReport)
+    debugReports.set(sourceId, debugMarkdown)
+
+    if (!orchestrationResult.finalResult.success || !orchestrationResult.finalResult.parsedData) {
+      throw new Error(orchestrationResult.finalResult.errors.join(', ') || 'Failed to parse text')
+    }
+
+    let parsedData = orchestrationResult.finalResult.parsedData
+
+    // Step 2: Enrich with defaults and computed values (unified)
+    const { enrichedData, defaultedFields, computedFields } = DataEnricher.enrich(parsedData)
+    parsedData = enrichedData
+
+    // Step 3: Validate
+    const validationResult = ParsedDataValidator.validate(parsedData)
+
+    // Step 4: Transform to form data
+    const formData = LeadTransformer.toFormData(parsedData)
+
+    // Step 5: Collect metadata
+    const parsedFields = LeadTransformer.getParsedFields(parsedData)
+    const confidenceScore = LeadTransformer.getConfidenceScore(parsedData)
+
+    // Step 6: Create enriched lead data
+    const enrichedLead: EnrichedLeadData = {
+      parsedData: parsedData as any,
+      validationStatus: validationResult.status,
+      missingRequiredFields: validationResult.missingRequiredFields,
+      defaultedFields,
+      formData,
+      metadata: {
+        source: 'manual', // Changed from 'email' to 'manual' to distinguish smart add
+        emailId: sourceId,
+        parserUsed: parsedData.metadata.parserUsed,
+        parsingConfidence: confidenceScore,
+        parsedFields,
+        defaultedFields,
+        warnings: [
+          ...parsedData.metadata.warnings,
+          ...validationResult.warnings
+        ]
+      }
+    }
+
+    return enrichedLead
+  }
+
+  /**
    * Récupère le rapport de debug pour un email
    */
   static getDebugReport(emailId: string): string | undefined {

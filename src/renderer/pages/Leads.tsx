@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { FileEdit, Mail } from 'lucide-react'
+import { FileEdit, Mail, Sparkles } from 'lucide-react'
 import { useToastContext } from '../contexts/ToastContext'
 import type { LeadStats, Lead, LeadFilters } from '../../shared/types/leads'
+import type { EnrichedLeadData } from '../../shared/types/emailParsing'
 import LeadsTable from '../components/leads/LeadsTable'
 import LeadsFilters from '../components/leads/LeadsFilters'
 import ConfirmModal from '../components/ConfirmModal'
 import LeadModal from '@renderer/components/leads/LeadModal'
+import SmartAddModal from '../components/leads/SmartAddModal'
 import { ImportPanel } from '../components/import-panel/ImportPanel'
 
 export default function Leads() {
@@ -21,6 +23,9 @@ export default function Leads() {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null)
   const [leadModalMode, setLeadModalMode] = useState<'create' | 'view' | 'edit'>('create')
   const [showLeadModal, setShowLeadModal] = useState(false)
+
+  const [showSmartAddModal, setShowSmartAddModal] = useState(false)
+  const [parsedLeadData, setParsedLeadData] = useState<EnrichedLeadData | null>(null)
 
   const [showImportPanel, setShowImportPanel] = useState(false)
 
@@ -71,6 +76,15 @@ export default function Leads() {
   }, [loadLeads])
 
   const handleAddLead = () => {
+    setSelectedLead(null)
+    setParsedLeadData(null)
+    setLeadModalMode('create')
+    setShowLeadModal(true)
+  }
+
+  const handleSmartAddSuccess = (enrichedLead: EnrichedLeadData) => {
+    // Store parsed data and open lead modal with pre-filled form
+    setParsedLeadData(enrichedLead)
     setSelectedLead(null)
     setLeadModalMode('create')
     setShowLeadModal(true)
@@ -186,6 +200,14 @@ export default function Leads() {
             Importer
           </button>
           <button
+            onClick={() => setShowSmartAddModal(true)}
+            className="flex items-center gap-2 px-3 py-2 rounded-md bg-purple-600 dark:bg-purple-500 text-white hover:bg-purple-700 dark:hover:bg-purple-600 text-sm transition-colors"
+            title="Parser automatiquement un lead depuis du texte brut"
+          >
+            <Sparkles size={16} />
+            Ajout intelligent
+          </button>
+          <button
             onClick={handleAddLead}
             className="flex items-center gap-2 px-3 py-2 rounded-md bg-blue-600 dark:bg-blue-500 text-white hover:bg-blue-700 dark:hover:bg-blue-600 text-sm transition-colors"
           >
@@ -297,19 +319,28 @@ export default function Leads() {
         confirmText="Supprimer"
       />
 
+      <SmartAddModal
+        isOpen={showSmartAddModal}
+        onClose={() => setShowSmartAddModal(false)}
+        onSuccess={handleSmartAddSuccess}
+      />
+
       <LeadModal
         mode={leadModalMode}
         lead={selectedLead || undefined}
+        parsedLeadData={parsedLeadData || undefined}
         isOpen={showLeadModal}
         onClose={() => {
           setShowLeadModal(false)
           setSelectedLead(null)
+          setParsedLeadData(null)
         }}
         onSuccess={() => {
           loadLeads()
           loadStats()
           setShowLeadModal(false)
           setSelectedLead(null)
+          setParsedLeadData(null)
         }}
       />
 
