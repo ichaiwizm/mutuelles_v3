@@ -1,35 +1,23 @@
 import { FormSchema, FormFieldDefinition } from './formSchemaGenerator'
+import { evaluateExpression as evaluateSharedExpression, applyAllBusinessRules } from '@shared/defaults'
+import type { DefaultContext } from '@shared/defaults'
 
 /**
  * Default value expressions that can be evaluated at runtime
+ *
+ * @deprecated Use evaluateSharedExpression from shared/defaults instead
  */
 type DefaultExpression = 'firstOfNextMonth' | 'today' | 'currentMonth'
 
 /**
  * Evaluates a default expression to its actual value
+ *
+ * @deprecated Use evaluateSharedExpression from shared/defaults instead
+ * Kept for backward compatibility
  */
 function evaluateDefaultExpression(expression: DefaultExpression): string {
-  switch (expression) {
-    case 'firstOfNextMonth': {
-      const nextMonth = new Date()
-      nextMonth.setMonth(nextMonth.getMonth() + 1)
-      nextMonth.setDate(1)
-      return `01/${String(nextMonth.getMonth() + 1).padStart(2, '0')}/${nextMonth.getFullYear()}`
-    }
-
-    case 'today': {
-      const today = new Date()
-      return `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`
-    }
-
-    case 'currentMonth': {
-      const now = new Date()
-      return `01/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`
-    }
-
-    default:
-      return ''
-  }
+  // Delegate to shared module
+  return evaluateSharedExpression(expression)
 }
 
 /**
@@ -231,4 +219,93 @@ export function getChildDefaults(schema: FormSchema, childIndex: number): Record
   })
 
   return defaults
+}
+
+/**
+ * Gets all defaults with business rules applied
+ *
+ * This function combines schema defaults with intelligent business rules
+ * from the shared defaults module. Use this instead of getAllDefaults
+ * when you want smart defaults (e.g., madelin based on status and age).
+ *
+ * @param schema - Form schema
+ * @param currentValues - Current form values (used for conditional rules)
+ * @param platform - Platform name (e.g., 'swisslifeone', 'alptis')
+ * @returns Complete defaults with business rules applied
+ */
+export function getAllDefaultsWithBusinessRules(
+  schema: FormSchema,
+  currentValues?: Record<string, any>,
+  platform?: string
+): Record<string, any> {
+  // Step 1: Get schema-based defaults
+  const schemaDefaults = getAllDefaults(schema, currentValues)
+
+  // Step 2: Merge with current values to create complete picture
+  const mergedValues = { ...schemaDefaults, ...currentValues }
+
+  // Step 3: Convert flat form values to nested structure for business rules
+  const nestedValues = flatToNested(mergedValues)
+
+  // Step 4: Apply business rules from shared module
+  const context: DefaultContext = {
+    source: 'manual',
+    platform,
+    currentValues: nestedValues
+  }
+
+  const businessDefaults = applyAllBusinessRules(nestedValues, context)
+
+  // Step 5: Convert business rule defaults back to flat form format
+  const flatBusinessDefaults: Record<string, any> = {}
+  for (const [key, defaultValue] of Object.entries(businessDefaults)) {
+    if (defaultValue && defaultValue.value !== undefined) {
+      flatBusinessDefaults[key] = defaultValue.value
+    }
+  }
+
+  // Step 6: Merge schema defaults with business rule defaults (business rules win)
+  return { ...schemaDefaults, ...flatBusinessDefaults }
+}
+
+/**
+ * Convert flat form values (e.g., "subscriber.firstName") to nested structure
+ */
+function flatToNested(flat: Record<string, any>): Record<string, any> {
+  const nested: Record<string, any> = {}
+
+  for (const [key, value] of Object.entries(flat)) {
+    const parts = key.split('.')
+
+    // Handle array notation like children[0].birthDate
+    if (key.includes('[')) {
+      const arrayMatch = key.match(/^(\w+)\[(\d+)\]\.(.+)$/)
+      if (arrayMatch) {
+        const [, arrayName, index, fieldName] = arrayMatch
+        const idx = parseInt(index, 10)
+
+        if (!nested[arrayName]) {
+          nested[arrayName] = []
+        }
+        if (!nested[arrayName][idx]) {
+          nested[arrayName][idx] = {}
+        }
+        nested[arrayName][idx][fieldName] = value
+        continue
+      }
+    }
+
+    // Handle regular nested notation
+    if (parts.length === 2) {
+      const [section, field] = parts
+      if (!nested[section]) {
+        nested[section] = {}
+      }
+      nested[section][field] = value
+    } else if (parts.length === 1) {
+      nested[parts[0]] = value
+    }
+  }
+
+  return nested
 }

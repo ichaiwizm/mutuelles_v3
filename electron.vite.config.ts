@@ -11,6 +11,14 @@ export default defineConfig({
   main: {
     plugins: [externalizeDepsPlugin()],
     build: { sourcemap: true },
+    resolve: {
+      alias: {
+        '@shared': resolve(__dirname, 'src/shared'),
+        '@renderer': resolve(__dirname, 'src/renderer'),
+        '@main': resolve(__dirname, 'src/main'),
+        '@preload': resolve(__dirname, 'src/preload')
+      }
+    },
     define: {
       'process.env.GOOGLE_CLIENT_ID': JSON.stringify(process.env.GOOGLE_CLIENT_ID),
       'process.env.GOOGLE_CLIENT_SECRET': JSON.stringify(process.env.GOOGLE_CLIENT_SECRET)
@@ -18,7 +26,15 @@ export default defineConfig({
   },
   preload: {
     plugins: [externalizeDepsPlugin()],
-    build: { sourcemap: true }
+    build: { sourcemap: true },
+    resolve: {
+      alias: {
+        '@shared': resolve(__dirname, 'src/shared'),
+        '@renderer': resolve(__dirname, 'src/renderer'),
+        '@main': resolve(__dirname, 'src/main'),
+        '@preload': resolve(__dirname, 'src/preload')
+      }
+    }
   },
   renderer: {
     resolve: {
