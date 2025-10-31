@@ -2,7 +2,7 @@ import { app, BrowserWindow, ipcMain } from 'electron'
 import path from 'node:path'
 import dotenv from 'dotenv'
 import { installMainErrorHandlers } from './errors'
-import { initDatabase, getDb } from './db/connection'
+import { initDatabase, getDb } from '../core/db/connection'
 
 const envPath = app.isPackaged
   ? path.join(process.resourcesPath, '.env')
@@ -12,16 +12,10 @@ dotenv.config({ path: envPath })
 
 console.log('📁 Chargement .env depuis:', envPath)
 console.log('🔑 GOOGLE_CLIENT_ID chargé:', process.env.GOOGLE_CLIENT_ID ? 'Oui ✓' : 'Non ✗')
-import { registerSettingsIpc } from './ipc/settings'
-import { registerProfilesIpc } from './ipc/profiles'
-import { registerCatalogIpc } from './ipc/catalog'
-import { registerPlatformCredsIpc } from './ipc/platform_credentials'
-import { registerBrowsersIpc } from './ipc/browsers'
-import { registerAdminCliIpc } from './ipc/admin_cli'
-import { registerLeadsIPC } from './ipc/leads'
-import { registerScenariosIpc } from './ipc/scenarios'
-import { registerEmailIpc } from './ipc/email'
-import { sendFailureNotification } from './services/notificationService'
+import { registerLeadsV2Ipc } from './ipc_v2/leads'
+import { registerTasksV2Ipc } from './ipc_v2/tasks'
+import { registerSecretsV2Ipc } from './ipc_v2/secrets'
+import '../core/worker/register_default_runners'
 
 let mainWindow: BrowserWindow | null = null
 
@@ -34,7 +28,7 @@ function createMainWindow() {
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
-    title: 'Mutuelles',
+    title: 'Broker-Automation',
     webPreferences: {
       preload: getPreloadPath(),
       contextIsolation: true,
@@ -57,21 +51,9 @@ app.whenReady().then(() => {
   if (!app.isPackaged) process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true'
   installMainErrorHandlers()
   initDatabase()
-  registerSettingsIpc()
-  registerProfilesIpc()
-  registerCatalogIpc()
-  registerPlatformCredsIpc()
-  registerBrowsersIpc()
-  registerAdminCliIpc()
-  registerLeadsIPC()
-  registerScenariosIpc()
-  registerEmailIpc()
-
-  ipcMain.handle('notifications:sendFailure', async (event, failures) => {
-    const window = BrowserWindow.fromWebContents(event.sender)
-    sendFailureNotification(failures, window ?? undefined)
-    return { success: true }
-  })
+  registerLeadsV2Ipc()
+  registerTasksV2Ipc()
+  registerSecretsV2Ipc()
 
   createMainWindow()
 
@@ -95,10 +77,10 @@ ipcMain.handle('app:getVersion', async () => {
 
 ipcMain.handle('app:getStats', async () => {
   const conn = getDb()
-  const count = (sql: string) => (conn.prepare(sql).get() as { c:number }).c
+  const count = (sql: string) => (conn.prepare(sql).get() as { c: number }).c
   return {
-    platforms: count('SELECT COUNT(*) as c FROM platforms_catalog WHERE selected = 1'),
-    profiles: count('SELECT COUNT(*) as c FROM profiles'),
-    credentials: count('SELECT COUNT(*) as c FROM platform_credentials')
+    platforms: 0,
+    profiles: 0,
+    credentials: 0,
   }
 })

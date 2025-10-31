@@ -1,5 +1,5 @@
-appId: com.mutuelles.app
-productName: Mutuelles
+appId: com.broker.automation
+productName: Broker-Automation
 directories:
   output: release
   buildResources: build

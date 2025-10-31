@@ -19,6 +19,30 @@
       "@preload/*": ["src/preload/*"]
     }
   },
-  "include": ["src"]
+  "include": [
+    "src/core/**/*.ts",
+    "src/main/index.ts",
+    "src/main/errors.ts",
+    "src/main/ipc_v2/**/*.ts",
+    "src/preload/index.ts",
+    "src/renderer/main.tsx",
+    "src/renderer/App.tsx",
+    "src/renderer/pages/BrokerDashboard.tsx",
+    "src/shared/**/*.ts",
+    "src/adapters/**/*.ts",
+    "src/mappers/**/*.ts",
+    "src/types/**/*.d.ts"
+  ],
+  "exclude": [
+    "scripts/**",
+    "src/main/services/**",
+    "src/main/ipc/**",
+    "src/renderer/components/automation/**",
+    "src/renderer/hooks/**",
+    "src/renderer/services/**",
+    "src/renderer/pages/Admin.tsx",
+    "src/renderer/pages/AutomationV3.tsx",
+    "src/renderer/pages/Leads.tsx",
+    "src/renderer/pages/Config.tsx"
+  ]
 }
-
