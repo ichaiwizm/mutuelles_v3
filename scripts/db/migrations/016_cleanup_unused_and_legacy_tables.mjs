@@ -83,6 +83,31 @@ export default {
 
         console.log(`  ✓ Migrated ${existingAssignments.length} lead_flow_assignments without platform_leads reference`)
       }
+    } else {
+      // Create table fresh if it did not exist yet
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS lead_flow_assignments (
+          id TEXT PRIMARY KEY,
+          clean_lead_id TEXT NOT NULL REFERENCES clean_leads(id) ON DELETE CASCADE,
+          flow_id INTEGER NOT NULL REFERENCES flows_catalog(id) ON DELETE CASCADE,
+          platform_id INTEGER NOT NULL REFERENCES platforms_catalog(id) ON DELETE CASCADE,
+          status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'running', 'completed', 'failed')),
+          priority INTEGER DEFAULT 0,
+          assigned_at TEXT DEFAULT (datetime('now')),
+          started_at TEXT DEFAULT NULL,
+          completed_at TEXT DEFAULT NULL,
+          error_message TEXT DEFAULT NULL,
+          UNIQUE(clean_lead_id, flow_id, platform_id)
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_assignments_status ON lead_flow_assignments(status);
+        CREATE INDEX IF NOT EXISTS idx_assignments_lead ON lead_flow_assignments(clean_lead_id);
+        CREATE INDEX IF NOT EXISTS idx_assignments_platform ON lead_flow_assignments(platform_id);
+        CREATE INDEX IF NOT EXISTS idx_assignments_flow ON lead_flow_assignments(flow_id);
+        CREATE INDEX IF NOT EXISTS idx_assignments_priority ON lead_flow_assignments(status, priority DESC, assigned_at);
+      `)
+
+      console.log('  ✓ Created lead_flow_assignments without platform_leads reference')
     }
 
     // Re-enable foreign key constraints
