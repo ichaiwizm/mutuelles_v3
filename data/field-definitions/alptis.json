@@ -56,7 +56,8 @@
           { "value": "AMEXA", "label": "Amexa", "option_selector": ".totem-select-option:has-text('Amexa')" },
           { "value": "REGIME_SALARIES_AGRICOLES", "label": "Régime des salariés agricoles", "option_selector": ".totem-select-option:has-text('Régime des salariés agricoles')" },
           { "value": "SECURITE_SOCIALE", "label": "Sécurité sociale", "option_selector": ".totem-select-option:has-text('Sécurité sociale'):not(:has-text('indépendants'))" },
-          { "value": "SECURITE_SOCIALE_INDEPENDANTS", "label": "Sécurité sociale des indépendants", "option_selector": ".totem-select-option:has-text('Sécurité sociale des indépendants')" }
+          { "value": "SECURITE_SOCIALE_INDEPENDANTS", "label": "Sécurité sociale des indépendants", "option_selector": ".totem-select-option:has-text('Sécurité sociale des indépendants')" },
+          { "value": "TNS", "label": "Sécurité sociale des indépendants (TNS)", "option_selector": ".totem-select-option:has-text('Sécurité sociale des indépendants')" }
         ]
       }
     },
@@ -115,7 +116,8 @@
           { "value": "AMEXA", "label": "Amexa", "option_selector": ".totem-select-option:has-text('Amexa')" },
           { "value": "REGIME_SALARIES_AGRICOLES", "label": "Régime des salariés agricoles", "option_selector": ".totem-select-option:has-text('Régime des salariés agricoles')" },
           { "value": "SECURITE_SOCIALE", "label": "Sécurité sociale", "option_selector": ".totem-select-option:has-text('Sécurité sociale'):not(:has-text('indépendants'))" },
-          { "value": "SECURITE_SOCIALE_INDEPENDANTS", "label": "Sécurité sociale des indépendants", "option_selector": ".totem-select-option:has-text('Sécurité sociale des indépendants')" }
+          { "value": "SECURITE_SOCIALE_INDEPENDANTS", "label": "Sécurité sociale des indépendants", "option_selector": ".totem-select-option:has-text('Sécurité sociale des indépendants')" },
+          { "value": "TNS", "label": "Sécurité sociale des indépendants (TNS)", "option_selector": ".totem-select-option:has-text('Sécurité sociale des indépendants')" }
         ]
       }
     },
@@ -161,7 +163,8 @@
           { "value": "AMEXA", "label": "Amexa", "option_selector": ".totem-select-option:has-text('Amexa')" },
           { "value": "REGIME_SALARIES_AGRICOLES", "label": "Régime des salariés agricoles", "option_selector": ".totem-select-option:has-text('Régime des salariés agricoles')" },
           { "value": "SECURITE_SOCIALE", "label": "Sécurité sociale", "option_selector": ".totem-select-option:has-text('Sécurité sociale'):not(:has-text('indépendants'))" },
-          { "value": "SECURITE_SOCIALE_INDEPENDANTS", "label": "Sécurité sociale des indépendants", "option_selector": ".totem-select-option:has-text('Sécurité sociale des indépendants')" }
+          { "value": "SECURITE_SOCIALE_INDEPENDANTS", "label": "Sécurité sociale des indépendants", "option_selector": ".totem-select-option:has-text('Sécurité sociale des indépendants')" },
+          { "value": "TNS", "label": "Sécurité sociale des indépendants (TNS)", "option_selector": ".totem-select-option:has-text('Sécurité sociale des indépendants')" }
         ]
       },
       "metadata": {
