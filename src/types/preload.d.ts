@@ -11,6 +11,7 @@ declare global {
       }
       tasks: {
         listByLead: (leadId: string) => Promise<any[]>
+        listRecent: (limit?: number) => Promise<any[]>
         enqueue: (tasks: any[]) => Promise<boolean>
         runPending: (leadId: string) => Promise<boolean>
       }

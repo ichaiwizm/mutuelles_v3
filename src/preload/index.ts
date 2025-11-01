@@ -14,6 +14,7 @@ contextBridge.exposeInMainWorld('apiV2', {
   },
   tasks: {
     listByLead: (leadId: string) => ipcRenderer.invoke('v2:tasks:listByLead', leadId),
+    listRecent: (limit?: number) => ipcRenderer.invoke('v2:tasks:listRecent', limit),
     enqueue: (tasks: any[]) => ipcRenderer.invoke('v2:tasks:enqueue', tasks),
     runPending: (leadId: string) => ipcRenderer.invoke('v2:tasks:runPending', leadId),
   },

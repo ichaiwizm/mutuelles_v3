@@ -35,6 +35,25 @@ export function listByLead(leadId: string): Task[] {
   }))
 }
 
+export function listRecent(limit = 50): Task[] {
+  const db = getDb()
+  const rows = db
+    .prepare('SELECT * FROM tasks ORDER BY created_at DESC LIMIT ?')
+    .all(limit) as any[]
+  return rows.map((r) => ({
+    id: String(r.id),
+    leadId: String(r.lead_id),
+    platform: String(r.platform),
+    product: String(r.product),
+    status: r.status as TaskStatus,
+    logs: r.logs ?? null,
+    resultPath: r.result_path ?? null,
+    createdAt: String(r.created_at),
+    startedAt: r.started_at ?? null,
+    finishedAt: r.finished_at ?? null,
+  }))
+}
+
 export function updateStatus(id: string, status: TaskStatus) {
   const db = getDb()
   const now = new Date().toISOString()

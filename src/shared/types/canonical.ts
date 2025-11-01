@@ -34,6 +34,7 @@ export type LeadGenerique = {
   needs?: Need[]
   metadata?: Record<string, any>
   createdAt: string
+  status?: 'new'|'in_progress'|'completed'|'partial_failure'|'awaiting_action'
 }
 
 export type TaskStatus = 'pending' | 'running' | 'success' | 'failed'
@@ -53,3 +54,19 @@ export type Task = {
 
 // Mapper output is a plain object whose structure depends on the product.
 export type MappedData = Record<string, unknown>
+
+// Quotes (Devis)
+export type QuoteStatus = 'draft' | 'ready' | 'submitted' | 'priced' | 'won' | 'lost' | 'canceled'
+
+export type Quote = {
+  id: string
+  leadId: string
+  platform: string
+  product: string
+  status: QuoteStatus
+  premium?: number | null
+  currency?: 'EUR'
+  createdAt: string
+  updatedAt: string
+  notes?: string | null
+}
