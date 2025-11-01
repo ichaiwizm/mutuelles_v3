@@ -4,7 +4,8 @@
       "Read(//mnt/c/Users/**)",
       "Bash(sqlite3:*)",
       "Bash(tree:*)",
-      "mcp__playwright__browser_navigate"
+      "mcp__playwright__browser_navigate",
+      "Bash(cat:*)"
     ],
     "deny": [],
     "ask": [],
