@@ -2,9 +2,8 @@ import { BaseCommand } from '../BaseCommand.mjs'
 
 export class ClickFieldCommand extends BaseCommand {
   async execute(step) {
-    const fieldDef = this.resolveField(step)
-    await this.debugActiveContext('clickField', step, fieldDef.selector)
     const activeContext = this.getActiveContext()
+    const fieldDef = this.resolveField(step)
 
     if (fieldDef.type === 'radio-group' && fieldDef.options) {
       const value = this.resolveValue(step)

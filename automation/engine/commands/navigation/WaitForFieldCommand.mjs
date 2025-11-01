@@ -5,7 +5,6 @@ export class WaitForFieldCommand extends BaseCommand {
     const f = this.resolveField(step)
     if (!f.selector) throw new Error(`Selector manquant pour ${step.field||step.domainField}`)
 
-    await this.debugActiveContext('waitForField', step, f.selector)
     const activeContext = this.getActiveContext()
     await activeContext.waitForSelector(f.selector, { state: 'attached' })
   }

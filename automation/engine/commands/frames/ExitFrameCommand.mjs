@@ -9,12 +9,7 @@ export class ExitFrameCommand extends BaseCommand {
       return
     }
 
-    const popped = contextStack.pop()
-    try {
-      const url = typeof popped?.url === 'function' ? popped.url() : '(no-url)'
-      console.log('[hl] exitFrame - contexte dépilé (profondeur: %d) lastFrameUrl=%s', contextStack.length, url)
-    } catch {
-      console.log('[hl] exitFrame - contexte dépilé (profondeur: %d)', contextStack.length)
-    }
+    contextStack.pop()
+    console.log('[hl] exitFrame - contexte dépilé (profondeur: %d)', contextStack.length)
   }
 }

@@ -99,7 +99,33 @@
       "domainKey": "subscriber.profession",
       "type": "select",
       "label": "Profession",
-      "selector": "#profession-assure-principal"
+      "selector": "#profession-assure-principal",
+      "valueMappings": {
+        "swisslifeone": {
+          "MEDECIN": "MEDECIN",
+          "Médecin": "MEDECIN",
+          "CHIRURGIEN": "CHIRURGIEN",
+          "Chirurgien": "CHIRURGIEN",
+          "CHIRURGIEN_DENTISTE": "CHIRURGIEN_DENTISTE",
+          "Chirurgien dentiste": "CHIRURGIEN_DENTISTE",
+          "PHARMACIEN": "PHARMACIEN",
+          "Pharmacien": "PHARMACIEN",
+          "AUXILIAIRE_MEDICAL": "AUXILIAIRE_MEDICAL",
+          "Auxiliaire médical": "AUXILIAIRE_MEDICAL",
+          "AUTRE": "AUTRE",
+          "Autre": "AUTRE",
+          "Artisan": "AUTRE",
+          "ARTISAN": "AUTRE",
+          "Independant": "AUTRE",
+          "Indépendant": "AUTRE",
+          "INDEPENDANT": "AUTRE",
+          "EMPLOYE": "AUTRE",
+          "Employé": "AUTRE",
+          "Cadre": "AUTRE",
+          "Salarié": "AUTRE",
+          "SALARIE": "AUTRE"
+        }
+      }
     },
     {
       "key": "slsis_departement",

@@ -3,9 +3,8 @@ import { buildOptionSelectorFromTemplate } from '../../utils/selectorBuilder.mjs
 
 export class SelectFieldCommand extends BaseCommand {
   async execute(step) {
-    const fieldDef = this.resolveField(step)
-    await this.debugActiveContext('selectField', step, fieldDef?.options?.open_selector || fieldDef.selector)
     const activeContext = this.getActiveContext()
+    const fieldDef = this.resolveField(step)
 
     let value = this.resolveValueWithMappings(step, fieldDef)
 
