@@ -3,7 +3,8 @@
     "allow": [
       "Read(//mnt/c/Users/**)",
       "Bash(sqlite3:*)",
-      "Bash(tree:*)"
+      "Bash(tree:*)",
+      "Bash(test:*)"
     ],
     "deny": [],
     "ask": [],

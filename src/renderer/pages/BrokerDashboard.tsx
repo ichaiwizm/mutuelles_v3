@@ -2,12 +2,15 @@ import React, { useEffect, useMemo, useState } from 'react'
 import type { LeadGenerique, Task } from '../../shared/types/canonical'
 import { LeadList, type ListItem } from '../ui/LeadList'
 import { LeadActions } from '../ui/LeadActions'
-import { TaskHistory } from '../ui/TaskHistory'
+import { LeadOverview } from '../ui/LeadOverview'
+import { DetailsPanel } from '../ui/DetailsPanel'
 
 export default function BrokerDashboard() {
   const [leads, setLeads] = useState<LeadGenerique[]>([])
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [tasks, setTasks] = useState<Task[]>([])
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
+  const [showActions, setShowActions] = useState(false)
   const selected = useMemo(() => leads.find((l) => l.id === selectedId) || null, [leads, selectedId])
 
   useEffect(() => {
@@ -16,7 +19,10 @@ export default function BrokerDashboard() {
 
   useEffect(() => {
     if (!selectedId) return
-    window.apiV2.tasks.listByLead(selectedId).then(setTasks)
+    window.apiV2.tasks.listByLead(selectedId).then((ts) => {
+      setTasks(ts)
+      setSelectedTaskId(null)
+    })
   }, [selectedId])
 
   const addLead = async () => {
@@ -42,6 +48,7 @@ export default function BrokerDashboard() {
     await window.apiV2.tasks.enqueue(toCreate as any)
     const updated = await window.apiV2.tasks.listByLead(selected.id)
     setTasks(updated)
+    setShowActions(false)
   }
 
   const runPending = async () => {
@@ -51,8 +58,9 @@ export default function BrokerDashboard() {
     setTasks(updated)
   }
 
+  const selTask = tasks.find((t) => t.id === selectedTaskId) || null
   return (
-    <div className="grid grid-cols-3 gap-3 h-full">
+    <div className="grid grid-cols-[200px_1fr_340px] gap-3 h-full">
       <LeadList
         items={leads.map((l): ListItem => ({ id: l.id, title: displayName(l), subtitle: l.contact?.email }))}
         selectedId={selectedId}
@@ -60,8 +68,21 @@ export default function BrokerDashboard() {
         onAdd={addLead}
         onImport={importCsv}
       />
-      <LeadActions lead={selected} onEnqueue={enqueueTasks} />
-      <TaskHistory tasks={tasks} onRun={runPending} />
+      <div className="space-y-3">
+        {selected && (
+          <LeadOverview
+            lead={selected}
+            tasks={tasks}
+            selectedTaskId={selectedTaskId}
+            onSelectTask={setSelectedTaskId}
+            onNewClick={() => setShowActions((v) => !v)}
+          />
+        )}
+        {showActions && selected && <LeadActions lead={selected} onEnqueue={enqueueTasks} />}
+        {!selected && <div className="border rounded p-4 opacity-70">Sélectionnez un lead</div>}
+      </div>
+      {selected && <DetailsPanel lead={selected} task={selTask} />}
+      {!selected && <div />}
     </div>
   )
 }
