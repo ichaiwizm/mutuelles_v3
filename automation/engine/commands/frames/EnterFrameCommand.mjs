@@ -26,6 +26,11 @@ export class EnterFrameCommand extends BaseCommand {
 
     if (!frame) throw new Error('Impossible d\'accéder au contenu du frame')
     contextStack.push(frame)
-    console.log('[hl] enterFrame %s - contexte empilé (profondeur: %d)', step.selector || `url~${step.urlContains}`, contextStack.length)
+    try {
+      const url = typeof frame?.url === 'function' ? frame.url() : '(no-url)'
+      console.log('[hl] enterFrame %s - contexte empilé (profondeur: %d) frameUrl=%s', step.selector || `url~${step.urlContains}`, contextStack.length, url)
+    } catch {
+      console.log('[hl] enterFrame %s - contexte empilé (profondeur: %d)', step.selector || `url~${step.urlContains}`, contextStack.length)
+    }
   }
 }

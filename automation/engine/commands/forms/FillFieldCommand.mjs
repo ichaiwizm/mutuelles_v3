@@ -2,7 +2,6 @@ import { BaseCommand } from '../BaseCommand.mjs'
 
 export class FillFieldCommand extends BaseCommand {
   async execute(step) {
-    const activeContext = this.getActiveContext()
     const fieldDef = this.resolveField(step)
     let value = this.resolveValue(step)
 
@@ -20,6 +19,8 @@ export class FillFieldCommand extends BaseCommand {
     const logValue = String(logName).toLowerCase().includes('password') ? '***' : valueStr
     console.log('[hl] fillField %s = %s', logName, logValue)
 
+    await this.debugActiveContext('fillField', step, fieldDef.selector)
+    const activeContext = this.getActiveContext()
     const useJQueryMethod = step.method === 'jquery'
 
     if (useJQueryMethod) {

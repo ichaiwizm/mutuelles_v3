@@ -74,7 +74,16 @@ export async function runHighLevelFlow({ fieldsFile, flowFile, leadFile, leadDat
     const stepsSummary = []
     progress.emit({ type:'run', status:'start', message:`Run ${slug} (${mode})` })
 
-    const getCurrentContext = () => getPage()
+    // Persistent browsing context stack across steps (page at index 0)
+    const contextStack = [/* main page placeholder, set lazily below */]
+    const getCurrentContext = () => {
+      try {
+        const top = contextStack[contextStack.length - 1]
+        return top || getPage()
+      } catch {
+        return getPage()
+      }
+    }
 
     // Pause gate at begin (cooperative)
     if (typeof pauseGate === 'function') {
@@ -114,7 +123,9 @@ export async function runHighLevelFlow({ fieldsFile, flowFile, leadFile, leadDat
       const errName = () => `error-${String(i+1).padStart(2,'0')}.png`
 
       try {
-        const commandContext = { ctx, page: getPage(), contextStack: [getPage()], getCurrentContext, resolvers: { field: fieldResolver, value: valueResolver, template: templateResolver } }
+        // Initialize main page on first step
+        if (contextStack.length === 0) contextStack.push(getPage())
+        const commandContext = { ctx, page: getPage(), contextStack, getCurrentContext, resolvers: { field: fieldResolver, value: valueResolver, template: templateResolver } }
         await execHLStep(step, commandRegistry, commandContext)
         await artifacts.onStepOk({ page: getPage(), index:i, step, domMode:dom, a11y, getShotName: shotName, activeContext: getCurrentContext() })
         progress.emit({ type:step.type, status:'success', stepIndex:i, screenshotPath: path.join('screenshots', shotName()) })
