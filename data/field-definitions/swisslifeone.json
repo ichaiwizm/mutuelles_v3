@@ -85,7 +85,24 @@
       "domainKey": "subscriber.regime",
       "type": "select",
       "label": "Régime social",
-      "selector": "#regime-social-assure-principal"
+      "selector": "#regime-social-assure-principal",
+      "valueMappings": {
+        "swisslifeone": {
+          "SECURITE_SOCIALE": "SECURITE_SOCIALE",
+          "REGIME_GENERAL": "SECURITE_SOCIALE",
+          "RG": "SECURITE_SOCIALE",
+          "ALSACE_MOSELLE": "SECURITE_SOCIALE_ALSACE_MOSELLE",
+          "SECURITE_SOCIALE_ALSACE_MOSELLE": "SECURITE_SOCIALE_ALSACE_MOSELLE",
+          "TNS": "TNS",
+          "INDEPENDANT": "TNS",
+          "INDEPENDANTS": "TNS",
+          "MSA": "AMEXA",
+          "AMEXA": "AMEXA",
+          "AUTRES": "AUTRES_REGIME_SPECIAUX",
+          "AUTRES_REGIME_SPECIAUX": "AUTRES_REGIME_SPECIAUX",
+          "*": "SECURITE_SOCIALE"
+        }
+      }
     },
     {
       "key": "slsis_statut",
@@ -123,7 +140,8 @@
           "Employé": "AUTRE",
           "Cadre": "AUTRE",
           "Salarié": "AUTRE",
-          "SALARIE": "AUTRE"
+          "SALARIE": "AUTRE",
+          "*": "AUTRE"
         }
       }
     },
@@ -280,7 +298,34 @@
       "domainKey": "spouse.profession",
       "type": "select",
       "label": "Profession conjoint",
-      "selector": "#profession-assure-conjoint"
+      "selector": "#profession-assure-conjoint",
+      "valueMappings": {
+        "swisslifeone": {
+          "MEDECIN": "MEDECIN",
+          "Médecin": "MEDECIN",
+          "CHIRURGIEN": "CHIRURGIEN",
+          "Chirurgien": "CHIRURGIEN",
+          "CHIRURGIEN_DENTISTE": "CHIRURGIEN_DENTISTE",
+          "Chirurgien dentiste": "CHIRURGIEN_DENTISTE",
+          "PHARMACIEN": "PHARMACIEN",
+          "Pharmacien": "PHARMACIEN",
+          "AUXILIAIRE_MEDICAL": "AUXILIAIRE_MEDICAL",
+          "Auxiliaire médical": "AUXILIAIRE_MEDICAL",
+          "AUTRE": "AUTRE",
+          "Autre": "AUTRE",
+          "Artisan": "AUTRE",
+          "ARTISAN": "AUTRE",
+          "Independant": "AUTRE",
+          "Indépendant": "AUTRE",
+          "INDEPENDANT": "AUTRE",
+          "EMPLOYE": "AUTRE",
+          "Employé": "AUTRE",
+          "Cadre": "AUTRE",
+          "Salarié": "AUTRE",
+          "SALARIE": "AUTRE",
+          "*": "AUTRE"
+        }
+      }
     },
     {
       "key": "slsis_enfant_0_date_naissance",

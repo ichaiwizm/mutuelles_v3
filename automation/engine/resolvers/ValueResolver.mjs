@@ -22,10 +22,20 @@ export class ValueResolver {
 
     if (fieldDef?.valueMappings && ctx.platform) {
       const platformMappings = fieldDef.valueMappings[ctx.platform]
-      if (platformMappings && platformMappings[String(value)] !== undefined) {
-        const mappedValue = platformMappings[String(value)]
-        console.log('[ValueResolver] Mapping applied: %s -> %s', value, mappedValue)
-        return mappedValue
+      if (platformMappings) {
+        const key = String(value)
+        if (platformMappings[key] !== undefined) {
+          const mappedValue = platformMappings[key]
+          console.log('[ValueResolver] Mapping applied: %s -> %s', value, mappedValue)
+          return mappedValue
+        }
+        // Support default mapping using '*' or '__default'
+        const defKey = platformMappings['*'] !== undefined ? '*' : (platformMappings['__default'] !== undefined ? '__default' : null)
+        if (defKey) {
+          const mappedValue = platformMappings[defKey]
+          console.log('[ValueResolver] Default mapping applied: %s -> %s', value, mappedValue)
+          return mappedValue
+        }
       }
     }
 
