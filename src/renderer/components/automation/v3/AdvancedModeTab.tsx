@@ -4,7 +4,6 @@ import LeadSelector from './LeadSelector'
 import AutoPreviewModal from './AutoPreviewModal'
 import ExecutionDashboard from './ExecutionDashboard'
 import FlowsBrowserPanel from './FlowsBrowserPanel'
-import FlowTestModal from './FlowTestModal'
 import FlowDetailsModal from './FlowDetailsModal'
 import DuplicateWarningBanner from './DuplicateWarningBanner'
 import { detectDuplicates, excludeDuplicates } from '../../../services/duplicateDetector'
@@ -101,7 +100,6 @@ export default function AdvancedModeTab({
 }: AdvancedModeTabProps) {
   const [showAutoPreview, setShowAutoPreview] = useState(false)
   const [selectedDetailsFlow, setSelectedDetailsFlow] = useState<Flow | null>(null)
-  const [selectedTestFlow, setSelectedTestFlow] = useState<Flow | null>(null)
 
   // Get selected leads and flows for preview
   const selectedLeads = leads.filter((lead) => selectedLeadIds.has(lead.id))
@@ -296,20 +294,7 @@ export default function AdvancedModeTab({
         isOpen={!!selectedDetailsFlow}
         onClose={() => setSelectedDetailsFlow(null)}
         flow={selectedDetailsFlow}
-        onLaunchTest={(flow) => {
-          setSelectedDetailsFlow(null)
-          setSelectedTestFlow(flow)
-        }}
       />
-
-      {selectedTestFlow && (
-        <FlowTestModal
-          isOpen={true}
-          onClose={() => setSelectedTestFlow(null)}
-          flow={selectedTestFlow}
-          leads={leads}
-        />
-      )}
     </div>
   )
 }

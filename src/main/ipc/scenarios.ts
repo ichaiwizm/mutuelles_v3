@@ -423,5 +423,19 @@ export function registerScenariosIpc() {
     }
   })
 
+  ipcMain.handle('scenarios:readFlowFile', async (_e, filePath: unknown) => {
+    try {
+      if (typeof filePath !== 'string' || !filePath) {
+        return { success: false, error: 'File path required' }
+      }
+
+      const flowData = JSON.parse(fs.readFileSync(filePath, 'utf-8'))
+      return { success: true, data: flowData }
+    } catch (error) {
+      console.error('Error reading flow file:', error)
+      return { success: false, error: error instanceof Error ? error.message : 'Failed to read flow file' }
+    }
+  })
+
 }
 

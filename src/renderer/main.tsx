@@ -5,7 +5,6 @@ import App from './App'
 import Dashboard from './pages/Dashboard'
 import Config from './pages/Config'
 import Leads from './pages/Leads'
-import Admin from './pages/Admin'
 import AutomationV3 from './pages/AutomationV3'
 import './styles.css'
 
@@ -18,7 +17,6 @@ const router = createBrowserRouter([
       { path: 'dashboard', element: <Dashboard /> },
       { path: 'config', element: <Config /> },
       { path: 'leads', element: <Leads /> },
-      { path: 'admin', element: <Admin /> },
       { path: 'automation', element: <AutomationV3 /> }
     ]
   }

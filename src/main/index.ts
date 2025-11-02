@@ -17,7 +17,6 @@ import { registerProfilesIpc } from './ipc/profiles'
 import { registerCatalogIpc } from './ipc/catalog'
 import { registerPlatformCredsIpc } from './ipc/platform_credentials'
 import { registerBrowsersIpc } from './ipc/browsers'
-import { registerAdminCliIpc } from './ipc/admin_cli'
 import { registerLeadsIPC } from './ipc/leads'
 import { registerScenariosIpc } from './ipc/scenarios'
 import { registerEmailIpc } from './ipc/email'
@@ -62,7 +61,6 @@ app.whenReady().then(() => {
   registerCatalogIpc()
   registerPlatformCredsIpc()
   registerBrowsersIpc()
-  registerAdminCliIpc()
   registerLeadsIPC()
   registerScenariosIpc()
   registerEmailIpc()

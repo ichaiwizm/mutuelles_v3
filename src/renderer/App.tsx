@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
-import { Home, KeyRound, Users, Settings, Zap } from 'lucide-react'
+import { Home, KeyRound, Users, Settings } from 'lucide-react'
 import ThemeToggle from './components/ThemeToggle'
 import ErrorBoundary from './components/ErrorBoundary'
 import { ToastProvider } from './contexts/ToastContext'
@@ -10,7 +10,6 @@ const nav = [
   { to: '/config', label: 'Configuration', icon: Settings },
   { to: '/leads', label: 'Leads', icon: Users },
   { to: '/automation', label: 'Automatisations', icon: KeyRound },
-  { to: '/admin', label: 'Admin (JSON Flows)', icon: Zap },
 ]
 
 export default function App() {

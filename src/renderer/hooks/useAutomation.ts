@@ -70,8 +70,19 @@ export function useAutomation() {
         setLeads(leadsResponse.data.items || [])
       }
 
-      const flowsList = await window.api.adminHL.listHLFlows()
-      setFlows(flowsList)
+      const flowsResponse = await window.api.scenarios.listFlows()
+      if (flowsResponse.success && flowsResponse.data) {
+        // Flatten the platform-grouped structure into a flat array of flows
+        const flowsList = flowsResponse.data.flatMap(platformGroup =>
+          platformGroup.flows.map(flow => ({
+            platform: platformGroup.platform,
+            slug: flow.slug,
+            name: flow.name,
+            file: flow.file
+          }))
+        )
+        setFlows(flowsList)
+      }
     } catch (error) {
       console.error('[useAutomation] Failed to load data:', error)
     }

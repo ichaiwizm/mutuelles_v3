@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { X, Play, FileText, List, Layers } from 'lucide-react'
+import { X, FileText, List, Layers } from 'lucide-react'
 import Modal from '../../Modal'
 import type { Flow } from '../../../hooks/useAutomation'
 
@@ -7,7 +7,6 @@ interface FlowDetailsModalProps {
   isOpen: boolean
   onClose: () => void
   flow: Flow | null
-  onLaunchTest?: (flow: Flow) => void
 }
 
 interface FlowDefinition {
@@ -27,8 +26,7 @@ interface FlowDefinition {
 export default function FlowDetailsModal({
   isOpen,
   onClose,
-  flow,
-  onLaunchTest
+  flow
 }: FlowDetailsModalProps) {
   const [flowDefinition, setFlowDefinition] = useState<FlowDefinition | null>(null)
   const [loading, setLoading] = useState(false)
@@ -47,12 +45,11 @@ export default function FlowDetailsModal({
       setError(null)
 
       try {
-        // Use the adminHL API to read the flow file
-        const result = await window.api.adminHL.readFlowFile(flow.file)
-        if (result) {
-          setFlowDefinition(result)
+        const result = await window.api.scenarios.readFlowFile(flow.file)
+        if (result.success && result.data) {
+          setFlowDefinition(result.data)
         } else {
-          setError('Could not load flow definition')
+          setError(result.error || 'Could not load flow definition')
         }
       } catch (err) {
         console.error('Failed to load flow definition:', err)
@@ -255,19 +252,6 @@ export default function FlowDetailsModal({
           >
             Fermer
           </button>
-
-          {onLaunchTest && (
-            <button
-              onClick={() => {
-                onClose()
-                onLaunchTest(flow)
-              }}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-blue-600 dark:bg-blue-500 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
-            >
-              <Play size={16} />
-              Tester ce flow
-            </button>
-          )}
         </div>
       </div>
     </Modal>
