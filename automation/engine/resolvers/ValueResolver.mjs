@@ -1,4 +1,7 @@
 import { TemplateResolver } from './TemplateResolver.mjs'
+import { createLogger } from '../utils/logger.mjs'
+
+const logger = createLogger('ValueResolver')
 
 export class ValueResolver {
   constructor() {
@@ -26,14 +29,14 @@ export class ValueResolver {
         const key = String(value)
         if (platformMappings[key] !== undefined) {
           const mappedValue = platformMappings[key]
-          console.log('[ValueResolver] Mapping applied: %s -> %s', value, mappedValue)
+          logger.debug('[ValueResolver] Mapping applied: %s -> %s', value, mappedValue)
           return mappedValue
         }
         // Support default mapping using '*' or '__default'
         const defKey = platformMappings['*'] !== undefined ? '*' : (platformMappings['__default'] !== undefined ? '__default' : null)
         if (defKey) {
           const mappedValue = platformMappings[defKey]
-          console.log('[ValueResolver] Default mapping applied: %s -> %s', value, mappedValue)
+          logger.debug('[ValueResolver] Default mapping applied: %s -> %s', value, mappedValue)
           return mappedValue
         }
       }

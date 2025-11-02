@@ -1,4 +1,7 @@
 import { BaseCommand } from '../BaseCommand.mjs'
+import { createLogger } from '../../utils/logger.mjs'
+
+const logger = createLogger('ClickFieldCommand')
 
 export class ClickFieldCommand extends BaseCommand {
   async execute(step) {
@@ -13,7 +16,7 @@ export class ClickFieldCommand extends BaseCommand {
 
       const option = fieldDef.options.find(opt => String(opt.value) === String(value))
       if (!option) throw new Error(`Option radio non trouvée pour ${this.getFieldName(step)}:${value}`)
-      console.log('[hl] clickField (radio) %s = %s', this.getFieldName(step), value)
+      logger.debug('[hl] clickField (radio) %s = %s', this.getFieldName(step), value)
       await activeContext.click(option.selector)
       return
     }
@@ -24,9 +27,9 @@ export class ClickFieldCommand extends BaseCommand {
       try {
         await activeContext.waitForSelector(fieldDef.selector, { state: 'attached', timeout: 1000 })
         await activeContext.click(fieldDef.selector)
-        console.log('[hl] clickField %s (optional, found)', this.getFieldName(step))
+        logger.debug('[hl] clickField %s (optional, found)', this.getFieldName(step))
       } catch (err) {
-        console.log('[hl] clickField %s = SKIPPED (optional, not found)', this.getFieldName(step))
+        logger.debug('[hl] clickField %s = SKIPPED (optional, not found)', this.getFieldName(step))
       }
       return
     }

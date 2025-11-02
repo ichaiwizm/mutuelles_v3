@@ -10,6 +10,9 @@ import type { Lead } from '@shared/types/leads'
 import type { EnrichedLeadData } from '@shared/types/emailParsing'
 import { transformToCleanLead } from '@shared/utils/leadFormData'
 import { shouldShowField } from '@renderer/utils/formSchemaGenerator'
+import { createLogger } from '../../services/logger'
+
+const logger = createLogger('LeadModal')
 
 export interface LeadModalProps {
   mode: 'create' | 'view' | 'edit'
@@ -237,17 +240,17 @@ export default function LeadModal({
       .then(() => {
         toast.success('Debug info copié', 'Les informations de débogage ont été copiées dans le presse-papier')
         console.group('🐛 Lead Form Debug State')
-        console.log('Mode:', currentMode)
-        console.log('Total Fields:', allFields.length)
-        console.log('Visible Fields:', visibleFields.length)
-        console.log('Filled Fields:', filledFields.length)
-        console.log('Required Missing:', requiredMissing.length)
-        console.log('Full Debug Info:', debugInfo)
+        logger.debug('Mode:', currentMode)
+        logger.debug('Total Fields:', allFields.length)
+        logger.debug('Visible Fields:', visibleFields.length)
+        logger.debug('Filled Fields:', filledFields.length)
+        logger.debug('Required Missing:', requiredMissing.length)
+        logger.debug('Full Debug Info:', debugInfo)
         console.groupEnd()
       })
       .catch(err => {
         toast.error('Erreur de copie', 'Impossible de copier dans le presse-papier')
-        console.error('Failed to copy debug info:', err)
+        logger.error('Failed to copy debug info:', err)
       })
   }
 

@@ -1,4 +1,7 @@
 import { BaseCommand } from '../BaseCommand.mjs'
+import { createLogger } from '../../utils/logger.mjs'
+
+const logger = createLogger('EnterFrameCommand')
 
 export class EnterFrameCommand extends BaseCommand {
   async execute(step) {
@@ -26,6 +29,6 @@ export class EnterFrameCommand extends BaseCommand {
 
     if (!frame) throw new Error('Impossible d\'accéder au contenu du frame')
     contextStack.push(frame)
-    console.log('[hl] enterFrame %s - contexte empilé (profondeur: %d)', step.selector || `url~${step.urlContains}`, contextStack.length)
+    logger.debug('[hl] enterFrame %s - contexte empilé (profondeur: %d)', step.selector || `url~${step.urlContains}`, contextStack.length)
   }
 }

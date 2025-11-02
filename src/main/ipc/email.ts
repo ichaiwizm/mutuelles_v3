@@ -2,6 +2,9 @@ import { ipcMain, BrowserWindow } from 'electron'
 import { z } from 'zod'
 import { EmailService } from '../services/email'
 import type { EmailFilters, StartImportParams } from '../../shared/types/email'
+import { createLogger } from '../services/logger'
+
+const logger = createLogger('IPC:Email')
 
 let emailService: EmailService | null = null
 
@@ -49,7 +52,7 @@ export function registerEmailIpc() {
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Erreur inconnue'
-      console.error('Erreur IPC startAuth:', message)
+      logger.error('Erreur IPC startAuth:', message)
       return { success: false, error: message }
     }
   })
@@ -186,20 +189,20 @@ export function registerEmailIpc() {
 
       // Vérifier si le token est expiré
       if (config.expiryDate && config.expiryDate < Date.now()) {
-        console.log(`⏰ Token expiré pour ${config.email}, tentative de refresh automatique...`)
+        logger.info(`Token expiré pour ${config.email}, tentative de refresh automatique...`)
 
         try {
           const refreshed = await getEmailService().refreshTokens(config.id!)
           if (refreshed) {
             const updatedConfig = getEmailService().getConfigById(config.id!)
-            console.log(`✅ Token refreshé automatiquement pour ${config.email}`)
+            logger.info(`Token refreshé automatiquement pour ${config.email}`)
             return {
               success: true,
               data: { status: 'authenticated', config: updatedConfig }
             }
           }
         } catch (error) {
-          console.error('❌ Échec du refresh automatique:', error)
+          logger.error('Échec du refresh automatique:', error)
         }
 
         return {
@@ -259,10 +262,10 @@ export function registerEmailIpc() {
       return { success: true, data: result }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Erreur inconnue'
-      console.error('[IPC] email:parseToLeads error:', error)
+      logger.error('email:parseToLeads error:', error)
       return { success: false, error: message }
     }
   })
 
-  console.log('[IPC] ✓ Email handlers registered')
+  logger.info('Email handlers registered')
 }

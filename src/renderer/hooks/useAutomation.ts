@@ -3,6 +3,9 @@ import { useSettings } from './automation/useSettings'
 import { useHistory } from './automation/useHistory'
 import { useSelection } from './automation/useSelection'
 import { useExecution, type ExecutionItem } from './automation/useExecution'
+import { createLogger } from '../services/logger'
+
+const logger = createLogger('useAutomation')
 
 // Re-export types for backwards compatibility
 export type { AdvancedSettings } from '../../shared/settings'
@@ -84,7 +87,7 @@ export function useAutomation() {
         setFlows(flowsList)
       }
     } catch (error) {
-      console.error('[useAutomation] Failed to load data:', error)
+      logger.error('[useAutomation] Failed to load data:', error)
     }
   }, [])
 

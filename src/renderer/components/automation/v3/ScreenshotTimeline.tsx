@@ -1,5 +1,8 @@
 import React, { useEffect, useState, useRef } from 'react'
 import ScreenshotThumbnail from './ScreenshotThumbnail'
+import { createLogger } from '../../../services/logger'
+
+const logger = createLogger('ScreenshotTimeline')
 
 interface Step {
   index: number
@@ -55,7 +58,7 @@ export default function ScreenshotTimeline({
             setLoadedImages(prev => new Map(prev).set(step.screenshot!, response.data!))
           }
         } catch (err) {
-          console.error('Error loading thumbnail:', err)
+          logger.error('Error loading thumbnail:', err)
         }
       }
     }

@@ -1,4 +1,7 @@
 import { BaseCommand } from '../BaseCommand.mjs'
+import { createLogger } from '../../utils/logger.mjs'
+
+const logger = createLogger('FillFieldCommand')
 
 export class FillFieldCommand extends BaseCommand {
   async execute(step) {
@@ -18,7 +21,7 @@ export class FillFieldCommand extends BaseCommand {
     const valueStr = String(value)
     const logName = this.getFieldName(step)
     const logValue = String(logName).toLowerCase().includes('password') ? '***' : valueStr
-    console.log('[hl] fillField %s = %s', logName, logValue)
+    logger.debug('[hl] fillField %s = %s', logName, logValue)
 
     const useJQueryMethod = step.method === 'jquery'
 
@@ -71,12 +74,12 @@ export class FillFieldCommand extends BaseCommand {
         }, { selector: fieldDef.selector, value: valueStr })
 
         if (result.success) {
-          console.log('[hl] fillField %s - date remplie via jQuery (value=%s)', step.field, result.finalValue)
+          logger.debug('[hl] fillField %s - date remplie via jQuery (value=%s)', step.field, result.finalValue)
         } else {
           throw new Error(result.error || 'jQuery method failed')
         }
       } catch (err) {
-        console.log('[hl] fillField %s - méthode jQuery échouée: %s, fallback sur pressSequentially', step.field, err.message)
+        logger.debug('[hl] fillField %s - méthode jQuery échouée: %s, fallback sur pressSequentially', step.field, err.message)
         const locator = activeContext.locator(fieldDef.selector)
         await locator.click()
         await new Promise(r => setTimeout(r, 200))
@@ -86,7 +89,7 @@ export class FillFieldCommand extends BaseCommand {
         await locator.press('Escape')
         await locator.blur()
         await new Promise(r => setTimeout(r, 300))
-        console.log('[hl] fillField %s - date remplie via pressSequentially (fallback)', step.field)
+        logger.debug('[hl] fillField %s - date remplie via pressSequentially (fallback)', step.field)
       }
     } else {
       await activeContext.fill(fieldDef.selector, valueStr)

@@ -58,13 +58,13 @@ export function getAutomationSettings(): AdvancedSettings {
     const validated = AdvancedSettingsSchema.safeParse(parsed)
 
     if (!validated.success) {
-      console.error('Invalid automation settings in DB, using defaults:', validated.error)
+      logger.error('Invalid automation settings in DB, using defaults:', validated.error)
       return DEFAULT_AUTOMATION_SETTINGS
     }
 
     return validated.data
   } catch (error) {
-    console.error('Failed to parse automation settings from DB:', error)
+    logger.error('Failed to parse automation settings from DB:', error)
     return DEFAULT_AUTOMATION_SETTINGS
   }
 }

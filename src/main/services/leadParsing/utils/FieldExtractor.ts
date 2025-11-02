@@ -8,6 +8,9 @@ import type {
   ConfidenceLevel
 } from '../types'
 import { TextCleaner } from './TextCleaner'
+import { createLogger } from '../../logger'
+
+const logger = createLogger('FieldExtractor')
 
 export class FieldExtractor {
   /**
@@ -424,7 +427,7 @@ export class FieldExtractor {
     const hasAsteriskFormat = content.match(/\*[A-Za-zÀ-ÿ\s]+\*\s+[^\n*]+/i)
 
     const result = !!(hasTableMarkers || hasMultipleColumns || hasAsteriskFormat)
-    console.log(
+    logger.debug(
       `[FieldExtractor] detectTabularStructure: pipe=${!!hasTableMarkers}, multi=${!!hasMultipleColumns}, asterisk=${!!hasAsteriskFormat}, result=${result}`
     )
 

@@ -6,6 +6,9 @@ import { useConfirmation } from '../hooks/useConfirmation'
 import CompactStats from '../components/automation/v3/CompactStats'
 import AdvancedModeTab from '../components/automation/v3/AdvancedModeTab'
 import SettingsModal from '../components/automation/v3/SettingsModal'
+import { createLogger } from '../services/logger'
+
+const logger = createLogger('AutomationV3')
 
 export default function AutomationV3() {
   // State
@@ -37,7 +40,7 @@ export default function AutomationV3() {
       await automation.startRun(mode)
       toast.success('Exécution démarrée', `${automation.totalExecutions} exécution(s) en cours`)
     } catch (error) {
-      console.error('Failed to start execution:', error)
+      logger.error('Failed to start execution:', error)
       toast.error('Erreur', error instanceof Error ? error.message : 'Impossible de démarrer l\'exécution')
     }
   }
@@ -69,7 +72,7 @@ export default function AutomationV3() {
             toast.error('Erreur', result.message || 'Impossible d\'arrêter l\'exécution')
           }
         } catch (error) {
-          console.error('Failed to stop execution:', error)
+          logger.error('Failed to stop execution:', error)
           toast.error('Erreur', error instanceof Error ? error.message : 'Impossible d\'arrêter l\'exécution')
         }
       }

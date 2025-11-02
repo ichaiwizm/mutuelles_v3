@@ -1,6 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import type { AdvancedSettings } from '../../../shared/settings'
 import { DEFAULT_AUTOMATION_SETTINGS } from '../../../shared/settings'
+import { createLogger } from '../../services/logger'
+
+const logger = createLogger('useSettings')
 
 /**
  * Hook for managing automation settings with database persistence
@@ -19,7 +22,7 @@ export function useSettings() {
         setSettings(dbSettings)
         setIsLoaded(true)
       } catch (error) {
-        console.error('Failed to load automation settings from DB:', error)
+        logger.error('Failed to load automation settings from DB:', error)
         setSettings(DEFAULT_AUTOMATION_SETTINGS)
         setIsLoaded(true)
       }
@@ -36,7 +39,7 @@ export function useSettings() {
     try {
       await window.api.settings.setAutomationSettings(newSettings)
     } catch (error) {
-      console.error('Failed to save automation settings to DB:', error)
+      logger.error('Failed to save automation settings to DB:', error)
       // Revert on error
       setSettings(settings)
     }
@@ -49,7 +52,7 @@ export function useSettings() {
     try {
       await window.api.settings.setAutomationSettings(DEFAULT_AUTOMATION_SETTINGS)
     } catch (error) {
-      console.error('Failed to reset automation settings in DB:', error)
+      logger.error('Failed to reset automation settings in DB:', error)
     }
   }, [])
 

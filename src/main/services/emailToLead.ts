@@ -20,6 +20,9 @@ import { parserOrchestrator, ParsingDebugger } from './leadParsing'
 import { ParsedDataValidator } from './leadParsing/ParsedDataValidator'
 import { DataEnricher } from './leadParsing/DataEnricher'
 import { LeadTransformer } from './leadParsing/LeadTransformer'
+import { createLogger } from './logger'
+
+const logger = createLogger('EmailToLead')
 
 // Store debug reports globally for UI access
 const debugReports = new Map<string, string>()
@@ -29,7 +32,7 @@ export class EmailToLeadService {
    * Parse emails and prepare leads for creation
    */
   static async parseEmailsToLeads(emails: EmailMessage[]): Promise<EmailToLeadResponse> {
-    console.log(`[EmailToLeadService] Processing ${emails.length} emails`)
+    logger.debug(`[EmailToLeadService] Processing ${emails.length} emails`)
 
     const enrichedLeads: EnrichedLeadData[] = []
     const errors: Array<{ emailId: string; error: string }> = []
@@ -51,7 +54,7 @@ export class EmailToLeadService {
 
         enrichedLeads.push(enrichedLead)
       } catch (error) {
-        console.error(`[EmailToLeadService] Error processing email ${email.id}:`, error)
+        logger.error(`[EmailToLeadService] Error processing email ${email.id}:`, error)
         errors.push({
           emailId: email.id,
           error: error instanceof Error ? error.message : 'Unknown error'
@@ -60,7 +63,7 @@ export class EmailToLeadService {
       }
     }
 
-    console.log(`[EmailToLeadService] Results: ${valid} valid, ${partial} partial, ${invalid} invalid`)
+    logger.debug(`[EmailToLeadService] Results: ${valid} valid, ${partial} partial, ${invalid} invalid`)
 
     return {
       total: emails.length,

@@ -3,6 +3,9 @@ import path from 'node:path'
 import { Db } from './DbPersistence'
 import { execHL } from './ExecHL'
 import type { RunContext, TaskDef } from './types'
+import { createLogger } from '../../logger'
+
+const logger = createLogger('TaskExecutor')
 
 export function makeTaskExecutor(runContext: RunContext, deps: {
   send: (e:any)=>void
@@ -26,7 +29,7 @@ export function makeTaskExecutor(runContext: RunContext, deps: {
         Db.incrementRunCounter(runId, 'pending_items', -1)
         Db.incrementRunCounter(runId, 'cancelled_items', 1)
       } catch (err) {
-        console.error('[Runner] Failed to mark item as cancelled (pre-start):', err)
+        logger.error('[Runner] Failed to mark item as cancelled (pre-start):', err)
       }
       return
     }
@@ -55,7 +58,7 @@ export function makeTaskExecutor(runContext: RunContext, deps: {
       Db.updateItem(def.itemId, { status: 'running', started_at: startedAt, attempt_number: attempt + 1 })
       if (!isRetry) Db.incrementRunCounter(runId, 'pending_items', -1)
     } catch (err) {
-      console.error('[Runner] Failed to update item start in DB:', err)
+      logger.error('[Runner] Failed to update item start in DB:', err)
     }
 
     // Flow step count for progress
@@ -70,7 +73,7 @@ export function makeTaskExecutor(runContext: RunContext, deps: {
 
       const progressCallback = (p: any) => {
         deps.send({ type: 'item-progress', runId, itemId: def.itemId, leadId: def.leadId, platform: def.platform, flowSlug: def.flowSlug, currentStep: p.stepIndex + 1, totalSteps: p.totalSteps, stepMessage: p.stepMessage })
-        try { Db.updateItem(def.itemId, { current_step: p.stepIndex + 1, total_steps: p.totalSteps }) } catch (err) { console.error('[runner] Failed to persist step progress:', err) }
+        try { Db.updateItem(def.itemId, { current_step: p.stepIndex + 1, total_steps: p.totalSteps }) } catch (err) { logger.error('[runner] Failed to persist step progress:', err) }
       }
 
       const browserCallback = (browser: any, context: any) => deps.onTrackBrowser(def.itemId, browser, context)
@@ -88,7 +91,7 @@ export function makeTaskExecutor(runContext: RunContext, deps: {
       Db.incrementRunCounter(runId, 'success_items')
       try {
         Db.createAttempt({ item_id: def.itemId, attempt_number: attempt + 1, status: 'success', started_at: startedAt, completed_at: completedAt, duration_ms: durationMs })
-      } catch (err) { console.error('[Runner] Failed to persist success attempt:', err) }
+      } catch (err) { logger.error('[Runner] Failed to persist success attempt:', err) }
 
       // Persist steps from manifest
       try {
@@ -98,14 +101,14 @@ export function makeTaskExecutor(runContext: RunContext, deps: {
           if (Array.isArray(manifest.steps)) manifest.steps.forEach((s:any)=>Db.createStepFromManifest(def.itemId, s, runDir!))
         }
       } catch (err) {
-        console.error('[Runner] Failed to create step records:', err)
+        logger.error('[Runner] Failed to create step records:', err)
       }
 
       runContext.activeTasks--
       // First check (may still see queue as running)
       deps.checkCompletion()
       // Ensure a second check after the queue decremented its internal counter
-      setTimeout(() => { try { deps.checkCompletion() } catch (e) { console.error(e) } }, 0)
+      setTimeout(() => { try { deps.checkCompletion() } catch (e) { logger.error(e) } }, 0)
     } catch (e: any) {
       const msg = e instanceof Error ? e.message : String(e)
       if (e && typeof e === 'object' && 'runDir' in e) runDir = (e as any).runDir
@@ -119,7 +122,7 @@ export function makeTaskExecutor(runContext: RunContext, deps: {
           const completedAt = new Date().toISOString()
           const durationMs = Date.parse(completedAt) - Date.parse(startedAt)
           Db.createAttempt({ item_id: def.itemId, attempt_number: attempt + 1, status: 'error', error_message: msg, started_at: startedAt, completed_at: completedAt, duration_ms: durationMs })
-        } catch (err) { console.error('[Runner] Failed to persist error attempt before retry:', err) }
+        } catch (err) { logger.error('[Runner] Failed to persist error attempt before retry:', err) }
 
         const delay = attempt === 0 ? 2000 : attempt === 1 ? 5000 : 10000
         await new Promise(r => setTimeout(r, delay))
@@ -148,7 +151,7 @@ export function makeTaskExecutor(runContext: RunContext, deps: {
                 const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'))
                 if (Array.isArray(manifest.steps)) manifest.steps.forEach((s:any)=>Db.createStepFromManifest(def.itemId, s, runDir!))
               }
-            } catch (err) { console.error('[Runner] Failed to create step records:', err) }
+            } catch (err) { logger.error('[Runner] Failed to create step records:', err) }
           }
         }
         deps.onUntrackBrowser(def.itemId)
@@ -156,7 +159,7 @@ export function makeTaskExecutor(runContext: RunContext, deps: {
         // First check (may still see queue as running)
         deps.checkCompletion()
         // Ensure a second check after the queue decremented its internal counter
-        setTimeout(() => { try { deps.checkCompletion() } catch (e) { console.error(e) } }, 0)
+        setTimeout(() => { try { deps.checkCompletion() } catch (e) { logger.error(e) } }, 0)
       }
     } finally {
       deps.onUntrackBrowser(def.itemId)

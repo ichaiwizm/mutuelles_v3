@@ -11,6 +11,9 @@ import React, { useState, useEffect } from 'react'
 import { EmailDateRangePicker } from './email/EmailDateRangePicker'
 import { KnownSendersManager } from './email/KnownSendersManager'
 import type { KnownSender } from '../../../shared/types/email'
+import { createLogger } from '../../services/logger'
+
+const logger = createLogger('ImportSettings')
 
 const STORAGE_KEY_DAYS = 'email_import_days'
 
@@ -54,7 +57,7 @@ export function ImportSettings({
         setKnownSenders(result.data.knownSenders || [])
       }
     } catch (error) {
-      console.error('Erreur chargement known senders:', error)
+      logger.error('Erreur chargement known senders:', error)
     }
   }
 
@@ -67,7 +70,7 @@ export function ImportSettings({
       })
       setKnownSenders(senders)
     } catch (error) {
-      console.error('Erreur mise à jour senders:', error)
+      logger.error('Erreur mise à jour senders:', error)
       alert('Erreur lors de la mise à jour')
     }
   }
@@ -91,10 +94,10 @@ export function ImportSettings({
         filters
       })
 
-      console.log('[DEBUG] Analyze result:', result)
+      logger.debug('[DEBUG] Analyze result:', result)
 
       if (result.success && result.data && result.data.length > 0) {
-        console.log('[DEBUG] Found senders:', result.data)
+        logger.debug('[DEBUG] Found senders:', result.data)
 
         setAnalyzeProgress('Analyse des expéditeurs...')
 
@@ -104,7 +107,7 @@ export function ImportSettings({
           .filter((s: any) => !existingEmails.has(s.email.toLowerCase()))
           .map((s: any) => ({ email: s.email }))
 
-        console.log('[DEBUG] New senders after filter:', newSenders)
+        logger.debug('[DEBUG] New senders after filter:', newSenders)
 
         if (newSenders.length > 0) {
           setAnalyzeProgress('Ajout des expéditeurs...')
@@ -121,13 +124,13 @@ export function ImportSettings({
           alert('✓ Analyse terminée\n\nTous les expéditeurs fréquents sont déjà configurés.')
         }
       } else {
-        console.log('[DEBUG] No data found or empty result')
+        logger.debug('[DEBUG] No data found or empty result')
         setAnalyzeProgress('')
         setIsAnalyzing(false)
         alert(`ℹ️ Aucun lead détecté\n\nAucun email avec structure de lead trouvé dans les ${selectedDays} derniers jours.\n\nEssayez d'augmenter la période ou vérifiez que vous avez des emails de leads dans votre boîte.`)
       }
     } catch (error) {
-      console.error('Erreur analyse:', error)
+      logger.error('Erreur analyse:', error)
       setAnalyzeProgress('')
       setIsAnalyzing(false)
       alert('❌ Erreur lors de l\'analyse\n\n' + (error instanceof Error ? error.message : 'Erreur inconnue'))

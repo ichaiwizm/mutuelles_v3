@@ -2,6 +2,9 @@ import { ipcMain } from 'electron'
 import { getTheme, setTheme, getAutomationSettings, setAutomationSettings } from '../services/settings'
 import { z } from 'zod'
 import type { AdvancedSettings } from '../../shared/settings'
+import { createLogger } from '../services/logger'
+
+const logger = createLogger('IPC:Settings')
 
 export function registerSettingsIpc() {
   ipcMain.handle('settings:getTheme', async () => getTheme() ?? null)
@@ -15,7 +18,7 @@ export function registerSettingsIpc() {
     try {
       return getAutomationSettings()
     } catch (error) {
-      console.error('Failed to get automation settings:', error)
+      logger.error('Failed to get automation settings:', error)
       throw error
     }
   })
@@ -25,7 +28,7 @@ export function registerSettingsIpc() {
       setAutomationSettings(settings as AdvancedSettings)
       return true
     } catch (error) {
-      console.error('Failed to set automation settings:', error)
+      logger.error('Failed to set automation settings:', error)
       throw error
     }
   })

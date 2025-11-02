@@ -4,6 +4,10 @@
  * Groups multiple failures within 10 seconds into a single notification
  */
 
+import { createLogger } from './logger'
+
+const logger = createLogger('NotificationBatcher')
+
 interface FailureItem {
   leadName: string
   platform: string
@@ -49,7 +53,7 @@ class NotificationBatcher {
       await window.api.sendFailureNotification(failures)
       // silent
     } catch (error) {
-      console.error('[NotificationBatcher] Failed to send notification:', error)
+      logger.error('[NotificationBatcher] Failed to send notification:', error)
     }
   }
 

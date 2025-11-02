@@ -7,6 +7,9 @@
 
 import type { ILeadParser, ParserResult, CleanedContent, ParsedLeadData, ParsedField } from './types'
 import { FieldExtractor } from './utils/FieldExtractor'
+import { createLogger } from '../logger'
+
+const logger = createLogger('BaseLeadParser')
 
 export abstract class BaseLeadParser implements ILeadParser {
   abstract readonly name: string
@@ -120,6 +123,6 @@ export abstract class BaseLeadParser implements ILeadParser {
    * Helper: Log
    */
   protected log(message: string, data?: any): void {
-    console.log(`[${this.name}] ${message}`, data || '')
+    logger.debug(`[${this.name}] ${message}`, data || '')
   }
 }

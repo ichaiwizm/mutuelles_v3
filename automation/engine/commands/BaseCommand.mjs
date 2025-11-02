@@ -1,3 +1,7 @@
+import { createLogger } from '../utils/logger.mjs'
+
+const logger = createLogger('BaseCommand')
+
 export class BaseCommand {
   constructor(context) {
     this.context = context
@@ -45,7 +49,7 @@ export class BaseCommand {
   validateOptionalValue(step, value, commandName) {
     if (value === undefined || value === null || value === '') {
       if (step.optional === true) {
-        console.log('[hl] %s %s = SKIPPED (optional, missing value)', commandName, this.getFieldName(step))
+        logger.debug('[hl] %s %s = SKIPPED (optional, missing value)', commandName, this.getFieldName(step))
         return { skip: true }
       }
       throw new Error(`Missing value for ${this.getFieldName(step)} (leadKey=${step.leadKey || ''}, value=${step.value || ''})`)

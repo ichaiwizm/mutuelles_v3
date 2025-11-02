@@ -11,6 +11,9 @@ import type { ILeadParser, OrchestrationResult, ParserResult } from '../types'
 import { ContentCleaner } from './ContentCleaner'
 import { ProviderDetector } from './ProviderDetector'
 import { ParsingDebugger } from './ParsingDebugger'
+import { createLogger } from '../../logger'
+
+const logger = createLogger('ParserOrchestrator')
 
 export class ParserOrchestrator {
   private parsers: Map<string, ILeadParser> = new Map()
@@ -20,22 +23,22 @@ export class ParserOrchestrator {
    */
   registerParser(parser: ILeadParser): void {
     this.parsers.set(parser.name.toLowerCase(), parser)
-    console.log(`[ParserOrchestrator] Registered parser: ${parser.name}`)
+    logger.debug(`[ParserOrchestrator] Registered parser: ${parser.name}`)
   }
 
   /**
    * Parse un contenu avec stratégie intelligente
    */
   parse(rawContent: string, sourceId: string, isHtml: boolean = false): OrchestrationResult {
-    console.log(`[ParserOrchestrator] Starting orchestration for source: ${sourceId}`)
+    logger.debug(`[ParserOrchestrator] Starting orchestration for source: ${sourceId}`)
 
     // Phase 1: Nettoyage basique (garde les mots-clés d'introduction pour détection)
     const basicCleaned = ContentCleaner.cleanBasic(rawContent, isHtml)
-    console.log(`[ParserOrchestrator] Basic cleaned content: ${basicCleaned.text.length} chars`)
+    logger.debug(`[ParserOrchestrator] Basic cleaned content: ${basicCleaned.text.length} chars`)
 
     // Phase 2: Détection du provider (sur contenu complet avec mots-clés)
     const providerDetection = ProviderDetector.detect(basicCleaned)
-    console.log(`[ParserOrchestrator] Detected provider: ${providerDetection.provider} (${providerDetection.confidence}%)`)
+    logger.debug(`[ParserOrchestrator] Detected provider: ${providerDetection.provider} (${providerDetection.confidence}%)`)
 
     // Phase 3: Extraction du bloc principal (maintenant qu'on connaît le provider)
     const extractedText = ContentCleaner.extractMainBlock(basicCleaned.text)
@@ -48,7 +51,7 @@ export class ParserOrchestrator {
         charsRemoved: basicCleaned.original.length - extractedText.length
       }
     }
-    console.log(`[ParserOrchestrator] Extracted main block: ${cleanedContent.text.length} chars`)
+    logger.debug(`[ParserOrchestrator] Extracted main block: ${cleanedContent.text.length} chars`)
 
     // Phase 4: Stratégie de parsing
     const allAttempts: ParserResult[] = []
@@ -58,21 +61,21 @@ export class ParserOrchestrator {
     if (providerDetection.confidence >= 70) {
       const recommendedParser = this.getParserByProvider(providerDetection.provider)
       if (recommendedParser) {
-        console.log(`[ParserOrchestrator] Trying recommended parser: ${recommendedParser.name}`)
+        logger.debug(`[ParserOrchestrator] Trying recommended parser: ${recommendedParser.name}`)
         const result = this.tryParser(recommendedParser, cleanedContent, sourceId)
         allAttempts.push(result)
 
         // Si bon score, on prend ce résultat
         if (result.success && result.score >= 60) {
           finalResult = result
-          console.log(`[ParserOrchestrator] Recommended parser succeeded with score ${result.score}`)
+          logger.debug(`[ParserOrchestrator] Recommended parser succeeded with score ${result.score}`)
         }
       }
     }
 
     // Stratégie 2: Si pas de résultat satisfaisant, essayer TOUS les parsers
     if (!finalResult) {
-      console.log(`[ParserOrchestrator] Trying all parsers as fallback`)
+      logger.debug(`[ParserOrchestrator] Trying all parsers as fallback`)
       const otherParsers = Array.from(this.parsers.values())
         .filter(p => !finalResult || p.name !== finalResult.parserName)
 
@@ -111,7 +114,7 @@ export class ParserOrchestrator {
     // Phase 4: Génération du rapport de debug
     orchestrationResult.debugReport = ParsingDebugger.createReport(orchestrationResult)
 
-    console.log(`[ParserOrchestrator] Orchestration complete. Final parser: ${finalResult.parserName}, fields: ${finalResult.fieldsExtracted}`)
+    logger.debug(`[ParserOrchestrator] Orchestration complete. Final parser: ${finalResult.parserName}, fields: ${finalResult.fieldsExtracted}`)
 
     return orchestrationResult
   }

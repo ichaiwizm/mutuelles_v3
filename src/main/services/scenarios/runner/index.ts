@@ -45,7 +45,7 @@ export class ScenariosRunner {
       try {
         Db.createRun({ id: runId, status: 'running', mode, concurrency, total_items: taskDefs.length + earlyErrors.length, started_at: new Date().toISOString(), settings_snapshot: JSON.stringify(payload.options || {}) })
       } catch (err) {
-        console.error('[Runner] Failed to create run in DB:', err)
+        logger.error('[Runner] Failed to create run in DB:', err)
       }
 
       send({ type:'items-queued', runId, items: taskDefs.map(def => ({ itemId: def.itemId, leadId: def.leadId, platform: def.platform, flowSlug: def.flowSlug })) })
@@ -65,7 +65,7 @@ export class ScenariosRunner {
           Db.incrementRunCounter(runId, 'error_items')
         }
       } catch (err) {
-        console.error('[Runner] Failed to create items in DB:', err)
+        logger.error('[Runner] Failed to create items in DB:', err)
       }
 
       for (const evt of earlyErrors) send({ ...evt, runId })
@@ -109,7 +109,7 @@ export class ScenariosRunner {
       this.activeRuns.set(runId, runContext)
 
       for (const def of taskDefs) {
-        queue.add(() => executeWithRetry(def)).catch(err => console.error('[Runner] Task execution failed:', err))
+        queue.add(() => executeWithRetry(def)).catch(err => logger.error('[Runner] Task execution failed:', err))
       }
     }, 0)
 
@@ -140,14 +140,14 @@ export class ScenariosRunner {
       Db.incrementRunCounter(runId, 'pending_items', -pending)
       Db.incrementRunCounter(runId, 'cancelled_items', dbCancelledCount)
     } catch (err) {
-      console.error('[Runner] Failed to update run status on stop:', err)
+      logger.error('[Runner] Failed to update run status on stop:', err)
     }
 
     this.activeRuns.delete(runId)
     if (runContext.sender) {
       try {
         runContext.sender.webContents.send(`scenarios:progress:${runId}`, { type:'run-cancelled', runId, message: `Arrêté (${queueCancelledCount + dbCancelledCount} tâches annulées)` } as RunProgressEvent)
-      } catch (err) { console.error('Failed to send cancellation event:', err) }
+      } catch (err) { logger.error('Failed to send cancellation event:', err) }
     }
 
     const totalCancelled = queueCancelledCount + dbCancelledCount
@@ -172,7 +172,7 @@ export class ScenariosRunner {
       const tracker = createBrowserTracker(runContext)
       await tracker.closeOne(itemId)
     } catch (err) {
-      console.debug('[Runner] stopItem closeOne error:', err instanceof Error ? err.message : err)
+      logger.debug('[Runner] stopItem closeOne error:', err instanceof Error ? err.message : err)
     }
 
     return { success: true, message: 'Item en cours d\'annulation' }
@@ -254,13 +254,13 @@ export class ScenariosRunner {
       Db.updateItem(itemId, { status: 'pending', error_message: null, started_at: null, completed_at: null, duration_ms: null, current_step: null })
       Db.incrementRunCounter(runId, 'error_items', -1)
       Db.incrementRunCounter(runId, 'pending_items')
-    } catch (err) { console.error('[Runner] Failed to update requeue in DB:', err) }
+    } catch (err) { logger.error('[Runner] Failed to update requeue in DB:', err) }
 
     if (runContext.sender) {
-      try { runContext.sender.webContents.send(`scenarios:progress:${runId}`, { type:'item-requeued', runId, itemId, leadId: taskDef.leadId, platform: taskDef.platform, flowSlug: taskDef.flowSlug } as RunProgressEvent) } catch (err) { console.error('Failed to send requeue event:', err) }
+      try { runContext.sender.webContents.send(`scenarios:progress:${runId}`, { type:'item-requeued', runId, itemId, leadId: taskDef.leadId, platform: taskDef.platform, flowSlug: taskDef.flowSlug } as RunProgressEvent) } catch (err) { logger.error('Failed to send requeue event:', err) }
     }
 
-    runContext.queue.add(() => runContext.executeWithRetry(taskDef)).catch(err => console.error('[Runner] Requeued task execution failed:', err))
+    runContext.queue.add(() => runContext.executeWithRetry(taskDef)).catch(err => logger.error('[Runner] Requeued task execution failed:', err))
     // silent
     return { success: true, message: 'Item remis en queue avec succès' }
   }

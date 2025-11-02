@@ -1,4 +1,7 @@
 import type { RunContext } from './types'
+import { createLogger } from '../../logger'
+
+const logger = createLogger('BrowserTracker')
 
 export function createBrowserTracker(runContext: RunContext) {
   function track(itemId: string, browser: any, context: any) {
@@ -12,13 +15,13 @@ export function createBrowserTracker(runContext: RunContext) {
     for (const [itemId, { browser, context }] of entries) {
       try {
         if (context && typeof context.close === 'function') {
-          await context.close().catch((err: any) => console.debug('[Runner] Context close error:', err?.message))
+          await context.close().catch((err: any) => logger.debug('[Runner] Context close error:', err?.message))
         }
         if (browser && typeof browser.close === 'function') {
-          await browser.close().catch((err: any) => console.debug('[Runner] Browser close error:', err?.message))
+          await browser.close().catch((err: any) => logger.debug('[Runner] Browser close error:', err?.message))
         }
       } catch (err) {
-        console.debug(`[Runner] Failed to close browser for ${itemId}:`, err instanceof Error ? err.message : err)
+        logger.debug(`[Runner] Failed to close browser for ${itemId}:`, err instanceof Error ? err.message : err)
       }
     }
     runContext.activeBrowsers.clear()
@@ -30,13 +33,13 @@ export function createBrowserTracker(runContext: RunContext) {
     const { browser, context } = entry
     try {
       if (context && typeof context.close === 'function') {
-        await context.close().catch((err: any) => console.debug('[Runner] Context close error (one):', err?.message))
+        await context.close().catch((err: any) => logger.debug('[Runner] Context close error (one):', err?.message))
       }
       if (browser && typeof browser.close === 'function') {
-        await browser.close().catch((err: any) => console.debug('[Runner] Browser close error (one):', err?.message))
+        await browser.close().catch((err: any) => logger.debug('[Runner] Browser close error (one):', err?.message))
       }
     } catch (err) {
-      console.debug(`[Runner] Failed to close browser for ${itemId}:`, err instanceof Error ? err.message : err)
+      logger.debug(`[Runner] Failed to close browser for ${itemId}:`, err instanceof Error ? err.message : err)
     } finally {
       runContext.activeBrowsers.delete(itemId)
     }

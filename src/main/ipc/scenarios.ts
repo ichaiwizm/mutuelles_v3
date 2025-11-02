@@ -5,6 +5,9 @@ import { ScenariosRunner } from '../services/scenarios/runner'
 import { listHLFlows } from '../services/scenarios/hl_catalog'
 import { getDb } from '../db/connection'
 import * as execQueries from '../../shared/db/queries/executions'
+import { createLogger } from '../services/logger'
+
+const logger = createLogger('IPC:Scenarios')
 
 const runner = new ScenariosRunner()
 
@@ -66,7 +69,7 @@ export function registerScenariosIpc() {
 
       return { success: true, data: result }
     } catch (error) {
-      console.error('Error listing flows:', error)
+      logger.error('Error listing flows:', error)
       return { success: false, error: error instanceof Error ? error.message : 'Failed to list flows' }
     }
   })
@@ -77,7 +80,7 @@ export function registerScenariosIpc() {
       const runs = execQueries.getRunHistory(db, filters)
       return { success: true, data: runs }
     } catch (error) {
-      console.error('Error getting history:', error)
+      logger.error('Error getting history:', error)
       return { success: false, error: error instanceof Error ? error.message : 'Failed to get history' }
     }
   })
@@ -119,7 +122,7 @@ export function registerScenariosIpc() {
 
       return { success: true, repaired }
     } catch (error) {
-      console.error('[IPC][scenarios:repairFinalize] Error:', error)
+      logger.error('scenarios:repairFinalize - Error:', error)
       return { success: false, error: error instanceof Error ? error.message : 'Failed to repair finalize' }
     }
   })
@@ -139,7 +142,7 @@ export function registerScenariosIpc() {
 
       return { success: true, data: run }
     } catch (error) {
-      console.error('Error getting active run:', error)
+      logger.error('Error getting active run:', error)
       return { success: false, error: error instanceof Error ? error.message : 'Failed to get active run' }
     }
   })
@@ -155,7 +158,7 @@ export function registerScenariosIpc() {
 
       return { success: true, data: items }
     } catch (error) {
-      console.error('Error getting run items:', error)
+      logger.error('Error getting run items:', error)
       return { success: false, error: error instanceof Error ? error.message : 'Failed to get run items' }
     }
   })
@@ -171,7 +174,7 @@ export function registerScenariosIpc() {
 
       return { success: true, data: steps }
     } catch (error) {
-      console.error('Error getting run steps:', error)
+      logger.error('Error getting run steps:', error)
       return { success: false, error: error instanceof Error ? error.message : 'Failed to get run steps' }
     }
   })
@@ -200,14 +203,14 @@ export function registerScenariosIpc() {
           try {
             fs.rmSync(runDir, { recursive: true, force: true })
           } catch (err) {
-            console.error(`Failed to delete run directory ${runDir}:`, err)
+            logger.error(`Failed to delete run directory ${runDir}:`, err)
           }
         }
       }
 
       return { success: true, message: 'Run deleted successfully' }
     } catch (error) {
-      console.error('Error deleting run:', error)
+      logger.error('Error deleting run:', error)
       return { success: false, error: error instanceof Error ? error.message : 'Failed to delete run' }
     }
   })
@@ -241,7 +244,7 @@ export function registerScenariosIpc() {
         }
       }
     } catch (error) {
-      console.error('Error getting run details:', error)
+      logger.error('Error getting run details:', error)
       return { success: false, error: error instanceof Error ? error.message : 'Failed to get run details' }
     }
   })
@@ -271,7 +274,7 @@ export function registerScenariosIpc() {
         }
       }
     } catch (error) {
-      console.error('Error getting item details:', error)
+      logger.error('Error getting item details:', error)
       return { success: false, error: error instanceof Error ? error.message : 'Failed to get item details' }
     }
   })
@@ -293,7 +296,7 @@ export function registerScenariosIpc() {
 
       return { success: true, data: `data:${mimeType};base64,${base64}` }
     } catch (error) {
-      console.error('Error reading screenshot:', error)
+      logger.error('Error reading screenshot:', error)
       return { success: false, error: error instanceof Error ? error.message : 'Failed to read screenshot' }
     }
   })
@@ -310,7 +313,7 @@ export function registerScenariosIpc() {
       const result = await runner.stop(runId)
       return result
     } catch (error) {
-      console.error('Error stopping execution:', error)
+      logger.error('Error stopping execution:', error)
       return {
         success: false,
         message: error instanceof Error ? error.message : 'Failed to stop execution'
@@ -330,7 +333,7 @@ export function registerScenariosIpc() {
       const result = runner.requeueItem(runId, itemId)
       return result
     } catch (error) {
-      console.error('Error requeueing item:', error)
+      logger.error('Error requeueing item:', error)
       return {
         success: false,
         message: error instanceof Error ? error.message : 'Failed to requeue item'
@@ -350,7 +353,7 @@ export function registerScenariosIpc() {
       const result = await runner.stopItem(runId, itemId)
       return result
     } catch (error) {
-      console.error('Error stopping item:', error)
+      logger.error('Error stopping item:', error)
       return {
         success: false,
         message: error instanceof Error ? error.message : 'Failed to stop item'
@@ -369,7 +372,7 @@ export function registerScenariosIpc() {
       const result = await runner.pauseItem(runId, itemId)
       return result
     } catch (error) {
-      console.error('Error pausing item:', error)
+      logger.error('Error pausing item:', error)
       return { success: false, message: error instanceof Error ? error.message : 'Failed to pause item' }
     }
   })
@@ -385,7 +388,7 @@ export function registerScenariosIpc() {
       const result = await runner.resumeItem(runId, itemId)
       return result
     } catch (error) {
-      console.error('Error resuming item:', error)
+      logger.error('Error resuming item:', error)
       return { success: false, message: error instanceof Error ? error.message : 'Failed to resume item' }
     }
   })
@@ -415,7 +418,7 @@ export function registerScenariosIpc() {
       const result = runner.requeueItems(runId, itemIds)
       return result
     } catch (error) {
-      console.error('Error requeueing items:', error)
+      logger.error('Error requeueing items:', error)
       return {
         success: false,
         message: error instanceof Error ? error.message : 'Failed to requeue items'
@@ -432,7 +435,7 @@ export function registerScenariosIpc() {
       const flowData = JSON.parse(fs.readFileSync(filePath, 'utf-8'))
       return { success: true, data: flowData }
     } catch (error) {
-      console.error('Error reading flow file:', error)
+      logger.error('Error reading flow file:', error)
       return { success: false, error: error instanceof Error ? error.message : 'Failed to read flow file' }
     }
   })

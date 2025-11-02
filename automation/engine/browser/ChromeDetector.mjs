@@ -1,5 +1,8 @@
 import fs from 'node:fs'
 import path from 'node:path'
+import { createLogger } from '../utils/logger.mjs'
+
+const logger = createLogger('ChromeDetector')
 
 /**
  * Détecte le chemin de Chrome/Chromium sur la machine
@@ -35,7 +38,7 @@ export function detectChromePath() {
     try {
       if (fs.existsSync(chromePath)) return chromePath
     } catch (err) {
-      console.debug('[ChromeDetector] Cannot access:', chromePath, err.message)
+      logger.debug('[ChromeDetector] Cannot access:', chromePath, err.message)
     }
   }
 

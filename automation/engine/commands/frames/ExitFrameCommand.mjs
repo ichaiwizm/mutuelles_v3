@@ -1,15 +1,18 @@
 import { BaseCommand } from '../BaseCommand.mjs'
+import { createLogger } from '../../utils/logger.mjs'
+
+const logger = createLogger('ExitFrameCommand')
 
 export class ExitFrameCommand extends BaseCommand {
   async execute(step) {
     const { contextStack } = this.context
 
     if (contextStack.length <= 1) {
-      console.log('[hl] exitFrame - déjà au contexte principal, ignoré')
+      logger.debug('[hl] exitFrame - déjà au contexte principal, ignoré')
       return
     }
 
     contextStack.pop()
-    console.log('[hl] exitFrame - contexte dépilé (profondeur: %d)', contextStack.length)
+    logger.debug('[hl] exitFrame - contexte dépilé (profondeur: %d)', contextStack.length)
   }
 }

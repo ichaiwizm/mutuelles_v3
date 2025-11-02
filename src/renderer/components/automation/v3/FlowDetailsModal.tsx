@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react'
 import { X, FileText, List, Layers } from 'lucide-react'
 import Modal from '../../Modal'
 import type { Flow } from '../../../hooks/useAutomation'
+import { createLogger } from '../../../services/logger'
+
+const logger = createLogger('FlowDetailsModal')
 
 interface FlowDetailsModalProps {
   isOpen: boolean
@@ -52,7 +55,7 @@ export default function FlowDetailsModal({
           setError(result.error || 'Could not load flow definition')
         }
       } catch (err) {
-        console.error('Failed to load flow definition:', err)
+        logger.error('Failed to load flow definition:', err)
         setError('Failed to load flow definition')
       } finally {
         setLoading(false)

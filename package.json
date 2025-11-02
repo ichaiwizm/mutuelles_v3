@@ -50,6 +50,8 @@
     "@types/react-window": "^1.8.8",
     "better-sqlite3": "^12.4.1",
     "dotenv": "^16.4.5",
+    "electron-log": "^5.4.3",
+    "glob": "^11.0.3",
     "googleapis": "^164.1.0",
     "lucide-react": "^0.441.0",
     "minimist": "^1.2.8",

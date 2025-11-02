@@ -1,5 +1,8 @@
 import { Db } from './DbPersistence'
 import type { RunContext } from './types'
+import { createLogger } from '../../logger'
+
+const logger = createLogger('Finalizer')
 
 export function makeFinalizer(runContext: RunContext, send: (e:any)=>void) {
   const { runId } = runContext
@@ -10,7 +13,7 @@ export function makeFinalizer(runContext: RunContext, send: (e:any)=>void) {
       const durationMs = runContext.startedAt ? Date.now() - runContext.startedAt.getTime() : null
       Db.updateRun(runId, { status: finalStatus, completed_at: completedAt, duration_ms: durationMs })
     } catch (err) {
-      console.error('[Runner] Failed to update run completion in DB:', err)
+      logger.error('[Runner] Failed to update run completion in DB:', err)
     }
     send({ type: 'run-done', runId, message: finalStatus === 'completed' ? 'Terminé' : `Terminé (${finalStatus})` })
   }

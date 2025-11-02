@@ -1,5 +1,8 @@
 import { BaseCommand } from '../BaseCommand.mjs'
 import { buildOptionSelectorFromTemplate } from '../../utils/selectorBuilder.mjs'
+import { createLogger } from '../../utils/logger.mjs'
+
+const logger = createLogger('SelectFieldCommand')
 
 export class SelectFieldCommand extends BaseCommand {
   async execute(step) {
@@ -13,7 +16,7 @@ export class SelectFieldCommand extends BaseCommand {
 
     const open = fieldDef?.options?.open_selector || fieldDef.selector
     if (!open) throw new Error(`open_selector manquant pour ${this.getFieldName(step)}`)
-    console.log('[hl] selectField %s -> %s', this.getFieldName(step), String(value))
+    logger.debug('[hl] selectField %s -> %s', this.getFieldName(step), String(value))
 
     // Si aucune liste d'items n'est fournie, utiliser selectOption directement
     if (!fieldDef?.options?.items || fieldDef.options.items.length === 0) {

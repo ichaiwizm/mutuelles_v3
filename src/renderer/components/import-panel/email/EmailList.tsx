@@ -10,6 +10,9 @@
 import React, { useState, useCallback } from 'react'
 import type { EmailMessage } from '../../../../shared/types/email'
 import { EmailListItem } from './EmailListItem'
+import { createLogger } from '../../../services/logger'
+
+const logger = createLogger('EmailList')
 
 interface EmailListProps {
   emails: EmailMessage[]
@@ -58,7 +61,7 @@ export function EmailList({
     navigator.clipboard.writeText(emailsText).then(() => {
       alert(`✓ ${emails.length} email(s) copié(s) dans le presse-papier`)
     }).catch(err => {
-      console.error('Erreur copie:', err)
+      logger.error('Erreur copie:', err)
       alert('Erreur lors de la copie')
     })
   }, [emails])

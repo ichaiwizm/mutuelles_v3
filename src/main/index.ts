@@ -3,6 +3,9 @@ import path from 'node:path'
 import dotenv from 'dotenv'
 import { installMainErrorHandlers } from './errors'
 import { initDatabase, getDb } from './db/connection'
+import { createLogger } from './services/logger'
+
+const logger = createLogger('Main')
 
 const envPath = app.isPackaged
   ? path.join(process.resourcesPath, '.env')
@@ -10,8 +13,8 @@ const envPath = app.isPackaged
 
 dotenv.config({ path: envPath })
 
-console.log('📁 Chargement .env depuis:', envPath)
-console.log('🔑 GOOGLE_CLIENT_ID chargé:', process.env.GOOGLE_CLIENT_ID ? 'Oui ✓' : 'Non ✗')
+logger.info('Chargement .env depuis:', envPath)
+logger.info('GOOGLE_CLIENT_ID chargé:', process.env.GOOGLE_CLIENT_ID ? 'Oui ✓' : 'Non ✗')
 import { registerSettingsIpc } from './ipc/settings'
 import { registerProfilesIpc } from './ipc/profiles'
 import { registerCatalogIpc } from './ipc/catalog'
@@ -86,7 +89,7 @@ ipcMain.handle('app:getVersion', async () => {
   try {
     return app.getVersion()
   } catch (err) {
-    console.error("app:getVersion a échoué", err)
+    logger.error("app:getVersion a échoué", err)
     throw err
   }
 })

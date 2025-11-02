@@ -1,5 +1,8 @@
 import path from 'node:path'
 import { writeText, writeJson } from '../utils/fileSystem.mjs'
+import { createLogger } from '../utils/logger.mjs'
+
+const logger = createLogger('DomCollector')
 
 /**
  * DomCollector - Collecte de DOM et snapshots d'accessibilité
@@ -30,7 +33,7 @@ export class DomCollector {
       await this.collectDom(activeContext, index, step, domDir)
       if (a11y) await this.collectA11y(activeContext, index, domDir)
     } catch (err) {
-      console.error('[DomCollector] Erreur lors de la capture:', err.message)
+      logger.error('[DomCollector] Erreur lors de la capture:', err.message)
     }
   }
 
@@ -44,20 +47,20 @@ export class DomCollector {
   async collectDom(activeContext, index, step, domDir) {
     try {
       if (!activeContext || activeContext.isClosed?.()) {
-        console.warn(`[DomCollector] Contexte fermé pour step ${index + 1}`)
+        logger.warn(`[DomCollector] Contexte fermé pour step ${index + 1}`)
         return
       }
 
       const full = await activeContext.content()
 
       if (!full || full.trim().length < 100) {
-        console.warn(`[DomCollector] DOM vide ou trop court pour step ${index + 1}: ${full?.length || 0} chars`)
+        logger.warn(`[DomCollector] DOM vide ou trop court pour step ${index + 1}: ${full?.length || 0} chars`)
       }
 
       const filename = `step-${String(index + 1).padStart(2, '0')}.html`
       writeText(path.join(domDir, filename), full)
     } catch (err) {
-      console.error(`[DomCollector] Erreur step ${index + 1}:`, err.message)
+      logger.error(`[DomCollector] Erreur step ${index + 1}:`, err.message)
     }
   }
 

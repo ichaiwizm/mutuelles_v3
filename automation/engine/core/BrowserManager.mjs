@@ -1,4 +1,7 @@
 import { chromium } from 'playwright-core'
+import { createLogger } from '../utils/logger.mjs'
+
+const logger = createLogger('BrowserManager')
 
 export class BrowserManager {
   constructor({ chromePath, useChannel, videoDir }) {
@@ -19,7 +22,7 @@ export class BrowserManager {
     let page = context.pages()[0] || (await context.newPage())
     page.setDefaultTimeout(15000)
     context.on('page', (p) => {
-      try { page = p; page.setDefaultTimeout(15000) } catch (err) { console.warn('[Browser] Failed to set timeout on new page:', err.message) }
+      try { page = p; page.setDefaultTimeout(15000) } catch (err) { logger.warn('[Browser] Failed to set timeout on new page:', err.message) }
     })
     return { browser, context, getPage: () => page }
   }

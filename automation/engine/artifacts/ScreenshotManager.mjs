@@ -1,3 +1,7 @@
+import { createLogger } from '../utils/logger.mjs'
+
+const logger = createLogger('ScreenshotManager')
+
 /**
  * ScreenshotManager - Gestion des captures d'écran avec retry logic
  */
@@ -12,7 +16,7 @@ export class ScreenshotManager {
       await context.screenshot({ path: filepath })
     } catch (e) {
       const msg = String(e?.message || '')
-      console.warn('[ScreenshotManager] 1st attempt failed:', msg)
+      logger.warn('[ScreenshotManager] 1st attempt failed:', msg)
 
       // Attendre que le DOM soit chargé avant de retry
       try {
@@ -24,7 +28,7 @@ export class ScreenshotManager {
         await context.screenshot({ path: filepath })
       } catch (e2) {
         const msg2 = String(e2?.message || '')
-        console.warn('[ScreenshotManager] 2nd attempt failed:', msg2)
+        logger.warn('[ScreenshotManager] 2nd attempt failed:', msg2)
         throw e2  // Propager l'erreur après 2 tentatives échouées
       }
     }

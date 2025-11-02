@@ -1,5 +1,8 @@
 import type { BrowserWindow } from 'electron'
 import type { RunProgressEvent } from './types'
+import { createLogger } from '../../logger'
+
+const logger = createLogger('Events')
 
 export function makeProgressSender(window: BrowserWindow | undefined, runId: string) {
   const send = (evt: RunProgressEvent) => {
@@ -11,7 +14,7 @@ export function makeProgressSender(window: BrowserWindow | undefined, runId: str
           ? ` (step ${evt.currentStep}/${evt.totalSteps})`
           : ''
     } catch (err) {
-      console.error('[Runner] ❌ IPC send failed:', err, 'Event:', evt.type)
+      logger.error('[Runner] ❌ IPC send failed:', err, 'Event:', evt.type)
     }
   }
   return send

@@ -15,6 +15,9 @@ import { ArtifactsPipeline } from './ArtifactsPipeline.mjs'
 import { ProgressEmitter } from './ProgressEmitter.mjs'
 import { RunError } from '../errors/RunError.mjs'
 import { describeHL } from '../utils/stepDescriber.mjs'
+import { createLogger } from '../utils/logger.mjs'
+
+const logger = createLogger('FlowRunner')
 
 export async function runHighLevelFlow({ fieldsFile, flowFile, leadFile, leadData, username, password, outRoot='data/runs', mode='dev_private', chrome=null, video=false, dom='errors', a11y=false, keepOpen=true, redact='(password|token|authorization|cookie)=([^;\\s]+)', onProgress=null, sessionRunId=null, onBrowserCreated=null, pauseGate=null }) {
   const fields = JSON.parse(fs.readFileSync(fieldsFile, 'utf-8'))
@@ -66,7 +69,7 @@ export async function runHighLevelFlow({ fieldsFile, flowFile, leadFile, leadDat
     getPage = launched.getPage
 
     if (typeof onBrowserCreated === 'function') {
-      try { onBrowserCreated(browser, context) } catch (err) { console.warn('[Engine] onBrowserCreated callback failed:', err.message) }
+      try { onBrowserCreated(browser, context) } catch (err) { logger.warn('[Engine] onBrowserCreated callback failed:', err.message) }
     }
 
     if (flow.trace === 'on' || flow.trace === 'retain-on-failure') { await context.tracing.start({ screenshots:true, snapshots:true, sources:true }); tracingStarted=true }
@@ -100,7 +103,7 @@ export async function runHighLevelFlow({ fieldsFile, flowFile, leadFile, leadDat
       if (step.skipIfNot) {
         const condValue = valueResolver.resolve({ leadKey: step.skipIfNot }, ctx)
         if (condValue === undefined || condValue === null || condValue === false || condValue === '' || (Array.isArray(condValue) && condValue.length === 0)) {
-          console.log('[hl] step %d SKIPPED (skipIfNot: %s is falsy)', i, step.skipIfNot)
+          logger.debug('[hl] step %d SKIPPED (skipIfNot: %s is falsy)', i, step.skipIfNot)
           stepsSummary.push({ index:i, type:step.type, ok:true, skipped:true, reason:'skipIfNot', ms: 0 })
           if (onProgress) onProgress({ stepIndex: i, totalSteps: flow.steps.length, stepMessage: describeHL(step), status: 'skipped' })
           continue
@@ -110,7 +113,7 @@ export async function runHighLevelFlow({ fieldsFile, flowFile, leadFile, leadDat
       if (step.skipIf) {
         const shouldSkip = conditionEvaluator.evaluateSkipIfCondition(step.skipIf, ctx)
         if (shouldSkip) {
-          console.log('[hl] step %d SKIPPED (skipIf condition matched)', i)
+          logger.debug('[hl] step %d SKIPPED (skipIf condition matched)', i)
           stepsSummary.push({ index:i, type:step.type, ok:true, skipped:true, reason:'skipIf', ms: 0 })
           if (onProgress) onProgress({ stepIndex: i, totalSteps: flow.steps.length, stepMessage: describeHL(step), status: 'skipped' })
           continue
@@ -151,31 +154,31 @@ export async function runHighLevelFlow({ fieldsFile, flowFile, leadFile, leadDat
         // Swallow errors when the context/browser has already been closed by a stop
         const msg = err?.message || ''
         if (!/has been closed|context .*closed|ENOENT/i.test(String(msg))) {
-          console.debug('[Trace] tracing.stop failed:', msg)
+          logger.debug('[Trace] tracing.stop failed:', msg)
         }
       }
     }
 
     const failedSteps = stepsSummary.filter(s => s.ok === false && !s.skipped)
     if (failedSteps.length > 0) {
-      try { await context?.close() } catch (err) { console.debug('[Browser] Context close failed:', err.message) }
-      try { await browser?.close() } catch (err) { console.debug('[Browser] Browser close failed:', err.message) }
+      try { await context?.close() } catch (err) { logger.debug('[Browser] Context close failed:', err.message) }
+      try { await browser?.close() } catch (err) { logger.debug('[Browser] Browser close failed:', err.message) }
       progress.emit({ type:'run', status:'error', message: `Step ${failedSteps[0].index + 1} (${failedSteps[0].type}) failed: ${failedSteps[0].error}` })
       throw new RunError(`Step ${failedSteps[0].index + 1} (${failedSteps[0].type}) failed: ${failedSteps[0].error}`, runDir)
     }
 
     if (!keepOpen) {
-      try { await context?.close() } catch (err) { console.debug('[Browser] Context close failed:', err.message) }
-      try { await browser?.close() } catch (err) { console.debug('[Browser] Browser close failed:', err.message) }
+      try { await context?.close() } catch (err) { logger.debug('[Browser] Context close failed:', err.message) }
+      try { await browser?.close() } catch (err) { logger.debug('[Browser] Browser close failed:', err.message) }
       progress.emit({ type:'run', status:'success', message:`Terminé – artefacts: ${path.relative(process.cwd(), runDir)}` })
     } else {
       progress.emit({ type:'run', status:'success', message:`Terminé – Navigateur laissé ouvert, fermez-le manuellement` })
-      console.log('[hl] ⏸  keepOpen=true - Navigateur laissé ouvert. Fermez-le pour terminer.')
+      logger.debug('[hl] ⏸  keepOpen=true - Navigateur laissé ouvert. Fermez-le pour terminer.')
       await waitForBrowserClose(browser, context)
     }
     return { runDir }
   } catch (err) {
-    console.error('[Engine] Fatal error:', err)
+    logger.error('[Engine] Fatal error:', err)
     const message = err?.message || String(err)
     const enriched = new RunError(message, runDir, err?.stack)
     throw enriched
@@ -193,9 +196,9 @@ async function execHLStep(step, commandRegistry, commandContext) {
 async function waitForBrowserClose(browser, context) {
   await new Promise((resolve) => {
     const check = setInterval(() => {
-      try { const pages = context?.pages() || []; if (pages.length === 0) { clearInterval(check); console.log('[hl] ✓ Toutes les pages fermées'); resolve() } } catch { clearInterval(check); resolve() }
+      try { const pages = context?.pages() || []; if (pages.length === 0) { clearInterval(check); logger.debug('[hl] ✓ Toutes les pages fermées'); resolve() } } catch { clearInterval(check); resolve() }
     }, 500)
-    if (browser) browser.once('disconnected', () => { clearInterval(check); console.log('[hl] ✓ Navigateur complètement fermé'); resolve() })
+    if (browser) browser.once('disconnected', () => { clearInterval(check); logger.debug('[hl] ✓ Navigateur complètement fermé'); resolve() })
   })
   try { await context?.close(); await browser?.close() } catch {}
 }

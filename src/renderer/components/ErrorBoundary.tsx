@@ -1,4 +1,7 @@
 import React from 'react'
+import { createLogger } from '../services/logger'
+
+const logger = createLogger('ErrorBoundary')
 
 type Props = { children: React.ReactNode }
 
@@ -10,7 +13,7 @@ export default class ErrorBoundary extends React.Component<Props, { error?: Erro
   }
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
-    console.error('Renderer error:', error, info)
+    logger.error('Renderer error:', error, info)
   }
 
   render() {

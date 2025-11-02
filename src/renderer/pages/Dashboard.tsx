@@ -1,10 +1,13 @@
 import React from 'react'
+import { createLogger } from '../services/logger'
+
+const logger = createLogger('Dashboard')
 
 export default function Dashboard() {
   const [stats, setStats] = React.useState<{ platforms:number; profiles:number; credentials:number } | null>(null)
   React.useEffect(() => {
     const load = async () => {
-      try { setStats(await window.api.getStats()) } catch (e) { console.error(e) }
+      try { setStats(await window.api.getStats()) } catch (e) { logger.error(e) }
     }
     load()
   }, [])

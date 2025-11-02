@@ -1,6 +1,9 @@
 import path from 'node:path'
 import { ScreenshotManager } from '../artifacts/ScreenshotManager.mjs'
 import { DomCollector } from '../artifacts/DomCollector.mjs'
+import { createLogger } from '../utils/logger.mjs'
+
+const logger = createLogger('ArtifactsPipeline')
 
 export class ArtifactsPipeline {
   constructor({ runDir, domDir, screenshotsDir, traceDir }) {
@@ -21,7 +24,7 @@ export class ArtifactsPipeline {
 
   async onStepError({ page, index, step, domMode, a11y, getErrName, activeContext }) {
     const errPath = path.join(this.screenshotsDir, getErrName())
-    try { await this.screens.capture(page, errPath) } catch (screenshotErr) { console.warn('[Screenshot] Failed to capture error screenshot:', screenshotErr.message) }
+    try { await this.screens.capture(page, errPath) } catch (screenshotErr) { logger.warn('[Screenshot] Failed to capture error screenshot:', screenshotErr.message) }
     await this.dom.maybeCollect(activeContext, index, step, this.domDir, domMode, a11y, true)
     return errPath
   }

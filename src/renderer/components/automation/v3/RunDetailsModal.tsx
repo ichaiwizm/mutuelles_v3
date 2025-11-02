@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react'
 import { X, CheckCircle, XCircle, Clock, Loader2, ArrowLeft, ArrowRight, Copy, Check } from 'lucide-react'
 import ScreenshotTimeline from './ScreenshotTimeline'
 import Tabs from '../../Tabs'
+import { createLogger } from '../../../services/logger'
+
+const logger = createLogger('RunDetailsModal')
 
 interface RunDetailsModalProps {
   runId: string      // Parent run ID
@@ -119,7 +122,7 @@ export default function RunDetailsModal({
         setManifest(normalized)
         setError(null)
       } catch (err) {
-        console.error('Error loading manifest:', err)
+        logger.error('Error loading manifest:', err)
         setError(err instanceof Error ? err.message : 'Failed to load run details')
       } finally {
         setLoading(false)
@@ -163,7 +166,7 @@ export default function RunDetailsModal({
           setLoadedImages(prev => new Map(prev).set(currentScreenshot.screenshot!, response.data!))
         }
       } catch (err) {
-        console.error('Error loading screenshot:', err)
+        logger.error('Error loading screenshot:', err)
       } finally {
         setLoadingImage(false)
       }

@@ -37,10 +37,10 @@ export class EmailService {
     )
 
     this.oauth2Client.on('tokens', (tokens) => {
-      console.log('📝 Nouveaux tokens reçus après refresh automatique')
+      logger.info('Nouveaux tokens reçus après refresh automatique')
       if (this.currentConfigId && tokens.access_token) {
         this.updateStoredTokens(this.currentConfigId, tokens).catch(error => {
-          console.error('❌ Erreur mise à jour tokens après refresh:', error)
+          logger.error('Erreur mise à jour tokens après refresh:', error)
         })
       }
     })
@@ -130,11 +130,11 @@ export class EmailService {
       })
 
       oauthServer.listen(OAUTH_CALLBACK_PORT, () => {
-        console.log(`Serveur OAuth en écoute sur le port ${OAUTH_CALLBACK_PORT}`)
+        logger.debug(`Serveur OAuth en écoute sur le port ${OAUTH_CALLBACK_PORT}`)
       })
 
       oauthServer.on('error', (error) => {
-        console.error('Erreur serveur OAuth:', error)
+        logger.error('Erreur serveur OAuth:', error)
         reject(error)
       })
 
@@ -167,7 +167,7 @@ export class EmailService {
       const result = await this.handleCallback(code)
       return result
     } catch (error) {
-      console.error('Erreur lors de l\'authentification OAuth:', error)
+      logger.error('Erreur lors de l\'authentification OAuth:', error)
 
       if (oauthServer) {
         oauthServer.close()
@@ -205,7 +205,7 @@ export class EmailService {
 
       return { success: true, config }
     } catch (error) {
-      console.error('Erreur lors du callback OAuth:', error)
+      logger.error('Erreur lors du callback OAuth:', error)
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Erreur inconnue'
@@ -272,7 +272,7 @@ export class EmailService {
       try {
         knownSenders = JSON.parse(row.known_senders_json)
       } catch (error) {
-        console.error('Erreur parsing known_senders_json:', error)
+        logger.error('Erreur parsing known_senders_json:', error)
       }
     }
 
@@ -300,7 +300,7 @@ export class EmailService {
       try {
         knownSenders = JSON.parse(row.known_senders_json)
       } catch (error) {
-        console.error('Erreur parsing known_senders_json:', error)
+        logger.error('Erreur parsing known_senders_json:', error)
       }
     }
 
@@ -327,7 +327,7 @@ export class EmailService {
         try {
           knownSenders = JSON.parse(row.known_senders_json)
         } catch (error) {
-          console.error('Erreur parsing known_senders_json:', error)
+          logger.error('Erreur parsing known_senders_json:', error)
         }
       }
 
@@ -369,11 +369,11 @@ export class EmailService {
   private async updateStoredTokens(configId: number, tokens: any): Promise<void> {
     const config = this.getConfigById(configId)
     if (!config) {
-      console.error(`⚠️ Config ${configId} introuvable pour mise à jour tokens`)
+      logger.warn(`Config ${configId} introuvable pour mise à jour tokens`)
       return
     }
 
-    console.log(`🔄 Mise à jour tokens pour ${config.email}`)
+    logger.info(`Mise à jour tokens pour ${config.email}`)
 
     const updatedConfig: EmailConfig = {
       ...config,
@@ -383,24 +383,24 @@ export class EmailService {
     }
 
     await this.saveConfig(updatedConfig)
-    console.log(`✅ Tokens mis à jour avec succès pour ${config.email}`)
+    logger.info(`Tokens mis à jour avec succès pour ${config.email}`)
   }
 
   async refreshTokens(configId: number): Promise<boolean> {
     const config = this.getConfigById(configId)
     if (!config) {
-      console.error(`⚠️ Config ${configId} introuvable pour refresh`)
+      logger.warn(`Config ${configId} introuvable pour refresh`)
       return false
     }
 
     const tokens = this.getDecryptedTokens(configId)
     if (!tokens?.refreshToken) {
-      console.error(`⚠️ Aucun refresh token pour ${config.email}`)
+      logger.warn(`Aucun refresh token pour ${config.email}`)
       return false
     }
 
     try {
-      console.log(`🔄 Refresh proactif des tokens pour ${config.email}`)
+      logger.info(`Refresh proactif des tokens pour ${config.email}`)
 
       this.oauth2Client.setCredentials({
         refresh_token: tokens.refreshToken
@@ -415,10 +415,10 @@ export class EmailService {
         expiryDate: credentials.expiry_date || undefined
       })
 
-      console.log(`✅ Tokens refreshés avec succès pour ${config.email}`)
+      logger.info(`Tokens refreshés avec succès pour ${config.email}`)
       return true
     } catch (error: any) {
-      console.error(`❌ Erreur refresh tokens pour ${config.email}:`, error.message)
+      logger.error(`Erreur refresh tokens pour ${config.email}:`, error.message)
       return false
     }
   }
@@ -429,7 +429,7 @@ export class EmailService {
       try {
         await this.oauth2Client.revokeToken(tokens.accessToken)
       } catch (error) {
-        console.error('Erreur lors de la révocation du token:', error)
+        logger.error('Erreur lors de la révocation du token:', error)
       }
     }
 
@@ -494,7 +494,7 @@ export class EmailService {
               })
               return this.parseGmailMessage(response.data)
             } catch (error) {
-              console.error(`Erreur récupération message ${msg.id}:`, error)
+              logger.error(`Erreur récupération message ${msg.id}:`, error)
               return null
             }
           })
@@ -514,10 +514,10 @@ export class EmailService {
         messages: leadsOnly
       }
     } catch (error: any) {
-      console.error('Erreur lors de la récupération des emails:', error)
+      logger.error('Erreur lors de la récupération des emails:', error)
 
       if (error.code === 401 || error.message?.includes('invalid_grant')) {
-        console.error('❌ Erreur authentification OAuth - token révoqué ou invalide')
+        logger.error('Erreur authentification OAuth - token révoqué ou invalide')
         await this.revokeAccess(configId)
 
         return {

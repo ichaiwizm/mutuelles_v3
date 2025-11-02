@@ -5,7 +5,8 @@
       "Bash(sqlite3:*)",
       "Bash(tree:*)",
       "mcp__playwright__browser_navigate",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(rm:*)"
     ],
     "deny": [],
     "ask": [],

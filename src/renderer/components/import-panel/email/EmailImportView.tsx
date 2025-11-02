@@ -20,6 +20,9 @@ import type { EnrichedLeadData } from '../../../../shared/types/emailParsing'
 import LeadModal from '../../../components/leads/LeadModal'
 import { transformToCleanLead } from '@shared/utils/leadFormData'
 import { useToastContext } from '../../../contexts/ToastContext'
+import { createLogger } from '../../../services/logger'
+
+const logger = createLogger('EmailImportView')
 
 const PROGRESS_MESSAGES: Record<string, string> = {
   authenticating: 'Authentification...',
@@ -351,7 +354,7 @@ export function EmailImportView({
         }
       }
     } catch (error) {
-      console.error('Erreur copie debug:', error)
+      logger.error('Erreur copie debug:', error)
       toast.error('Erreur lors de la copie du rapport')
     }
   }
