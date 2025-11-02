@@ -63,11 +63,10 @@ function loadEmailsFromCache(): EmailMessage[] {
     const cached = localStorage.getItem(STORAGE_KEY_EMAILS)
     if (cached) {
       const data = JSON.parse(cached) as EmailMessage[]
-      // cache load
       return data
     }
   } catch (err) {
-    // cache load error
+    // Ignore cache errors
   }
   return []
 }
@@ -82,7 +81,7 @@ function loadCacheTimestamp(): number | null {
       return parseInt(timestamp, 10)
     }
   } catch (err) {
-    // cache timestamp error
+    // Ignore cache errors
   }
   return null
 }
@@ -94,9 +93,8 @@ function saveEmailsToCache(emails: EmailMessage[]): void {
   try {
     localStorage.setItem(STORAGE_KEY_EMAILS, JSON.stringify(emails))
     localStorage.setItem(STORAGE_KEY_TIMESTAMP, Date.now().toString())
-    // cache save
   } catch (err) {
-    // cache save error
+    // Ignore cache errors
   }
 }
 
@@ -107,9 +105,8 @@ function clearEmailCache(): void {
   try {
     localStorage.removeItem(STORAGE_KEY_EMAILS)
     localStorage.removeItem(STORAGE_KEY_TIMESTAMP)
-    // cache cleared
   } catch (err) {
-    // cache clear error
+    // Ignore cache errors
   }
 }
 
@@ -137,7 +134,6 @@ export function useEmailImport(): UseEmailImportReturn {
     if (cachedEmails.length > 0) {
       setEmails(cachedEmails)
       setCacheTimestamp(timestamp)
-      // init from cache
     }
   }, [])
 
@@ -178,7 +174,7 @@ export function useEmailImport(): UseEmailImportReturn {
         setEmailConfig(result.data.config || null)
       }
     } catch (err) {
-      // auth status error
+      // Ignore auth status errors
     }
   }, [])
 

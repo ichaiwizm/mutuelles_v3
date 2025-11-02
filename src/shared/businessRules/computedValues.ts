@@ -28,7 +28,7 @@ export interface ComputedFieldsResult {
  * - Corsica: 2A (20000-20199), 2B (20200-20999)
  * - Overseas: 97X (971-978)
  */
-export function inferDepartment(postalCode: string | number): string | null {
+function inferDepartment(postalCode: string | number): string | null {
   if (!postalCode) return null
 
   const cleanCode = String(postalCode).trim().replace(/\s/g, '')
@@ -57,7 +57,7 @@ export function inferDepartment(postalCode: string | number): string | null {
  *
  * Madelin is available for TNS or EXPLOITANT_AGRICOLE under 70 years old
  */
-export function computeMadelin(
+function computeMadelin(
   status: string | undefined,
   birthDate: string | undefined
 ): boolean {
@@ -77,7 +77,7 @@ export function computeMadelin(
 /**
  * Infer status from regime
  */
-export function inferStatusFromRegime(regime: string | undefined): string | null {
+function inferStatusFromRegime(regime: string | undefined): string | null {
   if (regime === 'TNS') return 'TNS'
   return null
 }
@@ -85,7 +85,7 @@ export function inferStatusFromRegime(regime: string | undefined): string | null
 /**
  * Infer status from profession text
  */
-export function inferStatusFromProfession(profession: string | undefined): string | null {
+function inferStatusFromProfession(profession: string | undefined): string | null {
   if (!profession) return null
 
   const lower = profession.toLowerCase()
@@ -211,77 +211,4 @@ export function computeDerivedFields(
   }
 
   return computed
-}
-
-/**
- * Get dependencies for a field (which fields affect its computed value)
- *
- * This is useful for implementing reactive updates in forms.
- *
- * @param fieldPath - Field path (e.g., "project.madelin")
- * @returns Array of field paths that this field depends on
- */
-export function getFieldDependencies(fieldPath: string): string[] {
-  const dependencies: Record<string, string[]> = {
-    'subscriber.departmentCode': ['subscriber.postalCode'],
-    'subscriber.status': ['subscriber.regime', 'subscriber.profession'],
-    'project.madelin': ['subscriber.status', 'subscriber.birthDate'],
-    'spouse.departmentCode': ['spouse.postalCode'],
-    'spouse.status': ['spouse.regime'],
-    // Children fields are indexed, so we use a pattern
-    'children.*.departmentCode': ['children.*.postalCode'],
-  }
-
-  const carriers = ['alptis', 'swisslifeone']
-  const carrier = carriers.find(c => fieldPath.startsWith(c + '.'))
-  const strip = (s: string) => (carrier ? s.slice(carrier.length + 1) : s)
-  const bare = strip(fieldPath)
-
-  const arrayMatch = bare.match(/^children\[(\d+)\]\.(.+)$/)
-  if (arrayMatch) {
-    const index = arrayMatch[1]
-    const childField = arrayMatch[2]
-    const pattern = `children.*.${childField}`
-    const deps = dependencies[pattern] || []
-    return deps.map(dep => (carrier ? `${carrier}.${dep.replace('*', `[${index}]`)}` : dep.replace('*', `[${index}]`)))
-  }
-
-  const deps = dependencies[bare] || []
-  return deps.map(d => (carrier ? `${carrier}.${d}` : d))
-}
-
-/**
- * Check if a field value change should trigger recomputation
- *
- * @param changedFieldPath - Path of the field that changed
- * @returns Array of field paths that should be recomputed
- */
-export function getAffectedFields(changedFieldPath: string): string[] {
-  const affects: Record<string, string[]> = {
-    'subscriber.postalCode': ['subscriber.departmentCode'],
-    'subscriber.regime': ['subscriber.status', 'project.madelin'],
-    'subscriber.profession': ['subscriber.status', 'project.madelin'],
-    'subscriber.status': ['project.madelin'],
-    'subscriber.birthDate': ['project.madelin'],
-    'spouse.postalCode': ['spouse.departmentCode'],
-    'spouse.regime': ['spouse.status'],
-  }
-
-  const carriers = ['alptis', 'swisslifeone']
-  const carrier = carriers.find(c => changedFieldPath.startsWith(c + '.'))
-  const strip = (s: string) => (carrier ? s.slice(carrier.length + 1) : s)
-  const bare = strip(changedFieldPath)
-
-  const arrayMatch = bare.match(/^children\[(\d+)\]\.(.+)$/)
-  if (arrayMatch) {
-    const index = arrayMatch[1]
-    const childField = arrayMatch[2]
-    if (childField === 'postalCode') {
-      const p = `children[${index}].departmentCode`
-      return [carrier ? `${carrier}.${p}` : p]
-    }
-  }
-
-  const res = affects[bare] || []
-  return res.map(p => (carrier ? `${carrier}.${p}` : p))
 }

@@ -5,7 +5,7 @@
 
 const isDev = process.env.NODE_ENV !== 'production'
 
-export class Logger {
+class Logger {
   constructor(scope) {
     this.scope = scope
   }

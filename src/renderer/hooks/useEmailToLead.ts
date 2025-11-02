@@ -43,8 +43,6 @@ export function useEmailToLead(): UseEmailToLeadResult {
     setEnrichedLeads([])
 
     try {
-      // parsing started
-
       const result = await window.api.email.parseToLeads({ emails })
 
       if (!result.success) {
@@ -53,13 +51,10 @@ export function useEmailToLead(): UseEmailToLeadResult {
 
       const response = result.data as EmailToLeadResponse
 
-      // parsing complete
-
       setParseResult(response)
       setEnrichedLeads(response.enrichedLeads)
       return response
     } catch (err) {
-      // parse error
       setError(err instanceof Error ? err.message : 'Unknown error')
       return null
     } finally {
@@ -76,8 +71,6 @@ export function useEmailToLead(): UseEmailToLeadResult {
     setCreateResult(null)
 
     try {
-      // creating leads
-
       // Prepare leads for bulk creation
       const leadsPayload = leadsToCreate.map((enrichedLead) => ({
         formData: enrichedLead.formData,
@@ -92,14 +85,11 @@ export function useEmailToLead(): UseEmailToLeadResult {
 
       const response = result.data as BulkLeadCreationResponse
 
-      // creation complete
-
       setCreateResult(response)
 
       // Show notification
       // summarize via UI toasts elsewhere if needed
     } catch (err) {
-      // create error
       setError(err instanceof Error ? err.message : 'Unknown error')
     } finally {
       setIsCreating(false)

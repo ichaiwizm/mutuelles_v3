@@ -217,22 +217,3 @@ export function formatRelativeTime(dateString: string | null | undefined): strin
     return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
   }
 }
-
-/**
- * Format a full date and time
- */
-export function formatDateTime(dateString: string | null | undefined): string {
-  // Defensive: handle null/undefined dates
-  if (!dateString) {
-    return '-'
-  }
-
-  const date = new Date(dateString)
-  return date.toLocaleString('fr-FR', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
-}

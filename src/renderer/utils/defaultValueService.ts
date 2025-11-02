@@ -287,10 +287,3 @@ export function getAllDefaultsWithBusinessRules(
   // Merge defaults and computed
   return { ...defaults, ...computed }
 }
-
-/**
- * @deprecated Use getAllDefaultsForForm instead
- */
-export function getAllDefaults(schema: FormSchema, currentValues?: Record<string, any>): Record<string, any> {
-  return getAllDefaultsForForm(schema, currentValues || {})
-}

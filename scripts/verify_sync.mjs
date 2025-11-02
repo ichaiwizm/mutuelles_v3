@@ -1,7 +1,11 @@
 #!/usr/bin/env node
 import fs from 'node:fs'
 import path from 'node:path'
-import { openDbRW, getProjectRoot, listFlowFiles, readJsonFile, normalizeFlowObject } from './flows/lib/flows_io.mjs'
+import { fileURLToPath } from 'node:url'
+import Database from 'better-sqlite3'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 
 // ANSI color codes
 const colors = {
@@ -18,6 +22,15 @@ function colorize(text, color) {
   return `${colors[color]}${text}${colors.reset}`
 }
 
+function getProjectRoot() {
+  return path.resolve(__dirname, '..')
+}
+
+function readJsonFile(filePath) {
+  const content = fs.readFileSync(filePath, 'utf8')
+  return JSON.parse(content)
+}
+
 function normalizeJson(obj) {
   return JSON.stringify(obj, Object.keys(obj).sort(), 2)
 }
@@ -27,67 +40,9 @@ function areJsonEqual(obj1, obj2) {
   return normalizeJson(obj1) === normalizeJson(obj2)
 }
 
-function verifyFlows(db) {
-  console.log(colorize('\n━━━ FLOWS ━━━', 'bold'))
-
-  const stats = { synced: 0, different: 0, onlyInFiles: 0, onlyInDb: 0 }
-
-  const flowFiles = listFlowFiles()
-  const flowsFromFiles = new Map()
-
-  for (const filePath of flowFiles) {
-    try {
-      const flow = normalizeFlowObject(readJsonFile(filePath))
-      flowsFromFiles.set(flow.slug, { flow, filePath })
-    } catch (err) {
-      console.log(colorize(`  ✗ Erreur lecture ${path.basename(filePath)}: ${err.message}`, 'red'))
-    }
-  }
-
-  const flowsFromDb = new Map()
-  const dbRows = db.prepare(`
-    SELECT f.slug, f.flow_json
-    FROM flows_catalog f
-    WHERE f.flow_json IS NOT NULL
-  `).all()
-
-  for (const row of dbRows) {
-    try {
-      const flow = normalizeFlowObject(JSON.parse(row.flow_json))
-      flowsFromDb.set(row.slug, flow)
-    } catch (err) {
-      console.log(colorize(`  ✗ Erreur parsing DB flow ${row.slug}: ${err.message}`, 'red'))
-    }
-  }
-
-  for (const [slug, fileData] of flowsFromFiles) {
-    if (flowsFromDb.has(slug)) {
-      const fileFlow = fileData.flow
-      const dbFlow = flowsFromDb.get(slug)
-
-      if (areJsonEqual(fileFlow, dbFlow)) {
-        console.log(colorize(`  ✓ ${slug}`, 'green'))
-        stats.synced++
-      } else {
-        console.log(colorize(`  ⚠ ${slug} - différences détectées`, 'yellow'))
-        stats.different++
-      }
-    } else {
-      console.log(colorize(`  ✗ ${slug} - uniquement dans fichiers`, 'red'))
-      stats.onlyInFiles++
-    }
-  }
-
-  for (const [slug] of flowsFromDb) {
-    if (!flowsFromFiles.has(slug)) {
-      console.log(colorize(`  ✗ ${slug} - uniquement dans DB`, 'red'))
-      stats.onlyInDb++
-    }
-  }
-
-  console.log(`\n  Synchronisés: ${colorize(stats.synced, 'green')} | Différences: ${colorize(stats.different, 'yellow')} | Fichiers seuls: ${colorize(stats.onlyInFiles, 'red')} | DB seule: ${colorize(stats.onlyInDb, 'red')}`)
-
-  return stats
+function openDbRW() {
+  const dbPath = path.join(getProjectRoot(), 'mutuelles.db')
+  return new Database(dbPath, { fileMustExist: true })
 }
 
 function verifyFieldDefinitions(db) {
@@ -95,7 +50,8 @@ function verifyFieldDefinitions(db) {
 
   const stats = { synced: 0, different: 0, onlyInFiles: 0, onlyInDb: 0 }
 
-  const fieldDefsDir = path.join(getProjectRoot(), 'admin', 'field-definitions')
+  // Correction: admin -> data
+  const fieldDefsDir = path.join(getProjectRoot(), 'data', 'field-definitions')
 
   const fieldDefsFromFiles = new Map()
 
@@ -112,6 +68,8 @@ function verifyFieldDefinitions(db) {
         console.log(colorize(`  ✗ Erreur lecture ${file}: ${err.message}`, 'red'))
       }
     }
+  } else {
+    console.log(colorize(`  ⚠ Répertoire ${fieldDefsDir} introuvable`, 'yellow'))
   }
 
   const fieldDefsFromDb = new Map()
@@ -160,17 +118,15 @@ function verifyFieldDefinitions(db) {
 }
 
 async function main() {
-  console.log(colorize('\n═══ VÉRIFICATION SYNCHRONISATION JSON ↔ DB ═══\n', 'blue'))
+  console.log(colorize('\n═══ VÉRIFICATION SYNCHRONISATION FIELD DEFINITIONS (JSON ↔ DB) ═══\n', 'blue'))
+  console.log(colorize('Note: Les flows sont maintenant gérés uniquement en JSON (data/flows/)', 'gray'))
 
   const db = openDbRW()
 
   try {
-    const flowsStats = verifyFlows(db)
     const fieldsStats = verifyFieldDefinitions(db)
 
-    const flowsIssues = flowsStats.different + flowsStats.onlyInFiles + flowsStats.onlyInDb
-    const fieldsIssues = fieldsStats.different + fieldsStats.onlyInFiles + fieldsStats.onlyInDb
-    const totalIssues = flowsIssues + fieldsIssues
+    const totalIssues = fieldsStats.different + fieldsStats.onlyInFiles + fieldsStats.onlyInDb
 
     console.log(colorize('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'bold'))
     if (totalIssues === 0) {
@@ -188,6 +144,6 @@ async function main() {
 }
 
 main().catch(err => {
-  console.error(colorize('\nERRERUR:', 'red'), err.message)
+  console.error(colorize('\nERREUR:', 'red'), err.message)
   process.exit(1)
 })
