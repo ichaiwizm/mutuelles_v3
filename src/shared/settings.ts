@@ -13,9 +13,9 @@ export type AdvancedSettings = {
 }
 
 export const DEFAULT_AUTOMATION_SETTINGS: AdvancedSettings = {
-  mode: 'headless',
+  mode: 'headless-minimized',
   keepBrowserOpen: false,
-  concurrency: 4,
+  concurrency: 3,
   showPreviewBeforeRun: true,
   retryFailed: true,
   maxRetries: 2,
