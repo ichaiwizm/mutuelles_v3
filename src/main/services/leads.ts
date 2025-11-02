@@ -259,11 +259,25 @@ export class LeadsService {
     `)
     const { count: recent } = recentStmt.get() as { count: number }
 
+    const processedStmt = this.db.prepare(`
+      SELECT COUNT(DISTINCT lead_id) as count
+      FROM execution_items
+      WHERE status = 'success' AND lead_id IS NOT NULL
+    `)
+    const { count: processed } = processedStmt.get() as { count: number }
+
+    const processingStmt = this.db.prepare(`
+      SELECT COUNT(DISTINCT lead_id) as count
+      FROM execution_items
+      WHERE status IN ('pending', 'running') AND lead_id IS NOT NULL
+    `)
+    const { count: processing } = processingStmt.get() as { count: number }
+
     return {
       total,
       new: recent,
-      processed: 0, // TODO: Calculate from lead_flow_assignments
-      processing: 0 // TODO: Calculate from lead_flow_assignments
+      processed,
+      processing
     }
   }
 }

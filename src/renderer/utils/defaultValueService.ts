@@ -294,24 +294,3 @@ export function getAllDefaultsWithBusinessRules(
 export function getAllDefaults(schema: FormSchema, currentValues?: Record<string, any>): Record<string, any> {
   return getAllDefaultsForForm(schema, currentValues || {})
 }
-
-/**
- * @deprecated Not needed in new system
- */
-export function getSpouseDefaults(schema: FormSchema): Record<string, any> {
-  return {}
-}
-
-/**
- * @deprecated Not needed in new system
- */
-export function getChildDefaults(schema: FormSchema, childIndex: number): Record<string, any> {
-  return {}
-}
-
-/**
- * @deprecated Use evaluateExpression from shared/defaults/expressions instead
- */
-export function computeDefaultValue(field: FormFieldDefinition, currentValues?: Record<string, any>): any {
-  return undefined
-}
