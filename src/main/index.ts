@@ -13,8 +13,6 @@ const envPath = app.isPackaged
 
 dotenv.config({ path: envPath })
 
-logger.info('Chargement .env depuis:', envPath)
-logger.info('GOOGLE_CLIENT_ID chargé:', process.env.GOOGLE_CLIENT_ID ? 'Oui ✓' : 'Non ✗')
 import { registerSettingsIpc } from './ipc/settings'
 import { registerProfilesIpc } from './ipc/profiles'
 import { registerCatalogIpc } from './ipc/catalog'
