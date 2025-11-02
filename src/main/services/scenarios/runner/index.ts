@@ -2,13 +2,13 @@ import path from 'node:path'
 import fs from 'node:fs'
 import type { BrowserWindow } from 'electron'
 import { LeadsService } from '../../leads'
-import { makeProgressSender } from './Events'
-import { RunnerQueue } from './TaskQueue'
-import { Db } from './DbPersistence'
-import { buildTasks } from './TaskBuilder'
-import { createBrowserTracker } from './BrowserTracker'
-import { makeFinalizer } from './Finalizer'
-import { makeTaskExecutor } from './TaskExecutor'
+import { makeProgressSender } from './events'
+import { RunnerQueue } from './RunnerQueue'
+import { Db } from './dbPersistence'
+import { buildTasks } from './taskBuilder'
+import { createBrowserTracker } from './browserTracker'
+import { makeFinalizer } from './finalizer'
+import { makeTaskExecutor } from './taskExecutor'
 import type { Mode, RunContext, RunProgressEvent, RunRequest } from './types'
 import { createLogger } from '../../logger'
 
@@ -99,7 +99,7 @@ export class ScenariosRunner {
       }
 
       const browserTracker = createBrowserTracker(runContext)
-      const { createWindowTracker } = await import('./WindowTracker')
+      const { createWindowTracker } = await import('./windowTracker')
       const windowTracker = createWindowTracker(runContext)
       const { finalizeRun, checkCompletion } = makeFinalizer(runContext, send)
       const { executeWithRetry } = makeTaskExecutor(runContext, {
@@ -129,7 +129,7 @@ export class ScenariosRunner {
 
     const queueCancelledCount = runContext.queue.stop()
 
-    const { createBrowserTracker } = await import('./BrowserTracker')
+    const { createBrowserTracker } = await import('./browserTracker')
     const tracker = createBrowserTracker(runContext)
     await tracker.closeAll()
 
@@ -171,7 +171,7 @@ export class ScenariosRunner {
 
     // If running, try to close its browser/context immediately
     try {
-      const { createBrowserTracker } = await import('./BrowserTracker')
+      const { createBrowserTracker } = await import('./browserTracker')
       const tracker = createBrowserTracker(runContext)
       await tracker.closeOne(itemId)
     } catch (err) {
@@ -217,7 +217,7 @@ export class ScenariosRunner {
     const runContext = this.activeRuns.get(runId)
     if (!runContext) return { success: false, message: 'Run introuvable' }
     try {
-      const { createWindowTracker } = await import('./WindowTracker')
+      const { createWindowTracker } = await import('./windowTracker')
       const w = createWindowTracker(runContext)
       const ok = await w.minimize(itemId)
       return { success: ok, message: ok ? 'Fenêtre minimisée' : 'Impossible de minimiser' }
@@ -228,7 +228,7 @@ export class ScenariosRunner {
     const runContext = this.activeRuns.get(runId)
     if (!runContext) return { success: false, message: 'Run introuvable' }
     try {
-      const { createWindowTracker } = await import('./WindowTracker')
+      const { createWindowTracker } = await import('./windowTracker')
       const w = createWindowTracker(runContext)
       const ok = await w.restore(itemId)
       return { success: ok, message: ok ? 'Fenêtre restaurée' : 'Impossible de restaurer' }
@@ -239,7 +239,7 @@ export class ScenariosRunner {
     const runContext = this.activeRuns.get(runId)
     if (!runContext) return { success: false, message: 'Run introuvable' }
     try {
-      const { createWindowTracker } = await import('./WindowTracker')
+      const { createWindowTracker } = await import('./windowTracker')
       const w = createWindowTracker(runContext)
       const state = await w.getState(itemId)
       return { success: true, state: state || undefined }
