@@ -75,7 +75,6 @@ export function EmailImportView({
   const {
     isParsing,
     isCreating,
-    enrichedLeads,
     parseEmails,
     createLeads,
     reset: resetEmailToLead

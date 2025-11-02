@@ -7,7 +7,6 @@ import { createLogger } from '../../../services/logger'
 const logger = createLogger('RunDetailsModal')
 
 interface RunDetailsModalProps {
-  runId: string      // Parent run ID
   itemId: string     // Execution item ID (for loading data from DB)
   runDir: string     // Filesystem path (for loading screenshots)
   leadName: string
@@ -45,7 +44,6 @@ interface RunManifest {
 type TabKey = 'overview' | 'screenshots' | 'details'
 
 export default function RunDetailsModal({
-  runId,
   itemId,
   runDir,
   leadName,
@@ -229,7 +227,6 @@ export default function RunDetailsModal({
   const totalSteps = manifest?.steps?.length || 0
   const successSteps = manifest?.steps?.filter(s => s.ok).length || 0
   const errorSteps = manifest?.steps?.filter(s => !s.ok && !s.skipped).length || 0
-  const skippedSteps = manifest?.steps?.filter(s => s.skipped).length || 0
   const status = errorSteps > 0 ? (successSteps > 0 ? 'partial' : 'error') : 'success'
 
   // Find first error

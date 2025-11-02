@@ -22,7 +22,6 @@ export function LeadPreviewCard({
   onEdit
 }: LeadPreviewCardProps) {
   const subscriber = lead.parsedData.subscriber
-  const project = lead.parsedData.project
 
   // Construire le nom complet
   const fullName = [

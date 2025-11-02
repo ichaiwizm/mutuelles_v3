@@ -50,17 +50,11 @@ export type ExecutionRun = {
  * - Handle run lifecycle (start, poll, completion)
  * - Recover state after page refresh
  *
- * @param leads - Available leads
- * @param flows - Available flows
- * @param platforms - Available platforms
  * @param settings - Automation settings
  * @param onRunComplete - Callback when run completes
  * @returns Execution state and control functions
  */
 export function useExecution(
-  leads: Lead[],
-  flows: Flow[],
-  platforms: Platform[],
   settings: AdvancedSettings,
   onRunComplete: (runId: string) => void
 ) {
@@ -261,11 +255,7 @@ export function useExecution(
       // Filter out hidden flows if visibility filtering is enabled
       let flowsToExecute = selectedFlows
       if (settings.enableVisibilityFiltering && settings.hiddenFlows.length > 0) {
-        const beforeCount = flowsToExecute.length
         flowsToExecute = flowsToExecute.filter(f => !settings.hiddenFlows.includes(f.slug))
-        const filteredCount = beforeCount - flowsToExecute.length
-
-        // silent
 
         if (flowsToExecute.length === 0) {
           throw new Error('Aucun flow visible sélectionné. Veuillez afficher des flows ou désactiver le filtrage.')

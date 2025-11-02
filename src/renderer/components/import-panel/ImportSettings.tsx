@@ -15,8 +15,6 @@ import { createLogger } from '../../services/logger'
 
 const logger = createLogger('ImportSettings')
 
-const STORAGE_KEY_DAYS = 'email_import_days'
-
 interface ImportSettingsProps {
   // Date range
   selectedDays: number

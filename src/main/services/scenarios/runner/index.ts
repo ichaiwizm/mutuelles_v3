@@ -10,6 +10,9 @@ import { createBrowserTracker } from './BrowserTracker'
 import { makeFinalizer } from './Finalizer'
 import { makeTaskExecutor } from './TaskExecutor'
 import type { Mode, RunContext, RunProgressEvent, RunRequest } from './types'
+import { createLogger } from '../../logger'
+
+const logger = createLogger('ScenariosRunner')
 
 function makeId(prefix: string) { return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2,7)}` }
 

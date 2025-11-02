@@ -181,7 +181,6 @@ function computeRunStatus(run: any): 'completed' | 'partial' | 'failed' | 'stopp
   // If DB says stopped, keep stopped
   if (run.status === 'stopped') return 'stopped'
   // If DB says running (should be filtered out), fallback to partial/failed rules anyway
-  const total = run.total_items || 0
   const success = run.success_items || 0
   const error = run.error_items || 0
   const cancelled = run.cancelled_items || 0

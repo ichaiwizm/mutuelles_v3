@@ -2,6 +2,9 @@ import { z } from 'zod'
 import { getDb } from '../db/connection'
 import type { Theme, AdvancedSettings } from '../../shared/settings'
 import { DEFAULT_AUTOMATION_SETTINGS } from '../../shared/settings'
+import { createLogger } from './logger'
+
+const logger = createLogger('Settings')
 
 const ThemeSchema = z.enum(['light', 'dark'])
 

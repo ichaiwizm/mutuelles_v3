@@ -106,9 +106,6 @@ export function useAutomation() {
   const history = useHistory()
 
   const execution = useExecution(
-    leads,
-    flows,
-    platforms,
     settings,
     (runId: string) => {
       history.loadHistory()

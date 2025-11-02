@@ -10,19 +10,12 @@ export default function ProfileContent() {
   const [rows, setRows] = React.useState<Row[]>([])
   const [loading, setLoading] = React.useState({ create: false, init: false, del: false, open: false, pick: false })
   const [deleteModal, setDeleteModal] = React.useState<{ id: number; name: string } | null>(null)
-  const [chromePath, setChromePath] = React.useState<string | null>(null)
   const [menuOpen, setMenuOpen] = React.useState(false)
   const toast = useToastContext()
 
   const load = React.useCallback(async () => {
     const list = await window.api.profiles.list()
     setRows(list)
-    const hasBrowsers = (window.api as any).browsers
-    if (hasBrowsers && typeof window.api.browsers.getChromePath === 'function') {
-      setChromePath(await window.api.browsers.getChromePath())
-    } else {
-      setChromePath(null)
-    }
   }, [])
   React.useEffect(() => { load() }, [load])
 
@@ -56,14 +49,6 @@ export default function ProfileContent() {
     }
     catch (e) { toast.error('Erreur', String(e)) }
     finally { setLoading(prev => ({ ...prev, init: false })) }
-  }
-
-  async function onTest() {
-    if (!single) return
-    setLoading(prev => ({ ...prev, test: true }))
-    try { await window.api.profiles.test(single.id) }
-    catch (e) { toast.error('Erreur', String(e)) }
-    finally { setLoading(prev => ({ ...prev, test: false })) }
   }
 
   async function onOpenDir() {

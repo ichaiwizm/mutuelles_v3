@@ -163,14 +163,12 @@ export function formatDuration(durationMs: number | null | undefined): string {
 
   if (hours > 0) {
     const remainingMinutes = minutes % 60
-    const remainingSeconds = seconds % 60
     if (remainingMinutes > 0) {
       return `${hours}h ${remainingMinutes}m`
     }
     return `${hours}h`
   } else if (minutes > 0) {
-    const remainingSeconds = seconds % 60
-    return `${minutes}m ${remainingSeconds}s`
+    return `${minutes}m ${seconds % 60}s`
   } else {
     return `${seconds}s`
   }

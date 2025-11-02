@@ -27,20 +27,16 @@ export function groupExecutionItems(
   // Group items by the selected mode
   for (const item of items) {
     let key: string
-    let label: string
 
     switch (mode) {
       case 'flow':
         key = `${item.platform}:${item.flowSlug || 'unknown'}`
-        label = item.flowName || item.flowSlug || 'Flow inconnu'
         break
       case 'platform':
         key = item.platform
-        label = item.platformName
         break
       case 'status':
         key = item.status
-        label = getStatusLabel(item.status)
         break
     }
 

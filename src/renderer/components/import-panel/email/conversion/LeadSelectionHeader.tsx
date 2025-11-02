@@ -1,14 +1,9 @@
-import type { EnrichedLeadData } from '../../../../../shared/types/emailParsing'
-import type { EmailMessage } from '../../../../../shared/types/email'
-
 interface LeadSelectionHeaderProps {
   totalCount: number
   selectedCount: number
   completeCount: number
   onSelectAll: () => void
   onDeselectAll: () => void
-  leads: EnrichedLeadData[]
-  emails: EmailMessage[]
   duplicateCount?: number
   onRemoveDuplicates?: () => void
 }
@@ -23,8 +18,6 @@ export function LeadSelectionHeader({
   completeCount,
   onSelectAll,
   onDeselectAll,
-  leads,
-  emails,
   duplicateCount = 0,
   onRemoveDuplicates
 }: LeadSelectionHeaderProps) {

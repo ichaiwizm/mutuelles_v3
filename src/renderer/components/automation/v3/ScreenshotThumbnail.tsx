@@ -2,7 +2,6 @@ import React from 'react'
 import { CheckCircle, XCircle, Send } from 'lucide-react'
 
 interface ScreenshotThumbnailProps {
-  screenshot: string
   stepIndex: number
   stepType: string
   isError: boolean
@@ -18,7 +17,6 @@ interface ScreenshotThumbnailProps {
  * - Selected screenshot (thicker border)
  */
 export default function ScreenshotThumbnail({
-  screenshot,
   stepIndex,
   stepType,
   isError,

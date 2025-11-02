@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from 'react'
 import { Search, Check, User, Clock } from 'lucide-react'
 import type { Lead } from '../../../hooks/useAutomation'
-import type { RunHistoryItem } from '../../../../shared/types/automation'
 
 interface LeadSelectorProps {
   leads: Lead[]
@@ -10,8 +9,6 @@ interface LeadSelectorProps {
   onSelectAll: () => void
   onClearSelection: () => void
   getLeadName: (leadId: string) => string
-  selectedFlowSlugs?: string[]
-  runHistory?: RunHistoryItem[]
 }
 
 type FilterType = 'all' | 'recent'
@@ -22,9 +19,7 @@ export default function LeadSelector({
   onToggleLead,
   onSelectAll,
   onClearSelection,
-  getLeadName,
-  selectedFlowSlugs = [],
-  runHistory = []
+  getLeadName
 }: LeadSelectorProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [activeFilter, setActiveFilter] = useState<FilterType>('all')

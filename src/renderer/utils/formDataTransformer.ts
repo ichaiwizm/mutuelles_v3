@@ -5,35 +5,6 @@ interface FormData {
   [domainKey: string]: any
 }
 
-function parseDateToDDMMYYYY(value: any): string | undefined {
-  if (!value) return undefined
-
-  if (typeof value === 'string') {
-    if (value.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
-      return value
-    }
-
-    if (value.match(/^\d{4}-\d{2}-\d{2}$/)) {
-      const [year, month, day] = value.split('-')
-      return `${day}/${month}/${year}`
-    }
-  }
-
-  return value
-}
-
-function extractAllFormData(formData: FormData): Record<string, any> {
-  const allData: Record<string, any> = {}
-
-  Object.keys(formData).forEach(key => {
-    if (formData[key] === undefined || formData[key] === null) return
-
-    allData[key] = formData[key]
-  })
-
-  return allData
-}
-
 export function transformFromCleanLead(lead: any): Record<string, any> {
   if (lead.data?.platformData && Object.keys(lead.data.platformData).length > 0) {
     return { ...lead.data.platformData }

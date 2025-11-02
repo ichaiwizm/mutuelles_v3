@@ -19,7 +19,6 @@ import type {
   AuthStatus
 } from '../../shared/types/email'
 
-const DEFAULT_EMAIL_LIMIT = 100
 const STORAGE_KEY_EMAILS = 'email_leads_cache'
 const STORAGE_KEY_TIMESTAMP = 'email_leads_cache_timestamp'
 

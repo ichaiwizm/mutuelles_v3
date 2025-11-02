@@ -53,7 +53,7 @@ export default function ChildrenSection({
         onAdd={onAddChild}
         onRemove={onRemoveChild}
         disabled={disabled}
-        renderItem={(item, index) => (
+        renderItem={(_, index) => (
           <div className="space-y-4">
             {/* Common fields */}
             {commonFields.length > 0 && (

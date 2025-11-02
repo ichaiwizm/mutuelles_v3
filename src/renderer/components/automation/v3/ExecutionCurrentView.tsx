@@ -91,18 +91,6 @@ export default function ExecutionCurrentView({
     )
   }, [isRunning, currentStats, items, concurrency, runHistory, flows])
 
-  // Calculate estimated duration for each pending item
-  const itemEstimates = useMemo(() => {
-    const estimates = new Map<string, number>()
-
-    items.filter(item => item.status === 'pending' && item.flowSlug).forEach(item => {
-      const estimate = estimateFlowDuration(item.flowSlug!, runHistory, flows)
-      estimates.set(item.id, estimate.durationMs)
-    })
-
-    return estimates
-  }, [items, runHistory, flows])
-
   // Filter failed items for replay
   const failedItems = useMemo(() => {
     return items.filter(item => item.status === 'error')

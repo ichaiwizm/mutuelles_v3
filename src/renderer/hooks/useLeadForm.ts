@@ -192,7 +192,6 @@ export function useLeadForm({ schema, mode, initialLead, onSuccess, onError, onL
       setChildren([])
       setFormState(prev => {
         const newValues = { ...prev.values }
-        const prefixes = ['', 'alptis.', 'swisslifeone.']
         Object.keys(newValues).forEach(key => {
           if (key.startsWith('children[') || key.startsWith('alptis.children[') || key.startsWith('swisslifeone.children[')) {
             delete newValues[key]
@@ -226,7 +225,6 @@ export function useLeadForm({ schema, mode, initialLead, onSuccess, onError, onL
 
     setFormState(prev => {
       const newValues = { ...prev.values }
-      const carriers = ['', 'alptis.', 'swisslifeone.']
       Object.keys(newValues).forEach(key => {
         if (key.startsWith(`children[${index}]`) || key.startsWith(`alptis.children[${index}]`) || key.startsWith(`swisslifeone.children[${index}]`)) {
           delete newValues[key]

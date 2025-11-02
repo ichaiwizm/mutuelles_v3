@@ -25,7 +25,6 @@ export function ImportPanel({ isOpen, onClose, onCreated }: ImportPanelProps) {
     isAuthenticating,
     isImporting,
     importProgress,
-    leadsDetected,
     emails,
     cacheTimestamp,
     error,

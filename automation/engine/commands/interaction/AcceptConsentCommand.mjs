@@ -56,8 +56,6 @@ export class AcceptConsentCommand extends BaseCommand {
 
             const overlays = document.querySelectorAll('#axeptio_overlay, #axeptio_widget, [id^="axeptio"]')
             overlays.forEach(el => el.remove())
-
-            logger.debug('[DOM] Axeptio overlays supprimés:', overlays.length)
           }, step.selector)
           logger.debug('[hl] acceptConsent: suppression DOM forcée réussie')
         } catch (domErr) {

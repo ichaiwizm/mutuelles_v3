@@ -7,7 +7,7 @@
  */
 
 import { FormSchema, FormFieldDefinition } from './formSchemaGenerator'
-import { applyDefaults, getAllDefaults as getAllDefaultsFromSchema, type DomainSchema } from '@shared/defaults/simpleDefaults'
+import { getAllDefaults as getAllDefaultsFromSchema, type DomainSchema } from '@shared/defaults/simpleDefaults'
 import { computeDerivedFields } from '@shared/businessRules/computedValues'
 
 /**
@@ -203,7 +203,7 @@ function flatToNested(flat: Record<string, any>): Record<string, any> {
  */
 export function getAllDefaultsForForm(
   schema: FormSchema,
-  currentValues: Record<string, any>,
+  _currentValues: Record<string, any>,
   platform?: string
 ): Record<string, any> {
   // Convert FormSchema to DomainSchema
@@ -256,7 +256,7 @@ export function applyDefaultsToForm(
 export function getAllDefaultsWithBusinessRules(
   schema: FormSchema,
   currentValues: Record<string, any>,
-  platform?: string
+  _platform?: string
 ): Record<string, any> {
   // Convert to nested structure for computeDerivedFields
   const nested = flatToNested(currentValues)

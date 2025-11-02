@@ -138,6 +138,6 @@ function getHistoricalAverage(flowSlug: string, runHistory: RunHistoryItem[]): n
   return Math.round(totalDuration / flowItems.length)
 }
 
-function getStepCountFromFlow(flow: Flow): number {
+function getStepCountFromFlow(_flow: Flow): number {
   return 30
 }

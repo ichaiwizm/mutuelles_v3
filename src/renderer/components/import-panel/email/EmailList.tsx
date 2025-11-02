@@ -53,19 +53,6 @@ export function EmailList({
     }
   }, [emails, selectedEmailIds, onSelectionChange])
 
-  const handleCopyEmails = useCallback(() => {
-    const emailsText = emails.map(email => {
-      return `From: ${email.from}\nSubject: ${email.subject}\nDate: ${email.date}\nContent:\n${email.content}\n\n---\n`
-    }).join('\n')
-
-    navigator.clipboard.writeText(emailsText).then(() => {
-      alert(`✓ ${emails.length} email(s) copié(s) dans le presse-papier`)
-    }).catch(err => {
-      logger.error('Erreur copie:', err)
-      alert('Erreur lors de la copie')
-    })
-  }, [emails])
-
   const allSelected = emails.length > 0 && selectedEmailIds.length === emails.length
   const leadPotentialCount = emails.filter(e => e.hasLeadPotential).length
 

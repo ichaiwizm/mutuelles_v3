@@ -32,7 +32,6 @@ export default function ExecutionHistoryView({
   })
 
   const { selectedRunDetails, handleViewDetails, clearDetails } = useRunDetails()
-  const { confirm } = useConfirmation()
 
   // Filtered history
   const filteredHistory = useMemo(() => {
