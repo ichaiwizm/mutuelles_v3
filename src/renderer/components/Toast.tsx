@@ -9,7 +9,7 @@ export interface Toast {
   type: ToastType
   title: string
   message?: string
-  duration?: number // ms; 0 = persistant
+  duration?: number // ms; 0 = persistent
 }
 
 interface ToastComponentProps extends Toast {
@@ -33,7 +33,7 @@ function ToastComponent({ id, type, title, message, duration, onClose }: ToastCo
 
   const Icon = icons[type]
 
-  // Auto-fermeture configurable; 0 = persistant
+  // Auto-fermeture configurable; 0 = persistent
   const timerRef = React.useRef<NodeJS.Timeout | null>(null)
   React.useEffect(() => {
     if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null }
