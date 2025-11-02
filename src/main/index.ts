@@ -4,6 +4,7 @@ import dotenv from 'dotenv'
 import { installMainErrorHandlers } from './errors'
 import { initDatabase, getDb } from './db/connection'
 import { createLogger } from './services/logger'
+import { WINDOW_CONFIG, DEV_CONFIG, PLATFORMS } from './constants'
 
 const logger = createLogger('Main')
 
@@ -32,9 +33,9 @@ function getPreloadPath() {
 
 function createMainWindow() {
   mainWindow = new BrowserWindow({
-    width: 1200,
-    height: 800,
-    title: 'Mutuelles',
+    width: WINDOW_CONFIG.DEFAULT_WIDTH,
+    height: WINDOW_CONFIG.DEFAULT_HEIGHT,
+    title: WINDOW_CONFIG.TITLE,
     webPreferences: {
       preload: getPreloadPath(),
       contextIsolation: true,
@@ -45,7 +46,7 @@ function createMainWindow() {
 
   if (!app.isPackaged) {
     mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'] as string)
-    mainWindow.webContents.openDevTools({ mode: 'detach' })
+    mainWindow.webContents.openDevTools({ mode: DEV_CONFIG.DEV_TOOLS_MODE })
   } else {
     mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'))
   }
@@ -54,7 +55,7 @@ function createMainWindow() {
 }
 
 app.whenReady().then(() => {
-  if (!app.isPackaged) process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true'
+  if (!app.isPackaged) process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = DEV_CONFIG.SECURITY_WARNINGS_DISABLED
   installMainErrorHandlers()
   initDatabase()
   registerSettingsIpc()
@@ -80,7 +81,7 @@ app.whenReady().then(() => {
 })
 
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') app.quit()
+  if (process.platform !== PLATFORMS.MAC_OS) app.quit()
 })
 
 ipcMain.handle('app:getVersion', async () => {
