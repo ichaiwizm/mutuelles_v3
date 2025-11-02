@@ -34,14 +34,13 @@ function ToastComponent({ id, type, title, message, duration, onClose }: ToastCo
   const Icon = icons[type]
 
   // Auto-fermeture configurable; 0 = persistant
-  const timerRef = React.useRef<number | null>(null)
+  const timerRef = React.useRef<NodeJS.Timeout | null>(null)
   React.useEffect(() => {
-    if (timerRef.current) { clearTimeout(timerRef.current as any); timerRef.current = null }
+    if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null }
     const d = duration !== undefined ? duration : (type === 'info' ? 0 : 5000)
     if (d && d > 0) {
-      // @ts-ignore
-      timerRef.current = setTimeout(() => onClose(id), d) as any
-      return () => { if (timerRef.current) clearTimeout(timerRef.current as any) }
+      timerRef.current = setTimeout(() => onClose(id), d)
+      return () => { if (timerRef.current) clearTimeout(timerRef.current) }
     }
   }, [id, type, duration, onClose])
 
