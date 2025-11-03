@@ -6,7 +6,7 @@
  */
 
 import type { Flow } from '../../core/dsl';
-import type { FieldSelector } from '../../platforms/types';
+import type { FieldSelector, SelectorMap } from '../../platforms/types';
 
 /**
  * Get flow by slug (e.g., 'swisslifeone/slsis')
@@ -32,12 +32,9 @@ export function getFlowBySlug(slug: string): Flow | null {
 }
 
 /**
- * Get platform selector definition
+ * Get all selectors for a platform
  */
-export function resolvePlatformSelector(
-  platform: string,
-  field: string
-): FieldSelector | null {
+export function getPlatformSelectors(platform: string): SelectorMap | null {
   try {
     const platformModule = require(`../../platforms/${platform}`);
     const selectors = platformModule.selectors || platformModule.platformConfig?.selectors;
@@ -47,9 +44,21 @@ export function resolvePlatformSelector(
       return null;
     }
 
-    return selectors[field] || null;
+    return selectors;
   } catch (error: any) {
     console.error(`Failed to load selectors for platform '${platform}':`, error.message);
     return null;
   }
+}
+
+/**
+ * Get platform selector definition for a specific field
+ */
+export function resolvePlatformSelector(
+  platform: string,
+  field: string
+): FieldSelector | null {
+  const selectors = getPlatformSelectors(platform);
+  if (!selectors) return null;
+  return selectors[field] || null;
 }

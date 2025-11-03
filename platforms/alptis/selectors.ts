@@ -100,6 +100,12 @@ export const selectors: SelectorMap = {
     meta: { label: 'Code postal' },
   },
 
+  // Consent
+  'consent.acceptAll': {
+    selector: '#axeptio_btn_acceptAll, #axeptio_overlay #axeptio_btn_acceptAll',
+    meta: { label: 'Accept all (cookies)' },
+  },
+
   'subscriber.workFramework_salarie': {
     selector: 'label:has-text("Salarié")',
     meta: { label: 'Cadre d\'exercice - Salarié' },

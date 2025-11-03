@@ -8,8 +8,10 @@
 import { randomUUID } from 'crypto';
 import { getLeadById } from '../../core/db';
 import { createLogger } from '../../core/log';
-import { getFlowBySlug } from '../utils/flow-loader';
+import { FlowRunner } from '../../core/engine';
+import { getFlowBySlug, getPlatformSelectors } from '../utils/flow-loader';
 import { getDatabaseConnection } from '../utils/db-connection';
+import { getCredentialsForPlatform } from '../utils/credentials';
 
 interface RunOptions {
   headless?: boolean;
@@ -36,6 +38,15 @@ export async function runFlow(
     throw new Error(`Flow not found: ${flowSlug}`);
   }
 
+  // Load selectors
+  const selectors = getPlatformSelectors(flow.platform);
+  if (!selectors) {
+    throw new Error(`Selectors not found for platform: ${flow.platform}`);
+  }
+
+  // Load credentials
+  const credentials = getCredentialsForPlatform(db, flow.platform);
+
   // Create run ID
   const runId = `${flowSlug.replace('/', '-')}-${Date.now()}-${randomUUID().substring(0, 8)}`;
 
@@ -51,16 +62,28 @@ export async function runFlow(
   logger.info('Flow execution started', { flowSlug, leadId, runId });
 
   try {
-    // TODO: Integrate with automation engine
-    // For now, just log the intent
-    console.log('⚠️  Automation engine integration not yet complete');
-    console.log('Flow would execute with:');
-    console.log(`  - ${flow.steps.length} steps`);
-    console.log(`  - Platform: ${flow.platform}`);
-    console.log(`  - Lead data: subscriber.birthDate = ${lead.data.subscriber.birthDate}`);
+    // Execute flow
+    const runner = new FlowRunner(runId, logger);
+    const result = await runner.execute(flow, lead.data, selectors, credentials, {
+      headless: options.headless,
+      trace: options.trace || (flow.trace as any),
+      timeout: 30000,
+      screenshots: true,
+    });
 
-    logger.info('Flow execution completed', { runId, status: 'success' });
-    console.log('\n✅ Flow execution completed successfully');
+    if (result.success) {
+      logger.info('Flow execution completed', { runId, ...result });
+      console.log(`\n✅ Flow execution completed successfully`);
+      console.log(`   Duration: ${result.duration}ms`);
+      console.log(`   Steps executed: ${result.stepsExecuted}`);
+    } else {
+      logger.error('Flow execution failed', result.error || 'Unknown error', { runId, ...result });
+      console.error(`\n❌ Flow execution failed`);
+      console.error(`   Error: ${result.error}`);
+      console.error(`   Steps executed: ${result.stepsExecuted}`);
+      console.error(`   Steps failed: ${result.stepsFailed}`);
+      process.exit(1);
+    }
   } catch (error: any) {
     logger.error('Flow execution failed', error, { runId });
     console.error('\n❌ Flow execution failed:', error.message);
