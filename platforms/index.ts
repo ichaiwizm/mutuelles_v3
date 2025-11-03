@@ -6,4 +6,5 @@
  */
 
 export * as swisslifeone from './swisslifeone';
+export * as alptis from './alptis';
 export * from './types';
