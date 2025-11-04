@@ -1,11 +1,10 @@
 import { ipcMain } from 'electron'
 import { LeadsService } from '../services/leads'
 import type {
-  CreateLeadData,
-  UpdateLeadData,
   LeadFilters,
   PaginationParams
 } from '../../shared/types/leads'
+import { leadDataSchema } from '../../../core/domain/lead.schema'
 import { z } from 'zod'
 
 let leadsService: LeadsService | null = null
@@ -17,66 +16,105 @@ function getLeadsService() {
   return leadsService
 }
 
-const CreateLeadSchema = z.object({
-  subscriber: z.object({
-    civility: z.string().optional(),
-    lastName: z.string().optional(),
-    firstName: z.string().optional(),
+/**
+ * Normalize UI data to v2 canonical format
+ * Converts:
+ * - DD/MM/YYYY dates → YYYY-MM-DD (ISO)
+ * - Loose phone → +33... (E.164)
+ * - telephone field → phoneE164 field
+ */
+function normalizeToCanonical(uiData: any): any {
+  const normalized = JSON.parse(JSON.stringify(uiData)) // Deep clone
+
+  // Helper to convert DD/MM/YYYY → YYYY-MM-DD
+  const convertDate = (dateStr: string | undefined): string | undefined => {
+    if (!dateStr) return undefined
+
+    // If already ISO format, return as-is
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+      return dateStr
+    }
+
+    // Convert DD/MM/YYYY to YYYY-MM-DD
+    const match = dateStr.match(/^(\d{2})\/(\d{2})\/(\d{4})$/)
+    if (match) {
+      return `${match[3]}-${match[2]}-${match[1]}`
+    }
+
+    return dateStr // Fallback
+  }
+
+  // Helper to convert phone to E.164
+  const convertPhone = (phone: string | undefined): string | undefined => {
+    if (!phone) return undefined
+
+    // Already E.164
+    if (phone.startsWith('+')) {
+      return phone
+    }
+
+    // Remove all non-digits
+    const digits = phone.replace(/\D/g, '')
+
+    // French number: add +33 prefix
+    if (digits.length === 10 && digits.startsWith('0')) {
+      return `+33${digits.slice(1)}`
+    }
+
+    // Already without leading 0
+    if (digits.length === 9) {
+      return `+33${digits}`
+    }
+
+    return `+${digits}` // Fallback
+  }
+
+  // Normalize subscriber
+  if (normalized.subscriber) {
+    if (normalized.subscriber.birthDate) {
+      normalized.subscriber.birthDate = convertDate(normalized.subscriber.birthDate)
+    }
+
+    // Convert telephone → phoneE164
+    if (normalized.subscriber.telephone) {
+      normalized.subscriber.phoneE164 = convertPhone(normalized.subscriber.telephone)
+      delete normalized.subscriber.telephone
+    } else if (normalized.subscriber.phoneE164) {
+      normalized.subscriber.phoneE164 = convertPhone(normalized.subscriber.phoneE164)
+    }
+  }
+
+  // Normalize spouse
+  if (normalized.spouse?.birthDate) {
+    normalized.spouse.birthDate = convertDate(normalized.spouse.birthDate)
+  }
+
+  // Normalize children
+  if (Array.isArray(normalized.children)) {
+    normalized.children = normalized.children.map(child => ({
+      ...child,
+      birthDate: convertDate(child.birthDate)
+    }))
+  }
+
+  // Normalize project
+  if (normalized.project?.dateEffet) {
+    normalized.project.dateEffet = convertDate(normalized.project.dateEffet)
+  }
+
+  // Remove platformData (not part of v2 canonical schema)
+  delete normalized.platformData
+
+  return normalized
+}
+
+// Use v2 canonical schema but make most fields optional for UI flexibility
+const CreateLeadSchema = leadDataSchema.extend({
+  subscriber: leadDataSchema.shape.subscriber.extend({
+    lastName: z.string().min(1).optional(),
+    firstName: z.string().min(1).optional(),
     birthDate: z.string().optional(),
-    telephone: z.string().optional(),
-    email: z.string().email().optional(),
-    address: z.string().optional(),
-    postalCode: z.string().optional(),
-    city: z.string().optional(),
-    departmentCode: z.union([z.string(), z.number()]).optional(),
-    regime: z.string().optional(),
-    category: z.string().optional(),
-    status: z.string().optional(),
-    profession: z.string().optional(),
-    workFramework: z.string().optional(),
-    childrenCount: z.number().int().min(0).optional()
-  }),
-
-  spouse: z.object({
-    civility: z.string().optional(),
-    firstName: z.string().optional(),
-    lastName: z.string().optional(),
-    birthDate: z.string().optional(),
-    regime: z.string().optional(),
-    category: z.string().optional(),
-    status: z.string().optional(),
-    profession: z.string().optional(),
-    workFramework: z.string().optional()
-  }).optional(),
-
-  children: z.array(z.object({
-    birthDate: z.string().optional(),
-    gender: z.string().optional(),
-    regime: z.string().optional(),
-    ayantDroit: z.string().optional()
-  })).optional(),
-
-  project: z.object({
-    name: z.string().optional(),
-    dateEffet: z.string().optional(),
-    plan: z.string().optional(),
-    couverture: z.boolean().optional(),
-    ij: z.boolean().optional(),
-    simulationType: z.string().optional(),
-    madelin: z.boolean().optional(),
-    resiliation: z.boolean().optional(),
-    reprise: z.boolean().optional(),
-    currentlyInsured: z.boolean().optional(),
-    ranges: z.array(z.string()).optional(),
-    levels: z.object({
-      medicalCare: z.number().optional(),
-      hospitalization: z.number().optional(),
-      optics: z.number().optional(),
-      dental: z.number().optional()
-    }).optional()
-  }),
-
-  platformData: z.record(z.any()).optional()
+  })
 })
 
 const UpdateLeadSchema = CreateLeadSchema.partial()
@@ -91,9 +129,13 @@ const PaginationSchema = z.object({
 }).optional()
 
 export function registerLeadsIPC() {
-  ipcMain.handle('leads:create', async (_, data: CreateLeadData) => {
+  ipcMain.handle('leads:create', async (_, data: any) => {
     try {
-      const validated = CreateLeadSchema.parse(data)
+      // Normalize UI format to canonical
+      const canonical = normalizeToCanonical(data)
+
+      // Validate against v2 schema
+      const validated = CreateLeadSchema.parse(canonical)
 
       const duplicates = await getLeadsService().checkForDuplicates(
         validated.subscriber
@@ -144,13 +186,15 @@ export function registerLeadsIPC() {
     }
   })
 
-  ipcMain.handle('leads:update', async (_, id: string, data: UpdateLeadData) => {
+  ipcMain.handle('leads:update', async (_, id: string, data: any) => {
     try {
       if (!id || typeof id !== 'string') {
         throw new Error('ID du lead requis')
       }
 
-      const validated = UpdateLeadSchema.parse(data)
+      // Normalize UI format to canonical
+      const canonical = normalizeToCanonical(data)
+      const validated = UpdateLeadSchema.parse(canonical)
       const success = await getLeadsService().updateCleanLead(id, validated)
 
       if (!success) {
@@ -308,10 +352,10 @@ export function registerLeadsIPC() {
         const { formData, metadata } = leads[i]
 
         try {
-          // Use shared transformer (works in main process)
-          const { transformToCleanLead } = await import('../../shared/utils/leadFormData')
-          const cleanLeadData = transformToCleanLead(formData)
-          const lead = await getLeadsService().createCleanLead(cleanLeadData, metadata)
+          // Normalize and validate
+          const canonical = normalizeToCanonical(formData)
+          const validated = CreateLeadSchema.parse(canonical)
+          const lead = await getLeadsService().createLead(validated, metadata)
 
           results.push({
             success: true,

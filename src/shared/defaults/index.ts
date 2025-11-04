@@ -1,21 +1,11 @@
 /**
- * Unified defaults system - Main entry point
+ * Expression utilities for default values
  *
- * This module exports the new simplified defaults system.
- * The old complex system (defaultEnricher, businessRules, types)
- * has been completely removed and replaced.
+ * This module exports expression evaluation utilities
+ * for dynamic default values (e.g., "firstOfNextMonth").
  */
 
-// New simple defaults system
-export {
-  applyDefaults,
-  getAllDefaults,
-  type DomainSchema,
-  type FieldSchema,
-  type ApplyDefaultsOptions,
-} from './simpleDefaults'
-
-// Expression evaluation (kept from old system)
+// Expression evaluation utilities
 export {
   evaluateExpression,
   firstOfNextMonth,
@@ -23,6 +13,3 @@ export {
   calculateAge,
   parseDate,
 } from './expressions'
-
-// Schema loading
-export { loadDomainSchema, loadDomainSchemaFromData, getCachedSchema, clearSchemaCache } from './schemaLoader'
