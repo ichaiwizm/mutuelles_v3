@@ -41,22 +41,8 @@ export interface GmailConfig {
   createdAt?: string
 }
 
-export interface SwissLifeOneData {
-  projet: {
-    nom: string
-    couverture_individuelle: boolean
-    indemnites_journalieres: boolean
-    resiliation_contrat: boolean
-    reprise_concurrence: boolean
-    loi_madelin: boolean
-  }
-}
-
-export interface PlatformData {
-  swisslifeone?: Record<string, any>
-  alptis?: Record<string, any>
-  [key: string]: Record<string, any> | undefined
-}
+// Removed legacy carrier-specific containers (SwissLifeOneData, PlatformData)
+// Canonical LeadData must remain platform-agnostic.
 
 export interface CreateLeadData extends Partial<LeadData> {
   subscriber: SubscriberInfo

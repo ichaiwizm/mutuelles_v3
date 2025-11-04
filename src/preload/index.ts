@@ -13,8 +13,7 @@ contextBridge.exposeInMainWorld('api', {
   },
   catalog: {
     list: () => ipcRenderer.invoke('catalog:list') as Promise<Array<{id:number; slug:string; name:string; status:string; selected:boolean; has_creds:boolean}>>,
-    setSelected: (payload: { platform_id:number; selected:boolean }) => ipcRenderer.invoke('catalog:setSelected', payload) as Promise<{selected:boolean}>,
-    getUiForms: () => ipcRenderer.invoke('catalog:getUiForms') as Promise<Array<{ slug:string; ui:any|null }>>
+    setSelected: (payload: { platform_id:number; selected:boolean }) => ipcRenderer.invoke('catalog:setSelected', payload) as Promise<{selected:boolean}>
   },
   profiles: {
     list: () => ipcRenderer.invoke('profiles:list') as Promise<Array<{id:number; name:string; user_data_dir:string; browser_channel:string|null; initialized_at:string|null}>>,
