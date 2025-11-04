@@ -4,6 +4,7 @@
  */
 
 import type { LeadData } from '../core/domain';
+import { firstOfNextMonth } from '../core/adapters/date';
 
 /**
  * Enrich lead with computed and default values
@@ -18,7 +19,6 @@ export function enrichLead(partial: Partial<LeadData>): Partial<LeadData> {
 
   // Set default dateEffet if missing (first of next month)
   if (enriched.project && !enriched.project.dateEffet) {
-    const { firstOfNextMonth } = require('../core/adapters/date');
     enriched.project.dateEffet = firstOfNextMonth();
   }
 

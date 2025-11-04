@@ -34,6 +34,6 @@ export const setupSteps: FlowStep[] = [
   step.click('consent.acceptAll', { optional: true }, 'accept-cookies-page'),
   step.sleep(1000, 'wait-after-cookie'),
 
-  step.enterFrame('iframe[name="iFrameTarificateur"]', 'enter-slsis-iframe', 15000),
+  step.enterFrame('iframe[name="iFrameTarificateur"]', 'enter-slsis-iframe'),
   step.sleep(800, 'wait-iframe-ready'),
 ];
