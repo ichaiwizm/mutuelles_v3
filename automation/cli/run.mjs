@@ -160,7 +160,7 @@ async function main() {
       password,
       mode,
       keepOpen,
-      outRoot: 'data/runs',
+      outRoot: 'runs',
       dom: 'all'
     })
 

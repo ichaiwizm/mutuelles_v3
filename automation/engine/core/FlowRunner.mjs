@@ -19,7 +19,7 @@ import { createLogger } from '../utils/logger.mjs'
 
 const logger = createLogger('FlowRunner')
 
-export async function runHighLevelFlow({ fieldsFile, flowFile, leadFile, leadData, username, password, outRoot='data/runs', mode='dev_private', chrome=null, video=false, dom='errors', a11y=false, keepOpen=true, redact='(password|token|authorization|cookie)=([^;\\s]+)', onProgress=null, sessionRunId=null, onBrowserCreated=null, pauseGate=null }) {
+export async function runHighLevelFlow({ fieldsFile, flowFile, leadFile, leadData, username, password, outRoot='runs', mode='dev_private', chrome=null, video=false, dom='errors', a11y=false, keepOpen=true, redact='(password|token|authorization|cookie)=([^;\\s]+)', onProgress=null, sessionRunId=null, onBrowserCreated=null, pauseGate=null }) {
   const fields = JSON.parse(fs.readFileSync(fieldsFile, 'utf-8'))
   const flow = JSON.parse(fs.readFileSync(flowFile, 'utf-8'))
   const lead = leadData || (leadFile ? JSON.parse(fs.readFileSync(leadFile, 'utf-8')) : {})

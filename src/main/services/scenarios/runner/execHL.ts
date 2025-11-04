@@ -26,7 +26,7 @@ export async function execHL(args: {
     password: args.password,
     mode: args.mode,
     keepOpen: args.keepOpen ?? (args.mode !== 'headless'),
-    outRoot: path.join(process.cwd(), 'data', 'runs'),
+    outRoot: path.join(process.cwd(), 'runs'),
     dom: 'steps',
     onProgress: args.onProgress,
     sessionRunId: args.sessionRunId,

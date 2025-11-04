@@ -7,7 +7,7 @@
  * - execution_steps: Step-by-step execution results
  * - execution_attempts: Retry attempt tracking
  *
- * This replaces the filesystem-based execution tracking (data/runs/[platform]/[timestamp]/index.json)
+ * This replaces the filesystem-based execution tracking (runs/[platform]/[timestamp]/index.json)
  * with a proper database schema for stateless frontend and efficient querying.
  */
 
