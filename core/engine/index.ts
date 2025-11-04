@@ -6,3 +6,4 @@
  */
 
 export * from './flow-runner';
+export * from './types';
