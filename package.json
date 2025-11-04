@@ -38,7 +38,12 @@
     "ui:form:import": "cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/platforms/import_ui_form.mjs",
     "platforms:fields:import": "cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/platforms/import_field_definitions.mjs",
     "platforms:fields:export": "cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/platforms/export_field_definitions.mjs",
-    "verify:sync": "cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/verify_sync.mjs"
+    "verify:sync": "cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/verify_sync.mjs",
+    "flow:explain": "ts-node cli/index.ts flow:explain",
+    "flow:dry": "ts-node cli/index.ts flow:dry",
+    "flow:run": "ts-node cli/index.ts flow:run",
+    "selector:test": "ts-node cli/index.ts selector:test",
+    "migrate:data": "ts-node scripts/migrate-legacy-data.ts"
   },
   "dependencies": {
     "@types/react-window": "^1.8.8",
