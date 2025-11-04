@@ -10,4 +10,5 @@ export {
   type FormSchema,
   generateFormSchema,
   shouldShowField,
+  getFieldDefault,
 } from '@shared/domain/form-generator'

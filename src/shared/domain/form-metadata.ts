@@ -211,59 +211,6 @@ export const formMetadata = {
       type: 'date' as const,
       defaultValue: 'firstOfNextMonth',
     },
-    plan: {
-      label: 'Gamme/Produit',
-      type: 'select' as const,
-      options: [
-        { value: 'SwissLife Santé', label: 'SwissLife Santé' },
-      ],
-      defaultValue: 'SwissLife Santé',
-      disabled: true,
-    },
-    couverture: {
-      label: 'Couverture individuelle',
-      type: 'toggle' as const,
-      defaultValue: true,
-    },
-    ij: {
-      label: 'Indemnités journalières',
-      type: 'toggle' as const,
-      defaultValue: false,
-      disabled: true,
-    },
-    simulationType: {
-      label: 'Type de simulation',
-      type: 'select' as const,
-      options: [
-        { value: 'INDIVIDUEL', label: 'Individuel' },
-        { value: 'COUPLE', label: 'Couple' },
-        { value: 'FAMILLE', label: 'Famille' },
-      ],
-    },
-    madelin: {
-      label: 'Loi Madelin',
-      type: 'toggle' as const,
-      defaultValue: true,
-      showIf: {
-        field: 'subscriber.status',
-        oneOf: ['TNS', 'EXPLOITANT_AGRICOLE'],
-      },
-    },
-    resiliation: {
-      label: 'Résiliation de contrat',
-      type: 'toggle' as const,
-      defaultValue: false,
-    },
-    reprise: {
-      label: 'Reprise concurrence',
-      type: 'toggle' as const,
-      defaultValue: false,
-    },
-    currentlyInsured: {
-      label: 'Actuellement assuré',
-      type: 'toggle' as const,
-      defaultValue: false,
-    },
   },
 }
 

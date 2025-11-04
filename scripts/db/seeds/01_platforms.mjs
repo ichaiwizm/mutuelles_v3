@@ -79,24 +79,10 @@ export default {
             }
           }
 
+          // Deprecated: value_mappings_json was used by legacy JSON flows.
+          // New architecture maps values directly in TypeScript selectors.
+          // Keep null to avoid storing unused config in DB.
           let valueMappingsJson = null
-          if (platform.slug === 'swisslifeone') {
-            const valueMappings = {
-              'slsis_enfant_0_ayant_droit': { '1': 'CLIENT', '2': 'CONJOINT' },
-              'slsis_enfant_1_ayant_droit': { '1': 'CLIENT', '2': 'CONJOINT' },
-              'slsis_enfant_2_ayant_droit': { '1': 'CLIENT', '2': 'CONJOINT' },
-              'slsis_enfant_3_ayant_droit': { '1': 'CLIENT', '2': 'CONJOINT' },
-              'slsis_enfant_4_ayant_droit': { '1': 'CLIENT', '2': 'CONJOINT' },
-              'slsis_enfant_5_ayant_droit': { '1': 'CLIENT', '2': 'CONJOINT' },
-              'slsis_enfant_6_ayant_droit': { '1': 'CLIENT', '2': 'CONJOINT' },
-              'slsis_enfant_7_ayant_droit': { '1': 'CLIENT', '2': 'CONJOINT' },
-              'slsis_enfant_8_ayant_droit': { '1': 'CLIENT', '2': 'CONJOINT' },
-              'slsis_enfant_9_ayant_droit': { '1': 'CLIENT', '2': 'CONJOINT' },
-              'slsis_enfant_10_ayant_droit': { '1': 'CLIENT', '2': 'CONJOINT' }
-            }
-            valueMappingsJson = JSON.stringify(valueMappings)
-            console.log(`       Added value mappings for ${platform.slug}`)
-          }
 
           insertPlatform.run(
             platform.slug,
