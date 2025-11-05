@@ -124,14 +124,6 @@ export function transformToCleanLead(formData: FlatFormData): CreateLeadData {
   const project: ProjectInfo = {}
   if (formData['project.name']) project.name = formData['project.name']
   if (formData['project.dateEffet']) project.dateEffet = parseDateToDDMMYYYY(formData['project.dateEffet'])
-  if (formData['project.plan']) project.plan = formData['project.plan']
-  if (formData['project.couverture'] !== undefined) project.couverture = formData['project.couverture']
-  if (formData['project.ij'] !== undefined) project.ij = formData['project.ij']
-  if (formData['project.simulationType']) project.simulationType = formData['project.simulationType']
-  if (formData['project.madelin'] !== undefined) project.madelin = formData['project.madelin']
-  if (formData['project.resiliation'] !== undefined) project.resiliation = formData['project.resiliation']
-  if (formData['project.reprise'] !== undefined) project.reprise = formData['project.reprise']
-  if (formData['project.currentlyInsured'] !== undefined) project.currentlyInsured = formData['project.currentlyInsured']
   if (formData['project.ranges']) project.ranges = formData['project.ranges']
 
   const levels: any = {}
@@ -216,14 +208,6 @@ export function transformFromCleanLead(lead: any): Record<string, any> {
 
     if (project.name) formData['project.name'] = project.name
     if (project.dateEffet) formData['project.dateEffet'] = project.dateEffet
-    if (project.plan) formData['project.plan'] = project.plan
-    if (project.couverture !== undefined) formData['project.couverture'] = project.couverture
-    if (project.ij !== undefined) formData['project.ij'] = project.ij
-    if (project.simulationType) formData['project.simulationType'] = project.simulationType
-    if (project.madelin !== undefined) formData['project.madelin'] = project.madelin
-    if (project.resiliation !== undefined) formData['project.resiliation'] = project.resiliation
-    if (project.reprise !== undefined) formData['project.reprise'] = project.reprise
-    if (project.currentlyInsured !== undefined) formData['project.currentlyInsured'] = project.currentlyInsured
     if (project.ranges) formData['project.ranges'] = project.ranges
 
     if (project.levels) {

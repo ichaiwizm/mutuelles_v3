@@ -244,13 +244,6 @@ export function generateRandomTestData(schema: FormSchema): Record<string, any> 
       }
     }
 
-    if (status) {
-      const madelinField = findField('project.madelin')
-      if (madelinField && (status === 'TNS' || status === 'EXPLOITANT_AGRICOLE')) {
-        testData['project.madelin'] = randomBoolean(0.7)
-      }
-    }
-
     const professionField = findField('subscriber.profession')
     if (professionField?.options) {
       const agriculturalStatuses = ['SALARIE_AGRICOLE', 'EXPLOITANT_AGRICOLE', 'RETRAITE_ANCIEN_EXPLOITANT']
@@ -265,38 +258,15 @@ export function generateRandomTestData(schema: FormSchema): Record<string, any> 
 
     testData['project.name'] = `Simulation ${lastName} ${firstName}`
 
-    testData['project.plan'] = 'SwissLife Santé'
-
-    testData['project.couverture'] = true
-    testData['project.ij'] = false
-    testData['project.resiliation'] = randomBoolean(0.2)
-    testData['project.reprise'] = randomBoolean(0.15)
-    testData['project.currentlyInsured'] = randomBoolean(0.3)
+    testData['project.dateEffet'] = generateFirstOfNextMonth()
   }
-
-  testData['project.dateEffet'] = generateFirstOfNextMonth()
 
   // Ensure project fields are set even without SwissLife fields
   if (!testData['project.name']) {
     testData['project.name'] = `Simulation ${lastName} ${firstName}`
   }
-  if (!testData['project.plan']) {
-    testData['project.plan'] = 'Mutuelle Santé'
-  }
-  if (testData['project.couverture'] === undefined) {
-    testData['project.couverture'] = true
-  }
-  if (testData['project.ij'] === undefined) {
-    testData['project.ij'] = false
-  }
-  if (testData['project.resiliation'] === undefined) {
-    testData['project.resiliation'] = randomBoolean(0.2)
-  }
-  if (testData['project.reprise'] === undefined) {
-    testData['project.reprise'] = randomBoolean(0.15)
-  }
-  if (testData['project.currentlyInsured'] === undefined) {
-    testData['project.currentlyInsured'] = randomBoolean(0.3)
+  if (testData['project.dateEffet'] === undefined) {
+    testData['project.dateEffet'] = generateFirstOfNextMonth()
   }
 
   const hasSpouse = randomBoolean(0.6)
@@ -456,15 +426,6 @@ export function generateRandomTestData(schema: FormSchema): Record<string, any> 
         }
       }
     }
-  }
-
-  // Set simulation type based on family composition
-  if (nbChildren > 0) {
-    testData['project.simulationType'] = 'FAMILLE'
-  } else if (hasSpouse) {
-    testData['project.simulationType'] = 'COUPLE'
-  } else {
-    testData['project.simulationType'] = 'INDIVIDUEL'
   }
 
   return testData

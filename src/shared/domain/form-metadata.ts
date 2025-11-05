@@ -142,25 +142,6 @@ export const formMetadata = {
     },
   },
   spouse: {
-    civility: {
-      label: 'Civilité',
-      type: 'radio' as const,
-      options: [
-        { value: 'MONSIEUR', label: 'Monsieur' },
-        { value: 'MADAME', label: 'Madame' },
-      ],
-      defaultValue: 'MADAME',
-    },
-    firstName: {
-      label: 'Prénom',
-      type: 'text' as const,
-      defaultValue: 'Marie',
-    },
-    lastName: {
-      label: 'Nom',
-      type: 'text' as const,
-      defaultValue: 'Dupont',
-    },
     birthDate: {
       label: 'Date de naissance',
       type: 'date' as const,
@@ -260,51 +241,6 @@ export const formMetadata = {
       label: 'Date d\'effet',
       type: 'date' as const,
       defaultValue: 'firstOfNextMonth',
-    },
-    plan: {
-      label: 'Plan',
-      type: 'text' as const,
-      defaultValue: 'SwissLife Santé',
-    },
-    couverture: {
-      label: 'Couverture santé',
-      type: 'toggle' as const,
-      defaultValue: true,
-    },
-    ij: {
-      label: 'Indemnités journalières',
-      type: 'toggle' as const,
-      defaultValue: false,
-    },
-    simulationType: {
-      label: 'Type de simulation',
-      type: 'select' as const,
-      options: [
-        { value: 'INDIVIDUEL', label: 'Individuel' },
-        { value: 'COUPLE', label: 'Couple' },
-        { value: 'FAMILLE', label: 'Famille' },
-      ],
-      defaultValue: 'INDIVIDUEL',
-    },
-    madelin: {
-      label: 'Loi Madelin',
-      type: 'toggle' as const,
-      defaultValue: false,
-    },
-    resiliation: {
-      label: 'Résiliation en cours',
-      type: 'toggle' as const,
-      defaultValue: false,
-    },
-    reprise: {
-      label: 'Reprise d\'ancienneté',
-      type: 'toggle' as const,
-      defaultValue: false,
-    },
-    currentlyInsured: {
-      label: 'Actuellement assuré',
-      type: 'toggle' as const,
-      defaultValue: false,
     },
   },
 }
