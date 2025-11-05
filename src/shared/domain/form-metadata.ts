@@ -119,7 +119,11 @@ export const formMetadata = {
     },
     workFramework: {
       label: 'Cadre de travail',
-      type: 'text' as const,
+      type: 'select' as const,
+      options: [
+        { value: 'SALARIE', label: 'Salarié' },
+        { value: 'INDEPENDANT', label: 'Indépendant' },
+      ],
     },
     childrenCount: {
       label: 'Nombre d\'enfants',
@@ -129,22 +133,6 @@ export const formMetadata = {
     },
   },
   spouse: {
-    civility: {
-      label: 'Civilité',
-      type: 'radio' as const,
-      options: [
-        { value: 'MONSIEUR', label: 'Monsieur' },
-        { value: 'MADAME', label: 'Madame' },
-      ],
-    },
-    firstName: {
-      label: 'Prénom',
-      type: 'text' as const,
-    },
-    lastName: {
-      label: 'Nom',
-      type: 'text' as const,
-    },
     birthDate: {
       label: 'Date de naissance',
       type: 'date' as const,
@@ -195,7 +183,11 @@ export const formMetadata = {
     },
     workFramework: {
       label: 'Cadre de travail',
-      type: 'text' as const,
+      type: 'select' as const,
+      options: [
+        { value: 'SALARIE', label: 'Salarié' },
+        { value: 'INDEPENDANT', label: 'Indépendant' },
+      ],
     },
   },
   children: {
