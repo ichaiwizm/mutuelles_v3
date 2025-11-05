@@ -41,33 +41,39 @@ export const formMetadata = {
       label: 'Nom',
       type: 'text' as const,
       placeholder: 'Dupont',
+      defaultValue: 'Dupont',
     },
     firstName: {
       label: 'Prénom',
       type: 'text' as const,
       placeholder: 'Jean',
+      defaultValue: 'Jean',
     },
     birthDate: {
       label: 'Date de naissance',
       type: 'date' as const,
+      defaultValue: '1985-06-15',
     },
     phoneE164: {
       label: 'Téléphone',
       type: 'tel' as const,
       inputMode: 'tel' as const,
       placeholder: '+33612345678',
+      defaultValue: '+33612345678',
     },
     email: {
       label: 'Email',
       type: 'email' as const,
       inputMode: 'email' as const,
       placeholder: 'jean.dupont@example.com',
+      defaultValue: 'contact@example.com',
     },
     postalCode: {
       label: 'Code postal',
       type: 'text' as const,
       inputMode: 'numeric' as const,
       placeholder: '75001',
+      defaultValue: '75001',
     },
     // departmentCode retiré - calculé automatiquement à partir du code postal
     regime: {
@@ -91,6 +97,7 @@ export const formMetadata = {
         { value: 'EXPLOITANT_AGRICOLE', label: 'Exploitant agricole' },
         { value: 'AUTRE', label: 'Autre' },
       ],
+      defaultValue: 'SALARIE',
     },
     profession: {
       label: 'Profession',
@@ -108,6 +115,7 @@ export const formMetadata = {
         { value: 'Avocat', label: 'Avocat' },
         { value: 'Autre', label: 'Autre' },
       ],
+      defaultValue: 'Cadre',
     },
     category: {
       label: 'Catégorie',
@@ -116,10 +124,12 @@ export const formMetadata = {
         { value: 'CADRES', label: 'Cadres' },
         { value: 'NON_CADRES', label: 'Non-cadres' },
       ],
+      defaultValue: 'CADRES',
     },
     workFramework: {
       label: 'Cadre de travail',
       type: 'text' as const,
+      defaultValue: 'SALARIE',
     },
     childrenCount: {
       label: 'Nombre d\'enfants',
@@ -136,18 +146,22 @@ export const formMetadata = {
         { value: 'MONSIEUR', label: 'Monsieur' },
         { value: 'MADAME', label: 'Madame' },
       ],
+      defaultValue: 'MADAME',
     },
     firstName: {
       label: 'Prénom',
       type: 'text' as const,
+      defaultValue: 'Marie',
     },
     lastName: {
       label: 'Nom',
       type: 'text' as const,
+      defaultValue: 'Dupont',
     },
     birthDate: {
       label: 'Date de naissance',
       type: 'date' as const,
+      defaultValue: '1987-03-20',
     },
     regime: {
       label: 'Régime',
@@ -158,6 +172,7 @@ export const formMetadata = {
         { value: 'AMEXA', label: 'AMEXA (Agricole)' },
         { value: 'SECURITE_SOCIALE_ALSACE_MOSELLE', label: 'Alsace-Moselle' },
       ],
+      defaultValue: 'SECURITE_SOCIALE',
     },
     status: {
       label: 'Statut',
@@ -167,6 +182,7 @@ export const formMetadata = {
         { value: 'TNS', label: 'TNS' },
         { value: 'AUTRE', label: 'Autre' },
       ],
+      defaultValue: 'SALARIE',
     },
     profession: {
       label: 'Profession',
@@ -184,6 +200,7 @@ export const formMetadata = {
         { value: 'Avocat', label: 'Avocat' },
         { value: 'Autre', label: 'Autre' },
       ],
+      defaultValue: 'Employé',
     },
     category: {
       label: 'Catégorie',
@@ -192,16 +209,19 @@ export const formMetadata = {
         { value: 'CADRES', label: 'Cadres' },
         { value: 'NON_CADRES', label: 'Non-cadres' },
       ],
+      defaultValue: 'NON_CADRES',
     },
     workFramework: {
       label: 'Cadre de travail',
       type: 'text' as const,
+      defaultValue: 'SALARIE',
     },
   },
   children: {
     birthDate: {
       label: 'Date de naissance',
       type: 'date' as const,
+      defaultValue: '2015-09-10',
     },
     regime: {
       label: 'Régime',
@@ -210,6 +230,7 @@ export const formMetadata = {
         { value: 'SECURITE_SOCIALE', label: 'Sécurité Sociale' },
         { value: 'TNS', label: 'TNS' },
       ],
+      defaultValue: 'SECURITE_SOCIALE',
     },
     ayantDroit: {
       label: 'Ayant droit de',
@@ -218,6 +239,7 @@ export const formMetadata = {
         { value: 'CLIENT', label: 'Client' },
         { value: 'CONJOINT', label: 'Conjoint' },
       ],
+      defaultValue: 'CLIENT',
     },
   },
   project: {
@@ -226,11 +248,57 @@ export const formMetadata = {
       type: 'text' as const,
       autoGenerate: true,
       template: 'Simulation {subscriber.lastName} {subscriber.firstName}',
+      defaultValue: 'Simulation Test',
     },
     dateEffet: {
       label: 'Date d\'effet',
       type: 'date' as const,
       defaultValue: 'firstOfNextMonth',
+    },
+    plan: {
+      label: 'Plan',
+      type: 'text' as const,
+      defaultValue: 'SwissLife Santé',
+    },
+    couverture: {
+      label: 'Couverture santé',
+      type: 'toggle' as const,
+      defaultValue: true,
+    },
+    ij: {
+      label: 'Indemnités journalières',
+      type: 'toggle' as const,
+      defaultValue: false,
+    },
+    simulationType: {
+      label: 'Type de simulation',
+      type: 'select' as const,
+      options: [
+        { value: 'INDIVIDUEL', label: 'Individuel' },
+        { value: 'COUPLE', label: 'Couple' },
+        { value: 'FAMILLE', label: 'Famille' },
+      ],
+      defaultValue: 'INDIVIDUEL',
+    },
+    madelin: {
+      label: 'Loi Madelin',
+      type: 'toggle' as const,
+      defaultValue: false,
+    },
+    resiliation: {
+      label: 'Résiliation en cours',
+      type: 'toggle' as const,
+      defaultValue: false,
+    },
+    reprise: {
+      label: 'Reprise d\'ancienneté',
+      type: 'toggle' as const,
+      defaultValue: false,
+    },
+    currentlyInsured: {
+      label: 'Actuellement assuré',
+      type: 'toggle' as const,
+      defaultValue: false,
     },
   },
 }
