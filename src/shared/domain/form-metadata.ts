@@ -35,45 +35,38 @@ export const formMetadata = {
         { value: 'MONSIEUR', label: 'Monsieur' },
         { value: 'MADAME', label: 'Madame' },
       ],
-      defaultValue: 'MONSIEUR',
     },
     lastName: {
       label: 'Nom',
       type: 'text' as const,
       placeholder: 'Dupont',
-      defaultValue: 'Dupont',
     },
     firstName: {
       label: 'Prénom',
       type: 'text' as const,
       placeholder: 'Jean',
-      defaultValue: 'Jean',
     },
     birthDate: {
       label: 'Date de naissance',
       type: 'date' as const,
-      defaultValue: '1985-06-15',
     },
     phoneE164: {
       label: 'Téléphone',
       type: 'tel' as const,
       inputMode: 'tel' as const,
       placeholder: '+33612345678',
-      defaultValue: '+33612345678',
     },
     email: {
       label: 'Email',
       type: 'email' as const,
       inputMode: 'email' as const,
       placeholder: 'jean.dupont@example.com',
-      defaultValue: 'contact@example.com',
     },
     postalCode: {
       label: 'Code postal',
       type: 'text' as const,
       inputMode: 'numeric' as const,
       placeholder: '75001',
-      defaultValue: '75001',
     },
     // departmentCode retiré - calculé automatiquement à partir du code postal
     regime: {
@@ -86,7 +79,7 @@ export const formMetadata = {
         { value: 'SECURITE_SOCIALE_ALSACE_MOSELLE', label: 'Alsace-Moselle' },
         { value: 'AUTRES_REGIME_SPECIAUX', label: 'Autres régimes spéciaux' },
       ],
-      defaultValue: 'SECURITE_SOCIALE',
+      defaultValue: 'TNS',
     },
     status: {
       label: 'Statut',
@@ -97,7 +90,7 @@ export const formMetadata = {
         { value: 'EXPLOITANT_AGRICOLE', label: 'Exploitant agricole' },
         { value: 'AUTRE', label: 'Autre' },
       ],
-      defaultValue: 'SALARIE',
+      defaultValue: 'TNS',
     },
     profession: {
       label: 'Profession',
@@ -115,76 +108,7 @@ export const formMetadata = {
         { value: 'Avocat', label: 'Avocat' },
         { value: 'Autre', label: 'Autre' },
       ],
-      defaultValue: 'Cadre',
-    },
-    category: {
-      label: 'Catégorie',
-      type: 'select' as const,
-      options: [
-        { value: 'CADRES', label: 'Cadres' },
-        { value: 'NON_CADRES', label: 'Non-cadres' },
-      ],
-      defaultValue: 'CADRES',
-    },
-    workFramework: {
-      label: 'Cadre de travail',
-      type: 'select' as const,
-      options: [
-        { value: 'SALARIE', label: 'Salarié' },
-        { value: 'INDEPENDANT', label: 'Indépendant' },
-      ],
-    },
-    childrenCount: {
-      label: 'Nombre d\'enfants',
-      type: 'number' as const,
-      inputMode: 'numeric' as const,
-      defaultValue: 0,
-    },
-  },
-  spouse: {
-    birthDate: {
-      label: 'Date de naissance',
-      type: 'date' as const,
-      defaultValue: '1987-03-20',
-    },
-    regime: {
-      label: 'Régime',
-      type: 'select' as const,
-      options: [
-        { value: 'SECURITE_SOCIALE', label: 'Sécurité Sociale' },
-        { value: 'TNS', label: 'TNS (Indépendant)' },
-        { value: 'AMEXA', label: 'AMEXA (Agricole)' },
-        { value: 'SECURITE_SOCIALE_ALSACE_MOSELLE', label: 'Alsace-Moselle' },
-      ],
-      defaultValue: 'SECURITE_SOCIALE',
-    },
-    status: {
-      label: 'Statut',
-      type: 'select' as const,
-      options: [
-        { value: 'SALARIE', label: 'Salarié' },
-        { value: 'TNS', label: 'TNS' },
-        { value: 'AUTRE', label: 'Autre' },
-      ],
-      defaultValue: 'SALARIE',
-    },
-    profession: {
-      label: 'Profession',
-      type: 'select' as const,
-      options: [
-        { value: 'Ingénieur', label: 'Ingénieur' },
-        { value: 'Médecin', label: 'Médecin' },
-        { value: 'Profession libérale', label: 'Profession libérale' },
-        { value: 'Commerçant', label: 'Commerçant' },
-        { value: 'Cadre', label: 'Cadre' },
-        { value: 'Employé', label: 'Employé' },
-        { value: 'Ouvrier', label: 'Ouvrier' },
-        { value: 'Enseignant', label: 'Enseignant' },
-        { value: 'Infirmier', label: 'Infirmier' },
-        { value: 'Avocat', label: 'Avocat' },
-        { value: 'Autre', label: 'Autre' },
-      ],
-      defaultValue: 'Employé',
+      defaultValue: 'Autre',
     },
     category: {
       label: 'Catégorie',
@@ -202,13 +126,82 @@ export const formMetadata = {
         { value: 'SALARIE', label: 'Salarié' },
         { value: 'INDEPENDANT', label: 'Indépendant' },
       ],
+      defaultValue: 'INDEPENDANT',
+    },
+    childrenCount: {
+      label: 'Nombre d\'enfants',
+      type: 'number' as const,
+      inputMode: 'numeric' as const,
+      defaultValue: 0,
+    },
+  },
+  spouse: {
+    birthDate: {
+      label: 'Date de naissance',
+      type: 'date' as const,
+    },
+    regime: {
+      label: 'Régime',
+      type: 'select' as const,
+      options: [
+        { value: 'SECURITE_SOCIALE', label: 'Sécurité Sociale' },
+        { value: 'TNS', label: 'TNS (Indépendant)' },
+        { value: 'AMEXA', label: 'AMEXA (Agricole)' },
+        { value: 'SECURITE_SOCIALE_ALSACE_MOSELLE', label: 'Alsace-Moselle' },
+      ],
+      defaultValue: 'TNS',
+    },
+    status: {
+      label: 'Statut',
+      type: 'select' as const,
+      options: [
+        { value: 'SALARIE', label: 'Salarié' },
+        { value: 'TNS', label: 'TNS' },
+        { value: 'AUTRE', label: 'Autre' },
+      ],
+      defaultValue: 'TNS',
+    },
+    profession: {
+      label: 'Profession',
+      type: 'select' as const,
+      options: [
+        { value: 'Ingénieur', label: 'Ingénieur' },
+        { value: 'Médecin', label: 'Médecin' },
+        { value: 'Profession libérale', label: 'Profession libérale' },
+        { value: 'Commerçant', label: 'Commerçant' },
+        { value: 'Cadre', label: 'Cadre' },
+        { value: 'Employé', label: 'Employé' },
+        { value: 'Ouvrier', label: 'Ouvrier' },
+        { value: 'Enseignant', label: 'Enseignant' },
+        { value: 'Infirmier', label: 'Infirmier' },
+        { value: 'Avocat', label: 'Avocat' },
+        { value: 'Autre', label: 'Autre' },
+      ],
+      defaultValue: 'Autre',
+    },
+    category: {
+      label: 'Catégorie',
+      type: 'select' as const,
+      options: [
+        { value: 'CADRES', label: 'Cadres' },
+        { value: 'NON_CADRES', label: 'Non-cadres' },
+      ],
+      defaultValue: 'NON_CADRES',
+    },
+    workFramework: {
+      label: 'Cadre de travail',
+      type: 'select' as const,
+      options: [
+        { value: 'SALARIE', label: 'Salarié' },
+        { value: 'INDEPENDANT', label: 'Indépendant' },
+      ],
+      defaultValue: 'INDEPENDANT',
     },
   },
   children: {
     birthDate: {
       label: 'Date de naissance',
       type: 'date' as const,
-      defaultValue: '2015-09-10',
     },
     regime: {
       label: 'Régime',
@@ -217,7 +210,7 @@ export const formMetadata = {
         { value: 'SECURITE_SOCIALE', label: 'Sécurité Sociale' },
         { value: 'TNS', label: 'TNS' },
       ],
-      defaultValue: 'SECURITE_SOCIALE',
+      defaultValue: 'TNS',
     },
     ayantDroit: {
       label: 'Ayant droit de',
@@ -235,7 +228,6 @@ export const formMetadata = {
       type: 'text' as const,
       autoGenerate: true,
       template: 'Simulation {subscriber.lastName} {subscriber.firstName}',
-      defaultValue: 'Simulation Test',
     },
     dateEffet: {
       label: 'Date d\'effet',
