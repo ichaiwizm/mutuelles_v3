@@ -208,9 +208,12 @@ export const formMetadata = {
       type: 'select' as const,
       options: [
         { value: 'SECURITE_SOCIALE', label: 'Sécurité Sociale' },
-        { value: 'TNS', label: 'TNS' },
+        { value: 'SECURITE_SOCIALE_INDEPENDANTS', label: 'Sécurité Sociale Indépendants' },
+        { value: 'AMEXA', label: 'AMEXA (Agricole)' },
+        { value: 'REGIME_SALARIES_AGRICOLES', label: 'Régime Salariés Agricoles' },
+        { value: 'ALSACE_MOSELLE', label: 'Alsace-Moselle' },
       ],
-      defaultValue: 'TNS',
+      defaultValue: 'SECURITE_SOCIALE',
     },
     ayantDroit: {
       label: 'Ayant droit de',

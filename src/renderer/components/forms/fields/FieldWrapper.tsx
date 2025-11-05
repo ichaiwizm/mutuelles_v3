@@ -40,6 +40,7 @@ export default function FieldWrapper({
     <div className={containerClassName}>
       <label htmlFor={fieldId} className="block text-sm font-medium">
         {label}
+        {required && <span className="text-red-500 ml-1">*</span>}
       </label>
       {children(renderProps)}
       {error && <FieldError errorId={errorId} error={error} />}

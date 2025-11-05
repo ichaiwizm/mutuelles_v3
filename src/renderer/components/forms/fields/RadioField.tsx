@@ -26,6 +26,7 @@ export default function RadioField({
     <div className="space-y-2">
       <label id={groupId} className="block text-sm font-medium">
         {label}
+        {required && <span className="text-red-500 ml-1">*</span>}
       </label>
       <div
         role="radiogroup"
