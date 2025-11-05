@@ -5,7 +5,7 @@
  * Load flows and platform configs dynamically.
  */
 
-import type { Flow } from '../../core/dsl';
+import type { Flow } from '../../core/flow-dsl';
 import type { FieldSelector, SelectorMap } from '../../platforms/types';
 
 /**

@@ -6,10 +6,10 @@
  */
 
 import { getLeadById } from '../../core/db';
-import { resolveValue, type ResolveContext } from '../../core/resolve';
+import { resolveValue, type ResolveContext } from '../../core/template-resolution';
 import { getFlowBySlug, resolvePlatformSelector } from '../utils/flow-loader';
 import { getDatabaseConnection } from '../utils/db-connection';
-import type { FlowStep } from '../../core/dsl';
+import type { FlowStep } from '../../core/flow-dsl';
 
 interface ExplainOptions {
   format: 'table' | 'json';

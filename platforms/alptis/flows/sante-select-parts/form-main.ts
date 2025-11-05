@@ -3,7 +3,7 @@
  * Project + Subscriber
  */
 
-import { step, type FlowStep } from '../../../../core/dsl';
+import { step, type FlowStep } from '../../../../core/flow-dsl';
 
 export const formMainSteps: FlowStep[] = [
   // ============================================================

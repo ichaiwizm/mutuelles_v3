@@ -10,7 +10,7 @@
  * - Uses step builders
  */
 
-import type { Flow } from '../../../core/dsl';
+import type { Flow } from '../../../core/flow-dsl';
 import { setupSteps } from './sante-select-parts/setup';
 import { formMainSteps } from './sante-select-parts/form-main';
 import { formSpouseChildrenSteps } from './sante-select-parts/form-spouse-children';

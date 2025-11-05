@@ -12,7 +12,7 @@
  * - Uses step builders
  */
 
-import type { Flow } from '../../../core/dsl';
+import type { Flow } from '../../../core/flow-dsl';
 import { setupSteps } from './slsis-parts/setup';
 import { formMainSteps } from './slsis-parts/form-main';
 import { formChildrenSteps } from './slsis-parts/form-children';

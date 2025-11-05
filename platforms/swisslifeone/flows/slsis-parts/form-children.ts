@@ -2,7 +2,7 @@
  * SLSIS Flow - Children & Exit Steps
  */
 
-import { step, type FlowStep } from '../../../../core/dsl';
+import { step, type FlowStep } from '../../../../core/flow-dsl';
 
 export const formChildrenSteps: FlowStep[] = [
   // CHILDREN

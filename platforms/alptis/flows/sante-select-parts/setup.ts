@@ -3,7 +3,7 @@
  * Login + Navigation
  */
 
-import { step, type FlowStep } from '../../../../core/dsl';
+import { step, type FlowStep } from '../../../../core/flow-dsl';
 
 export const setupSteps: FlowStep[] = [
   // ============================================================

@@ -1,5 +1,5 @@
 import { ipcMain } from 'electron'
-import { deleteForPlatform, getForPlatform, listSelectedWithCreds, revealPassword, setForPlatform } from '../services/platform_credentials'
+import { deleteForPlatform, getForPlatform, listSelectedWithCreds, revealPassword, setForPlatform } from '../services/platform-credentials'
 
 export function registerPlatformCredsIpc() {
   ipcMain.handle('pcreds:listSelected', async () => listSelectedWithCreds())

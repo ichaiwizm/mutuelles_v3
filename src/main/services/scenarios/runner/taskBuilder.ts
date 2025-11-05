@@ -2,7 +2,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { getDb } from '../../../db/connection'
 import { LeadsService } from '../../leads'
-import { revealPassword } from '../../platform_credentials'
+import { revealPassword } from '../../platform-credentials'
 import { listHLFlows, pickDefaultFlowForPlatform } from '../hl_catalog'
 
 export function buildTasks(projectRoot: string, leadIds: string[], platformSlugs: string[], flowOverrides?: Record<string,string>) {
