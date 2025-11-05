@@ -28,8 +28,7 @@ export class LeadsService {
       subscriber: data.subscriber,
       spouse: data.spouse,
       children: data.children,
-      project: data.project,
-      platformData: data.platformData
+      project: data.project
     }
 
     const stmt = this.db.prepare(`
@@ -87,8 +86,7 @@ export class LeadsService {
       subscriber: updates.subscriber ? { ...existing.data.subscriber, ...updates.subscriber } : existing.data.subscriber,
       spouse: updates.spouse !== undefined ? updates.spouse : existing.data.spouse,
       children: updates.children !== undefined ? updates.children : existing.data.children,
-      project: updates.project ? { ...existing.data.project, ...updates.project } : existing.data.project,
-      platformData: updates.platformData ? { ...existing.data.platformData, ...updates.platformData } : existing.data.platformData
+      project: updates.project ? { ...existing.data.project, ...updates.project } : existing.data.project
     }
 
     const stmt = this.db.prepare(`

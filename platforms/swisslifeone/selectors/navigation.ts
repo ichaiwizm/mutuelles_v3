@@ -42,11 +42,3 @@ export const navigationSelectors: SelectorMap = {
   meta: { label: 'Onglet Conjoint' },
 },
 };
-
-export const platformConfig = {
-slug: 'swisslifeone',
-name: 'SwissLife One',
-baseUrl: 'https://www.swisslifeone.fr/',
-selectors,
-notes: 'Platform uses iframes for simulation forms. Date format: DD/MM/YYYY.',
-};

@@ -11,8 +11,6 @@
     "preview": "electron-vite preview",
     "typecheck": "tsc --noEmit",
     "postinstall": "electron-builder install-app-deps",
-    "flows:lint": "node scripts/flows/lint_flows.mjs",
-    "flows:run": "cross-env ELECTRON_RUN_AS_NODE=1 electron automation/cli/run.mjs",
     "db:reset": "cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/db/reset.mjs",
     "db:reset:seed": "cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/db/reset.mjs --seed",
     "db:reset:dry": "cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/db/reset.mjs --dry-run",
@@ -25,8 +23,6 @@
     "db:seed": "cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/db/seed.mjs",
     "db:seed:list": "cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/db/seed.mjs --list",
     "db:seed:dry": "cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/db/seed.mjs --dry-run",
-    "db:seed:flows": "cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/db/seed.mjs --only flows",
-    "db:seed:leads": "cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/db/seed.mjs --only leads",
     "db:seed:platforms": "cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/db/seed.mjs --only platforms",
     "db:seed:credentials": "cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/db/seed.mjs --only credentials",
     "db:seed:profiles": "cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/db/seed.mjs --only profiles",
@@ -35,15 +31,14 @@
     "db:dump": "cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/db/dump.mjs",
     "db:dump:schema": "cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/db/dump.mjs --schema-only",
     "db:dump:data": "cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/db/dump.mjs --data-only",
-    "ui:form:import": "cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/platforms/import_ui_form.mjs",
-    "platforms:fields:import": "cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/platforms/import_field_definitions.mjs",
-    "platforms:fields:export": "cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/platforms/export_field_definitions.mjs",
-    "verify:sync": "cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/verify_sync.mjs",
+    "db:optimize": "cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/db/optimize.mjs",
+    "db:generate-leads": "cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/db/generate-leads.mjs",
     "flow:explain": "ts-node cli/index.ts flow:explain",
     "flow:dry": "ts-node cli/index.ts flow:dry",
     "flow:run": "ts-node cli/index.ts flow:run",
     "selector:test": "ts-node cli/index.ts selector:test",
-    "migrate:data": "ts-node scripts/migrate-legacy-data.ts"
+    "clean": "cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/clean.mjs",
+    "verify:platforms": "tsx scripts/verify-platforms.ts"
   },
   "dependencies": {
     "@types/react-window": "^1.8.8",
@@ -73,6 +68,8 @@
     "electron-vite": "^2.3.0",
     "tailwindcss": "^4.0.0",
     "typescript": "^5.6.2",
-    "vite": "^5.4.8"
+    "vite": "^5.4.8",
+    "playwright": "^1.48.2",
+    "tsx": "^4.19.1"
   }
 }

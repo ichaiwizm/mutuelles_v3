@@ -43,11 +43,3 @@ export const childrenSelectors: SelectorMap = {
   },
 },
 };
-
-export const platformConfig = {
-slug: 'alptis',
-name: 'Alptis',
-baseUrl: 'https://www.alptis.org/',
-selectors,
-notes: 'Platform uses custom Totem UI components. Toggle states checked with .totem-toggle--on class.',
-};

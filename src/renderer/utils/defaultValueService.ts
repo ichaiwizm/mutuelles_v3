@@ -1,162 +1,11 @@
 /**
- * Default value service for forms
+ * Default value service for forms (v2 - Zod-based)
  *
- * This is a frontend wrapper around the unified defaults system.
- * It converts between FormSchema (frontend) and DomainSchema (backend)
- * and provides helper functions for form default filling.
+ * Simplified version using form metadata from v2 architecture.
  */
 
-import { FormSchema, FormFieldDefinition } from './formSchemaGenerator'
-import { getAllDefaults as getAllDefaultsFromSchema, type DomainSchema } from '@shared/defaults/simpleDefaults'
+import { FormSchema, FormFieldDefinition, getFieldDefault } from './formSchemaGenerator'
 import { computeDerivedFields } from '@shared/businessRules/computedValues'
-
-/**
- * Convert FormSchema to DomainSchema format
- *
- * FormSchema has { common: [...], platformSpecific: {alptis: [...], swisslifeone: [...]}}
- * DomainSchema needs { domains: { subscriber: {...}, spouse: {...}, project: {...}, children: {...} }}
- */
-function formSchemaToDomainSchema(formSchema: FormSchema): DomainSchema {
-  const domains: Record<string, any> = {}
-
-  const ensureSection = (key: string) => {
-    if (!domains[key]) domains[key] = {}
-    return domains[key]
-  }
-
-  // Process all fields from all sources
-  const allFields = [
-    ...formSchema.common,
-    ...formSchema.platformSpecific.alptis,
-    ...formSchema.platformSpecific.swisslifeone,
-  ]
-
-  // Deduplicate by domainKey and merge field definitions
-  const fieldsByKey = new Map<string, FormFieldDefinition>()
-  for (const field of allFields) {
-    const existing = fieldsByKey.get(field.domainKey)
-    if (!existing) {
-      fieldsByKey.set(field.domainKey, field)
-    } else {
-      fieldsByKey.set(field.domainKey, {
-        ...existing,
-        ...field,
-        options: field.options || existing.options,
-      })
-    }
-  }
-
-  // Convert to domain structure (supports prefixed sections like "alptis.subscriber")
-  for (const [domainKey, field] of fieldsByKey.entries()) {
-    const tokens = domainKey.split('.')
-    const maybeCarrier = tokens[0]
-    const carriers = new Set(['alptis', 'swisslifeone'])
-
-    let sectionKey = ''
-    let fieldName = ''
-
-    if (carriers.has(maybeCarrier)) {
-      // Prefixed key, e.g., alptis.subscriber.regime or alptis.children[].regime
-      const rest = tokens.slice(1)
-      if (rest[0] === 'children[]' || domainKey.includes('children[].')) {
-        sectionKey = `${maybeCarrier}.children`
-        fieldName = '[]'
-        if (!domains[sectionKey]) {
-          domains[sectionKey] = { '[]': {} }
-        } else if (!domains[sectionKey]['[]']) {
-          domains[sectionKey]['[]'] = {}
-        }
-        const childFieldName = rest[1] || domainKey.split('children[].')[1].replace('.', '')
-        domains[sectionKey]['[]'][childFieldName] = {
-          type: field.type,
-          default: field.default,
-          defaultExpression: field.defaultExpression,
-          defaultsByCarrier: field.defaultsByCarrier,
-          options: field.options,
-          disabled: field.disabled,
-        }
-        continue
-      }
-
-      const section = rest[0]
-      fieldName = rest[1]
-      sectionKey = `${maybeCarrier}.${section}`
-      const sect = ensureSection(sectionKey)
-      sect[fieldName] = {
-        type: field.type,
-        default: field.default,
-        defaultExpression: field.defaultExpression,
-        defaultsByCarrier: field.defaultsByCarrier,
-        options: field.options,
-        disabled: field.disabled,
-      }
-    } else {
-      // Unprefixed common keys
-      if (tokens[0] === 'children[]' || domainKey.startsWith('children[].')) {
-        sectionKey = 'children'
-        fieldName = '[]'
-        if (!domains[sectionKey]) {
-          domains[sectionKey] = { '[]': {} }
-        } else if (!domains[sectionKey]['[]']) {
-          domains[sectionKey]['[]'] = {}
-        }
-        const childFieldName = tokens[1] || tokens[0].replace('children[].', '')
-        domains[sectionKey]['[]'][childFieldName] = {
-          type: field.type,
-          default: field.default,
-          defaultExpression: field.defaultExpression,
-          defaultsByCarrier: field.defaultsByCarrier,
-          options: field.options,
-          disabled: field.disabled,
-        }
-      } else if (tokens.length >= 2) {
-        const [section, name] = tokens
-        sectionKey = section
-        const sect = ensureSection(sectionKey)
-        sect[name] = {
-          type: field.type,
-          default: field.default,
-          defaultExpression: field.defaultExpression,
-          defaultsByCarrier: field.defaultsByCarrier,
-          options: field.options,
-          disabled: field.disabled,
-        }
-      }
-    }
-  }
-
-  return { domains }
-}
-
-/**
- * Convert nested object to flat object with dot notation
- * { subscriber: { firstName: "John" } } → { "subscriber.firstName": "John" }
- */
-function nestedToFlat(obj: Record<string, any>, prefix = ''): Record<string, any> {
-  const result: Record<string, any> = {}
-
-  for (const [key, value] of Object.entries(obj)) {
-    const newKey = prefix ? `${prefix}.${key}` : key
-
-    if (value && typeof value === 'object' && !Array.isArray(value)) {
-      // Nested object
-      Object.assign(result, nestedToFlat(value, newKey))
-    } else if (Array.isArray(value)) {
-      // Array (like children)
-      value.forEach((item, index) => {
-        if (item && typeof item === 'object') {
-          Object.assign(result, nestedToFlat(item, `${key}[${index}]`))
-        } else {
-          result[`${key}[${index}]`] = item
-        }
-      })
-    } else {
-      result[newKey] = value
-    }
-  }
-
-  return result
-}
 
 /**
  * Convert flat object to nested object
@@ -194,23 +43,63 @@ function flatToNested(flat: Record<string, any>): Record<string, any> {
 }
 
 /**
- * Get all default values for a form
+ * Convert nested object to flat object with dot notation
+ * { subscriber: { firstName: "John" } } → { "subscriber.firstName": "John" }
+ */
+function nestedToFlat(obj: Record<string, any>, prefix = ''): Record<string, any> {
+  const result: Record<string, any> = {}
+
+  for (const [key, value] of Object.entries(obj)) {
+    const newKey = prefix ? `${prefix}.${key}` : key
+
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+      // Nested object
+      Object.assign(result, nestedToFlat(value, newKey))
+    } else if (Array.isArray(value)) {
+      // Array (like children)
+      value.forEach((item, index) => {
+        if (item && typeof item === 'object') {
+          Object.assign(result, nestedToFlat(item, `${key}[${index}]`))
+        } else {
+          result[`${key}[${index}]`] = item
+        }
+      })
+    } else {
+      result[newKey] = value
+    }
+  }
+
+  return result
+}
+
+/**
+ * Get all default values from form schema
  *
  * @param schema - Form schema
- * @param currentValues - Current form values (flat object with dot notation)
- * @param platform - Optional platform for carrier-specific defaults
+ * @param currentValues - Current form values (not used, kept for API compatibility)
+ * @param platform - Optional platform (not used in v2, kept for compatibility)
  * @returns Flat object with default values
  */
 export function getAllDefaultsForForm(
   schema: FormSchema,
-  _currentValues: Record<string, any>,
-  platform?: string
+  _currentValues?: Record<string, any>,
+  _platform?: string
 ): Record<string, any> {
-  // Convert FormSchema to DomainSchema
-  const domainSchema = formSchemaToDomainSchema(schema)
+  const defaults: Record<string, any> = {}
 
-  // Get all defaults
-  const defaults = getAllDefaultsFromSchema(domainSchema, platform)
+  // Extract defaults from all fields
+  const allFields = [
+    ...schema.common,
+    ...schema.platformSpecific.alptis,
+    ...schema.platformSpecific.swisslifeone,
+  ]
+
+  for (const field of allFields) {
+    const defaultValue = getFieldDefault(field)
+    if (defaultValue !== undefined) {
+      defaults[field.domainKey] = defaultValue
+    }
+  }
 
   return defaults
 }
@@ -250,7 +139,7 @@ export function applyDefaultsToForm(
  *
  * @param schema - Form schema
  * @param currentValues - Current form values (flat)
- * @param platform - Optional platform
+ * @param platform - Optional platform (not used in v2, kept for compatibility)
  * @returns Combined defaults and computed values
  */
 export function getAllDefaultsWithBusinessRules(
@@ -262,8 +151,7 @@ export function getAllDefaultsWithBusinessRules(
   const nested = flatToNested(currentValues)
 
   // Get static defaults
-  const domainSchema = formSchemaToDomainSchema(schema)
-  const defaults = getAllDefaultsFromSchema(domainSchema)
+  const defaults = getAllDefaultsForForm(schema)
 
   // Apply defaults to nested structure (for computing derived values)
   const withDefaults = { ...nested }

@@ -22,15 +22,4 @@ export function setSelected(payload: unknown) {
   return { selected: parsed.selected }
 }
 
-export function getUiFormsFromDb(): Array<{ slug: string; ui: any | null }> {
-  const rows = getDb().prepare(`
-    SELECT slug, ui_form_json
-    FROM platforms_catalog
-    ORDER BY slug
-  `).all() as Array<{ slug: string; ui_form_json: string | null }>
-
-  return rows.map(r => ({
-    slug: r.slug,
-    ui: r.ui_form_json ? JSON.parse(r.ui_form_json) : null
-  }))
-}
+// getUiFormsFromDb removed: no active usage in renderer. Keep schema column for backward-compat.

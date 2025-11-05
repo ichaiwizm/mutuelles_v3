@@ -58,13 +58,23 @@ function formatBytes(bytes) {
 
 function getTableStats(db) {
   const tables = [
-    'platforms_catalog',
-    'user_platforms',
-    'platform_credentials',
+    // Core
+    'settings',
     'profiles',
+    // Platforms
+    'platforms_catalog',
+    'platform_credentials',
+    // Leads
     'clean_leads',
+    // Execution tracking
     'execution_runs',
-    'execution_items'
+    'execution_items',
+    'execution_steps',
+    'execution_attempts',
+    // Email import
+    'email_configs',
+    'imported_emails',
+    'email_import_history',
   ]
 
   const stats = {}
@@ -143,10 +153,11 @@ async function main() {
       const tableStats = getTableStats(db)
 
       const categories = {
-        'Platforms': ['platforms_catalog', 'user_platforms', 'platform_credentials'],
-        'Profiles': ['profiles'],
-        'Flows': ['flows_catalog', 'flow_steps', 'flows_runs'],
-        'Leads': ['raw_leads', 'clean_leads', 'platform_leads']
+        'Core': ['settings', 'profiles'],
+        'Platforms': ['platforms_catalog', 'platform_credentials'],
+        'Leads': ['clean_leads'],
+        'Execution': ['execution_runs', 'execution_items', 'execution_steps', 'execution_attempts'],
+        'Email': ['email_configs', 'imported_emails', 'email_import_history']
       }
 
       for (const [category, tables] of Object.entries(categories)) {
