@@ -128,8 +128,11 @@ export const formMetadata = {
     },
     workFramework: {
       label: 'Cadre de travail',
-      type: 'text' as const,
-      defaultValue: 'SALARIE',
+      type: 'select' as const,
+      options: [
+        { value: 'SALARIE', label: 'Salarié' },
+        { value: 'INDEPENDANT', label: 'Indépendant' },
+      ],
     },
     childrenCount: {
       label: 'Nombre d\'enfants',
@@ -213,8 +216,11 @@ export const formMetadata = {
     },
     workFramework: {
       label: 'Cadre de travail',
-      type: 'text' as const,
-      defaultValue: 'SALARIE',
+      type: 'select' as const,
+      options: [
+        { value: 'SALARIE', label: 'Salarié' },
+        { value: 'INDEPENDANT', label: 'Indépendant' },
+      ],
     },
   },
   children: {
