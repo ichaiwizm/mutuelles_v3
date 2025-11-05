@@ -2,7 +2,7 @@
  * SwissLifeOne - Subscriber Selectors
  */
 
-import { dateIsoToFr } from '../../../core/adapters';
+import { dateIsoToFr, extractDepartmentCode } from '../../../core/adapters';
 import type { SelectorMap } from '../../types';
 
 export const subscriberSelectors: SelectorMap = {
@@ -67,8 +67,12 @@ export const subscriberSelectors: SelectorMap = {
   meta: { label: 'Profession' },
 },
 
-'subscriber.departmentCode': {
+'subscriber.postalCode': {
   selector: '#departement-assure-principal',
-  meta: { label: 'Département' },
+  adapter: extractDepartmentCode,
+  meta: {
+    label: 'Code postal → Département',
+    notes: 'Le département est automatiquement extrait du code postal (ex: 75001 → 75, 20100 → 2A)'
+  },
 },
 };

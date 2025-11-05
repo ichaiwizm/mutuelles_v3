@@ -52,7 +52,7 @@ export const subscriberSchema = z.object({
   birthDate: isoDateSchema,
   phoneE164: e164PhoneSchema,
   email: z.string().email().optional(),
-  departmentCode: departmentCodeSchema.optional(),
+  departmentCode: departmentCodeSchema.optional(), // Deprecated: Use postalCode instead (auto-extracted)
   postalCode: postalCodeSchema.optional(),
   regime: z.string().optional(),
   status: z.string().optional(),
