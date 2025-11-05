@@ -130,6 +130,11 @@ export function generateRandomTestData(schema: FormSchema): Record<string, any> 
 
   testData['subscriber.birthDate'] = generateBirthDate(25, 65)
 
+  // Generate email and phone
+  const emailDomain = randomChoice(['gmail.com', 'outlook.com', 'yahoo.fr', 'free.fr', 'orange.fr'])
+  testData['subscriber.email'] = `${firstName.toLowerCase()}.${lastName.toLowerCase()}@${emailDomain}`
+  testData['subscriber.phoneE164'] = `+336${randomInt(10, 99)}${randomInt(10, 99)}${randomInt(10, 99)}${randomInt(10, 99)}`
+
   const allFields = [
     ...schema.common,
     ...schema.platformSpecific.alptis,
@@ -266,14 +271,48 @@ export function generateRandomTestData(schema: FormSchema): Record<string, any> 
     testData['project.ij'] = false
     testData['project.resiliation'] = randomBoolean(0.2)
     testData['project.reprise'] = randomBoolean(0.15)
+    testData['project.currentlyInsured'] = randomBoolean(0.3)
   }
 
   testData['project.dateEffet'] = generateFirstOfNextMonth()
+
+  // Ensure project fields are set even without SwissLife fields
+  if (!testData['project.name']) {
+    testData['project.name'] = `Simulation ${lastName} ${firstName}`
+  }
+  if (!testData['project.plan']) {
+    testData['project.plan'] = 'Mutuelle Santé'
+  }
+  if (testData['project.couverture'] === undefined) {
+    testData['project.couverture'] = true
+  }
+  if (testData['project.ij'] === undefined) {
+    testData['project.ij'] = false
+  }
+  if (testData['project.resiliation'] === undefined) {
+    testData['project.resiliation'] = randomBoolean(0.2)
+  }
+  if (testData['project.reprise'] === undefined) {
+    testData['project.reprise'] = randomBoolean(0.15)
+  }
+  if (testData['project.currentlyInsured'] === undefined) {
+    testData['project.currentlyInsured'] = randomBoolean(0.3)
+  }
 
   const hasSpouse = randomBoolean(0.6)
   testData['conjoint'] = hasSpouse
 
   if (hasSpouse) {
+    // Generate spouse basic info
+    const spouseCivility = civility === 'MONSIEUR' ? 'MADAME' : 'MONSIEUR'
+    const spouseFirstName = spouseCivility === 'MONSIEUR'
+      ? randomChoice(FIRST_NAMES_MALE)
+      : randomChoice(FIRST_NAMES_FEMALE)
+
+    testData['spouse.civility'] = spouseCivility
+    testData['spouse.firstName'] = spouseFirstName
+    testData['spouse.lastName'] = lastName // Usually same last name
+
     const subscriberAge = 45
     testData['spouse.birthDate'] = generateBirthDate(subscriberAge - 5, subscriberAge + 5)
 
@@ -417,6 +456,15 @@ export function generateRandomTestData(schema: FormSchema): Record<string, any> 
         }
       }
     }
+  }
+
+  // Set simulation type based on family composition
+  if (nbChildren > 0) {
+    testData['project.simulationType'] = 'FAMILLE'
+  } else if (hasSpouse) {
+    testData['project.simulationType'] = 'COUPLE'
+  } else {
+    testData['project.simulationType'] = 'INDIVIDUEL'
   }
 
   return testData
