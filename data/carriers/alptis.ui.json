@@ -1,0 +1,28 @@
+{
+  "carrier": "alptis",
+  "sections": [
+    {
+      "name": "subscriber",
+      "fields": [
+        "subscriber.category",
+        "subscriber.regime",
+        "subscriber.postalCode",
+        "subscriber.workFramework"
+      ]
+    },
+    {
+      "name": "spouse",
+      "fields": [
+        "spouse.category",
+        "spouse.regime",
+        "spouse.workFramework"
+      ]
+    },
+    {
+      "name": "children",
+      "fields": [
+        "children[].regime"
+      ]
+    }
+  ]
+}

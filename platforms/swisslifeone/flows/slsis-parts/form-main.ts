@@ -56,8 +56,8 @@ export const formMainSteps: FlowStep[] = [
   // ============================================================
 
   step.comment('=== ÉTAPE 5: DONNÉES ASSURÉ PRINCIPAL ==='),
-  step.waitField('subscriber.departmentCode', 'wait-departement'),
-  step.select('subscriber.departmentCode', { leadKey: 'subscriber.departmentCode' }, 'select-departement'),
+  step.waitField('subscriber.postalCode', 'wait-departement'),
+  step.select('subscriber.postalCode', { leadKey: 'subscriber.postalCode' }, 'select-departement'),
   step.select('subscriber.regime', { leadKey: 'subscriber.regime' }, 'select-regime'),
   step.select('subscriber.status', { leadKey: 'subscriber.status' }, 'select-statut'),
   step.select('subscriber.profession', {

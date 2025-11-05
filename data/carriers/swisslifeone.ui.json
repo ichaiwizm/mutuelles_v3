@@ -1,0 +1,34 @@
+{
+  "carrier": "swisslifeone",
+  "sections": [
+    {
+      "name": "subscriber",
+      "fields": [
+        "subscriber.postalCode",
+        "subscriber.regime",
+        "subscriber.status",
+        "subscriber.profession"
+      ]
+    },
+    {
+      "name": "spouse",
+      "fields": [
+        "spouse.regime",
+        "spouse.status",
+        "spouse.profession"
+      ]
+    },
+    {
+      "name": "project",
+      "fields": [
+        "project.name",
+        "project.plan",
+        "project.couverture",
+        "project.ij",
+        "project.madelin",
+        "project.resiliation",
+        "project.reprise"
+      ]
+    }
+  ]
+}

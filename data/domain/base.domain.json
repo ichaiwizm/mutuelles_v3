@@ -172,20 +172,11 @@
         "type": "number",
         "label": "Code postal",
         "required": true,
-        "carriers": ["alptis"],
+        "carriers": ["alptis", "swisslifeone"],
+        "notes": "Code postal français (5 chiffres). Pour SwissLife, le département est automatiquement extrait du code postal.",
         "validations": {
           "min": 1000,
           "max": 99999
-        }
-      },
-      "departmentCode": {
-        "type": "number",
-        "label": "Département",
-        "required": true,
-        "carriers": ["swisslifeone"],
-        "validations": {
-          "min": 1,
-          "max": 999
         }
       },
       "status": {
