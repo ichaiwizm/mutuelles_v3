@@ -32,6 +32,7 @@
     "db:dump:schema": "cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/db/dump.mjs --schema-only",
     "db:dump:data": "cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/db/dump.mjs --data-only",
     "db:optimize": "cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/db/optimize.mjs",
+    "db:generate-leads": "cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/db/generate-leads.mjs",
     "flow:explain": "ts-node cli/index.ts flow:explain",
     "flow:dry": "ts-node cli/index.ts flow:dry",
     "flow:run": "ts-node cli/index.ts flow:run",
