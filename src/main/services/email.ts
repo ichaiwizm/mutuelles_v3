@@ -4,6 +4,7 @@ import { safeStorage, shell, BrowserWindow } from 'electron'
 import { getDb } from '../db/connection'
 import { emailClassifier } from './emailClassifier'
 import * as http from 'http'
+import { createLogger } from './logger'
 import type {
   EmailConfig,
   EmailMessage,
@@ -11,6 +12,8 @@ import type {
   EmailImportResult,
   OAuthResult
 } from '../../shared/types/email'
+
+const logger = createLogger('EmailService')
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || ''
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || ''
