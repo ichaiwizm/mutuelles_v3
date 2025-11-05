@@ -28,7 +28,7 @@ const DEPARTMENTS = [
 const REGIMES = ['SECURITE_SOCIALE', 'TNS', 'AMEXA', 'SECURITE_SOCIALE_ALSACE_MOSELLE', 'AUTRES_REGIME_SPECIAUX']
 const STATUSES = ['SALARIE', 'TNS', 'EXPLOITANT_AGRICOLE', 'AUTRE']
 const CATEGORIES = ['CADRES', 'NON_CADRES']
-const PROFESSIONS = ['Ingénieur', 'Médecin', 'Profession libérale', 'Commerçant', 'Cadre', 'Employé', 'Ouvrier', 'Enseignant']
+const PROFESSIONS = ['Ingénieur', 'Médecin', 'Profession libérale', 'Commerçant', 'Cadre', 'Employé', 'Ouvrier', 'Enseignant', 'Infirmier', 'Avocat']
 
 // Fonctions utilitaires
 function randomChoice(array) {
