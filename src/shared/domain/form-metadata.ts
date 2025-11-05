@@ -69,11 +69,7 @@ export const formMetadata = {
       inputMode: 'numeric' as const,
       placeholder: '75001',
     },
-    departmentCode: {
-      label: 'Département',
-      type: 'text' as const,
-      placeholder: '75',
-    },
+    // departmentCode retiré - calculé automatiquement à partir du code postal
     regime: {
       label: 'Régime',
       type: 'select' as const,
