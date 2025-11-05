@@ -118,9 +118,6 @@ export const leadDataSchema = z.object({
 export const leadSchema = z.object({
   id: z.string().uuid(),
   data: leadDataSchema,
-  fingerprintPrimary: z.string(),
-  fingerprintEmail: z.string().optional(),
-  fingerprintPhone: z.string().optional(),
   metadata: z.record(z.any()).optional(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),

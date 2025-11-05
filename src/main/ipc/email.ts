@@ -41,6 +41,10 @@ const RevokeAccessSchema = z.object({
 })
 
 export function registerEmailIpc() {
+  // Start proactive token refresh scheduler
+  const service = getEmailService()
+  service.startProactiveRefresh()
+
   ipcMain.handle('email:startAuth', async () => {
     try {
       const result = await getEmailService().startAuth()
