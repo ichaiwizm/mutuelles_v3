@@ -75,11 +75,13 @@ export const formMetadata = {
       options: [
         { value: 'SECURITE_SOCIALE', label: 'Sécurité Sociale' },
         { value: 'TNS', label: 'TNS (Indépendant)' },
+        { value: 'SECURITE_SOCIALE_INDEPENDANTS', label: 'Sécurité Sociale Indépendants' },
         { value: 'AMEXA', label: 'AMEXA (Agricole)' },
         { value: 'SECURITE_SOCIALE_ALSACE_MOSELLE', label: 'Alsace-Moselle' },
+        { value: 'REGIME_SALARIES_AGRICOLES', label: 'Régime Salariés Agricoles' },
         { value: 'AUTRES_REGIME_SPECIAUX', label: 'Autres régimes spéciaux' },
       ],
-      defaultValue: 'TNS',
+      defaultValue: 'SECURITE_SOCIALE',
     },
     status: {
       label: 'Statut',
@@ -146,10 +148,13 @@ export const formMetadata = {
       options: [
         { value: 'SECURITE_SOCIALE', label: 'Sécurité Sociale' },
         { value: 'TNS', label: 'TNS (Indépendant)' },
+        { value: 'SECURITE_SOCIALE_INDEPENDANTS', label: 'Sécurité Sociale Indépendants' },
         { value: 'AMEXA', label: 'AMEXA (Agricole)' },
         { value: 'SECURITE_SOCIALE_ALSACE_MOSELLE', label: 'Alsace-Moselle' },
+        { value: 'REGIME_SALARIES_AGRICOLES', label: 'Régime Salariés Agricoles' },
+        { value: 'AUTRES_REGIME_SPECIAUX', label: 'Autres régimes spéciaux' },
       ],
-      defaultValue: 'TNS',
+      defaultValue: 'SECURITE_SOCIALE',
     },
     status: {
       label: 'Statut',
@@ -208,10 +213,12 @@ export const formMetadata = {
       type: 'select' as const,
       options: [
         { value: 'SECURITE_SOCIALE', label: 'Sécurité Sociale' },
+        { value: 'TNS', label: 'TNS (Indépendant)' },
         { value: 'SECURITE_SOCIALE_INDEPENDANTS', label: 'Sécurité Sociale Indépendants' },
         { value: 'AMEXA', label: 'AMEXA (Agricole)' },
+        { value: 'SECURITE_SOCIALE_ALSACE_MOSELLE', label: 'Alsace-Moselle' },
         { value: 'REGIME_SALARIES_AGRICOLES', label: 'Régime Salariés Agricoles' },
-        { value: 'ALSACE_MOSELLE', label: 'Alsace-Moselle' },
+        { value: 'AUTRES_REGIME_SPECIAUX', label: 'Autres régimes spéciaux' },
       ],
       defaultValue: 'SECURITE_SOCIALE',
     },
