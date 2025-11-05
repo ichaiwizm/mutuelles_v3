@@ -24,9 +24,13 @@ const SCOPES = [
 let oauthServer: http.Server | null = null
 let oauthResolve: ((code: string) => void) | null = null
 
+const TOKEN_REFRESH_INTERVAL = 24 * 60 * 60 * 1000 // 24 hours
+const TOKEN_EXPIRY_THRESHOLD = 7 * 24 * 60 * 60 * 1000 // 7 days
+
 export class EmailService {
   private oauth2Client: OAuth2Client
   private currentConfigId: number | null = null
+  private refreshScheduler: NodeJS.Timeout | null = null
 
   constructor() {
     const redirectUri = `http://localhost:${OAUTH_CALLBACK_PORT}`
@@ -619,6 +623,76 @@ export class EmailService {
       .filter(([_, count]) => count >= 1)
       .map(([email, occurrences]) => ({ email, occurrences }))
       .sort((a, b) => b.occurrences - a.occurrences)
+  }
+
+  /**
+   * Start proactive token refresh scheduler
+   * Checks all active configs every 24h and refreshes tokens expiring within 7 days
+   */
+  startProactiveRefresh(): void {
+    if (this.refreshScheduler) {
+      logger.debug('Token refresh scheduler already running')
+      return
+    }
+
+    logger.info('Starting proactive OAuth token refresh scheduler')
+
+    // Run immediately on start
+    this.checkAndRefreshTokens()
+
+    // Then run every 24 hours
+    this.refreshScheduler = setInterval(() => {
+      this.checkAndRefreshTokens()
+    }, TOKEN_REFRESH_INTERVAL)
+  }
+
+  /**
+   * Stop proactive token refresh scheduler
+   */
+  stopProactiveRefresh(): void {
+    if (this.refreshScheduler) {
+      clearInterval(this.refreshScheduler)
+      this.refreshScheduler = null
+      logger.info('Stopped proactive OAuth token refresh scheduler')
+    }
+  }
+
+  /**
+   * Check all active configs and refresh tokens expiring soon
+   */
+  private async checkAndRefreshTokens(): Promise<void> {
+    try {
+      const configs = this.listConfigs()
+      const now = Date.now()
+
+      logger.debug(`Checking ${configs.length} email configs for token expiry`)
+
+      for (const config of configs) {
+        if (!config.expiryDate) {
+          logger.debug(`Config ${config.email}: No expiry date, skipping`)
+          continue
+        }
+
+        const expiryTime = config.expiryDate
+        const timeUntilExpiry = expiryTime - now
+
+        if (timeUntilExpiry < TOKEN_EXPIRY_THRESHOLD) {
+          logger.info(`Config ${config.email}: Token expires in ${Math.round(timeUntilExpiry / (24 * 60 * 60 * 1000))} days, refreshing proactively`)
+
+          const success = await this.refreshTokens(config.id!)
+
+          if (success) {
+            logger.info(`Config ${config.email}: Tokens refreshed successfully`)
+          } else {
+            logger.warn(`Config ${config.email}: Failed to refresh tokens`)
+          }
+        } else {
+          logger.debug(`Config ${config.email}: Token valid for ${Math.round(timeUntilExpiry / (24 * 60 * 60 * 1000))} more days`)
+        }
+      }
+    } catch (error) {
+      logger.error('Error in proactive token refresh:', error)
+    }
   }
 
 }
