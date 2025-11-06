@@ -148,27 +148,29 @@ export function generateRandomTestData(schema: FormSchema): Record<string, any> 
     return allFields.find(f => f.domainKey === domainKey)
   }
 
-  if (hasAlptisFields) {
-    const categoryField = findField('subscriber.category')
-    if (categoryField?.options) {
-      const category = randomChoice(categoryField.options).value
-      testData['subscriber.category'] = category
+  // Category & work framework (indépendant des plateformes)
+  const categoryField = findField('subscriber.category')
+  if (categoryField?.options) {
+    const category = randomChoice(categoryField.options).value
+    testData['subscriber.category'] = category
 
-      const workFrameworkField = findField('subscriber.workFramework')
-      if (workFrameworkField) {
-        const categoriesRequiringWorkFramework = [
-          'CHEFS_D_ENTREPRISE',
-          'PROFESSIONS_LIBERALES_ET_ASSIMILES',
-          'ARTISANS',
-          'COMMERCANTS_ET_ASSIMILES',
-          'AGRICULTEURS_EXPLOITANTS'
-        ]
-        if (categoriesRequiringWorkFramework.includes(category) && workFrameworkField.options) {
-          testData['subscriber.workFramework'] = randomBoolean(0.6) ? 'SALARIE' : 'INDEPENDANT'
-        }
+    const workFrameworkField = findField('subscriber.workFramework')
+    if (workFrameworkField) {
+      const categoriesRequiringWorkFramework = [
+        'CHEFS_D_ENTREPRISE',
+        'PROFESSIONS_LIBERALES_ET_ASSIMILES',
+        'ARTISANS',
+        'COMMERCANTS_ET_ASSIMILES',
+        'AGRICULTEURS_EXPLOITANTS'
+      ]
+      if (categoriesRequiringWorkFramework.includes(category) && workFrameworkField.options) {
+        testData['subscriber.workFramework'] = randomBoolean(0.6) ? 'SALARIE' : 'INDEPENDANT'
       }
     }
+  }
 
+  // Toujours fournir un code postal valable
+  {
     const dept = randomChoice(DEPARTMENTS)
     testData['subscriber.postalCode'] = randomChoice(dept.postalCodes)
   }
@@ -259,6 +261,16 @@ export function generateRandomTestData(schema: FormSchema): Record<string, any> 
     testData['project.name'] = `Simulation ${lastName} ${firstName}`
 
     testData['project.dateEffet'] = generateFirstOfNextMonth()
+  } else {
+    // Fallback logique quand SwissLife n'est pas présent: choisir un statut/profession compatibles
+    const statusField = findField('subscriber.status')
+    if (statusField?.options && !testData['subscriber.status']) {
+      testData['subscriber.status'] = randomChoice(statusField.options).value
+    }
+    const professionField = findField('subscriber.profession')
+    if (professionField?.options && !testData['subscriber.profession']) {
+      testData['subscriber.profession'] = randomChoice(professionField.options).value
+    }
   }
 
   // Ensure project fields are set even without SwissLife fields
@@ -286,7 +298,8 @@ export function generateRandomTestData(schema: FormSchema): Record<string, any> 
     const subscriberAge = 45
     testData['spouse.birthDate'] = generateBirthDate(subscriberAge - 5, subscriberAge + 5)
 
-    if (hasAlptisFields) {
+    // Catégorie & cadre de travail du conjoint (indépendant des plateformes)
+    {
       const spouseCategoryField = findField('spouse.category')
       if (spouseCategoryField?.options) {
         const spouseCategory = randomChoice(spouseCategoryField.options).value
@@ -385,6 +398,16 @@ export function generateRandomTestData(schema: FormSchema): Record<string, any> 
           testData['spouse.profession'] = randomChoice(spouseProfessionField.options).value
         }
       }
+    } else {
+      // Fallback logique sans SwissLife: statut/profession du conjoint
+      const spouseStatusField = findField('spouse.status')
+      if (spouseStatusField?.options && !testData['spouse.status']) {
+        testData['spouse.status'] = randomChoice(spouseStatusField.options).value
+      }
+      const spouseProfessionField = findField('spouse.profession')
+      if (spouseProfessionField?.options && !testData['spouse.profession']) {
+        testData['spouse.profession'] = randomChoice(spouseProfessionField.options).value
+      }
     }
   }
 
@@ -407,22 +430,18 @@ export function generateRandomTestData(schema: FormSchema): Record<string, any> 
     for (let i = 0; i < nbChildren; i++) {
       testData[`children[${i}].birthDate`] = generateBirthDate(0, 25)
 
-      if (hasAlptisFields) {
-        const childRegimeFieldAlptis = findFieldInPlatform('children[].regime', 'alptis')
-        const chosenChildRegimeAlptis = pickOptionValue(childRegimeFieldAlptis) || pickOptionValue(findField('children[].regime'))
-        if (chosenChildRegimeAlptis) {
-          testData[`children[${i}].regime`] = chosenChildRegimeAlptis
-        }
+      // Régime enfant (via commun)
+      {
+        const childRegimeField = findField('children[].regime')
+        const chosenChildRegime = pickOptionValue(childRegimeField) || 'SECURITE_SOCIALE'
+        testData[`children[${i}].regime`] = chosenChildRegime
       }
 
-      if (hasSwissLifeFields) {
+      // Ayant droit enfant (via commun)
+      {
         const childAyantDroitField = findField('children[].ayantDroit')
         if (childAyantDroitField?.options) {
-          if (hasSpouse && randomBoolean(0.2)) {
-            testData[`children[${i}].ayantDroit`] = '2'
-          } else {
-            testData[`children[${i}].ayantDroit`] = '1'
-          }
+          testData[`children[${i}].ayantDroit`] = (hasSpouse && randomBoolean(0.2)) ? 'CONJOINT' : 'CLIENT'
         }
       }
     }

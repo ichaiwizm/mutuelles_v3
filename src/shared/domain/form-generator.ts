@@ -134,6 +134,11 @@ function buildFieldDefinition(
     if (validation) field.validation = validation
   }
 
+  // UI uses JJ/MM/AAAA; ignore Zod ISO regex patterns for date fields
+  if (field.type === 'date' && field.validation?.pattern) {
+    delete field.validation.pattern
+  }
+
   return field
 }
 
@@ -247,7 +252,10 @@ export function evaluateDefaultExpression(expression: string): any {
   if (expression === 'firstOfNextMonth') {
     const now = new Date()
     const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1)
-    return nextMonth.toISOString().split('T')[0] // YYYY-MM-DD
+    const dd = '01'
+    const mm = String(nextMonth.getMonth() + 1).padStart(2, '0')
+    const yyyy = String(nextMonth.getFullYear())
+    return `${dd}/${mm}/${yyyy}` // JJ/MM/AAAA
   }
 
   return undefined
