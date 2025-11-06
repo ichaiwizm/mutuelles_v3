@@ -67,10 +67,27 @@ function formatDate(date: Date): string {
 
 function generateBirthDate(minAge: number, maxAge: number): string {
   const age = randomInt(minAge, maxAge)
-  const birthDate = new Date()
-  birthDate.setFullYear(birthDate.getFullYear() - age)
+  const today = new Date()
+  const birthDate = new Date(today)
+
+  // Base year from age
+  birthDate.setFullYear(today.getFullYear() - age)
   birthDate.setMonth(randomInt(0, 11))
   birthDate.setDate(randomInt(1, 28)) // Safe day for all months
+
+  // Never allow future dates
+  if (birthDate > today) {
+    if (age === 0) {
+      // Clamp to today (or earlier in current month)
+      birthDate.setFullYear(today.getFullYear())
+      birthDate.setMonth(today.getMonth())
+      birthDate.setDate(Math.min(birthDate.getDate(), today.getDate()))
+    } else {
+      // Older than 0: step back one year if it slipped to the future
+      birthDate.setFullYear(birthDate.getFullYear() - 1)
+    }
+  }
+
   return formatDate(birthDate)
 }
 
