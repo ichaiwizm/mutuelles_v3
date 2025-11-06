@@ -215,6 +215,10 @@ export function validateForm(
   ]
 
   allFields.forEach(field => {
+    // Skip placeholder children keys; they are validated per index below
+    if (field.domainKey.includes('children[].')) {
+      return
+    }
     if (!shouldValidateField(field, values)) {
       return
     }
