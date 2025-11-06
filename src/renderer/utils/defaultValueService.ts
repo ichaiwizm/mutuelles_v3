@@ -82,7 +82,7 @@ function nestedToFlat(obj: Record<string, any>, prefix = ''): Record<string, any
  */
 export function getAllDefaultsForForm(
   schema: FormSchema,
-  _currentValues?: Record<string, any>,
+  currentValues?: Record<string, any>,
   _platform?: string
 ): Record<string, any> {
   const defaults: Record<string, any> = {}
@@ -101,7 +101,24 @@ export function getAllDefaultsForForm(
     }
   }
 
-  return defaults
+  // Expand array defaults (e.g., children[].regime → children[0].regime ...)
+  const expanded: Record<string, any> = {}
+  const childrenCount = Number(currentValues?.['children.count'] || 0)
+
+  for (const [key, value] of Object.entries(defaults)) {
+    const arrayMatch = key.match(/^(children)\[\]\.(.+)$/)
+    if (arrayMatch && childrenCount > 0) {
+      const arrayName = arrayMatch[1]
+      const fieldName = arrayMatch[2]
+      for (let i = 0; i < childrenCount; i++) {
+        expanded[`${arrayName}[${i}].${fieldName}`] = value
+      }
+      continue
+    }
+    expanded[key] = value
+  }
+
+  return expanded
 }
 
 /**
@@ -151,7 +168,7 @@ export function getAllDefaultsWithBusinessRules(
   const nested = flatToNested(currentValues)
 
   // Get static defaults
-  const defaults = getAllDefaultsForForm(schema)
+  const defaults = getAllDefaultsForForm(schema, currentValues)
 
   // Apply defaults to nested structure (for computing derived values)
   const withDefaults = { ...nested }
