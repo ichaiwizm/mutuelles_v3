@@ -145,6 +145,15 @@ function shouldValidateField(
   field: FormFieldDefinition,
   values: Record<string, any>
 ): boolean {
+  // Skip spouse fields entirely when "conjoint" toggle is not active
+  {
+    const key = field.domainKey
+    const isSpouseField = key.startsWith('spouse.') || key.includes('.spouse.')
+    if (isSpouseField && values['conjoint'] !== true) {
+      return false
+    }
+  }
+
   if (!field.showIf) {
     return true
   }

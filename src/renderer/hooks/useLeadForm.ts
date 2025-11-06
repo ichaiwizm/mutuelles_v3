@@ -308,6 +308,8 @@ export function useLeadForm({ schema, mode, initialLead, onSuccess, onError, onL
     const errors = validateForm(schema, formState.values)
 
     if (Object.keys(errors).length > 0) {
+      // Debug: log full error map to console for diagnosis
+      try { console.warn('Form errors:', errors) } catch {}
       setFormState(prev => ({ ...prev, errors }))
       onError?.('Veuillez corriger les erreurs avant de continuer')
       return
