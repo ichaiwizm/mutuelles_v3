@@ -152,7 +152,7 @@ export default function LeadsTable({
                   if (!has(s.lastName)) missing.push('Nom')
                   if (!has(s.firstName)) missing.push('Prénom')
                   if (!has(s.birthDate)) missing.push('Naissance assuré')
-                  if (!has(s.telephone)) missing.push('Téléphone')
+                  // Le téléphone n'est pas requis pour les leads
 
                   if (spouse) {
                     if (!has(spouse.birthDate)) missing.push('Naissance conjoint')
