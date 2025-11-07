@@ -1,0 +1,20 @@
+{
+  "auth.username": {
+    "selector": "input[name='username']",
+    "meta": {
+      "label": "Username field"
+    }
+  },
+  "auth.password": {
+    "selector": "input[name='password']",
+    "meta": {
+      "label": "Password field"
+    }
+  },
+  "auth.submit": {
+    "selector": "button[type='submit']",
+    "meta": {
+      "label": "Submit button"
+    }
+  }
+}

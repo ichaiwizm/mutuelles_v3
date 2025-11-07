@@ -1,0 +1,317 @@
+# Guide d'utilisation de l'Automation
+
+Ce guide explique comment utiliser le système d'automation pour exécuter des flows sur plusieurs leads.
+
+## 🎯 Architecture
+
+### Vue d'ensemble
+```
+UI (React) → IPC → ScenariosRunner → TaskBuilder → TaskExecutor → Playwright Engine
+   ↓              ↓          ↓              ↓              ↓              ↓
+Sélection    Payload    Produit       TaskDefs    Exécution    Flows +
+Leads +                 cartésien                 avec        Field Defs
+Flows                   leads×flows              lead data
+```
+
+### Composants principaux
+
+1. **Frontend (UI)**
+   - `AutomationV3.tsx` : Page principale
+   - `LeadSelector.tsx` : Sélection des leads
+   - `FlowsBrowserPanel.tsx` : Sélection des flows
+   - `useAutomation.ts` : Hook orchestrateur
+
+2. **Backend (IPC Handlers)**
+   - `scenarios.ts` : Handlers IPC
+   - `ScenariosRunner` : Orchestrateur d'exécution
+   - `taskBuilder.ts` : Création des tâches
+   - `taskExecutor.ts` : Exécution des tâches
+
+3. **Moteur d'exécution**
+   - `automation/engine/index.mjs` : Moteur Playwright
+   - Lit les flows `.hl.json`
+   - Utilise les `field-definitions` pour mapper les champs
+   - Exécute avec Playwright
+
+## 📁 Structure des fichiers
+
+### Flows (.hl.json)
+Localisation : `data/flows/{platform}/{slug}.hl.json`
+
+```json
+{
+  "platform": "swisslifeone",
+  "slug": "slsis",
+  "name": "SwissLifeOne - SLSIS",
+  "description": "Description du flow",
+  "steps": [
+    {
+      "type": "goto",
+      "url": "https://example.com",
+      "label": "Navigate to page"
+    },
+    {
+      "type": "fill",
+      "field": "subscriber.firstName",
+      "label": "Fill first name"
+    },
+    {
+      "type": "click",
+      "field": "auth.submit",
+      "label": "Submit form"
+    }
+  ]
+}
+```
+
+### Types de steps disponibles
+
+- **Navigation**
+  - `goto` : Naviguer vers une URL
+  - `sleep` : Attendre X millisecondes
+  - `enterFrame` : Entrer dans un iframe
+  - `exitFrame` : Sortir d'un iframe
+
+- **Formulaires**
+  - `fill` : Remplir un champ input
+  - `select` : Sélectionner une option
+  - `type` : Taper du texte avec délai
+  - `click` : Cliquer sur un élément
+
+- **Utilitaires**
+  - `waitField` : Attendre qu'un champ soit visible
+  - `pressKey` : Appuyer sur une touche
+  - `comment` : Commentaire (pas d'action)
+
+### Field Definitions
+Localisation : `data/field-definitions/{platform}.json`
+
+```json
+{
+  "subscriber.firstName": {
+    "selector": "input[name='firstName']",
+    "meta": {
+      "label": "First name"
+    }
+  },
+  "subscriber.birthDate": {
+    "selector": "#birthDate",
+    "adapter": "dateIsoToFr",
+    "meta": {
+      "label": "Birth date"
+    }
+  },
+  "subscriber.regime": {
+    "selector": "#regime",
+    "valueMap": {
+      "SECURITE_SOCIALE": "SS",
+      "TNS": "TNS",
+      "*": "AUTRE"
+    }
+  }
+}
+```
+
+### Adapters disponibles
+
+- `dateIsoToFr` : Convertit YYYY-MM-DD → DD/MM/YYYY
+- `extractDepartmentCode` : Extrait le département du code postal
+
+## 🚀 Utilisation
+
+### 1. Préparer les données
+
+#### Créer des leads
+Aller dans la page **Leads** et créer des leads avec :
+- Informations souscripteur (nom, prénom, date de naissance, etc.)
+- Informations conjoint (optionnel)
+- Informations enfants (optionnel)
+- Informations projet
+
+#### Configurer les credentials
+Dans la page **Plateformes**, configurer les identifiants pour chaque plateforme.
+
+### 2. Créer un flow
+
+1. Créer un fichier `.hl.json` dans `data/flows/{platform}/`
+2. Définir les steps du flow
+3. Créer le fichier `field-definitions` correspondant dans `data/field-definitions/{platform}.json`
+
+### 3. Lancer une automation
+
+1. Aller dans la page **Automatisations**
+2. Sélectionner un ou plusieurs leads (cocher les cases)
+3. Sélectionner un ou plusieurs flows
+   - ⚠️ **Important** : Un seul flow par plateforme
+4. Cliquer sur **"Démarrer X exécution(s)"**
+
+### 4. Suivre l'exécution
+
+- **En temps réel** : Voir le statut de chaque exécution
+  - `pending` : En attente
+  - `running` : En cours
+  - `success` : Terminé avec succès
+  - `error` : Échoué
+
+- **Actions disponibles** :
+  - Pause/Resume d'un item
+  - Retry d'un item échoué
+  - Stop d'un item ou de toute l'exécution
+  - Voir les screenshots
+
+### 5. Consulter l'historique
+
+Onglet **"Historique"** dans la page Automatisations :
+- Liste de toutes les exécutions passées
+- Détails des résultats
+- Possibilité de relancer
+
+## ⚙️ Configuration
+
+### Settings (Paramètres)
+
+Accessible via le bouton **"Paramètres"** dans la page Automatisations :
+
+- **Mode d'exécution** :
+  - `headless` : Sans interface (plus rapide)
+  - `headless-minimized` : Avec fenêtre minimisée
+  - `visible` : Fenêtres visibles (debug)
+
+- **Concurrence** : Nombre d'exécutions en parallèle (1-15)
+- **Retry** : Nombre de tentatives en cas d'échec
+- **Keep browser open** : Garder le navigateur ouvert après exécution
+- **Filtres de visibilité** : Masquer certaines plateformes/flows
+
+## 🔧 Développement
+
+### Ajouter une nouvelle plateforme
+
+1. **Créer les selectors TypeScript** (optionnel, pour le nouveau système) :
+   ```typescript
+   // platforms/{platform}/selectors.ts
+   export const selectors: SelectorMap = {
+     'subscriber.firstName': {
+       selector: '#firstName',
+       meta: { label: 'First name' }
+     }
+   }
+   ```
+
+2. **Créer un flow .hl.json** :
+   ```bash
+   data/flows/{platform}/{slug}.hl.json
+   ```
+
+3. **Créer les field-definitions** :
+   ```bash
+   data/field-definitions/{platform}.json
+   ```
+
+4. **Enregistrer la plateforme dans la DB** :
+   ```sql
+   INSERT INTO platforms_catalog (slug, name, selected)
+   VALUES ('myplatform', 'My Platform', 1);
+   ```
+
+5. **Configurer les credentials** :
+   Via l'UI dans la page Plateformes
+
+### Mapping des données
+
+Le moteur mappe automatiquement les données du lead vers les champs du formulaire :
+
+```javascript
+// Lead data
+{
+  subscriber: {
+    firstName: "Jean",
+    lastName: "Dupont",
+    birthDate: "1980-01-15"
+  }
+}
+
+// Field definition
+{
+  "subscriber.firstName": {
+    "selector": "#firstName"
+  }
+}
+
+// Résultat : page.fill("#firstName", "Jean")
+```
+
+### Variables disponibles
+
+Dans les steps, vous pouvez utiliser :
+- `{lead.subscriber.firstName}` : Données du lead
+- `{credentials.username}` : Username de la plateforme
+- `{credentials.password}` : Password de la plateforme
+
+## 📊 Debugging
+
+### Logs
+
+- **Console backend** : Logs du ScenariosRunner
+- **Run directory** : `runs/{runId}/`
+  - `index.json` : Manifest avec détails de l'exécution
+  - `step-XXX.png` : Screenshots de chaque step
+
+### Problèmes courants
+
+1. **"Field definition not found"**
+   → Ajouter la définition dans `field-definitions/{platform}.json`
+
+2. **"Element not found"**
+   → Vérifier le sélecteur CSS dans les field-definitions
+   → Utiliser `waitField` avant de cliquer/remplir
+
+3. **"Multiple flows per platform"**
+   → Ne sélectionner qu'un seul flow par plateforme
+
+4. **Flow se bloque**
+   → Augmenter les `sleep` entre les steps
+   → Ajouter des `waitField` pour attendre le chargement
+
+## 📦 Installation
+
+```bash
+# Installer les dépendances
+npm install
+
+# Installer les browsers Playwright
+npx playwright install chromium
+
+# Initialiser la base de données
+npm run db:reset:seed
+
+# Lancer l'application
+npm run dev
+```
+
+## 🎓 Exemples
+
+### Exemple complet : SwissLifeOne SLSIS
+
+Voir les fichiers :
+- `data/flows/swisslifeone/slsis.hl.json`
+- `data/field-definitions/swisslifeone.json`
+
+### Exemple simple : Demo
+
+Voir les fichiers :
+- `data/flows/demo/simple.hl.json`
+- `data/field-definitions/demo.json`
+
+## 🔒 Sécurité
+
+- Les credentials sont chiffrés dans la base de données
+- Les screenshots peuvent contenir des données sensibles
+- Les runs sont stockés localement dans `runs/`
+
+## 📝 Notes
+
+- Le système crée un produit cartésien : **leads × flows**
+  - 2 leads × 3 flows = 6 exécutions
+- Chaque exécution est indépendante
+- Les exécutions sont parallélisées selon la concurrence configurée
+- Les screenshots sont pris à chaque step pour debug

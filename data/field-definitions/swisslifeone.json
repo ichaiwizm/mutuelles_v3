@@ -1,0 +1,84 @@
+{
+  "auth.loginButton": {
+    "selector": "button.login-btn, a.login-link, [href*='login']",
+    "meta": {
+      "label": "Login button"
+    }
+  },
+  "auth.username": {
+    "selector": "input[name='username'], input[type='email'], input[id*='username'], input[id*='email']",
+    "meta": {
+      "label": "Username/Email field"
+    }
+  },
+  "auth.password": {
+    "selector": "input[name='password'], input[type='password'], input[id*='password']",
+    "meta": {
+      "label": "Password field"
+    }
+  },
+  "auth.submit": {
+    "selector": "button[type='submit'], button.submit, input[type='submit']",
+    "meta": {
+      "label": "Submit button"
+    }
+  },
+  "consent.acceptAll": {
+    "selector": "button#acceptAll, button.accept-all, [class*='accept-all']",
+    "meta": {
+      "label": "Accept all cookies"
+    }
+  },
+  "subscriber.birthDate": {
+    "selector": "#date-naissance-assure-principal",
+    "adapter": "dateIsoToFr",
+    "meta": {
+      "label": "Birth date"
+    }
+  },
+  "subscriber.regime": {
+    "selector": "#regime-social-assure-principal",
+    "valueMap": {
+      "SECURITE_SOCIALE": "SECURITE_SOCIALE",
+      "REGIME_GENERAL": "SECURITE_SOCIALE",
+      "RG": "SECURITE_SOCIALE",
+      "ALSACE_MOSELLE": "SECURITE_SOCIALE_ALSACE_MOSELLE",
+      "TNS": "TNS",
+      "INDEPENDANT": "TNS",
+      "MSA": "AMEXA",
+      "AMEXA": "AMEXA",
+      "AUTRES": "AUTRES_REGIME_SPECIAUX",
+      "*": "SECURITE_SOCIALE"
+    },
+    "meta": {
+      "label": "Social regime"
+    }
+  },
+  "subscriber.status": {
+    "selector": "#statut-assure-principal",
+    "meta": {
+      "label": "Status"
+    }
+  },
+  "subscriber.profession": {
+    "selector": "#profession-assure-principal",
+    "valueMap": {
+      "MEDECIN": "MEDECIN",
+      "CHIRURGIEN": "CHIRURGIEN",
+      "CHIRURGIEN_DENTISTE": "CHIRURGIEN_DENTISTE",
+      "PHARMACIEN": "PHARMACIEN",
+      "AUXILIAIRE_MEDICAL": "AUXILIAIRE_MEDICAL",
+      "*": "AUTRE"
+    },
+    "meta": {
+      "label": "Profession"
+    }
+  },
+  "subscriber.postalCode": {
+    "selector": "#departement-assure-principal",
+    "adapter": "extractDepartmentCode",
+    "meta": {
+      "label": "Postal code → Department"
+    }
+  }
+}

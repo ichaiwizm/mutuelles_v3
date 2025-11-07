@@ -1,0 +1,92 @@
+{
+  "platform": "alptis",
+  "slug": "sante-select",
+  "name": "Alptis - Santé Select",
+  "description": "Alptis Santé Select Flow - Simplified version",
+  "steps": [
+    {
+      "type": "comment",
+      "text": "=== LOGIN ==="
+    },
+    {
+      "type": "goto",
+      "url": "https://www.alptis.fr/",
+      "label": "Navigate to Alptis"
+    },
+    {
+      "type": "sleep",
+      "ms": 2000,
+      "label": "Wait for page load"
+    },
+    {
+      "type": "waitField",
+      "field": "auth.loginButton",
+      "label": "Wait for login button"
+    },
+    {
+      "type": "click",
+      "field": "auth.loginButton",
+      "label": "Click login button"
+    },
+    {
+      "type": "sleep",
+      "ms": 2000,
+      "label": "Wait for login form"
+    },
+    {
+      "type": "fill",
+      "field": "auth.username",
+      "value": "{credentials.username}",
+      "label": "Fill username"
+    },
+    {
+      "type": "fill",
+      "field": "auth.password",
+      "value": "{credentials.password}",
+      "label": "Fill password"
+    },
+    {
+      "type": "click",
+      "field": "auth.submit",
+      "label": "Submit login"
+    },
+    {
+      "type": "sleep",
+      "ms": 3000,
+      "label": "Wait for post-login"
+    },
+    {
+      "type": "comment",
+      "text": "=== FILL SUBSCRIBER INFO ==="
+    },
+    {
+      "type": "fill",
+      "field": "subscriber.firstName",
+      "label": "Fill first name"
+    },
+    {
+      "type": "fill",
+      "field": "subscriber.lastName",
+      "label": "Fill last name"
+    },
+    {
+      "type": "fill",
+      "field": "subscriber.email",
+      "label": "Fill email"
+    },
+    {
+      "type": "fill",
+      "field": "subscriber.birthDate",
+      "label": "Fill birth date"
+    },
+    {
+      "type": "comment",
+      "text": "=== COMPLETE ==="
+    },
+    {
+      "type": "sleep",
+      "ms": 2000,
+      "label": "Wait before completing"
+    }
+  ]
+}
