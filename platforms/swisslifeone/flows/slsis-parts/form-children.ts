@@ -88,5 +88,4 @@ export const formChildrenSteps: FlowStep[] = [
 
   step.comment('=== ÉTAPE 10: SORTIE ==='),
   step.exitFrame('exit-slsis-iframe'),
-  ],
 ];

@@ -21,7 +21,7 @@ export const DEFAULT_AUTOMATION_SETTINGS: AdvancedSettings = {
   maxRetries: 2,
   enableVisibilityFiltering: true,
   hiddenPlatforms: [],
-  hiddenFlows: ['alptis_login_hl', 'swisslifeone_login', 'swisslifeone_slsis_inspect']
+  hiddenFlows: []
 }
 
 export type SettingKey = 'theme' | 'chrome_path' | 'automation-settings'

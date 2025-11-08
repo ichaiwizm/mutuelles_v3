@@ -94,5 +94,4 @@ export const formSpouseChildrenSteps: FlowStep[] = [
   step.sleep(300, 'wait-after-regime-enfant-3'),
 
   step.sleep(500, 'final-wait'),
-  ],
-};
+];
