@@ -43,18 +43,3 @@ export function extractDepartmentCode(postalCode: string | number): string {
   // Standard departments (01-95)
   return firstTwo;
 }
-
-/**
- * Validate French postal code
- */
-export function isValidPostalCode(postalCode: string | number): boolean {
-  const code = String(postalCode);
-  return /^\d{5}$/.test(code);
-}
-
-/**
- * Format postal code (ensure 5 digits with leading zeros)
- */
-export function formatPostalCode(postalCode: string | number): string {
-  return String(postalCode).padStart(5, '0');
-}

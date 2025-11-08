@@ -27,16 +27,6 @@ export const projectSelectors: SelectorMap = {
   meta: { label: 'Couverture individuelle Oui' },
 },
 
-'project.couverture_non': {
-  selector: 'label[for="projet-sante-individuelle-non"]',
-  meta: { label: 'Couverture individuelle Non' },
-},
-
-'project.ij': {
-  selector: 'label[for="projet-confort-hospitalisation-oui"]',
-  meta: { label: 'Indemnités journalières Oui' },
-},
-
 'project.ij_non': {
   selector: 'label[for="projet-confort-hospitalisation-non"]',
   meta: { label: 'Indemnités journalières Non' },
@@ -57,19 +47,9 @@ export const projectSelectors: SelectorMap = {
   meta: { label: 'Option Loi Madelin (checkbox via label)' },
 },
 
-'project.resiliation': {
-  selector: 'label[for="resiliation-contrat-oui"]',
-  meta: { label: 'Résiliation Oui' },
-},
-
 'project.resiliation_non': {
   selector: 'label[for="resiliation-contrat-non"]',
   meta: { label: 'Résiliation Non' },
-},
-
-'project.reprise': {
-  selector: 'label[for="reprise-concurrence-oui"]',
-  meta: { label: 'Reprise concurrence Oui' },
 },
 
 'project.reprise_non': {

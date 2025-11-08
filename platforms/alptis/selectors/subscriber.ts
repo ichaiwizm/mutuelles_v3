@@ -14,16 +14,6 @@ export const subscriberSelectors: SelectorMap = {
   },
 },
 
-'subscriber.civility_monsieur': {
-  selector: '.section-adherent span[data-test="radio"][value="MONSIEUR"] label',
-  meta: { label: 'Civilité adhérent - Monsieur' },
-},
-
-'subscriber.civility_madame': {
-  selector: '.section-adherent span[data-test="radio"][value="MADAME"] label',
-  meta: { label: 'Civilité adhérent - Madame' },
-},
-
 'subscriber.lastName': {
   selector: '#nom',
   meta: { label: 'Nom adhérent' },

@@ -208,22 +208,3 @@ export interface BulkLeadCreationResponse {
   failed: number
   results: LeadCreationResult[]
 }
-
-/**
- * Parser configuration
- */
-export interface ParserConfig {
-  name: string
-  priority: number
-  enabled: boolean
-}
-
-/**
- * Field extraction pattern
- */
-export interface FieldPattern {
-  regex: RegExp
-  group?: number
-  transform?: (value: string) => any
-  confidence?: ConfidenceLevel
-}

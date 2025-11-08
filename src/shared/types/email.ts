@@ -86,21 +86,3 @@ export interface OAuthResult {
   config?: EmailConfig
   error?: string
 }
-
-export interface EmailImportStats {
-  totalImports: number
-  lastImportDate?: string
-  totalEmailsFetched: number
-  totalLeadsDetected: number
-}
-
-export type ImportMethod = 'email' | 'csv' | 'manual'
-
-export interface ImportWizardState {
-  step: number
-  method: ImportMethod
-  emailConfig?: EmailConfig
-  filters?: EmailFilters
-  result?: EmailImportResult
-  selectedMessageIds: string[]
-}
