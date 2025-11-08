@@ -6,7 +6,8 @@
       "Bash(tree:*)",
       "mcp__playwright__browser_navigate",
       "Bash(cat:*)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(xargs -I {} sh -c 'echo \"\"\"\"=== {} ===\"\"\"\" && grep -l \"\"\"\"from.*{}\"\"\"\" src/renderer/**/*.{ts,tsx} 2>/dev/null | head -5 || echo \"\"\"\"No usage found\"\"\"\"')"
     ],
     "deny": [],
     "ask": [],
