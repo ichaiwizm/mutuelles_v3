@@ -308,6 +308,8 @@ export async function runHighLevelFlow(options) {
       stack: error.stack,
       step: manifest.steps.length
     };
+    // Attach runDir so taskExecutor can recover it on cancellation
+    error.runDir = runDir;
     throw error;
   } finally {
     // Save manifest
