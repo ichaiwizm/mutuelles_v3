@@ -65,11 +65,16 @@ function getLeadValue(fieldPath, leadData, fieldDef) {
   }
 
   if (fieldDef?.adapter === 'extractDepartmentCode' && value) {
-    // Extract department from postal code
-    value = value.substring(0, 2);
-    if (value === '20') {
-      const thirdDigit = value.substring(2, 3);
-      value = thirdDigit < '2' ? '2A' : '2B';
+    // Extract department from postal code (e.g., "75001" → "75", "20100" → "2A")
+    const originalValue = String(value);
+    const firstTwo = originalValue.substring(0, 2);
+
+    if (firstTwo === '20') {
+      // Special case for Corsica: 20100-20199 = 2A, 20200+ = 2B
+      const thirdDigit = originalValue.substring(2, 3);
+      value = (thirdDigit >= '0' && thirdDigit < '2') ? '2A' : '2B';
+    } else {
+      value = firstTwo;
     }
   }
 

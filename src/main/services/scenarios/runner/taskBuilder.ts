@@ -38,8 +38,9 @@ export function buildTasks(projectRoot: string, leadIds: string[], platformSlugs
 
       let flow = null as null | { file:string; slug:string }
       if (flowOverrides?.[slug]) {
-        flow = hl.find(f => f.slug === flowOverrides![slug]) || null
-        if (!flow) { earlyErrors.push({ type:'item-error', runId:'', itemId, leadId, platform: slug, message:`Flow override '${flowOverrides[slug]}' introuvable` }); continue }
+        // CRITICAL: Must match BOTH platform AND slug to avoid conflicts
+        flow = hl.find(f => f.platform === slug && f.slug === flowOverrides![slug]) || null
+        if (!flow) { earlyErrors.push({ type:'item-error', runId:'', itemId, leadId, platform: slug, message:`Flow override '${flowOverrides[slug]}' introuvable pour plateforme '${slug}'` }); continue }
       } else {
         const picked = pickDefaultFlowForPlatform(hl, slug)
         if (!picked) { earlyErrors.push({ type:'item-error', runId:'', itemId, leadId, platform: slug, message:'Aucun flow HL trouvé' }); continue }
