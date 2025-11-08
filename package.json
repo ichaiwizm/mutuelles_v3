@@ -37,6 +37,7 @@
     "flow:dry": "tsx cli/index.ts flow:dry",
     "flow:run": "tsx cli/index.ts flow:run",
     "selector:test": "tsx cli/index.ts selector:test",
+    "leads:list": "cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/leads/list.mjs",
     "clean": "cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/clean.mjs"
   },
   "dependencies": {

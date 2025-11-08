@@ -17,6 +17,7 @@ import { explainFlow } from './commands/explain';
 import { dryRunFlow } from './commands/dry-run';
 import { runFlow } from './commands/run';
 import { testSelector } from './commands/test-selector';
+import { listLeadsCommand } from './commands/list-leads';
 
 const program = new Command();
 
@@ -98,6 +99,29 @@ program
     try {
       await testSelector(platform, selector, options.url, {
         timeout: parseInt(options.timeout, 10),
+      });
+    } catch (error: any) {
+      console.error('Error:', error.message);
+      process.exit(1);
+    }
+  });
+
+// ============================================================
+// leads:list
+// ============================================================
+
+program
+  .command('leads:list')
+  .description('List all leads with detailed information')
+  .option('--format <format>', 'Output format (table|json|detailed)', 'table')
+  .option('--limit <number>', 'Maximum number of leads to display', '1000')
+  .option('--offset <number>', 'Number of leads to skip', '0')
+  .action(async (options) => {
+    try {
+      await listLeadsCommand({
+        format: options.format,
+        limit: parseInt(options.limit, 10),
+        offset: parseInt(options.offset, 10),
       });
     } catch (error: any) {
       console.error('Error:', error.message);
