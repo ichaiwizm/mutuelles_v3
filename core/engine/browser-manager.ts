@@ -25,6 +25,10 @@ export class BrowserManager {
       viewport: { width: 1280, height: 720 },
     });
 
+    if (options.onBrowserCreated) {
+      try { options.onBrowserCreated(context.browser, context.context) } catch {}
+    }
+
     // Enable tracing if requested
     if (options.trace === 'on' || options.trace === 'retain-on-failure') {
       await context.context.tracing.start({
@@ -63,11 +67,13 @@ export class BrowserManager {
     context: FlowRunnerContext,
     stepIndex: number,
     options: FlowRunnerOptions
-  ): Promise<void> {
+  ): Promise<string | undefined> {
     if (!options.screenshots || !context.page) return;
-
-    const path = `screenshots/${context.runId}-step-${stepIndex}.png`;
-    await context.page.screenshot({ path });
+    const filePath = options.outputDir
+      ? `${options.outputDir}/step-${stepIndex + 1}.png`
+      : `screenshots/${context.runId}-step-${stepIndex + 1}.png`;
+    await context.page.screenshot({ path: filePath }).catch(()=>{})
+    return filePath
   }
 
   /**

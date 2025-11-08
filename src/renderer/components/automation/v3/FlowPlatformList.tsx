@@ -173,7 +173,15 @@ export default function FlowPlatformList({
                                 </span>
                               )}
                             </div>
-                            <div className="text-xs text-neutral-500 mt-0.5">{flow.slug}</div>
+                            <div className="text-xs text-neutral-500 mt-0.5 flex items-center gap-2">
+                              <span className="truncate">{flow.slug}</span>
+                              {typeof (flow as any).stepsCount === 'number' && (
+                                <span className="text-neutral-400">•</span>
+                              )}
+                              {typeof (flow as any).stepsCount === 'number' && (
+                                <span className="whitespace-nowrap">{(flow as any).stepsCount} étape{(flow as any).stepsCount > 1 ? 's' : ''}</span>
+                              )}
+                            </div>
                           </div>
 
                           <button

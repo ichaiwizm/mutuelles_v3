@@ -39,6 +39,7 @@ export type Flow = {
   slug: string
   name: string
   file: string
+  stepsCount?: number
 }
 
 /**
@@ -81,7 +82,8 @@ export function useAutomation() {
             platform: platformGroup.platform,
             slug: flow.slug,
             name: flow.name,
-            file: flow.file
+            file: flow.file,
+            stepsCount: flow.stepsCount
           }))
         )
         setFlows(flowsList)

@@ -40,6 +40,11 @@ export class FlowRunner {
       // Initialize browser
       await BrowserManager.initialize(this.context, options);
 
+      // Cooperative pause before starting
+      if (options.pauseGate) {
+        try { await options.pauseGate('begin') } catch {}
+      }
+
       // Build resolution context
       const resolveContext: ResolveContext = {
         lead: leadData,
@@ -53,11 +58,18 @@ export class FlowRunner {
         const stepStartTime = Date.now();
 
         try {
+          // Pause gate before step
+          if (options.pauseGate) {
+            try { await options.pauseGate('before-step', idx) } catch {}
+          }
           // Check when condition
           if ('when' in step && step.when) {
             const shouldExecute = evaluateWhen(step.when, leadData);
             if (!shouldExecute) {
               this.logStep(step, idx, 0, true, 'Skipped (condition not met)');
+              if (options.onProgress) {
+                try { options.onProgress({ stepIndex: idx, totalSteps: flow.steps.length, step, ok: true, ms: 0 }) } catch {}
+              }
               continue;
             }
           }
@@ -72,15 +84,21 @@ export class FlowRunner {
           );
 
           // Take screenshot if enabled
-          await BrowserManager.takeScreenshot(this.context, idx, options);
+          const screenshotPath = await BrowserManager.takeScreenshot(this.context, idx, options);
 
           const stepDuration = Date.now() - stepStartTime;
           stepsExecuted++;
           this.logStep(step, idx, stepDuration, true);
+          if (options.onProgress) {
+            try { options.onProgress({ stepIndex: idx, totalSteps: flow.steps.length, step, ok: true, ms: stepDuration, screenshot: screenshotPath }) } catch {}
+          }
         } catch (error: any) {
           const stepDuration = Date.now() - stepStartTime;
           stepsFailed++;
           this.logStep(step, idx, stepDuration, false, error.message);
+          if (options.onProgress) {
+            try { options.onProgress({ stepIndex: idx, totalSteps: flow.steps.length, step, ok: false, ms: stepDuration }) } catch {}
+          }
 
           // Stop on error unless optional
           if (!('optional' in step && step.optional)) {

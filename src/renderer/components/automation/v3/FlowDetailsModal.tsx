@@ -13,7 +13,7 @@ interface FlowDetailsModalProps {
 }
 
 interface FlowDefinition {
-  version: number
+  version?: number
   platform: string
   slug: string
   name: string
@@ -70,12 +70,12 @@ export default function FlowDetailsModal({
   const getStepTypeIcon = (type: string) => {
     const icons: Record<string, string> = {
       goto: '🌐',
-      fillField: '✏️',
-      selectField: '📋',
-      clickField: '👆',
-      toggleField: '🔘',
-      typeField: '⌨️',
-      waitForField: '⏳',
+      fill: '✏️',
+      select: '📋',
+      click: '👆',
+      toggle: '🔘',
+      type: '⌨️',
+      waitField: '⏳',
       acceptConsent: '✅',
       sleep: '⏱️',
       enterFrame: '🖼️',
@@ -91,12 +91,12 @@ export default function FlowDetailsModal({
   const getStepTypeLabel = (type: string) => {
     const labels: Record<string, string> = {
       goto: 'Navigation',
-      fillField: 'Remplir champ',
-      selectField: 'Sélectionner',
-      clickField: 'Cliquer',
-      toggleField: 'Toggle',
-      typeField: 'Taper',
-      waitForField: 'Attendre champ',
+      fill: 'Remplir champ',
+      select: 'Sélectionner',
+      click: 'Cliquer',
+      toggle: 'Toggle',
+      type: 'Taper',
+      waitField: 'Attendre champ',
       acceptConsent: 'Accepter consentement',
       sleep: 'Pause',
       enterFrame: 'Entrer iframe',
@@ -169,9 +169,10 @@ export default function FlowDetailsModal({
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <List size={16} className="text-neutral-500" />
-                  <h3 className="text-sm font-semibold">
-                    Étapes ({flowDefinition.steps.length})
-                  </h3>
+                  <h3 className="text-sm font-semibold">Étapes</h3>
+                </div>
+                <div className="text-xs text-neutral-500">
+                  {flowDefinition.steps.length} étape{flowDefinition.steps.length > 1 ? 's' : ''}
                 </div>
               </div>
 
@@ -230,16 +231,16 @@ export default function FlowDetailsModal({
               <div className="grid grid-cols-2 gap-3 text-xs">
                 <div className="flex justify-between">
                   <span className="text-neutral-500">Version:</span>
-                  <span className="font-medium">{flowDefinition.version}</span>
+                  <span className="font-medium">{flowDefinition.version ?? '—'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-neutral-500">Trace:</span>
                   <span className="font-medium">{flowDefinition.trace || 'N/A'}</span>
                 </div>
                 <div className="flex justify-between col-span-2">
-                  <span className="text-neutral-500">Fichier:</span>
+                  <span className="text-neutral-500">Flow:</span>
                   <span className="font-medium font-mono text-right truncate ml-2">
-                    {flow.file.split('/').slice(-2).join('/')}
+                    {flow.platform}/{flow.slug}
                   </span>
                 </div>
               </div>

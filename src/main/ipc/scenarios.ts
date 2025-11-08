@@ -2,7 +2,7 @@ import { BrowserWindow, ipcMain, shell } from 'electron'
 import path from 'node:path'
 import fs from 'node:fs'
 import { ScenariosRunner } from '../services/scenarios/runner'
-import { listHLFlows } from '../services/scenarios/hl_catalog'
+import { listTSFlows, getTSFlow } from '../services/scenarios/ts_catalog'
 import { getDb } from '../db/connection'
 import * as execQueries from '../../shared/db/queries/executions'
 import { createLogger } from '../services/logger'
@@ -33,7 +33,7 @@ export function registerScenariosIpc() {
   ipcMain.handle('scenarios:listFlows', async () => {
     try {
       const projectRoot = process.cwd()
-      const allFlows = listHLFlows(projectRoot)
+      const allFlows = listTSFlows()
 
       const db = getDb()
       const platformsMap = new Map<string, string>()
@@ -42,23 +42,12 @@ export function registerScenariosIpc() {
 
       const flowsByPlatform = new Map<string, any[]>()
 
-      for (const flow of allFlows) {
-        if (!flowsByPlatform.has(flow.platform)) {
-          flowsByPlatform.set(flow.platform, [])
-        }
-
-        let stepsCount = 0
-        try {
-          const flowData = JSON.parse(fs.readFileSync(flow.file, 'utf-8'))
-          stepsCount = flowData.steps ? flowData.steps.length : 0
-        } catch {}
-
-        flowsByPlatform.get(flow.platform)!.push({
-          slug: flow.slug,
-          name: flow.name,
-          file: flow.file,
-          stepsCount
-        })
+      for (const f of allFlows) {
+        if (!flowsByPlatform.has(f.platform)) flowsByPlatform.set(f.platform, [])
+        const stepsCount = Array.isArray(f.flow?.steps) ? f.flow.steps.length : 0
+        // We expose 'file' as a slug token (platform/slug) for compatibility with readFlowFile
+        const fileToken = `${f.platform}/${f.slug}`
+        flowsByPlatform.get(f.platform)!.push({ slug: f.slug, name: f.name, file: fileToken, stepsCount })
       }
 
       const result = Array.from(flowsByPlatform.entries()).map(([platform, flows]) => ({
@@ -487,6 +476,27 @@ export function registerScenariosIpc() {
         return { success: false, error: 'File path required' }
       }
 
+      // New behavior: if filePath looks like 'platform/slug', load TS flow and serialize
+      if (!fs.existsSync(filePath)) {
+        const parts = filePath.split('/')
+        if (parts.length === 2) {
+          const [platform, slug] = parts
+          const flow = getTSFlow(platform, slug)
+          if (!flow) return { success: false, error: `Flow not found: ${filePath}` }
+          const data = {
+            platform,
+            slug,
+            name: flow.name,
+            description: flow.description,
+            trace: flow.trace,
+            steps: flow.steps.map(s => ({ ...s })),
+          }
+          return { success: true, data }
+        }
+        return { success: false, error: 'Flow not found' }
+      }
+
+      // Fallback (legacy JSON files if any still around)
       const flowData = JSON.parse(fs.readFileSync(filePath, 'utf-8'))
       return { success: true, data: flowData }
     } catch (error) {

@@ -14,7 +14,8 @@ function parseArgs() {
     format: 'table',
     limit: 1000,
     offset: 0,
-    help: false
+    help: false,
+    timeout: 3000
   };
 
   for (let i = 0; i < args.length; i++) {
@@ -29,6 +30,9 @@ function parseArgs() {
         break;
       case '--offset':
         opts.offset = parseInt(args[++i], 10);
+        break;
+      case '--timeout':
+        opts.timeout = parseInt(args[++i], 10) || 3000;
         break;
       case '--help':
       case '-h':
@@ -51,6 +55,7 @@ Options:
   --format <type>     Output format (table|json|detailed) [default: table]
   --limit <number>    Maximum number of leads to display [default: 1000]
   --offset <number>   Number of leads to skip [default: 0]
+  --timeout <ms>      Auto-exit after <ms> milliseconds (default: 3000)
   --help, -h          Show this help
 
 Examples:
@@ -240,6 +245,12 @@ async function main() {
     process.exit(1);
   }
 
+  // Safety timer to avoid hanging forever
+  const killer = setTimeout(() => {
+    console.log(`\n[leads:list] Timeout reached after ${options.timeout}ms. Exiting.`);
+    process.exit(0);
+  }, options.timeout);
+
   const db = openDb();
 
   try {
@@ -265,6 +276,7 @@ async function main() {
     process.exit(1);
   } finally {
     db.close();
+    clearTimeout(killer);
   }
 }
 

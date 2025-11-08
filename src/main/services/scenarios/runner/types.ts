@@ -49,9 +49,7 @@ export type TaskDef = {
   itemId: string
   leadId: string
   platform: string
-  flowFile: string
   flowSlug: string
-  fieldsFile: string
   username: string
   password: string
 }

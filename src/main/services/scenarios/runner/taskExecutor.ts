@@ -1,7 +1,8 @@
+import { Db } from './dbPersistence'
 import fs from 'node:fs'
 import path from 'node:path'
-import { Db } from './dbPersistence'
-import { execHL } from './execHL'
+import { execTS } from './execTS'
+import { getTSFlow } from '../ts_catalog'
 import type { RunContext, TaskDef } from './types'
 import { createLogger } from '../../logger'
 
@@ -61,9 +62,9 @@ export function makeTaskExecutor(runContext: RunContext, deps: {
       logger.error('[Runner] Failed to update item start in DB:', err)
     }
 
-    // Flow step count for progress
+    // Flow step count for progress (TS flows)
     let totalSteps = 0
-    try { const flowData = JSON.parse(fs.readFileSync(def.flowFile, 'utf-8')); totalSteps = flowData.steps?.length || 0 } catch {}
+    try { const flow = getTSFlow(def.platform, def.flowSlug); totalSteps = flow?.steps?.length || 0 } catch {}
     if (totalSteps > 0) deps.send({ type:'item-progress', runId, itemId: def.itemId, leadId: def.leadId, platform: def.platform, flowSlug: def.flowSlug, currentStep: 0, totalSteps })
 
     let runDir: string | undefined = undefined
@@ -78,7 +79,7 @@ export function makeTaskExecutor(runContext: RunContext, deps: {
 
       const browserCallback = (browser: any, context: any) => deps.onTrackBrowser(def.itemId, browser, context)
 
-      const result = await execHL({ ...def, mode, leadData: lead.data, keepOpen, onProgress: progressCallback, sessionRunId: runId, onBrowserCreated: browserCallback, pauseGate })
+      const result = await execTS({ ...def, mode, leadData: lead.data, keepOpen, onProgress: progressCallback, sessionRunId: runId, onBrowserCreated: browserCallback, pauseGate })
       runDir = result.runDir
 
       deps.onUntrackBrowser(def.itemId)

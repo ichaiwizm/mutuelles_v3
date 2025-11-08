@@ -1,22 +1,18 @@
-import fs from 'node:fs'
-import path from 'node:path'
 import { getDb } from '../../../db/connection'
 import { LeadsService } from '../../leads'
 import { revealPassword } from '../../platform_credentials'
-import { listHLFlows, pickDefaultFlowForPlatform } from '../hl_catalog'
+import { listTSFlows, pickDefaultTSFlowForPlatform } from '../ts_catalog'
 
 export function buildTasks(projectRoot: string, leadIds: string[], platformSlugs: string[], flowOverrides?: Record<string,string>) {
   const db = getDb()
   const leadsSvc = new LeadsService()
-  const hl = listHLFlows(projectRoot)
+  const tsFlows = listTSFlows()
 
   type TaskDef = {
     itemId: string
     leadId: string
     platform: string
-    flowFile: string
     flowSlug: string
-    fieldsFile: string
     username: string
     password: string
   }
@@ -36,20 +32,15 @@ export function buildTasks(projectRoot: string, leadIds: string[], platformSlugs
       const platformId = platformIdBySlug[slug]
       if (!platformId) { earlyErrors.push({ type:'item-error', runId:'', itemId, leadId, platform: slug, message:'Plateforme non sélectionnée' }); continue }
 
-      let flow = null as null | { file:string; slug:string }
+      let flow = null as null | { slug:string }
       if (flowOverrides?.[slug]) {
-        // CRITICAL: Must match BOTH platform AND slug to avoid conflicts
-        flow = hl.find(f => f.platform === slug && f.slug === flowOverrides![slug]) || null
+        flow = tsFlows.find(f => f.platform === slug && f.slug === flowOverrides![slug]) || null
         if (!flow) { earlyErrors.push({ type:'item-error', runId:'', itemId, leadId, platform: slug, message:`Flow override '${flowOverrides[slug]}' introuvable pour plateforme '${slug}'` }); continue }
       } else {
-        const picked = pickDefaultFlowForPlatform(hl, slug)
-        if (!picked) { earlyErrors.push({ type:'item-error', runId:'', itemId, leadId, platform: slug, message:'Aucun flow HL trouvé' }); continue }
-        flow = picked
+        const picked = pickDefaultTSFlowForPlatform(slug)
+        if (!picked) { earlyErrors.push({ type:'item-error', runId:'', itemId, leadId, platform: slug, message:'Aucun flow TS trouvé' }); continue }
+        flow = { slug: picked.slug }
       }
-
-      const fieldsFile = path.join(projectRoot, 'data', 'field-definitions', `${slug}.json`)
-      if (!fs.existsSync(fieldsFile)) { earlyErrors.push({ type:'item-error', runId:'', itemId, leadId, platform: slug, message:'Field-definitions introuvables' }); continue }
-      if (!fs.existsSync(flow.file)) { earlyErrors.push({ type:'item-error', runId:'', itemId, leadId, platform: slug, message:'Flow HL introuvable' }); continue }
 
       const credsRow = db.prepare('SELECT username FROM platform_credentials WHERE platform_id = ?').get(platformId) as {username?:string}|undefined
       if (!credsRow?.username) { earlyErrors.push({ type:'item-error', runId:'', itemId, leadId, platform: slug, message:'Identifiants manquants' }); continue }
@@ -66,9 +57,7 @@ export function buildTasks(projectRoot: string, leadIds: string[], platformSlugs
         itemId,
         leadId,
         platform: slug,
-        flowFile: flow.file,
         flowSlug: flow.slug,
-        fieldsFile,
         username: credsRow.username,
         password
       })

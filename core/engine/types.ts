@@ -12,6 +12,10 @@ export interface FlowRunnerOptions {
   slowMo?: number;
   timeout?: number;
   screenshots?: boolean;
+  outputDir?: string;
+  onProgress?: (payload: { stepIndex: number; totalSteps: number; step: any; ok?: boolean; ms?: number; screenshot?: string }) => void;
+  onBrowserCreated?: (browser: Browser, context: BrowserContext) => void;
+  pauseGate?: (where: 'begin' | 'before-step', stepIndex?: number) => Promise<void>;
 }
 
 export interface FlowRunResult {

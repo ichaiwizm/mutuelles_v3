@@ -28,39 +28,29 @@ Flows                   leads×flows              lead data
    - `taskExecutor.ts` : Exécution des tâches
 
 3. **Moteur d'exécution**
-   - `automation/engine/index.mjs` : Moteur Playwright
-   - Lit les flows `.hl.json`
-   - Utilise les `field-definitions` pour mapper les champs
+   - `core/engine/*` : Moteur Playwright full TypeScript (DSL)
+   - Lit les flows TS (`platforms/*/flows/*.ts`)
+   - Utilise les selectors TS (`platforms/*/selectors.ts`)
    - Exécute avec Playwright
 
 ## 📁 Structure des fichiers
 
-### Flows (.hl.json)
-Localisation : `data/flows/{platform}/{slug}.hl.json`
+### Flows (TypeScript)
+Localisation : `platforms/{platform}/flows/{slug}.ts`
 
-```json
-{
-  "platform": "swisslifeone",
-  "slug": "slsis",
-  "name": "SwissLifeOne - SLSIS",
-  "description": "Description du flow",
-  "steps": [
-    {
-      "type": "goto",
-      "url": "https://example.com",
-      "label": "Navigate to page"
-    },
-    {
-      "type": "fill",
-      "field": "subscriber.firstName",
-      "label": "Fill first name"
-    },
-    {
-      "type": "click",
-      "field": "auth.submit",
-      "label": "Submit form"
-    }
-  ]
+Exemple minimal:
+```ts
+import type { Flow } from '../../../core/dsl'
+
+export const slsis: Flow = {
+  slug: 'swisslifeone/slsis',
+  platform: 'swisslifeone',
+  name: 'SwissLifeOne - SLSIS',
+  steps: [
+    { type: 'goto', url: 'https://example.com', label: 'Open page' },
+    { type: 'waitField', field: 'auth.username' },
+    { type: 'fill', field: 'auth.username', value: '{credentials.username}' },
+  ],
 }
 ```
 
@@ -83,32 +73,15 @@ Localisation : `data/flows/{platform}/{slug}.hl.json`
   - `pressKey` : Appuyer sur une touche
   - `comment` : Commentaire (pas d'action)
 
-### Field Definitions
-Localisation : `data/field-definitions/{platform}.json`
+### Selectors (TypeScript)
+Localisation : `platforms/{platform}/selectors.ts`
 
-```json
-{
-  "subscriber.firstName": {
-    "selector": "input[name='firstName']",
-    "meta": {
-      "label": "First name"
-    }
-  },
-  "subscriber.birthDate": {
-    "selector": "#birthDate",
-    "adapter": "dateIsoToFr",
-    "meta": {
-      "label": "Birth date"
-    }
-  },
-  "subscriber.regime": {
-    "selector": "#regime",
-    "valueMap": {
-      "SECURITE_SOCIALE": "SS",
-      "TNS": "TNS",
-      "*": "AUTRE"
-    }
-  }
+```ts
+import type { SelectorMap } from '../types'
+
+export const selectors: SelectorMap = {
+  'subscriber.firstName': { selector: "input[name='firstName']" },
+  'subscriber.birthDate': { selector: '#birthDate', adapter: v => v?.split('-').reverse().join('/') },
 }
 ```
 
@@ -133,9 +106,9 @@ Dans la page **Plateformes**, configurer les identifiants pour chaque plateforme
 
 ### 2. Créer un flow
 
-1. Créer un fichier `.hl.json` dans `data/flows/{platform}/`
-2. Définir les steps du flow
-3. Créer le fichier `field-definitions` correspondant dans `data/field-definitions/{platform}.json`
+1. Créer un fichier TS dans `platforms/{platform}/flows/`
+2. Définir les steps du flow via le DSL TS
+3. Définir/mettre à jour les selectors dans `platforms/{platform}/selectors.ts`
 
 ### 3. Lancer une automation
 
@@ -186,7 +159,7 @@ Accessible via le bouton **"Paramètres"** dans la page Automatisations :
 
 ### Ajouter une nouvelle plateforme
 
-1. **Créer les selectors TypeScript** (optionnel, pour le nouveau système) :
+1. **Créer les selectors TypeScript** :
    ```typescript
    // platforms/{platform}/selectors.ts
    export const selectors: SelectorMap = {
@@ -197,15 +170,8 @@ Accessible via le bouton **"Paramètres"** dans la page Automatisations :
    }
    ```
 
-2. **Créer un flow .hl.json** :
-   ```bash
-   data/flows/{platform}/{slug}.hl.json
-   ```
-
-3. **Créer les field-definitions** :
-   ```bash
-   data/field-definitions/{platform}.json
-   ```
+2. **Créer des flows TS** :
+   - `platforms/{platform}/flows/*.ts`
 
 4. **Enregistrer la plateforme dans la DB** :
    ```sql
@@ -218,27 +184,7 @@ Accessible via le bouton **"Paramètres"** dans la page Automatisations :
 
 ### Mapping des données
 
-Le moteur mappe automatiquement les données du lead vers les champs du formulaire :
-
-```javascript
-// Lead data
-{
-  subscriber: {
-    firstName: "Jean",
-    lastName: "Dupont",
-    birthDate: "1980-01-15"
-  }
-}
-
-// Field definition
-{
-  "subscriber.firstName": {
-    "selector": "#firstName"
-  }
-}
-
-// Résultat : page.fill("#firstName", "Jean")
-```
+Le moteur mappe automatiquement les données du lead et les credentials vers les champs, via les selectors TS.
 
 ### Variables disponibles
 
@@ -258,11 +204,11 @@ Dans les steps, vous pouvez utiliser :
 
 ### Problèmes courants
 
-1. **"Field definition not found"**
-   → Ajouter la définition dans `field-definitions/{platform}.json`
+1. **"Selector not found"**
+   → Ajouter la définition dans `platforms/{platform}/selectors.ts`
 
 2. **"Element not found"**
-   → Vérifier le sélecteur CSS dans les field-definitions
+   → Vérifier le sélecteur CSS dans les selectors
    → Utiliser `waitField` avant de cliquer/remplir
 
 3. **"Multiple flows per platform"**
@@ -293,14 +239,8 @@ npm run dev
 ### Exemple complet : SwissLifeOne SLSIS
 
 Voir les fichiers :
-- `data/flows/swisslifeone/slsis.hl.json`
-- `data/field-definitions/swisslifeone.json`
-
-### Exemple simple : Demo
-
-Voir les fichiers :
-- `data/flows/demo/simple.hl.json`
-- `data/field-definitions/demo.json`
+- `platforms/swisslifeone/flows/slsis.ts`
+- `platforms/swisslifeone/selectors.ts`
 
 ## 🔒 Sécurité
 
