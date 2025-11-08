@@ -3,7 +3,7 @@
  * Handles field-based step execution (wait, fill, type, select, toggle, click)
  */
 
-import type { Page } from 'playwright';
+import type { Page } from 'playwright-core';
 import { resolveValue, resolveAndMapValue } from '../resolve';
 import type { SelectorMap, FieldSelector } from '../../platforms/types';
 import type { FlowRunnerOptions, ResolveContext } from './types';

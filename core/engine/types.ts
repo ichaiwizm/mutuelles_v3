@@ -2,7 +2,7 @@
  * Flow Runner Types
  */
 
-import type { Browser, BrowserContext, Page } from 'playwright';
+import type { Browser, BrowserContext, Page } from 'playwright-core';
 import type { LeadData } from '../domain';
 import type { Logger } from '../log';
 

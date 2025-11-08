@@ -3,7 +3,7 @@
  * Handles browser lifecycle, tracing, and screenshots
  */
 
-import { chromium } from 'playwright';
+import { chromium } from 'playwright-core';
 import type { FlowRunnerOptions, FlowRunnerContext } from './types';
 
 export class BrowserManager {

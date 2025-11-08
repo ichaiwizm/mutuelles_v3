@@ -5,7 +5,7 @@
  * Open a page and test a specific selector.
  */
 
-import { chromium } from 'playwright';
+import { chromium } from 'playwright-core';
 
 interface TestSelectorOptions {
   timeout?: number;

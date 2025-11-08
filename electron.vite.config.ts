@@ -10,13 +10,20 @@ dotenv.config()
 export default defineConfig({
   main: {
     plugins: [externalizeDepsPlugin()],
-    build: { sourcemap: true },
+    build: {
+      sourcemap: true,
+      rollupOptions: {
+        external: ['playwright', 'playwright-core']
+      }
+    },
     resolve: {
       alias: {
         '@shared': resolve(__dirname, 'src/shared'),
         '@renderer': resolve(__dirname, 'src/renderer'),
         '@main': resolve(__dirname, 'src/main'),
-        '@preload': resolve(__dirname, 'src/preload')
+        '@preload': resolve(__dirname, 'src/preload'),
+        '@core': resolve(__dirname, 'core'),
+        '@platforms': resolve(__dirname, 'platforms')
       }
     },
     define: {
@@ -26,23 +33,35 @@ export default defineConfig({
   },
   preload: {
     plugins: [externalizeDepsPlugin()],
-    build: { sourcemap: true },
+    build: {
+      sourcemap: true,
+      rollupOptions: {
+        external: ['playwright', 'playwright-core']
+      }
+    },
     resolve: {
       alias: {
         '@shared': resolve(__dirname, 'src/shared'),
         '@renderer': resolve(__dirname, 'src/renderer'),
         '@main': resolve(__dirname, 'src/main'),
-        '@preload': resolve(__dirname, 'src/preload')
+        '@preload': resolve(__dirname, 'src/preload'),
+        '@core': resolve(__dirname, 'core'),
+        '@platforms': resolve(__dirname, 'platforms')
       }
     }
   },
   renderer: {
+    optimizeDeps: {
+      exclude: ['playwright', 'playwright-core']
+    },
     resolve: {
       alias: {
         '@shared': resolve(__dirname, 'src/shared'),
         '@renderer': resolve(__dirname, 'src/renderer'),
         '@main': resolve(__dirname, 'src/main'),
-        '@preload': resolve(__dirname, 'src/preload')
+        '@preload': resolve(__dirname, 'src/preload'),
+        '@core': resolve(__dirname, 'core'),
+        '@platforms': resolve(__dirname, 'platforms')
       }
     },
     plugins: [react(), tailwindcss()],

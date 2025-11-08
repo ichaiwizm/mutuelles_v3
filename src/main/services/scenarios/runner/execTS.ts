@@ -1,8 +1,8 @@
 import path from 'node:path'
 import fs from 'node:fs'
-import { FlowRunner } from '../../../../core/engine'
-import type { Flow } from '../../../../core/dsl'
-import { createLogger as createRunLogger } from '../../../../core/log'
+import { FlowRunner } from '@core/engine'
+import type { Flow } from '@core/dsl'
+import { createLogger as createRunLogger } from '@core/log'
 import { getTSFlow, getPlatformSelectorsTS } from '../ts_catalog'
 
 export async function execTS(args: {

@@ -16,9 +16,11 @@
       "@shared/*": ["src/shared/*"],
       "@renderer/*": ["src/renderer/*"],
       "@main/*": ["src/main/*"],
-      "@preload/*": ["src/preload/*"]
+      "@preload/*": ["src/preload/*"],
+      "@core/*": ["core/*"],
+      "@platforms/*": ["platforms/*"]
     }
   },
-  "include": ["src"]
+  "include": ["src", "core", "platforms", "cli", "scripts"]
 }
 

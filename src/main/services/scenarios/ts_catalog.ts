@@ -1,6 +1,6 @@
-import * as platforms from '../../../../platforms'
-import type { Flow } from '../../../../core/dsl'
-import type { SelectorMap } from '../../../../platforms/types'
+import * as platforms from '@platforms/index'
+import type { Flow } from '@core/dsl'
+import type { SelectorMap } from '@platforms/types'
 
 export type TSFlow = { platform: string; slug: string; name: string; flow: Flow }
 
