@@ -14,13 +14,15 @@ interface HistoryFiltersProps {
   onFiltersChange: (filters: HistoryFilterState) => void
   totalRuns: number
   filteredRuns: number
+  onDeleteAll?: () => void
 }
 
 export default function HistoryFilters({
   filters,
   onFiltersChange,
   totalRuns,
-  filteredRuns
+  filteredRuns,
+  onDeleteAll
 }: HistoryFiltersProps) {
   const [showFilters, setShowFilters] = useState(false)
 
@@ -81,7 +83,17 @@ export default function HistoryFilters({
           <ChevronDown size={14} className={`transition-transform ${showFilters ? 'rotate-180' : ''}`} />
         </button>
 
-        {/* Clear history button removed - filesystem history cannot be bulk-deleted */}
+        {/* Delete All button */}
+        {totalRuns > 0 && onDeleteAll && (
+          <button
+            onClick={onDeleteAll}
+            className="flex items-center gap-2 px-3 py-2 text-sm font-medium border border-red-300 dark:border-red-700 text-red-700 dark:text-red-400 rounded-md hover:bg-red-50 dark:hover:bg-red-950 transition-colors"
+            title="Supprimer tout l'historique"
+          >
+            <Trash2 size={16} />
+            Tout supprimer
+          </button>
+        )}
       </div>
 
       {/* Filter options (collapsible) */}

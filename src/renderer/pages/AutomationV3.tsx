@@ -79,6 +79,30 @@ export default function AutomationV3() {
     )
   }
 
+  const handleDeleteAllHistory = async () => {
+    if (automation.runHistory.length === 0) {
+      toast.warning('Aucun historique', 'Aucun historique à supprimer')
+      return
+    }
+
+    confirm(
+      `Êtes-vous sûr de vouloir supprimer tout l'historique (${automation.runHistory.length} run(s)) ?`,
+      async () => {
+        try {
+          const result = await automation.deleteAllRuns()
+          if (result.success) {
+            toast.success('Historique supprimé', result.message || 'Tout l\'historique a été supprimé')
+          } else {
+            toast.error('Erreur', result.error || 'Impossible de supprimer l\'historique')
+          }
+        } catch (error) {
+          logger.error('Failed to delete all history:', error)
+          toast.error('Erreur', error instanceof Error ? error.message : 'Impossible de supprimer l\'historique')
+        }
+      }
+    )
+  }
+
   return (
     <section className="space-y-6">
       {/* Header */}
@@ -139,6 +163,7 @@ export default function AutomationV3() {
         onRerunHistory={automation.rerunHistoryRun}
         onRerunHistoryItem={automation.rerunSingleItem}
         onDeleteHistory={automation.deleteHistoryRun}
+        onDeleteAllHistory={handleDeleteAllHistory}
         settings={automation.settings}
         onUpdateSettings={automation.updateSettings}
         getLeadName={automation.getLeadName}

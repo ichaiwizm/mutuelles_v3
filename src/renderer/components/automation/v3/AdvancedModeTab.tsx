@@ -42,6 +42,7 @@ interface AdvancedModeTabProps {
   onRerunHistory: (runId: string) => void
   onRerunHistoryItem: (item: ExecutionHistoryItem) => void
   onDeleteHistory: (runId: string) => void
+  onDeleteAllHistory?: () => void
 
   // Settings
   settings: AdvancedSettings
@@ -87,6 +88,7 @@ export default function AdvancedModeTab({
   onRerunHistory,
   onRerunHistoryItem,
   onDeleteHistory,
+  onDeleteAllHistory,
   settings,
   onUpdateSettings,
   getLeadName,
@@ -264,6 +266,7 @@ export default function AdvancedModeTab({
         onRerunHistory={onRerunHistory}
         onRerunHistoryItem={onRerunHistoryItem}
         onDeleteHistory={onDeleteHistory}
+        onDeleteAllHistory={onDeleteAllHistory}
         onClearCompletedExecutions={onClearCompletedExecutions}
         flows={flows}
         concurrency={settings.concurrency}

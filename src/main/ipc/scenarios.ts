@@ -215,6 +215,61 @@ export function registerScenariosIpc() {
     }
   })
 
+  ipcMain.handle('scenarios:deleteAllRuns', async () => {
+    try {
+      const db = getDb()
+
+      // Collect all run directories before deleting from database
+      const allRunDirs = new Set<string>()
+      const completedRuns = execQueries.getRunHistory(db, { status: undefined })
+
+      for (const run of completedRuns) {
+        const items = execQueries.getRunItems(db, run.id)
+        items.forEach((item) => {
+          if (item.run_dir) allRunDirs.add(item.run_dir)
+        })
+      }
+
+      // Delete all completed runs from database (CASCADE handles related tables)
+      const runIds = execQueries.deleteAllCompletedRuns(db)
+
+      if (runIds.length === 0) {
+        return {
+          success: true,
+          message: 'Aucun historique à supprimer',
+          deletedCount: 0
+        }
+      }
+
+      // Clean up filesystem
+      let cleanedDirs = 0
+      for (const runDir of allRunDirs) {
+        if (runDir && fs.existsSync(runDir)) {
+          try {
+            fs.rmSync(runDir, { recursive: true, force: true })
+            cleanedDirs++
+          } catch (err) {
+            logger.error(`Failed to delete run directory ${runDir}:`, err)
+          }
+        }
+      }
+
+      logger.info(`Deleted ${runIds.length} runs and cleaned ${cleanedDirs} directories`)
+
+      return {
+        success: true,
+        message: `${runIds.length} run(s) supprimé(s)`,
+        deletedCount: runIds.length
+      }
+    } catch (error) {
+      logger.error('Error deleting all runs:', error)
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to delete all runs'
+      }
+    }
+  })
+
   ipcMain.handle('scenarios:getRunDetails', async (_e, runId: unknown) => {
     try {
       if (typeof runId !== 'string') {

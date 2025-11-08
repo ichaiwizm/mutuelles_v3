@@ -232,6 +232,7 @@ export function useAutomation() {
     rerunHistoryRun,
     rerunSingleItem,
     deleteHistoryRun: history.deleteHistoryRun,
+    deleteAllRuns: history.deleteAllRuns,
     loadHistory: history.loadHistory,
 
     prepareReplayFromErrors

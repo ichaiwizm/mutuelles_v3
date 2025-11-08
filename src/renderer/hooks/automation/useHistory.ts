@@ -143,6 +143,24 @@ export function useHistory() {
   }, [])
 
   /**
+   * Delete all completed/failed/stopped runs from database
+   */
+  const deleteAllRuns = useCallback(async () => {
+    try {
+      const result = await window.api.scenarios.deleteAllRuns()
+
+      if (result.success) {
+        // Clear all history from state
+        setRunHistory([])
+      }
+
+      return result
+    } catch (error) {
+      return { success: false, error: String(error) }
+    }
+  }, [])
+
+  /**
    * Get run items for a specific run (for details modal)
    */
   const getRunItems = useCallback(async (runId: string) => {
@@ -171,6 +189,7 @@ export function useHistory() {
     isLoading,
     loadHistory,
     deleteHistoryRun,
+    deleteAllRuns,
     getRunItems,
     getItemSteps
   }

@@ -13,6 +13,7 @@ interface ExecutionHistoryViewProps {
   onRerunHistory: (runId: string) => void
   onRerunHistoryItem: (item: ExecutionHistoryItem) => void
   onDeleteHistory: (runId: string) => void
+  onDeleteAllHistory?: () => void
 }
 
 /**
@@ -22,7 +23,8 @@ export default function ExecutionHistoryView({
   runHistory,
   onRerunHistory,
   onRerunHistoryItem,
-  onDeleteHistory
+  onDeleteHistory,
+  onDeleteAllHistory
 }: ExecutionHistoryViewProps) {
   // History filters
   const [historyFilters, setHistoryFilters] = useState<HistoryFilterState>({
@@ -72,6 +74,7 @@ export default function ExecutionHistoryView({
         onFiltersChange={setHistoryFilters}
         totalRuns={runHistory.length}
         filteredRuns={filteredHistory.length}
+        onDeleteAll={onDeleteAllHistory}
       />
 
       {/* History list */}

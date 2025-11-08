@@ -498,3 +498,33 @@ export function deleteRun(db: Database.Database, runId: string): void {
   db.prepare('DELETE FROM execution_runs WHERE id = ?').run(runId)
 }
 
+/**
+ * Delete all completed/failed/stopped runs (exclude 'running')
+ * Returns array of deleted run IDs for filesystem cleanup
+ */
+export function deleteAllCompletedRuns(db: Database.Database): string[] {
+  // First get all completed run IDs for filesystem cleanup
+  const runs = db
+    .prepare(
+      `
+    SELECT id FROM execution_runs
+    WHERE status IN ('completed', 'failed', 'stopped')
+  `
+    )
+    .all() as Array<{ id: string }>
+
+  const runIds = runs.map((r) => r.id)
+
+  // Delete from database (CASCADE handles related tables)
+  if (runIds.length > 0) {
+    db.prepare(
+      `
+      DELETE FROM execution_runs
+      WHERE status IN ('completed', 'failed', 'stopped')
+    `
+    ).run()
+  }
+
+  return runIds
+}
+

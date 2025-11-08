@@ -15,6 +15,7 @@ interface ExecutionDashboardProps {
   onRerunHistory?: (runId: string) => void
   onRerunHistoryItem?: (item: ExecutionHistoryItem) => void
   onDeleteHistory?: (runId: string) => void
+  onDeleteAllHistory?: () => void
   // For time estimation
   flows?: Flow[]
   concurrency?: number
@@ -41,6 +42,7 @@ export default function ExecutionDashboard({
   onRerunHistory,
   onRerunHistoryItem,
   onDeleteHistory,
+  onDeleteAllHistory,
   flows = [],
   concurrency = 2,
   onPrepareReplayFromErrors,
@@ -96,6 +98,7 @@ export default function ExecutionDashboard({
           onRerunHistory={onRerunHistory!}
           onRerunHistoryItem={onRerunHistoryItem!}
           onDeleteHistory={onDeleteHistory!}
+          onDeleteAllHistory={onDeleteAllHistory}
         />
       )}
     </div>

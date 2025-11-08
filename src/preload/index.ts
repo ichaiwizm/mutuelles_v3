@@ -93,6 +93,7 @@ contextBridge.exposeInMainWorld('api', {
     getRunItems: (runId: string) => ipcRenderer.invoke('scenarios:getRunItems', runId) as Promise<{ success: boolean; data?: Array<any>; error?: string }>,
     getRunSteps: (itemId: string) => ipcRenderer.invoke('scenarios:getRunSteps', itemId) as Promise<{ success: boolean; data?: Array<any>; error?: string }>,
     deleteRun: (runId: string) => ipcRenderer.invoke('scenarios:deleteRun', runId) as Promise<{ success: boolean; message?: string; error?: string }>,
+    deleteAllRuns: () => ipcRenderer.invoke('scenarios:deleteAllRuns') as Promise<{ success: boolean; message?: string; error?: string; deletedCount?: number }>,
     getRunDetails: (runDir: string) => ipcRenderer.invoke('scenarios:getRunDetails', runDir) as Promise<{ success: boolean; data?: any; error?: string }>,
     repairFinalize: () => ipcRenderer.invoke('scenarios:repairFinalize') as Promise<{ success: boolean; repaired?: number; error?: string }>,
     getItemDetails: (itemId: string) => ipcRenderer.invoke('scenarios:getItemDetails', itemId) as Promise<{ success: boolean; data?: any; error?: string }>,
@@ -223,6 +224,17 @@ declare global {
           success: boolean
           data?: Array<any>
           error?: string
+        }>
+        deleteRun: (runId: string) => Promise<{
+          success: boolean
+          message?: string
+          error?: string
+        }>
+        deleteAllRuns: () => Promise<{
+          success: boolean
+          message?: string
+          error?: string
+          deletedCount?: number
         }>
       getRunDetails: (runDir: string) => Promise<{
         success: boolean
