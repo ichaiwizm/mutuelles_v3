@@ -23,6 +23,18 @@
       "label": "Submit button"
     }
   },
+  "consent.acceptAll": {
+    "selector": "button:has-text('Tout autoriser'), button:has-text('Tout accepter'), [role='button']:has-text('Tout autoriser')",
+    "meta": { "label": "Accept all cookies" }
+  },
+  "consent.manage": {
+    "selector": "button:has-text('Préférence'), button:has-text('préférences'), button:has-text('Manage your preferences'), button:has-text('Manage your preferences about cookies')",
+    "meta": { "label": "Open cookies preferences" }
+  },
+  "consent.overlay": {
+    "selector": "#axeptio_overlay, .axeptio_mount",
+    "meta": { "label": "Cookies overlay" }
+  },
   "subscriber.firstName": {
     "selector": "input[name='firstName'], input[id*='firstName'], input[id*='prenom']",
     "meta": {
@@ -47,5 +59,23 @@
     "meta": {
       "label": "Birth date"
     }
+  }
+  ,
+  "product.lastName": {
+    "selector": "xpath=//label[contains(normalize-space(.),'Nom')]/following::input[1]",
+    "meta": { "label": "Nom (produit)" }
+  },
+  "product.firstName": {
+    "selector": "xpath=//label[contains(normalize-space(.),'Prénom')]/following::input[1]",
+    "meta": { "label": "Prénom (produit)" }
+  },
+  "product.birthDate": {
+    "selector": "xpath=//label[contains(normalize-space(.),'Date de naissance')]/following::input[1]",
+    "adapter": "dateIsoToFr",
+    "meta": { "label": "Date de naissance (produit)" }
+  },
+  "product.postalCode": {
+    "selector": "xpath=//label[contains(normalize-space(.),'Code postal')]/following::input[1]",
+    "meta": { "label": "Code postal (produit)" }
   }
 }

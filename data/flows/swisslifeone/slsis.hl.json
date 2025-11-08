@@ -19,6 +19,17 @@
       "label": "Wait for page load"
     },
     {
+      "type": "click",
+      "field": "consent.acceptAll",
+      "optional": true,
+      "label": "Accept cookies"
+    },
+    {
+      "type": "sleep",
+      "ms": 500,
+      "label": "Stabilize after cookies"
+    },
+    {
       "type": "waitField",
       "field": "auth.loginButton",
       "label": "Wait for login button"
@@ -53,18 +64,15 @@
     {
       "type": "click",
       "field": "auth.submit",
-      "label": "Submit login"
+      "optional": true,
+      "label": "Submit login (click)"
     },
+    { "type": "sleep", "ms": 600, "label": "Stabilize before fallback" },
+    { "type": "pressKey", "key": "Enter", "label": "Submit login (Enter fallback)" },
     {
       "type": "sleep",
       "ms": 5000,
       "label": "Wait for post-login"
-    },
-    {
-      "type": "click",
-      "field": "consent.acceptAll",
-      "optional": true,
-      "label": "Accept cookies"
     },
     {
       "type": "comment",
@@ -90,6 +98,7 @@
       "ms": 1000,
       "label": "Wait for iframe ready"
     },
+    { "type": "waitField", "field": "slsis.projectName", "label": "Wait project name field" },
     {
       "type": "comment",
       "text": "=== FILL SUBSCRIBER INFO ==="
@@ -114,11 +123,7 @@
       "field": "subscriber.profession",
       "label": "Select profession"
     },
-    {
-      "type": "fill",
-      "field": "subscriber.postalCode",
-      "label": "Fill postal code"
-    },
+    { "type": "select", "field": "subscriber.postalCode", "label": "Select department from postal code" },
     {
       "type": "comment",
       "text": "=== COMPLETE ==="

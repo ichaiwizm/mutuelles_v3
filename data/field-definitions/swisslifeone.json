@@ -1,9 +1,7 @@
 {
   "auth.loginButton": {
-    "selector": "button.login-btn, a.login-link, [href*='login']",
-    "meta": {
-      "label": "Login button"
-    }
+    "selector": "button:has-text('Se connecter'), a:has-text('Se connecter')",
+    "meta": { "label": "Login button" }
   },
   "auth.username": {
     "selector": "input[name='username'], input[type='email'], input[id*='username'], input[id*='email']",
@@ -24,10 +22,12 @@
     }
   },
   "consent.acceptAll": {
-    "selector": "button#acceptAll, button.accept-all, [class*='accept-all']",
-    "meta": {
-      "label": "Accept all cookies"
-    }
+    "selector": "button:has-text('Tout autoriser'), button:has-text('Tout accepter'), [role='button']:has-text('Tout autoriser')",
+    "meta": { "label": "Accept all cookies" }
+  },
+  "slsis.projectName": {
+    "selector": "#nom-projet",
+    "meta": { "label": "Nom du projet (SLSIS)" }
   },
   "subscriber.birthDate": {
     "selector": "#date-naissance-assure-principal",

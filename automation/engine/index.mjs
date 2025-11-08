@@ -197,6 +197,14 @@ export async function runHighLevelFlow(options) {
             break;
           }
 
+          case 'waitGone': {
+            const fieldDef = fieldDefs[step.field];
+            if (!fieldDef) throw new Error(`Field definition not found: ${step.field}`);
+            // Wait until element is hidden or detached (returns immediately if not found)
+            await target.waitForSelector(fieldDef.selector, { state: 'hidden', timeout: step.timeoutMs || 15000 });
+            break;
+          }
+
           case 'fill': {
             const fieldDef = fieldDefs[step.field];
             if (!fieldDef) throw new Error(`Field definition not found: ${step.field}`);
@@ -273,9 +281,11 @@ export async function runHighLevelFlow(options) {
         }
 
         // Take screenshot
-        const screenshotPath = path.join(runDir, `step-${i.toString().padStart(3, '0')}.png`);
-        await (currentFrame || page).screenshot({ path: screenshotPath, fullPage: false });
-        stepResult.screenshot = screenshotPath;
+        const screenshotFilename = `step-${i.toString().padStart(3, '0')}.png`;
+        const screenshotPath = path.join(runDir, screenshotFilename);
+        // Always capture from page level (Frame does not support screenshot)
+        await page.screenshot({ path: screenshotPath, fullPage: false });
+        stepResult.screenshot = screenshotFilename;
 
       } catch (error) {
         stepResult.ok = false;
@@ -286,9 +296,10 @@ export async function runHighLevelFlow(options) {
 
         // Screenshot on error
         try {
-          const screenshotPath = path.join(runDir, `step-${i.toString().padStart(3, '0')}-error.png`);
-          await (currentFrame || page).screenshot({ path: screenshotPath, fullPage: true });
-          stepResult.screenshot = screenshotPath;
+          const screenshotFilename = `step-${i.toString().padStart(3, '0')}-error.png`;
+          const screenshotPath = path.join(runDir, screenshotFilename);
+          await page.screenshot({ path: screenshotPath, fullPage: true });
+          stepResult.screenshot = screenshotFilename;
         } catch {}
 
         if (!step.optional) {
