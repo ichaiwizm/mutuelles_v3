@@ -33,10 +33,7 @@
     "db:dump:data": "cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/db/dump.mjs --data-only",
     "db:optimize": "cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/db/optimize.mjs",
     "db:generate-leads": "cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/db/generate-leads.mjs",
-    "flow:explain": "tsx cli/index.ts flow:explain",
-    "flow:dry": "tsx cli/index.ts flow:dry",
-    "flow:run": "tsx cli/index.ts flow:run",
-    "selector:test": "tsx cli/index.ts selector:test",
+    "flow:run": "node cli/runner.mjs flow:run",
     "leads:list": "cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/leads/list.mjs",
     "leads:show": "cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/leads/show.mjs",
     "clean": "cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/clean.mjs"

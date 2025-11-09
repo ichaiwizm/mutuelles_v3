@@ -6,18 +6,11 @@
  * Main CLI entry point for flow operations.
  *
  * Commands:
- * - flow:explain <platform/flow> --lead <id>
- * - flow:dry <platform/flow> --lead <id> [--probe]
- * - flow:run <platform/flow> --lead <id> [--headless]
- * - selector:test <platform> <selector> --url <url>
+ * - flow:run <platform/flow> --lead <id> [--headless] [--trace <mode>] [--output <path>]
  */
 
 import { Command } from 'commander';
-import { explainFlow } from './commands/explain';
-import { dryRunFlow } from './commands/dry-run';
 import { runFlow } from './commands/run';
-import { testSelector } from './commands/test-selector';
-import { listLeadsCommand } from './commands/list-leads';
 
 const program = new Command();
 
@@ -27,43 +20,7 @@ program
   .version('2.0.0');
 
 // ============================================================
-// flow:explain
-// ============================================================
-
-program
-  .command('flow:explain <flowSlug>')
-  .description('Explain a flow execution (show resolution table without running)')
-  .requiredOption('--lead <id>', 'Lead ID')
-  .option('--format <format>', 'Output format (table|json)', 'table')
-  .action(async (flowSlug, options) => {
-    try {
-      await explainFlow(flowSlug, options.lead, { format: options.format });
-    } catch (error: any) {
-      console.error('Error:', error.message);
-      process.exit(1);
-    }
-  });
-
-// ============================================================
-// flow:dry
-// ============================================================
-
-program
-  .command('flow:dry <flowSlug>')
-  .description('Dry-run a flow (validate without executing)')
-  .requiredOption('--lead <id>', 'Lead ID')
-  .option('--probe', 'Open browser and check selector existence')
-  .action(async (flowSlug, options) => {
-    try {
-      await dryRunFlow(flowSlug, options.lead, { probe: options.probe });
-    } catch (error: any) {
-      console.error('Error:', error.message);
-      process.exit(1);
-    }
-  });
-
-// ============================================================
-// flow:run
+// flow:run - Execute a flow with a lead
 // ============================================================
 
 program
@@ -79,49 +36,6 @@ program
         headless: options.headless,
         trace: options.trace,
         outputPath: options.output,
-      });
-    } catch (error: any) {
-      console.error('Error:', error.message);
-      process.exit(1);
-    }
-  });
-
-// ============================================================
-// selector:test
-// ============================================================
-
-program
-  .command('selector:test <platform> <selector>')
-  .description('Test a selector on a page')
-  .requiredOption('--url <url>', 'Page URL')
-  .option('--timeout <ms>', 'Timeout in milliseconds', '5000')
-  .action(async (platform, selector, options) => {
-    try {
-      await testSelector(platform, selector, options.url, {
-        timeout: parseInt(options.timeout, 10),
-      });
-    } catch (error: any) {
-      console.error('Error:', error.message);
-      process.exit(1);
-    }
-  });
-
-// ============================================================
-// leads:list
-// ============================================================
-
-program
-  .command('leads:list')
-  .description('List all leads with detailed information')
-  .option('--format <format>', 'Output format (table|json|detailed)', 'table')
-  .option('--limit <number>', 'Maximum number of leads to display', '1000')
-  .option('--offset <number>', 'Number of leads to skip', '0')
-  .action(async (options) => {
-    try {
-      await listLeadsCommand({
-        format: options.format,
-        limit: parseInt(options.limit, 10),
-        offset: parseInt(options.offset, 10),
       });
     } catch (error: any) {
       console.error('Error:', error.message);

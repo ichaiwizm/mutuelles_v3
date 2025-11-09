@@ -51,7 +51,10 @@ export class BrowserManager {
   ): Promise<void> {
     if (!context.context) return;
 
-    const tracePath = `traces/${context.runId}.zip`;
+    // Use outputDir if provided, otherwise fall back to traces/
+    const tracePath = options.outputDir
+      ? `${options.outputDir}/traces/trace.zip`
+      : `traces/${context.runId}.zip`;
 
     if (options.trace === 'on') {
       await context.context.tracing.stop({ path: tracePath });
@@ -70,7 +73,7 @@ export class BrowserManager {
   ): Promise<string | undefined> {
     if (!options.screenshots || !context.page) return;
     const filePath = options.outputDir
-      ? `${options.outputDir}/step-${stepIndex + 1}.png`
+      ? `${options.outputDir}/screenshots/step-${stepIndex + 1}.png`
       : `screenshots/${context.runId}-step-${stepIndex + 1}.png`;
     await context.page.screenshot({ path: filePath }).catch(()=>{})
     return filePath
