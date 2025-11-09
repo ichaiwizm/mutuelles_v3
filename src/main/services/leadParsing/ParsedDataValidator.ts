@@ -19,8 +19,7 @@ export class ParsedDataValidator {
   // Critical fields that MUST be present (or defaultable)
   private static readonly CRITICAL_FIELDS = [
     'subscriber.lastName',
-    'subscriber.firstName',
-    'subscriber.telephone'
+    'subscriber.firstName'
   ]
 
   // Important fields that should be present for high quality

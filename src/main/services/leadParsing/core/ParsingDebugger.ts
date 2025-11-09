@@ -186,7 +186,8 @@ export class ParsingDebugger {
   }
 
   private static getMissingFields(result: ParserResult): string[] {
-    const required = ['lastName', 'firstName', 'telephone', 'email']
+    // Téléphone n'est pas requis; se limiter au couple Nom/Prénom
+    const required = ['lastName', 'firstName']
     const extracted = this.getExtractedFields(result)
     return required.filter(f => !extracted.includes(f))
   }

@@ -41,10 +41,30 @@ function cleanPostalCode(input: any): string | undefined {
 
 function cleanPhone(input: any): string | undefined {
   if (!input) return undefined
-  const s = String(input).replace(/\D/g, '')
-  // Keep as-is if 10+ digits, trim to last 10 if longer
-  if (s.length >= 10) return s.slice(-10)
-  return s || undefined
+  const digits = String(input).replace(/\D/g, '')
+
+  if (!digits) return undefined
+
+  // If french international format (33xxxxxxxxx) -> convert to domestic 0XXXXXXXXX
+  if (digits.startsWith('33') && digits.length >= 11) {
+    const rest = digits.slice(2) // drop country code
+    const nineOrTen = rest.length >= 9 ? rest.slice(-9) : rest
+    const local = ('0' + nineOrTen).slice(0, 10)
+    return local.length === 10 ? local : undefined
+  }
+
+  // Domestic already starting with 0 -> keep first 10
+  if (digits.startsWith('0') && digits.length >= 10) {
+    return digits.slice(0, 10)
+  }
+
+  // Fallback: take last 10 and ensure leading 0
+  if (digits.length >= 10) {
+    const last10 = digits.slice(-10)
+    return last10.startsWith('0') ? last10 : ('0' + last10.slice(-9))
+  }
+
+  return undefined
 }
 
 /**
@@ -112,8 +132,9 @@ function normalizeValues(values: Record<string, any>) {
   if (values.subscriber) {
     const phone = cleanPhone(values.subscriber.telephone || values.subscriber.phoneE164)
     if (phone) {
-      values.subscriber.phoneE164 = phone.startsWith('+') ? phone : `+33${phone.slice(1)}`
-      delete values.subscriber.telephone // Remove old field
+      // Keep domestic telephone for validator/UI and also set E.164
+      values.subscriber.telephone = phone
+      values.subscriber.phoneE164 = `+33${phone.slice(1)}`
     }
     const cp = cleanPostalCode(values.subscriber.postalCode)
     if (cp) values.subscriber.postalCode = cp

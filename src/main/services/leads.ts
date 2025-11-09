@@ -1,4 +1,5 @@
 import { getDb } from '../db/connection'
+import { createLogger } from './logger'
 import type {
   Lead,
   CleanLead,
@@ -13,6 +14,7 @@ import type {
 import { randomUUID } from 'crypto'
 
 export class LeadsService {
+  private log = createLogger('LeadsService')
   private get db() {
     return getDb()
   }
@@ -42,6 +44,8 @@ export class LeadsService {
       JSON.stringify(metadata),
       createdAt
     )
+
+    this.log.debug('createLead inserted', { id, lastName: data.subscriber?.lastName, firstName: data.subscriber?.firstName, birthDate: data.subscriber?.birthDate })
 
     return {
       id,

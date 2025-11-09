@@ -1,4 +1,5 @@
 import { ipcMain } from 'electron'
+import { createLogger } from '../services/logger'
 import { LeadsService } from '../services/leads'
 import type {
   LeadFilters,
@@ -129,8 +130,10 @@ const PaginationSchema = z.object({
 }).optional()
 
 export function registerLeadsIPC() {
+  const log = createLogger('IPC:Leads')
   ipcMain.handle('leads:create', async (_, data: any) => {
     try {
+      log.debug('leads:create called')
       // Normalize UI format to canonical
       const canonical = normalizeToCanonical(data)
 
@@ -161,9 +164,11 @@ export function registerLeadsIPC() {
         { createdManually: true }
       )
 
+      log.info('leads:create success', { id: lead.id })
       return { success: true, data: lead }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Erreur inconnue'
+      log.error('leads:create error', message)
       return { success: false, error: message }
     }
   })
@@ -339,6 +344,7 @@ export function registerLeadsIPC() {
   ipcMain.handle('leads:createBulk', async (_, data: { leads: Array<{ formData: Record<string, any>; metadata: Record<string, any> }> }) => {
     try {
       const leads = data.leads
+      log.debug('leads:createBulk called', { count: Array.isArray(leads) ? leads.length : 0 })
 
       if (!Array.isArray(leads) || leads.length === 0) {
         throw new Error('Liste de leads requise')
@@ -363,6 +369,7 @@ export function registerLeadsIPC() {
             metadata: { index: i, emailId: metadata.emailId }
           })
 
+          log.info('leads:createBulk item success', { index: i, id: lead.id, emailId: metadata?.emailId })
           successCount++
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue'
@@ -372,21 +379,23 @@ export function registerLeadsIPC() {
             metadata: { index: i, emailId: metadata?.emailId }
           })
 
+          log.error('leads:createBulk item error', { index: i, emailId: metadata?.emailId, error: errorMessage })
           failureCount++
         }
       }
 
+      const summary = { total: leads.length, successful: successCount, failed: failureCount }
+      log.info('leads:createBulk done', summary)
       return {
         success: true,
         data: {
-          total: leads.length,
-          successful: successCount,
-          failed: failureCount,
+          ...summary,
           results
         }
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Erreur inconnue'
+      log.error('leads:createBulk fatal error', message)
       return { success: false, error: message }
     }
   })

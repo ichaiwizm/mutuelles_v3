@@ -103,6 +103,7 @@ export function EmailImportView({
   }
 
   const handleConvertSelected = async () => {
+    logger.debug('EmailImport: handleConvertSelected start')
     // Get selected emails
     const selectedEmails = potentialLeads.filter((email) =>
       selectedEmailIds.includes(email.id)
@@ -114,11 +115,18 @@ export function EmailImportView({
     }
 
     // Parse emails
+    logger.debug('EmailImport: parseEmails', { selectedCount: selectedEmails.length })
     const resp = await parseEmails(selectedEmails)
+    if (!resp) {
+      logger.error('EmailImport: parseEmails failed')
+      toast.error('Analyse impossible, voir logs')
+      return
+    }
 
     // Filtrer les leads invalides (manque champs critiques) et marquer les doublons
     const baseLeads = resp?.enrichedLeads || []
     const validOrPartial = baseLeads.filter(l => l.validationStatus !== 'invalid')
+    logger.debug('EmailImport: parse result', { total: baseLeads.length, accepted: validOrPartial.length, stats: { valid: resp.valid, partial: resp.partial, invalid: resp.invalid } })
 
     // Vérifier les doublons via IPC (nom + prénom + date de naissance)
     const items = validOrPartial.map(l => ({
@@ -131,6 +139,7 @@ export function EmailImportView({
 
     const withDbDupInfo = await (async () => {
       try {
+        logger.debug('EmailImport: checkDuplicatesBatch', { items: items.length })
         const dupRes = await window.api.leads.checkDuplicatesBatch(items)
         if (dupRes.success && dupRes.data) {
           return validOrPartial.map((lead, idx) => ({
@@ -141,7 +150,9 @@ export function EmailImportView({
             }
           }))
         }
-      } catch {}
+      } catch (e) {
+        logger.error('Erreur checkDuplicatesBatch', e)
+      }
       return validOrPartial
     })()
 
@@ -149,6 +160,7 @@ export function EmailImportView({
     const withLocalDup = computeLocalDupFlags(withDbDupInfo)
     setPreviewLeads(withLocalDup)
     selection.selectAll()
+    logger.info('EmailImport: preview prepared', { total: withLocalDup.length })
   }
 
   const identityKey = (l: EnrichedLeadData) => {
@@ -187,9 +199,15 @@ export function EmailImportView({
   }
 
   const handleConfirmCreation = async () => {
+    logger.debug('EmailImport: handleConfirmCreation start')
     const selectedLeads = selection.getSelectedLeads()
-    if (selectedLeads.length === 0) return
+    if (selectedLeads.length === 0) {
+      logger.warn('EmailImport: no leads selected for creation')
+      return
+    }
+    logger.debug('EmailImport: createLeads', { count: selectedLeads.length })
     await createLeads(selectedLeads)
+    logger.info('EmailImport: createLeads done')
 
     // Reset selection mails + preview + état parsing
     setSelectedEmailIds([])
@@ -232,7 +250,6 @@ export function EmailImportView({
     const missingCritical: string[] = []
     if (!has('subscriber.lastName')) missingCritical.push('subscriber.lastName')
     if (!has('subscriber.firstName')) missingCritical.push('subscriber.firstName')
-    if (!has('subscriber.telephone')) missingCritical.push('subscriber.telephone')
 
     const missingImportant: string[] = []
     if (!has('subscriber.civility')) missingImportant.push('subscriber.civility')
