@@ -92,9 +92,9 @@ function normalizeToCanonical(uiData: any): any {
 
   // Normalize children
   if (Array.isArray(normalized.children)) {
-    normalized.children = normalized.children.map(child => ({
+    normalized.children = normalized.children.map((child: any) => ({
       ...child,
-      birthDate: convertDate(child.birthDate)
+      birthDate: convertDate((child as any).birthDate)
     }))
   }
 

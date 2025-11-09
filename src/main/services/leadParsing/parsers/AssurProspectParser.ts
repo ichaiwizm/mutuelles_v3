@@ -155,6 +155,39 @@ export class AssurProspectParser extends BaseLeadParser {
       project.madelin = { value: true, confidence: 'high', source: 'parsed' }
     }
 
+    // Souscripteur actuellement assuré : Oui/Non
+    const insuredMatch = text.match(/Souscripteur\s+actuellement\s+assur[ée]\s*:\s*(oui|non)/i)
+    if (insuredMatch) {
+      project.currentlyInsured = {
+        value: insuredMatch[1].toLowerCase() === 'oui',
+        confidence: 'high',
+        source: 'parsed'
+      }
+    }
+
+    // Need levels: Soins médicaux, Hospitalisation, Optique, Dentaire (values like 1..4)
+    const level = (label: string): number | null => {
+      const m = text.match(new RegExp(`${label}[^\n]*:\\s*(\\d)`, 'i'))
+      return m ? parseInt(m[1], 10) : null
+    }
+
+    const medical = level('Soins\s*m[ée]dicaux')
+    if (medical !== null) {
+      project.medicalCareLevel = { value: medical, confidence: 'medium', source: 'parsed' }
+    }
+    const hosp = level('Hospitalisation')
+    if (hosp !== null) {
+      project.hospitalizationLevel = { value: hosp, confidence: 'medium', source: 'parsed' }
+    }
+    const optics = level('Optique')
+    if (optics !== null) {
+      project.opticsLevel = { value: optics, confidence: 'medium', source: 'parsed' }
+    }
+    const dental = level('Dentaire')
+    if (dental !== null) {
+      project.dentalLevel = { value: dental, confidence: 'medium', source: 'parsed' }
+    }
+
     return project
   }
 }

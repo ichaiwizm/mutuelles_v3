@@ -314,7 +314,9 @@ export function enrich(
 
   // Compute derived fields (business rules)
   const computedValues = computeDerivedFields(currentValues, {
-    overwriteExisting: false,
+    // Allow computed (inferred) values to override generic defaults
+    // so that, e.g., SALARIÉ inferred from SECURITE_SOCIALE replaces default TNS
+    overwriteExisting: true,
   })
 
   // Apply computed values to current values

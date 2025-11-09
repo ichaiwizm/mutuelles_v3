@@ -138,6 +138,13 @@ function displayAsTable(leads, total) {
     if (data.project?.name) {
       console.log(`     Name: ${data.project.name}`);
     }
+    if (data.project?.medicalCareLevel || data.project?.hospitalizationLevel || data.project?.opticsLevel || data.project?.dentalLevel) {
+      console.log('     Levels:');
+      if (data.project?.medicalCareLevel !== undefined) console.log(`       Soins médicaux: ${data.project.medicalCareLevel}`);
+      if (data.project?.hospitalizationLevel !== undefined) console.log(`       Hospitalisation: ${data.project.hospitalizationLevel}`);
+      if (data.project?.opticsLevel !== undefined) console.log(`       Optique: ${data.project.opticsLevel}`);
+      if (data.project?.dentalLevel !== undefined) console.log(`       Dentaire: ${data.project.dentalLevel}`);
+    }
 
     // Subscriber info
     console.log('\n  👤 Subscriber:');

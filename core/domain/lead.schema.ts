@@ -52,6 +52,9 @@ export const subscriberSchema = z.object({
   birthDate: isoDateSchema,
   phoneE164: e164PhoneSchema,
   email: z.string().email().optional(),
+  // Contact/location additions
+  address: z.string().min(3).max(120).optional(),
+  city: z.string().min(2).max(60).optional(),
   departmentCode: departmentCodeSchema.optional(), // Deprecated: Use postalCode instead (auto-extracted)
   postalCode: postalCodeSchema.optional(),
   regime: z.string().optional(),
@@ -82,6 +85,7 @@ export const spouseSchema = z.object({
  */
 export const childSchema = z.object({
   birthDate: isoDateSchema,
+  gender: z.string().optional(),
   regime: z.string().optional(),
   ayantDroit: z.enum(['CLIENT', 'CONJOINT']).optional(),
 });
@@ -95,6 +99,21 @@ export const projectSchema = z.object({
   plan: z.string().optional(),
   couverture: z.boolean().optional(),
   ij: z.boolean().optional(),
+  // Parsed need levels (optional)
+  medicalCareLevel: z.number().int().min(1).max(9).optional(),
+  hospitalizationLevel: z.number().int().min(1).max(9).optional(),
+  opticsLevel: z.number().int().min(1).max(9).optional(),
+  dentalLevel: z.number().int().min(1).max(9).optional(),
+  // Alternative nested container for levels, kept flexible and optional
+  levels: z
+    .object({
+      medicalCare: z.number().int().min(1).max(9).optional(),
+      hospitalization: z.number().int().min(1).max(9).optional(),
+      optics: z.number().int().min(1).max(9).optional(),
+      dental: z.number().int().min(1).max(9).optional(),
+    })
+    .partial()
+    .optional(),
   simulationType: z.enum(['INDIVIDUEL', 'COUPLE', 'FAMILLE']).optional(),
   madelin: z.boolean().optional(),
   resiliation: z.boolean().optional(),

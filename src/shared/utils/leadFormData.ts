@@ -60,7 +60,7 @@ function extractAll(formData: FlatFormData): Record<string, any> {
 }
 
 export function transformToCleanLead(formData: FlatFormData): CreateLeadData {
-  const subscriber: SubscriberInfo = {}
+  const subscriber: Partial<SubscriberInfo> = {}
 
   // Identity
   if (formData['subscriber.civility']) subscriber.civility = formData['subscriber.civility']
@@ -92,24 +92,25 @@ export function transformToCleanLead(formData: FlatFormData): CreateLeadData {
 
   if (formData['children.count'] !== undefined) subscriber.childrenCount = formData['children.count']
 
-  let spouse: SpouseInfo | undefined
+  let spouse: Partial<SpouseInfo> | undefined
   if (formData['conjoint']) {
-    spouse = {}
-    if (formData['spouse.civility']) spouse.civility = formData['spouse.civility']
-    if (formData['spouse.firstName']) spouse.firstName = formData['spouse.firstName']
-    if (formData['spouse.lastName']) spouse.lastName = formData['spouse.lastName']
-    if (formData['spouse.birthDate']) spouse.birthDate = parseDateToDDMMYYYY(formData['spouse.birthDate'])
-    if (formData['spouse.regime']) spouse.regime = formData['spouse.regime']
-    if (formData['spouse.category']) spouse.category = formData['spouse.category']
-    if (formData['spouse.status']) spouse.status = formData['spouse.status']
-    if (formData['spouse.profession']) spouse.profession = formData['spouse.profession']
-    if (formData['spouse.workFramework']) spouse.workFramework = formData['spouse.workFramework']
+    const s: Partial<SpouseInfo> = {}
+    if (formData['spouse.civility']) s.civility = formData['spouse.civility']
+    if (formData['spouse.firstName']) s.firstName = formData['spouse.firstName']
+    if (formData['spouse.lastName']) s.lastName = formData['spouse.lastName']
+    if (formData['spouse.birthDate']) s.birthDate = parseDateToDDMMYYYY(formData['spouse.birthDate'])
+    if (formData['spouse.regime']) s.regime = formData['spouse.regime']
+    if (formData['spouse.category']) s.category = formData['spouse.category']
+    if (formData['spouse.status']) s.status = formData['spouse.status']
+    if (formData['spouse.profession']) s.profession = formData['spouse.profession']
+    if (formData['spouse.workFramework']) s.workFramework = formData['spouse.workFramework']
+    if (Object.keys(s).length > 0) spouse = s
   }
 
-  const children: ChildInfo[] = []
+  const children: Array<Partial<ChildInfo>> = []
   const count = Number(formData['children.count'] || 0)
   for (let i = 0; i < count; i++) {
-    const child: ChildInfo = {}
+    const child: Partial<ChildInfo> = {}
     const b = formData[`children[${i}].birthDate`]
     const g = formData[`children[${i}].gender`]
     const r = formData[`children[${i}].regime`]
@@ -118,24 +119,28 @@ export function transformToCleanLead(formData: FlatFormData): CreateLeadData {
     if (g) child.gender = g
     if (r) child.regime = r
     if (a) child.ayantDroit = a
-    children.push(child)
+    if (child.birthDate) children.push(child)
   }
 
-  const project: ProjectInfo = {}
+  const project: Partial<ProjectInfo> = {}
   if (formData['project.name']) project.name = formData['project.name']
   if (formData['project.dateEffet']) project.dateEffet = parseDateToDDMMYYYY(formData['project.dateEffet'])
-  if (formData['project.ranges']) project.ranges = formData['project.ranges']
 
   const levels: any = {}
   if (formData['project.medicalCareLevel'] !== undefined) levels.medicalCare = formData['project.medicalCareLevel']
   if (formData['project.hospitalizationLevel'] !== undefined) levels.hospitalization = formData['project.hospitalizationLevel']
   if (formData['project.opticsLevel'] !== undefined) levels.optics = formData['project.opticsLevel']
   if (formData['project.dentalLevel'] !== undefined) levels.dental = formData['project.dentalLevel']
-  if (Object.keys(levels).length > 0) project.levels = levels
+  if (Object.keys(levels).length > 0) {
+    // Also copy flat fields for canonical schema
+    if (levels.medicalCare !== undefined) (project as any).medicalCareLevel = levels.medicalCare
+    if (levels.hospitalization !== undefined) (project as any).hospitalizationLevel = levels.hospitalization
+    if (levels.optics !== undefined) (project as any).opticsLevel = levels.optics
+    if (levels.dental !== undefined) (project as any).dentalLevel = levels.dental
+    ;(project as any).levels = levels
+  }
 
-  const platformData = extractAll(formData)
-
-  const out: CreateLeadData = { subscriber, project, platformData }
+  const out: CreateLeadData = { subscriber, project }
   if (spouse) out.spouse = spouse
   if (children.length > 0) out.children = children
   return out

@@ -45,8 +45,11 @@ export interface GmailConfig {
 // Canonical LeadData must remain platform-agnostic.
 
 export interface CreateLeadData extends Partial<LeadData> {
-  subscriber: SubscriberInfo
-  project: ProjectInfo
+  // UI/IPC may send partials; IPC normalizer + Zod will enforce requireds
+  subscriber: Partial<SubscriberInfo>
+  project: Partial<ProjectInfo>
+  spouse?: Partial<SpouseInfo>
+  children?: Array<Partial<ChildInfo>>
 }
 
 export interface UpdateLeadData extends Partial<LeadData> {

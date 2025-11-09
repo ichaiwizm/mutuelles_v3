@@ -226,7 +226,7 @@ export const formMetadata = {
         { value: 'REGIME_SALARIES_AGRICOLES', label: 'Régime Salariés Agricoles' },
         { value: 'AUTRES_REGIME_SPECIAUX', label: 'Autres régimes spéciaux' },
       ],
-      defaultValue: 'TNS',
+      defaultValue: 'SECURITE_SOCIALE_INDEPENDANTS',
     },
     ayantDroit: {
       label: 'Ayant droit de',

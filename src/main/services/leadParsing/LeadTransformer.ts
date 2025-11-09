@@ -226,7 +226,12 @@ export class LeadTransformer {
       madelin: 'project.madelin',
       resiliation: 'project.resiliation',
       reprise: 'project.reprise',
-      currentlyInsured: 'project.currentlyInsured'
+      currentlyInsured: 'project.currentlyInsured',
+      // Parsed need levels
+      medicalCareLevel: 'project.medicalCareLevel',
+      hospitalizationLevel: 'project.hospitalizationLevel',
+      opticsLevel: 'project.opticsLevel',
+      dentalLevel: 'project.dentalLevel'
     }
 
     for (const [parsedKey, formKey] of Object.entries(fieldMappings)) {

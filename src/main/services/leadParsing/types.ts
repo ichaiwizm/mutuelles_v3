@@ -103,6 +103,11 @@ export interface ParsedLeadData {
     resiliation?: ParsedField<boolean>
     reprise?: ParsedField<boolean>
     currentlyInsured?: ParsedField<boolean>
+    // Parsed need levels (AssurProspect: Soins, Hospitalisation, Optique, Dentaire)
+    medicalCareLevel?: ParsedField<number>
+    hospitalizationLevel?: ParsedField<number>
+    opticsLevel?: ParsedField<number>
+    dentalLevel?: ParsedField<number>
   }
 
   metadata: {

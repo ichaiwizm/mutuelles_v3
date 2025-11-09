@@ -79,6 +79,7 @@ function computeMadelin(
  */
 function inferStatusFromRegime(regime: string | undefined): string | null {
   if (regime === 'TNS') return 'TNS'
+  if (regime === 'SECURITE_SOCIALE' || regime === 'REGIME_SALARIES_AGRICOLES') return 'SALARIE'
   return null
 }
 
@@ -98,6 +99,16 @@ function inferStatusFromProfession(profession: string | undefined): string | nul
     return 'TNS'
   }
 
+  return null
+}
+
+/**
+ * Infer regime from status when regime is missing
+ */
+function inferRegimeFromStatus(status: string | undefined): string | null {
+  if (!status) return null
+  if (status === 'SALARIE') return 'SECURITE_SOCIALE'
+  if (status === 'TNS' || status === 'EXPLOITANT_AGRICOLE') return 'TNS'
   return null
 }
 
@@ -152,11 +163,15 @@ export function computeDerivedFields(
     }
 
     const subscriberRegime = getWithPrefix(prefix, 'subscriber.regime')
-    if (subscriberRegime && isEmpty(getWithPrefix(prefix, 'subscriber.status'))) {
+    if (subscriberRegime) {
       const inferredStatus = inferStatusFromRegime(subscriberRegime)
-      if (inferredStatus) {
-        setComputedWithPrefix(prefix, 'subscriber.status', inferredStatus)
-      }
+      if (inferredStatus) setComputedWithPrefix(prefix, 'subscriber.status', inferredStatus)
+    }
+    // Also infer regime from status if regime missing
+    const subStatusForRegime = getWithPrefix(prefix, 'subscriber.status')
+    if (!subscriberRegime && subStatusForRegime) {
+      const inferredRegime = inferRegimeFromStatus(subStatusForRegime)
+      if (inferredRegime) setComputedWithPrefix(prefix, 'subscriber.regime', inferredRegime)
     }
 
     const subscriberProfession = getWithPrefix(prefix, 'subscriber.profession')
@@ -186,11 +201,15 @@ export function computeDerivedFields(
     }
 
     const spouseRegime = getWithPrefix(prefix, 'spouse.regime')
-    if (spouseRegime && isEmpty(getWithPrefix(prefix, 'spouse.status'))) {
+    if (spouseRegime) {
       const inferredStatus = inferStatusFromRegime(spouseRegime)
-      if (inferredStatus) {
-        setComputedWithPrefix(prefix, 'spouse.status', inferredStatus)
-      }
+      if (inferredStatus) setComputedWithPrefix(prefix, 'spouse.status', inferredStatus)
+    }
+    // Also infer spouse regime from status if missing
+    const spouseStatus = getWithPrefix(prefix, 'spouse.status')
+    if (!spouseRegime && spouseStatus) {
+      const inferredRegime = inferRegimeFromStatus(spouseStatus)
+      if (inferredRegime) setComputedWithPrefix(prefix, 'spouse.regime', inferredRegime)
     }
 
     // === CHILDREN FIELDS ===

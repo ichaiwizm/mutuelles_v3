@@ -14,7 +14,7 @@ import type {
   EmailToLeadResponse,
   EnrichedLeadData
 } from '../../shared/types/emailParsing'
-import type { ParsedLeadData } from './leadParsing/types'
+import type { ParsedLeadData } from '../../shared/types/emailParsing'
 
 import { parserOrchestrator, ParsingDebugger } from './leadParsing'
 import { ParsedDataValidator } from './leadParsing/ParsedDataValidator'
@@ -98,18 +98,18 @@ export class EmailToLeadService {
 
     // Step 2: Enrich with defaults and computed values (unified)
     // The new DataEnricher.enrich() applies both defaults and business rules
-    const { enrichedData, defaultedFields, computedFields } = DataEnricher.enrich(parsedData)
-    parsedData = enrichedData
+    const { enrichedData, defaultedFields, computedFields } = DataEnricher.enrich(parsedData as any)
+    parsedData = enrichedData as any
 
     // Step 4: Validate
     const validationResult = ParsedDataValidator.validate(parsedData)
 
     // Step 5: Transform to form data
-    const formData = LeadTransformer.toFormData(parsedData)
+    const formData = LeadTransformer.toFormData(parsedData as any)
 
     // Step 6: Collect metadata
-    const parsedFields = LeadTransformer.getParsedFields(parsedData)
-    const confidenceScore = LeadTransformer.getConfidenceScore(parsedData)
+    const parsedFields = LeadTransformer.getParsedFields(parsedData as any)
+    const confidenceScore = LeadTransformer.getConfidenceScore(parsedData as any)
 
     // Step 7: Create enriched lead data
     const enrichedLead: EnrichedLeadData = {
