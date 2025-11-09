@@ -107,9 +107,6 @@ export class FlowRunner {
         }
       }
 
-      // Stop tracing if needed
-      await BrowserManager.stopTracing(this.context, options, stepsFailed);
-
       return {
         success: stepsFailed === 0,
         duration: Date.now() - startTime,
@@ -118,14 +115,17 @@ export class FlowRunner {
       };
     } catch (error: any) {
       this.context.logger.error('Flow execution failed', error);
+      stepsFailed++; // Count the error that caused the catch
       return {
         success: false,
         duration: Date.now() - startTime,
         stepsExecuted,
-        stepsFailed: stepsFailed + 1,
+        stepsFailed,
         error: error.message,
       };
     } finally {
+      // Stop tracing before cleanup (handles both success and failure)
+      await BrowserManager.stopTracing(this.context, options, stepsFailed);
       await BrowserManager.cleanup(this.context);
     }
   }
