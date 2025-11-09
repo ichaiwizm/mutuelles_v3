@@ -107,7 +107,14 @@ export class FieldExecutors {
     const isChecked = await page.isChecked(selector);
 
     if ((targetState && !isChecked) || (!targetState && isChecked)) {
-      await page.click(selector);
+      // For checkboxes, use JavaScript click to avoid viewport positioning issues in iframes
+      await page.evaluate((sel) => {
+        const element = document.querySelector(sel) as HTMLElement;
+        if (element) {
+          element.scrollIntoView({ behavior: 'instant', block: 'center' });
+          element.click();
+        }
+      }, selector);
     }
   }
 
@@ -121,7 +128,11 @@ export class FieldExecutors {
       ? selectorDef.selector(0)
       : selectorDef.selector;
 
-    await page.click(selector);
+    // Scroll into view before clicking to avoid viewport positioning issues
+    const locator = page.locator(selector);
+    await locator.scrollIntoViewIfNeeded();
+    // Use force: true to bypass viewport checks, especially useful in iframes
+    await locator.click({ force: true });
   }
 
   static getSelector(field: string, selectors: SelectorMap): FieldSelector {
