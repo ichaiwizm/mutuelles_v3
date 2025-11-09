@@ -43,8 +43,8 @@ export const projectSelectors: SelectorMap = {
 },
 
 'project.madelin': {
-  selector: 'label[for="loi-madelin-checkbox"], label:has(#madelin)',
-  meta: { label: 'Option Loi Madelin (checkbox via label)' },
+  selector: '#loi-madelin-checkbox, #madelin',
+  meta: { label: 'Option Loi Madelin (checkbox directe)' },
 },
 
 'project.resiliation_non': {

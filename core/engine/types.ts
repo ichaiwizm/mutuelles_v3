@@ -32,6 +32,7 @@ export interface FlowRunnerContext {
   browser?: Browser;
   context?: BrowserContext;
   page?: Page;
+  mainPage?: Page; // Always points to the main page, even when inside a frame
   logger: Logger;
   runId: string;
 }

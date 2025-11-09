@@ -39,6 +39,7 @@ export class BrowserManager {
 
     // Create page
     context.page = await context.context.newPage();
+    context.mainPage = context.page; // Keep reference to main page for screenshots
   }
 
   /**
@@ -71,11 +72,14 @@ export class BrowserManager {
     stepIndex: number,
     options: FlowRunnerOptions
   ): Promise<string | undefined> {
-    if (!options.screenshots || !context.page) return;
+    if (!options.screenshots) return;
+    // Always use mainPage for screenshots, even when inside a frame
+    const screenshotPage = context.mainPage || context.page;
+    if (!screenshotPage) return;
     const filePath = options.outputDir
       ? `${options.outputDir}/screenshots/step-${stepIndex + 1}.png`
       : `screenshots/${context.runId}-step-${stepIndex + 1}.png`;
-    await context.page.screenshot({ path: filePath }).catch(()=>{})
+    await screenshotPage.screenshot({ path: filePath }).catch(()=>{})
     return filePath
   }
 
@@ -83,8 +87,9 @@ export class BrowserManager {
    * Cleanup browser resources
    */
   static async cleanup(context: FlowRunnerContext): Promise<void> {
-    if (context.page) {
-      await context.page.close().catch(() => {});
+    // Close the main page (not the frame, if we're in one)
+    if (context.mainPage) {
+      await context.mainPage.close().catch(() => {});
     }
     if (context.context) {
       await context.context.close().catch(() => {});

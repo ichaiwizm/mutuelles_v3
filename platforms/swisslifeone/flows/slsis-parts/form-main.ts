@@ -80,14 +80,20 @@ export const formMainSteps: FlowStep[] = [
   // ============================================================
 
   step.comment('=== ÉTAPE 6: DONNÉES CONJOINT (si présent) ==='),
-  step.waitField('nav.onglet_conjoint', 'wait-onglet-conjoint'),
+  step.waitField('nav.onglet_conjoint', {
+    when: { field: 'spouse', isEmpty: false },
+    optional: true,
+  }, 'wait-onglet-conjoint'),
   step.click('nav.onglet_conjoint', {
     when: { field: 'spouse', isEmpty: false },
     optional: true,
   }, 'click-onglet-conjoint'),
   step.sleep(500, 'wait-after-onglet-conjoint'),
 
-  step.waitField('spouse.birthDate', 'wait-conjoint-date-naissance'),
+  step.waitField('spouse.birthDate', {
+    when: { field: 'spouse', isEmpty: false },
+    optional: true,
+  }, 'wait-conjoint-date-naissance'),
   step.fill('spouse.birthDate', {
     leadKey: 'spouse.birthDate',
     when: { field: 'spouse', isEmpty: false },
@@ -109,11 +115,16 @@ export const formMainSteps: FlowStep[] = [
   step.select('spouse.profession', {
     leadKey: 'spouse.profession',
     when: {
-      or: [
-        { field: 'spouse.profession', isEmpty: true },
+      and: [
+        { field: 'spouse', isEmpty: false },
         {
-          field: 'spouse.status',
-          oneOf: ['SALARIE_AGRICOLE', 'EXPLOITANT_AGRICOLE', 'RETRAITE', 'RETRAITE_ANCIEN_SALARIE', 'RETRAITE_ANCIEN_EXPLOITANT'],
+          or: [
+            { field: 'spouse.profession', isEmpty: true },
+            {
+              field: 'spouse.status',
+              oneOf: ['SALARIE_AGRICOLE', 'EXPLOITANT_AGRICOLE', 'RETRAITE', 'RETRAITE_ANCIEN_SALARIE', 'RETRAITE_ANCIEN_EXPLOITANT'],
+            },
+          ],
         },
       ],
     },

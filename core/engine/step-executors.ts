@@ -63,7 +63,9 @@ export class StepExecutors {
         break;
 
       case 'pressKey':
-        await context.page.keyboard.press(step.key);
+        // Use mainPage for keyboard events (works even when inside a frame)
+        const keyboardPage = context.mainPage || context.page;
+        await keyboardPage.keyboard.press(step.key);
         break;
 
       case 'comment':
@@ -85,13 +87,15 @@ export class StepExecutors {
     const frame = await frameElement!.contentFrame();
     if (!frame) throw new Error(`Frame not found: ${step.selector}`);
 
-    // Switch context to frame
+    // Switch context to frame (mainPage stays pointing to the main page for screenshots)
     context.page = frame as any;
   }
 
   private static async exitFrame(context: FlowRunnerContext): Promise<void> {
     // Return to main page
-    if (context.context) {
+    if (context.mainPage) {
+      context.page = context.mainPage;
+    } else if (context.context) {
       const pages = context.context.pages();
       context.page = pages[0];
     }

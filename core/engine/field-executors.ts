@@ -80,7 +80,12 @@ export class FieldExecutors {
       selectorDef.valueMap
     );
 
-    await page.selectOption(selector, String(mapped));
+    // Apply adapter if present
+    const finalValue = selectorDef.adapter
+      ? selectorDef.adapter(mapped)
+      : mapped;
+
+    await page.selectOption(selector, String(finalValue));
   }
 
   static async toggleField(

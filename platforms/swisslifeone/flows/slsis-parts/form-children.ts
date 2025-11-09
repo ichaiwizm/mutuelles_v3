@@ -9,13 +9,19 @@ export const formChildrenSteps: FlowStep[] = [
   // ============================================================
 
   step.comment('=== ÉTAPE 7: ENFANTS ==='),
-  step.waitField('children.count', 'wait-nb-enfants'),
-  step.select('children.count', { leadKey: 'subscriber.childrenCount' }, 'select-nb-enfants'),
+  step.waitField('children.count', { optional: true }, 'wait-nb-enfants'),
+  step.select('children.count', {
+    leadKey: 'subscriber.childrenCount',
+    optional: true,
+  }, 'select-nb-enfants'),
   step.sleep(2000, 'network-after-nb-enfants'),
 
   // Child 0
   step.comment('=== Enfant 0 ==='),
-  step.waitField('children[].birthDate', 'wait-enfant-0-date'),
+  step.waitField('children[].birthDate', {
+    when: { field: 'children[0].birthDate', isEmpty: false },
+    optional: true,
+  }, 'wait-enfant-0-date'),
   step.fill('children[].birthDate', {
     leadKey: 'children[0].birthDate',
     when: { field: 'children[0].birthDate', isEmpty: false },
@@ -64,17 +70,20 @@ export const formChildrenSteps: FlowStep[] = [
 
   step.waitField('project.dateEffet', 'wait-date-effet'),
   step.fill('project.dateEffet', { leadKey: 'project.dateEffet' }, 'fill-date-effet'),
-  step.sleep(2000, 'network-after-date-effet'),
+  step.pressKey('Escape', 'close-datepicker'),
+  step.sleep(2000, 'wait-page-reposition'),
+  step.sleep(1000, 'network-after-date-effet'),
 
   // ============================================================
   // OPTIONS (MADELIN, RÉSILIATION, REPRISE)
   // ============================================================
 
   step.comment('=== ÉTAPE 9: OPTIONS (MADELIN, RÉSILIATION, REPRISE) ==='),
-  step.click('project.madelin', {
+  step.toggle('project.madelin', {
+    value: true,
     when: { field: 'subscriber.status', equals: 'TNS' },
     optional: true,
-  }, 'click-madelin'),
+  }, 'toggle-madelin'),
 
   step.waitField('project.resiliation_non', 'wait-resiliation-non'),
   step.click('project.resiliation_non', { optional: true }, 'click-resiliation-non'),

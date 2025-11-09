@@ -81,7 +81,7 @@ export const formMetadata = {
         { value: 'REGIME_SALARIES_AGRICOLES', label: 'Régime Salariés Agricoles' },
         { value: 'AUTRES_REGIME_SPECIAUX', label: 'Autres régimes spéciaux' },
       ],
-      defaultValue: 'SECURITE_SOCIALE',
+      defaultValue: 'TNS',
     },
     status: {
       label: 'Statut',
@@ -157,7 +157,7 @@ export const formMetadata = {
         { value: 'REGIME_SALARIES_AGRICOLES', label: 'Régime Salariés Agricoles' },
         { value: 'AUTRES_REGIME_SPECIAUX', label: 'Autres régimes spéciaux' },
       ],
-      defaultValue: 'SECURITE_SOCIALE',
+      defaultValue: 'TNS',
     },
     status: {
       label: 'Statut',
@@ -226,7 +226,7 @@ export const formMetadata = {
         { value: 'REGIME_SALARIES_AGRICOLES', label: 'Régime Salariés Agricoles' },
         { value: 'AUTRES_REGIME_SPECIAUX', label: 'Autres régimes spéciaux' },
       ],
-      defaultValue: 'SECURITE_SOCIALE',
+      defaultValue: 'TNS',
     },
     ayantDroit: {
       label: 'Ayant droit de',

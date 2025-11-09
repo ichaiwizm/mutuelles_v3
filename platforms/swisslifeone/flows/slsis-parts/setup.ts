@@ -31,9 +31,6 @@ export const setupSteps: FlowStep[] = [
   step.goto('https://www.swisslifeone.fr/index-swisslifeOne.html#/tarification-et-simulation/slsis', 'goto-slsis-page'),
   step.sleep(1500, 'wait-slsis-load'),
 
-  step.click('consent.acceptAll', { optional: true }, 'accept-cookies-page'),
-  step.sleep(1000, 'wait-after-cookie'),
-
   step.enterFrame('iframe[name="iFrameTarificateur"]', 'enter-slsis-iframe'),
   step.sleep(800, 'wait-iframe-ready'),
 ];
