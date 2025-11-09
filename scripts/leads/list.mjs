@@ -84,6 +84,14 @@ function formatDate(dateStr) {
   });
 }
 
+// Format YYYY-MM-DD → DD/MM/YYYY (without time)
+function formatISODate(iso) {
+  if (!iso || typeof iso !== 'string') return 'N/A';
+  const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return iso; // fallback raw
+  return `${m[3]}/${m[2]}/${m[1]}`;
+}
+
 function listLeads(db, options) {
   const { limit, offset } = options;
 
@@ -121,14 +129,14 @@ function displayAsTable(leads, total) {
     console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
     console.log(`  ID: ${lead.id}`);
     console.log(`  Created: ${formatDate(lead.created_at)}`);
-    console.log(`  Updated: ${formatDate(lead.updated_at)}`);
+    console.log(`  Updated: ${lead.updated_at ? formatDate(lead.updated_at) : 'N/A'}`);
 
-    // Project info
+    // Project info (v2 canonical: plan, dateEffet, name)
     console.log('\n  📌 Project:');
-    console.log(`     Type: ${data.project?.type || 'N/A'}`);
-    console.log(`     Start Date: ${data.project?.startDate || 'N/A'}`);
-    if (data.project?.postalCode) {
-      console.log(`     Postal Code: ${data.project.postalCode}`);
+    console.log(`     Plan: ${data.project?.plan || 'N/A'}`);
+    console.log(`     Date d'effet: ${data.project?.dateEffet ? formatISODate(data.project.dateEffet) : 'N/A'}`);
+    if (data.project?.name) {
+      console.log(`     Name: ${data.project.name}`);
     }
 
     // Subscriber info
@@ -138,27 +146,50 @@ function displayAsTable(leads, total) {
     if (data.subscriber?.email) {
       console.log(`     Email: ${data.subscriber.email}`);
     }
-    if (data.subscriber?.phone) {
-      console.log(`     Phone: ${data.subscriber.phone}`);
+    if (data.subscriber?.phoneE164 || data.subscriber?.telephone) {
+      console.log(`     Phone: ${data.subscriber.phoneE164 || data.subscriber.telephone}`);
+    }
+    if (data.subscriber?.address) {
+      console.log(`     Address: ${data.subscriber.address}`);
+    }
+    if (data.subscriber?.postalCode && data.subscriber?.city) {
+      console.log(`     Location: ${data.subscriber.postalCode} ${data.subscriber.city}`);
+    }
+    if (data.subscriber?.regime) {
+      console.log(`     Regime: ${data.subscriber.regime}`);
+    }
+    if (data.subscriber?.profession) {
+      console.log(`     Profession: ${data.subscriber.profession}`);
     }
 
-    // Spouse info
-    if (data.spouse?.exists) {
+    // Spouse info (present if object exists)
+    if (data.spouse) {
       console.log('\n  💑 Spouse:');
-      console.log(`     Name: ${data.spouse?.civility || ''} ${data.spouse?.firstName || ''} ${data.spouse?.lastName || ''}`);
-      console.log(`     Birth Date: ${data.spouse?.birthDate || 'N/A'}`);
-      console.log(`     Regime: ${data.spouse?.regime || 'N/A'}`);
+      const civ = data.spouse.civility ? `${data.spouse.civility} ` : '';
+      console.log(`     Name: ${civ}${data.spouse.firstName || ''} ${data.spouse.lastName || ''}`.trim());
+      console.log(`     Birth Date: ${data.spouse.birthDate ? formatISODate(data.spouse.birthDate) : 'N/A'}`);
+      if (data.spouse.regime) console.log(`     Regime: ${data.spouse.regime}`);
+      if (data.spouse.status) console.log(`     Status: ${data.spouse.status}`);
+      if (data.spouse.profession) console.log(`     Profession: ${data.spouse.profession}`);
+      if (data.spouse.category) console.log(`     Category: ${data.spouse.category}`);
+      if (data.spouse.workFramework) console.log(`     Work: ${data.spouse.workFramework}`);
     }
 
-    // Children info
-    if (data.children && data.children.length > 0) {
+    // Children info (v2 canonical: birthDate, regime, ayantDroit)
+    if (Array.isArray(data.children) && data.children.length > 0) {
       console.log('\n  👶 Children:');
       data.children.forEach((child, idx) => {
-        console.log(`     Child ${idx + 1}: ${child.firstName || 'N/A'} ${child.lastName || ''} (${child.birthDate || 'N/A'})`);
-        if (child.schoolCertificate !== undefined) {
-          console.log(`              School Certificate: ${child.schoolCertificate ? 'Yes' : 'No'}`);
-        }
+        console.log(`     Child ${idx + 1}:`);
+        console.log(`       Birth Date: ${child.birthDate ? formatISODate(child.birthDate) : 'N/A'}`);
+        if (child.regime) console.log(`       Regime: ${child.regime}`);
+        if (child.ayantDroit) console.log(`       Ayant droit: ${child.ayantDroit}`);
       });
+    }
+
+    // Platform specific data
+    if (data.platformData) {
+      console.log('\n  🔧 Platform Data:');
+      console.log(`     Available platforms: ${Object.keys(data.platformData).filter(k => k.startsWith('alptis.') || k.startsWith('swisslifeone.')).map(k => k.split('.')[0]).filter((v, i, a) => a.indexOf(v) === i).join(', ') || 'None'}`);
     }
 
     // Metadata
@@ -167,17 +198,26 @@ function displayAsTable(leads, total) {
       if (metadata.source) {
         console.log(`     Source: ${metadata.source}`);
       }
-      if (metadata.provider) {
-        console.log(`     Provider: ${metadata.provider}`);
+      if (metadata.emailId) {
+        console.log(`     Email ID: ${metadata.emailId}`);
+      }
+      if (metadata.parserUsed) {
+        console.log(`     Parser: ${metadata.parserUsed}`);
+      }
+      if (metadata.parsingConfidence) {
+        console.log(`     Parsing Confidence: ${metadata.parsingConfidence}%`);
       }
       if (metadata.tags && metadata.tags.length > 0) {
         console.log(`     Tags: ${metadata.tags.join(', ')}`);
+      }
+      if (metadata.warnings && metadata.warnings.length > 0) {
+        console.log(`     Warnings: ${metadata.warnings.join(', ')}`);
       }
     }
 
     // Fingerprints
     console.log('\n  🔍 Fingerprints:');
-    console.log(`     Primary: ${lead.fingerprint_primary}`);
+    console.log(`     Primary: ${lead.fingerprint_primary || 'N/A'}`);
     if (lead.fingerprint_email) {
       console.log(`     Email: ${lead.fingerprint_email}`);
     }

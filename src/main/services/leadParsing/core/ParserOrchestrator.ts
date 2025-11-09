@@ -31,6 +31,7 @@ export class ParserOrchestrator {
    */
   parse(rawContent: string, sourceId: string, isHtml: boolean = false): OrchestrationResult {
     logger.debug(`[ParserOrchestrator] Starting orchestration for source: ${sourceId}`)
+    logger.debug(`[ParserOrchestrator] Raw email content (${rawContent.length} chars):\n${rawContent}`)
 
     // Phase 1: Nettoyage basique (garde les mots-clés d'introduction pour détection)
     const basicCleaned = ContentCleaner.cleanBasic(rawContent, isHtml)
