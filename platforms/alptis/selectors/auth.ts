@@ -6,12 +6,12 @@ import type { SelectorMap } from '../../types';
 
 export const authSelectors: SelectorMap = {
 'auth.username': {
-  selector: '#username',
+  selector: 'input[placeholder="Email ou identifiant individuel"]',
   meta: { label: 'Nom d\'utilisateur' },
 },
 
 'auth.password': {
-  selector: '#password',
+  selector: 'input[type="password"]',
   meta: { label: 'Mot de passe' },
 },
 

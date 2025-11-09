@@ -9,6 +9,13 @@
  * - flow:run <platform/flow> --lead <id> [--headless] [--trace <mode>] [--output <path>]
  */
 
+// Load environment variables from .env file
+import dotenv from 'dotenv';
+import path from 'path';
+
+const envPath = path.join(process.cwd(), '.env');
+dotenv.config({ path: envPath });
+
 import { Command } from 'commander';
 import { runFlow } from './commands/run';
 

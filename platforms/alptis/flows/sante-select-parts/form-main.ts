@@ -25,9 +25,12 @@ export const formMainSteps: FlowStep[] = [
 
   step.fill('subscriber.lastName', { leadKey: 'subscriber.lastName' }, 'fill-nom'),
   step.fill('subscriber.firstName', { leadKey: 'subscriber.firstName' }, 'fill-prenom'),
+  step.sleep(500, 'wait-after-prenom'),  // Ensure firstName is persisted
   step.fill('subscriber.birthDate', { leadKey: 'subscriber.birthDate' }, 'fill-naissance-adherent'),
+  step.sleep(300, 'wait-after-birthdate'),
 
-  step.select('subscriber.category', { leadKey: 'subscriber.category' }, 'select-categorie-adherent'),
+  // Use fill instead of select for Totem custom dropdown component
+  step.fill('subscriber.category', { leadKey: 'subscriber.category' }, 'fill-categorie-adherent'),
   step.sleep(300, 'wait-after-categorie-adherent'),
 
   // Work framework (conditional on category)
@@ -46,7 +49,8 @@ export const formMainSteps: FlowStep[] = [
   }, 'cadre-exercice-independant'),
   step.sleep(300, 'wait-after-cadre-exercice'),
 
-  step.select('subscriber.regime', { leadKey: 'subscriber.regime' }, 'select-regime-adherent'),
+  // Use fill instead of select for Totem custom dropdown component
+  step.fill('subscriber.regime', { leadKey: 'subscriber.regime' }, 'fill-regime-adherent'),
   step.sleep(300, 'wait-after-regime-adherent'),
 
   step.fill('subscriber.postalCode', { leadKey: 'subscriber.postalCode' }, 'fill-code-postal'),

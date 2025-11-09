@@ -19,7 +19,6 @@ export const setupSteps: FlowStep[] = [
   step.fill('auth.username', { value: '{credentials.username}' }, 'fill-user'),
   step.fill('auth.password', { value: '{credentials.password}' }, 'fill-pass'),
 
-  step.click('consent.acceptAll', { optional: true }, 'accept-axeptio-2'),
   step.sleep(800, 'wait-before-submit'),
   step.click('auth.submit', {}, 'submit'),
 
@@ -27,9 +26,12 @@ export const setupSteps: FlowStep[] = [
   // NAVIGATE TO PROJECT PAGE
   // ============================================================
 
+  // IMPORTANT: Wait for the authentication to complete before navigating
+  // The server needs time to validate the session after submit
+  step.sleep(5000, 'wait-for-auth-validation'),
+
   step.goto('https://pro.alptis.org/sante-select/informations-projet/', 'goto-infos-projet'),
   step.sleep(1500, 'post-goto-wait'),
-  step.click('consent.acceptAll', { optional: true }, 'accept-axeptio-page'),
   step.waitField('project.dateEffet', 'infos-projet-ready'),
 
   // ============================================================
