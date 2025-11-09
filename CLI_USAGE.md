@@ -185,20 +185,93 @@ npm run flow:run alptis/wrong-name -- --lead <id>
 ### Lister tous les leads
 
 ```bash
-npm run leads:list
+npm run leads:list [options]
 ```
 
-Affiche :
-- ID du lead
-- Nom complet
-- Email
+**Options disponibles :**
+
+- `--format <type>` - Format de sortie : `table` (défaut), `json`, ou `detailed`
+- `--limit <number>` - Nombre maximum de leads à afficher (défaut: 1000)
+- `--offset <number>` - Nombre de leads à sauter (défaut: 0)
+- `--help, -h` - Afficher l'aide
+
+**Affiche pour chaque lead :**
+- ID du lead (UUID)
+- Nom complet (souscripteur, conjoint, enfants)
 - Date de naissance
-- Date de création
-- Metadata
+- Email et téléphone
+- Informations projet
+- Metadata (source, provider, tags)
+- Fingerprints (primary, email, phone)
+
+**Exemples :**
+
+```bash
+# Liste tous les leads (format table par défaut)
+npm run leads:list
+
+# Liste les 10 premiers leads
+npm run leads:list -- --limit 10
+
+# Liste en format JSON
+npm run leads:list -- --format json
+
+# Liste en format détaillé (full JSON)
+npm run leads:list -- --format detailed
+```
 
 ### Voir un lead spécifique
 
-Ouvrez le fichier `dev-data/mutuelles.sqlite3` avec un client SQLite ou utilisez :
+```bash
+npm run leads:show <id|name> [options]
+```
+
+**Arguments :**
+
+- `<id|name>` - Lead ID (UUID complet ou partiel) ou nom à rechercher
+
+**Options disponibles :**
+
+- `--format <type>` - Format de sortie : `table` (défaut) ou `json`
+- `--help, -h` - Afficher l'aide
+
+**Capacités de recherche :**
+
+- Recherche par ID complet : `3e0dc672-2069-45e3-93b2-0ff8a30c8ca6`
+- Recherche par ID partiel (début) : `3e0dc672`
+- Recherche par nom : `DAIRE`
+
+**Affiche :**
+- Toutes les informations détaillées du lead
+- Données du projet (type, date de début, code postal)
+- Informations du souscripteur (nom, email, téléphone, adresse, profession)
+- Informations du conjoint (si applicable)
+- Informations des enfants (si applicable)
+- Données spécifiques aux plateformes
+- Metadata complète (source, provider, parser, confidence, warnings)
+- Fingerprints
+
+**Exemples :**
+
+```bash
+# Afficher un lead par son ID complet
+npm run leads:show 3e0dc672-2069-45e3-93b2-0ff8a30c8ca6
+
+# Afficher un lead par ID partiel
+npm run leads:show 3e0dc672
+
+# Chercher un lead par nom
+npm run leads:show "DAIRE"
+
+# Afficher en format JSON
+npm run leads:show 3e0dc672 -- --format json
+```
+
+**Note :** Si plusieurs leads correspondent au critère de recherche, l'outil affichera une liste avec leurs IDs pour affiner la recherche.
+
+### Accès direct à la base de données
+
+Si nécessaire, vous pouvez aussi accéder directement à la base SQLite :
 
 ```bash
 sqlite3 dev-data/mutuelles.sqlite3 "SELECT id, data FROM clean_leads LIMIT 5;"
