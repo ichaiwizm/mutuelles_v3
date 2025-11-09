@@ -32,6 +32,19 @@ export const subscriberSelectors: SelectorMap = {
 
 'subscriber.category': {
   selector: '.section-adherent .totem-select__input input[placeholder="Sélectionner une catégorie socioprofessionnelle"]',
+  valueMap: {
+    CADRES: 'Cadres',
+    AGRICULTEURS_EXPLOITANTS: 'Agriculteurs exploitants',
+    ARTISANS: 'Artisans',
+    CADRES_ET_EMPLOYES_DE_LA_FONCTION_PUBLIQUE: 'Cadres et employés de la fonction publique',
+    CHEFS_D_ENTREPRISE: 'Chefs d\'entreprise',
+    COMMERCANTS_ET_ASSIMILES: 'Commerçants et assimilés',
+    EMPLOYES_AGENTS_DE_MAITRISE: 'Employés, agents de maîtrise',
+    OUVRIERS: 'Ouvriers',
+    PERSONNES_SANS_ACTIVITE_PROFESSIONNELLE: 'Personnes sans activité professionnelle',
+    PROFESSIONS_LIBERALES_ET_ASSIMILES: 'Professions libérales et assimilés',
+    RETRAITES: 'Retraités',
+  },
   meta: { label: 'Catégorie socio-professionnelle' },
 },
 

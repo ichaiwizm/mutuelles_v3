@@ -36,7 +36,7 @@
     "flow:run": "node cli/runner.mjs flow:run",
     "leads:list": "cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/leads/list.mjs",
     "leads:show": "cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/leads/show.mjs",
-    "clean": "cross-env ELECTRON_RUN_AS_NODE=1 electron scripts/clean.mjs"
+    "clean": "cmd /c rmdir /s /q node_modules && npm cache clean --force && del package-lock.json && npm install"
   },
   "dependencies": {
     "better-sqlite3": "^12.4.1",
