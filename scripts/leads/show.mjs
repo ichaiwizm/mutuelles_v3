@@ -83,6 +83,14 @@ function formatDate(dateStr) {
   });
 }
 
+// Format YYYY-MM-DD → DD/MM/YYYY (without time)
+function formatISODate(iso) {
+  if (!iso || typeof iso !== 'string') return 'N/A';
+  const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return iso; // fallback raw
+  return `${m[3]}/${m[2]}/${m[1]}`;
+}
+
 function findLead(db, query) {
   // Try to find by exact ID first
   let stmt = db.prepare('SELECT * FROM clean_leads WHERE id = ?');
@@ -138,13 +146,10 @@ function displayAsTable(lead) {
   console.log(`  Created: ${formatDate(lead.created_at)}`);
   console.log(`  Updated: ${lead.updated_at ? formatDate(lead.updated_at) : 'N/A'}`);
 
-  // Project info
+  // Project info (v2 canonical: plan, dateEffet, name)
   console.log('\n  📌 Project:');
-  console.log(`     Type: ${data.project?.type || 'N/A'}`);
-  console.log(`     Start Date: ${data.project?.startDate || 'N/A'}`);
-  if (data.project?.postalCode) {
-    console.log(`     Postal Code: ${data.project.postalCode}`);
-  }
+  console.log(`     Plan: ${data.project?.plan || 'N/A'}`);
+  console.log(`     Date d'effet: ${data.project?.dateEffet ? formatISODate(data.project.dateEffet) : 'N/A'}`);
   if (data.project?.name) {
     console.log(`     Name: ${data.project.name}`);
   }
@@ -156,8 +161,8 @@ function displayAsTable(lead) {
   if (data.subscriber?.email) {
     console.log(`     Email: ${data.subscriber.email}`);
   }
-  if (data.subscriber?.phone || data.subscriber?.telephone) {
-    console.log(`     Phone: ${data.subscriber.phone || data.subscriber.telephone}`);
+  if (data.subscriber?.phoneE164 || data.subscriber?.telephone) {
+    console.log(`     Phone: ${data.subscriber.phoneE164 || data.subscriber.telephone}`);
   }
   if (data.subscriber?.address) {
     console.log(`     Address: ${data.subscriber.address}`);
@@ -172,30 +177,27 @@ function displayAsTable(lead) {
     console.log(`     Profession: ${data.subscriber.profession}`);
   }
 
-  // Spouse info
-  if (data.spouse?.exists) {
+  // Spouse info (present if object exists)
+  if (data.spouse) {
     console.log('\n  💑 Spouse:');
-    console.log(`     Name: ${data.spouse?.civility || ''} ${data.spouse?.firstName || ''} ${data.spouse?.lastName || ''}`);
-    console.log(`     Birth Date: ${data.spouse?.birthDate || 'N/A'}`);
-    console.log(`     Regime: ${data.spouse?.regime || 'N/A'}`);
-    if (data.spouse?.profession) {
-      console.log(`     Profession: ${data.spouse.profession}`);
-    }
+    const civ = data.spouse.civility ? `${data.spouse.civility} ` : '';
+    console.log(`     Name: ${civ}${data.spouse.firstName || ''} ${data.spouse.lastName || ''}`.trim());
+    console.log(`     Birth Date: ${data.spouse.birthDate ? formatISODate(data.spouse.birthDate) : 'N/A'}`);
+    if (data.spouse.regime) console.log(`     Regime: ${data.spouse.regime}`);
+    if (data.spouse.status) console.log(`     Status: ${data.spouse.status}`);
+    if (data.spouse.profession) console.log(`     Profession: ${data.spouse.profession}`);
+    if (data.spouse.category) console.log(`     Category: ${data.spouse.category}`);
+    if (data.spouse.workFramework) console.log(`     Work: ${data.spouse.workFramework}`);
   }
 
-  // Children info
-  if (data.children && data.children.length > 0) {
+  // Children info (v2 canonical: birthDate, regime, ayantDroit)
+  if (Array.isArray(data.children) && data.children.length > 0) {
     console.log('\n  👶 Children:');
     data.children.forEach((child, idx) => {
       console.log(`     Child ${idx + 1}:`);
-      console.log(`       Name: ${child.firstName || 'N/A'} ${child.lastName || ''}`);
-      console.log(`       Birth Date: ${child.birthDate || 'N/A'}`);
-      if (child.schoolCertificate !== undefined) {
-        console.log(`       School Certificate: ${child.schoolCertificate ? 'Yes' : 'No'}`);
-      }
-      if (child.regime) {
-        console.log(`       Regime: ${child.regime}`);
-      }
+      console.log(`       Birth Date: ${child.birthDate ? formatISODate(child.birthDate) : 'N/A'}`);
+      if (child.regime) console.log(`       Regime: ${child.regime}`);
+      if (child.ayantDroit) console.log(`       Ayant droit: ${child.ayantDroit}`);
     });
   }
 
@@ -210,9 +212,6 @@ function displayAsTable(lead) {
     console.log('\n  ℹ️  Metadata:');
     if (metadata.source) {
       console.log(`     Source: ${metadata.source}`);
-    }
-    if (metadata.provider) {
-      console.log(`     Provider: ${metadata.provider}`);
     }
     if (metadata.emailId) {
       console.log(`     Email ID: ${metadata.emailId}`);
