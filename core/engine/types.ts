@@ -13,6 +13,8 @@ export interface FlowRunnerOptions {
   timeout?: number;
   screenshots?: boolean;
   outputDir?: string;
+  // When true, leave browser/context/page open after flow completes
+  keepOpen?: boolean;
   onProgress?: (payload: { stepIndex: number; totalSteps: number; step: any; ok?: boolean; ms?: number; screenshot?: string }) => void;
   onBrowserCreated?: (browser: Browser, context: BrowserContext) => void;
   pauseGate?: (where: 'begin' | 'before-step', stepIndex?: number) => Promise<void>;

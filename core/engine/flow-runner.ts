@@ -126,7 +126,10 @@ export class FlowRunner {
     } finally {
       // Stop tracing before cleanup (handles both success and failure)
       await BrowserManager.stopTracing(this.context, options, stepsFailed);
-      await BrowserManager.cleanup(this.context);
+      // Respect keepOpen option: leave browser/context/page open for inspection
+      if (!options.keepOpen) {
+        await BrowserManager.cleanup(this.context);
+      }
     }
   }
 

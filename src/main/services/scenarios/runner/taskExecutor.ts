@@ -82,7 +82,7 @@ export function makeTaskExecutor(runContext: RunContext, deps: {
       const result = await execTS({ ...def, mode, leadData: lead.data, keepOpen, onProgress: progressCallback, sessionRunId: runId, onBrowserCreated: browserCallback, pauseGate })
       runDir = result.runDir
 
-      deps.onUntrackBrowser(def.itemId)
+      if (!keepOpen) deps.onUntrackBrowser(def.itemId)
       if (totalSteps > 0) deps.send({ type:'item-progress', runId, itemId: def.itemId, leadId: def.leadId, platform: def.platform, flowSlug: def.flowSlug, currentStep: totalSteps, totalSteps })
       deps.send({ type:'item-success', runId, itemId: def.itemId, leadId: def.leadId, platform: def.platform, flowSlug: def.flowSlug, runDir })
 
@@ -155,7 +155,7 @@ export function makeTaskExecutor(runContext: RunContext, deps: {
             } catch (err) { logger.error('[Runner] Failed to create step records:', err) }
           }
         }
-        deps.onUntrackBrowser(def.itemId)
+        if (!keepOpen) deps.onUntrackBrowser(def.itemId)
         runContext.activeTasks--
         // First check (may still see queue as running)
         deps.checkCompletion()
@@ -163,7 +163,7 @@ export function makeTaskExecutor(runContext: RunContext, deps: {
         setTimeout(() => { try { deps.checkCompletion() } catch (e) { logger.error(e) } }, 0)
       }
     } finally {
-      deps.onUntrackBrowser(def.itemId)
+      if (!keepOpen) deps.onUntrackBrowser(def.itemId)
     }
   }
 

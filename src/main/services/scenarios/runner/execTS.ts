@@ -54,6 +54,7 @@ export async function execTS(args: {
       trace: 'retain-on-failure',
       screenshots: true,
       outputDir: runDir,
+      keepOpen: !!args.keepOpen,
       onBrowserCreated: args.onBrowserCreated,
       pauseGate: args.pauseGate,
       onProgress: (p: any) => {

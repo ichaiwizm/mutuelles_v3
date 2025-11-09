@@ -14,6 +14,17 @@ export const subscriberSelectors: SelectorMap = {
   },
 },
 
+// Specific civility selectors for conditional clicks
+'subscriber.civility_madame': {
+  selector: 'label:has-text("Madame")',
+  meta: { label: 'Civilité - Madame' },
+},
+
+'subscriber.civility_monsieur': {
+  selector: 'label:has-text("Monsieur")',
+  meta: { label: 'Civilité - Monsieur' },
+},
+
 'subscriber.lastName': {
   selector: '#nom',
   meta: { label: 'Nom adhérent' },
@@ -48,17 +59,29 @@ export const subscriberSelectors: SelectorMap = {
   meta: { label: 'Catégorie socio-professionnelle' },
 },
 
+// Selector for clicking on dropdown option after typing (autocomplete)
+'subscriber.category_option': {
+  selector: '.totem-select__dropdown-item',
+  meta: { label: 'Catégorie option dans le dropdown (après recherche)' },
+},
+
 'subscriber.regime': {
   selector: '.section-adherent .totem-select__input input[placeholder="Sélectionner un régime obligatoire"]',
   valueMap: {
-    ALSACE_MOSELLE: 'ALSACE_MOSELLE',
-    AMEXA: 'AMEXA',
-    REGIME_SALARIES_AGRICOLES: 'REGIME_SALARIES_AGRICOLES',
-    SECURITE_SOCIALE: 'SECURITE_SOCIALE',
-    SECURITE_SOCIALE_INDEPENDANTS: 'SECURITE_SOCIALE_INDEPENDANTS',
-    TNS: 'SECURITE_SOCIALE_INDEPENDANTS', // Map TNS to SECURITE_SOCIALE_INDEPENDANTS
+    ALSACE_MOSELLE: 'Alsace',
+    AMEXA: 'Amexa',
+    REGIME_SALARIES_AGRICOLES: 'salariés agricoles',
+    SECURITE_SOCIALE: 'Sécurité sociale',
+    SECURITE_SOCIALE_INDEPENDANTS: 'indépendants',  // Shortened to trigger autocomplete
+    TNS: 'indépendants', // Map TNS to "indépendants" (autocomplete search)
   },
   meta: { label: 'Régime obligatoire' },
+},
+
+// Selector for clicking on dropdown option after typing (autocomplete)
+'subscriber.regime_option': {
+  selector: '.totem-select__dropdown-item',
+  meta: { label: 'Régime option dans le dropdown (après recherche)' },
 },
 
 'subscriber.postalCode': {
@@ -80,5 +103,11 @@ export const subscriberSelectors: SelectorMap = {
 'subscriber.workFramework_independant': {
   selector: 'label:has-text("Indépendant Président SASU/SAS")',
   meta: { label: 'Cadre d\'exercice - Indépendant' },
+},
+
+// Helper selector to close calendar/dropdown overlays by clicking on a neutral area
+'_closeCalendar': {
+  selector: 'h1, h2, .totem-section__title',
+  meta: { label: 'Page title - used to close calendar overlays by clicking outside' },
 },
 };
