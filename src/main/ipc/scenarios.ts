@@ -329,13 +329,25 @@ export function registerScenariosIpc() {
         throw new Error('Invalid screenshot path')
       }
 
-      if (!fs.existsSync(screenshotPath)) {
-        throw new Error('Screenshot file not found')
+      // Accept both absolute and runDir-relative paths. If the provided path
+      // does not exist and looks like "runDir/step-X.png", try the legacy fix
+      // of looking under "runDir/screenshots/step-X.png" to support older
+      // manifests written before we preserved the subfolder.
+      let resolvedPath = screenshotPath
+      if (!fs.existsSync(resolvedPath)) {
+        const dir = path.dirname(screenshotPath)
+        const base = path.basename(screenshotPath)
+        const alt = path.join(dir, 'screenshots', base)
+        if (fs.existsSync(alt)) {
+          resolvedPath = alt
+        } else {
+          throw new Error('Screenshot file not found')
+        }
       }
 
-      const imageBuffer = fs.readFileSync(screenshotPath)
+      const imageBuffer = fs.readFileSync(resolvedPath)
       const base64 = imageBuffer.toString('base64')
-      const ext = path.extname(screenshotPath).toLowerCase()
+      const ext = path.extname(resolvedPath).toLowerCase()
       const mimeType = ext === '.png' ? 'image/png' : 'image/jpeg'
 
       return { success: true, data: `data:${mimeType};base64,${base64}` }

@@ -59,13 +59,19 @@ export async function execTS(args: {
       onProgress: (p: any) => {
         // p has: stepIndex, totalSteps, step, ok, ms, screenshot
         if (args.onProgress) args.onProgress({ stepIndex: p.stepIndex, totalSteps: p.totalSteps, stepMessage: p.step?.label || p.step?.type })
+        // Keep screenshot path relative to runDir so renderer can resolve it.
+        // BrowserManager saves to `${runDir}/screenshots/step-X.png`.
+        // Using basename would drop the `screenshots/` folder and break lookups.
+        const relScreenshot = p.screenshot
+          ? path.relative(runDir, p.screenshot).split(path.sep).join('/')
+          : undefined
         manifest.steps.push({
           index: p.stepIndex,
           type: p.step?.type,
           label: p.step?.label,
           ok: p.ok !== false,
           ms: p.ms,
-          screenshot: p.screenshot ? path.basename(p.screenshot) : undefined,
+          screenshot: relScreenshot,
         })
       },
     })
