@@ -82,12 +82,15 @@ export class GenericStructuredParser extends BaseLeadParser {
       if (match) {
         const spouseText = match[0]
         const identity = FieldExtractor.extractIdentity(spouseText)
+        const professional = FieldExtractor.extractProfessionalInfo(spouseText)
 
         const spouse: ParsedLeadData['spouse'] = {}
         if (identity.civility.value) spouse.civility = this.toParsedField(identity.civility)
         if (identity.lastName.value) spouse.lastName = this.toParsedField(identity.lastName)
         if (identity.firstName.value) spouse.firstName = this.toParsedField(identity.firstName)
         if (identity.birthDate.value) spouse.birthDate = this.toParsedField(identity.birthDate)
+        if (professional.regime.value) spouse.regime = this.toParsedField(professional.regime)
+        if (professional.profession.value) spouse.profession = this.toParsedField(professional.profession)
 
         return spouse
       }

@@ -113,6 +113,103 @@ function inferRegimeFromStatus(status: string | undefined): string | null {
 }
 
 /**
+ * Infer professional category from profession text
+ *
+ * Maps profession descriptions to standardized categories
+ */
+function inferCategoryFromProfession(profession: string | undefined): string | null {
+  if (!profession) return null
+
+  // Normalize typographic apostrophes (U+2019 ') to ASCII apostrophe (')
+  const lower = profession.toLowerCase().trim().replace(/['']/g, "'")
+
+  // Professions libérales
+  if (
+    lower.includes('profession libérale') ||
+    lower.includes('professionnel libéral') ||
+    lower.includes('libéral')
+  ) {
+    return 'PROFESSIONS_LIBERALES_ET_ASSIMILES'
+  }
+
+  // Artisans
+  if (lower.includes('artisan')) {
+    return 'ARTISANS'
+  }
+
+  // Chefs d'entreprise
+  if (
+    lower.includes('chef d\'entreprise') ||
+    lower.includes('dirigeant') ||
+    lower.includes('gérant')
+  ) {
+    return 'CHEFS_ENTREPRISE'
+  }
+
+  // Commerçants
+  if (lower.includes('commerçant') || lower.includes('commercant')) {
+    return 'COMMERCANTS'
+  }
+
+  // Exploitants agricoles
+  if (lower.includes('agricole') || lower.includes('agriculteur') || lower.includes('exploitant')) {
+    return 'EXPLOITANTS_AGRICOLES'
+  }
+
+  // Salariés or unemployed → EXPLICITLY null (not undefined) to prevent incorrect defaults
+  if (
+    lower.includes('salarié') ||
+    lower.includes('salarie') ||
+    lower.includes('recherche d\'emploi') ||
+    lower.includes('recherche emploi') ||  // Variant without apostrophe
+    lower.includes('sans emploi') ||
+    lower.includes('chômeur') ||
+    lower.includes('chomeur')
+  ) {
+    return null
+  }
+
+  return null
+}
+
+/**
+ * Infer work framework from regime
+ *
+ * Maps regime to work framework (INDEPENDANT or SALARIE)
+ */
+function inferWorkFrameworkFromRegime(regime: string | undefined): string | null {
+  if (!regime) return null
+
+  const upper = regime.toUpperCase()
+
+  // Independent workers (TNS)
+  if (upper === 'TNS' || upper === 'SECURITE_SOCIALE_INDEPENDANTS') {
+    return 'INDEPENDANT'
+  }
+
+  // Salaried workers
+  if (
+    upper === 'REGIME_GENERAL' ||
+    upper === 'SECURITE_SOCIALE' ||
+    upper === 'SALARIE' ||
+    upper.includes('SALARIE')
+  ) {
+    return 'SALARIE'
+  }
+
+  return null
+}
+
+/**
+ * Compute simulation type based on family situation
+ *
+ * Returns "couple" if spouse exists, "celibataire" otherwise
+ */
+function computeSimulationType(hasSpouse: boolean): string {
+  return hasSpouse ? 'couple' : 'celibataire'
+}
+
+/**
  * Compute all derived fields for a lead
  *
  * This function computes values that depend on other fields.
@@ -182,6 +279,22 @@ export function computeDerivedFields(
       }
     }
 
+    // Infer category from profession
+    if (subscriberProfession) {
+      const inferredCategory = inferCategoryFromProfession(subscriberProfession)
+      if (inferredCategory) {
+        setComputedWithPrefix(prefix, 'subscriber.category', inferredCategory)
+      }
+    }
+
+    // Infer work framework from regime
+    if (subscriberRegime) {
+      const inferredWorkFramework = inferWorkFrameworkFromRegime(subscriberRegime)
+      if (inferredWorkFramework) {
+        setComputedWithPrefix(prefix, 'subscriber.workFramework', inferredWorkFramework)
+      }
+    }
+
     // === PROJECT FIELDS ===
     const subscriberStatus = getWithPrefix(prefix, 'subscriber.status')
     const subscriberBirthDate = getWithPrefix(prefix, 'subscriber.birthDate')
@@ -189,6 +302,16 @@ export function computeDerivedFields(
     if (isEmpty(getWithPrefix(prefix, 'project.madelin')) || overwriteExisting) {
       const key = prefix ? `${prefix}.project.madelin` : 'project.madelin'
       computed[key] = madelinValue
+    }
+
+    // Compute simulation type based on spouse presence
+    const spouseBirthDate = getWithPrefix(prefix, 'spouse.birthDate')
+    const spouseFirstName = getWithPrefix(prefix, 'spouse.firstName')
+    const hasSpouse = !isEmpty(spouseBirthDate) || !isEmpty(spouseFirstName)
+    const simulationTypeValue = computeSimulationType(hasSpouse)
+    if (isEmpty(getWithPrefix(prefix, 'project.simulationType')) || overwriteExisting) {
+      const key = prefix ? `${prefix}.project.simulationType` : 'project.simulationType'
+      computed[key] = simulationTypeValue
     }
 
     // === SPOUSE FIELDS ===
@@ -210,6 +333,23 @@ export function computeDerivedFields(
     if (!spouseRegime && spouseStatus) {
       const inferredRegime = inferRegimeFromStatus(spouseStatus)
       if (inferredRegime) setComputedWithPrefix(prefix, 'spouse.regime', inferredRegime)
+    }
+
+    // Infer spouse category from profession
+    const spouseProfession = getWithPrefix(prefix, 'spouse.profession')
+    if (spouseProfession) {
+      const inferredSpouseCategory = inferCategoryFromProfession(spouseProfession)
+      if (inferredSpouseCategory) {
+        setComputedWithPrefix(prefix, 'spouse.category', inferredSpouseCategory)
+      }
+    }
+
+    // Infer spouse work framework from regime
+    if (spouseRegime) {
+      const inferredSpouseWorkFramework = inferWorkFrameworkFromRegime(spouseRegime)
+      if (inferredSpouseWorkFramework) {
+        setComputedWithPrefix(prefix, 'spouse.workFramework', inferredSpouseWorkFramework)
+      }
     }
 
     // === CHILDREN FIELDS ===
@@ -234,6 +374,26 @@ export function computeDerivedFields(
             const key = prefix ? `${prefix}.children[${index}].regime` : `children[${index}].regime`
             computed[key] = inheritedRegime
           }
+        }
+
+        // Infer ayantDroit based on child regime vs subscriber/spouse regime
+        const ayantDroit = child?.ayantDroit
+        if (isEmpty(ayantDroit)) {
+          // Get final child regime (either already set or newly computed)
+          const regimeKey = prefix ? `${prefix}.children[${index}].regime` : `children[${index}].regime`
+          const finalChildRegime = computed[regimeKey] || childRegime
+
+          // Default to subscriber
+          let inferredAyantDroit = 'CLIENT'
+
+          // If spouse exists and child has same regime as spouse → spouse
+          if (spouseRegime && finalChildRegime === spouseRegime && !isEmpty(spouseBirthDate)) {
+            inferredAyantDroit = 'CONJOINT'
+          }
+          // Otherwise if child has same regime as subscriber → subscriber (already default)
+
+          const ayantDroitKey = prefix ? `${prefix}.children[${index}].ayantDroit` : `children[${index}].ayantDroit`
+          computed[ayantDroitKey] = inferredAyantDroit
         }
       })
     }

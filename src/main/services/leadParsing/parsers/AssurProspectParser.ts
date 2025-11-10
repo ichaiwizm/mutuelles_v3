@@ -75,8 +75,9 @@ export class AssurProspectParser extends BaseLeadParser {
   private parseSpouse(text: string): ParsedLeadData['spouse'] {
     // ✅ Pattern with negative lookahead to stop at next section (Enfant, Besoin, Projet, Contact)
     // Captures lines that don't start with these section headers
+    // Fixed: Use \n\s* instead of ^\s* to properly detect section boundaries with /m flag
     const spouseMatch = text.match(
-      /conjoint[^\n]*\n((?:(?!^\s*(?:Enfant|Besoin|Projet|Contact|Souscripteur actuellement))[^\n]*\n)*?)(?=^\s*(?:Enfant|Besoin|Projet|Contact|Souscripteur actuellement)|$)/im
+      /conjoint[^\n]*\n((?:(?!\n\s*(?:\*)?(?:Enfant|Besoin|Projet|Contact|Souscripteur actuellement))[^\n]*\n)*?)(?=\n\s*(?:\*)?(?:Enfant|Besoin|Projet|Contact|Souscripteur actuellement)|$)/ims
     )
     if (!spouseMatch) return undefined
 

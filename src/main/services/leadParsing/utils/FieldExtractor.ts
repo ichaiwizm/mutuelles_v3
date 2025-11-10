@@ -279,10 +279,11 @@ export class FieldExtractor {
    */
   static extractProfession(content: string): FieldExtractionResult<string> {
     const patterns = [
-      // ✅ Stop at: double space, new field label, pipe, newline, or end of string
-      /\*?Profession\*?\s*:?\s*\*?\s*([A-Z\u00C0-\u017F][a-z\u00C0-\u017F\s\-']{2,40}?)(?=\s{2,}|\s*(?:R[ée]gime|Date|Statut|T[ée]l|Cat[ée]gorie|Nombre)|[│\|]|\n|$)/i,
-      /\*?M[ée]tier\*?\s*:?\s*\*?\s*([A-Z\u00C0-\u017F][a-z\u00C0-\u017F\s\-']{2,40}?)(?=\s{2,}|\s*(?:R[ée]gime|Date|Statut|T[ée]l)|[│\|]|\n|$)/i,
-      /\*?Activit[ée]\*?\s*:?\s*\*?\s*([A-Z\u00C0-\u017F][a-z\u00C0-\u017F\s\-']{2,40}?)(?=\s{2,}|\s*(?:R[ée]gime|Date|Statut|T[ée]l)|[│\|]|\n|$)/i
+      // ✅ Accept both uppercase and lowercase, apostrophes (including typographic U+2019), 3-80 chars
+      // Stop at newline for cleaner extraction
+      /\*?Profession\*?\s*:?\s*\*?\s*([A-Z\u00C0-\u017F][A-Za-z\u00C0-\u017F\s\-'']{2,80}?)(?=\s*\n)/i,
+      /\*?M[ée]tier\*?\s*:?\s*\*?\s*([A-Z\u00C0-\u017F][A-Za-z\u00C0-\u017F\s\-'']{2,80}?)(?=\s*\n)/i,
+      /\*?Activit[ée]\*?\s*:?\s*\*?\s*([A-Z\u00C0-\u017F][A-Za-z\u00C0-\u017F\s\-'']{2,80}?)(?=\s*\n)/i
     ]
 
     return this.extractField(content, patterns, 'medium')
@@ -294,7 +295,8 @@ export class FieldExtractor {
   static extractRegime(content: string): FieldExtractionResult<string> {
     const patterns = [
       // Match "Régime Social : TNS : régime des indépendants" (AssurProspect format)
-      /\*?R[ée]gime\s+Social\*?\s*:?\s*\*?\s*([^:\n]+?)(?:\s*:|$)/i,
+      // Fixed: Better handling of asterisks and spaces, stop at asterisks too
+      /\*?\s*R[ée]gime\s+Social\s*\*?\s*:\s*\*?\s*([^:\n*]+?)(?:\s*(?:\*|:|\n)|$)/i,
       // Match "Régime obligatoire : ..." (Alptis format)
       /\*?R[ée]gime\s+obligatoire\*?\s*:?\s*\*?\s*([^\n]{5,50})/i,
       // Match simple "Régime : value" format
@@ -362,10 +364,11 @@ export class FieldExtractor {
 
   /**
    * Extract date d'effet
+   * ✅ Support typographic apostrophes (U+2019 ')
    */
   static extractDateEffet(content: string): FieldExtractionResult<string> {
     const patterns = [
-      /Date d['’]effet\s*:?\s*(\d{2}[-\/]\d{2}[-\/]\d{4})/i,
+      /Date d[''']effet\s*:?\s*(\d{2}[-\/]\d{2}[-\/]\d{4})/i,
       /Date de d[ée]but\s*:?\s*(\d{2}[-\/]\d{2}[-\/]\d{4})/i,
       /Effet le\s*:?\s*(\d{2}[-\/]\d{2}[-\/]\d{4})/i,
       /Effective date\s*:?\s*(\d{2}[-\/]\d{2}[-\/]\d{4})/i

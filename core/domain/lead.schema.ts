@@ -85,7 +85,6 @@ export const spouseSchema = z.object({
  */
 export const childSchema = z.object({
   birthDate: isoDateSchema,
-  gender: z.string().optional(),
   regime: z.string().optional(),
   ayantDroit: z.enum(['CLIENT', 'CONJOINT']).optional(),
 });
@@ -114,7 +113,7 @@ export const projectSchema = z.object({
     })
     .partial()
     .optional(),
-  simulationType: z.enum(['INDIVIDUEL', 'COUPLE', 'FAMILLE']).optional(),
+  simulationType: z.enum(['celibataire', 'couple']).optional(),
   madelin: z.boolean().optional(),
   resiliation: z.boolean().optional(),
   reprise: z.boolean().optional(),
