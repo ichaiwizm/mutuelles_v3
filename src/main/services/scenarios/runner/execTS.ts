@@ -14,6 +14,7 @@ export async function execTS(args: {
   password: string
   mode: 'headless' | 'dev' | 'dev_private'
   keepOpen?: boolean
+  executablePath?: string
   onProgress?: (progress: any) => void
   sessionRunId?: string
   onBrowserCreated?: (browser: any, context: any) => void
@@ -55,6 +56,7 @@ export async function execTS(args: {
       screenshots: true,
       outputDir: runDir,
       keepOpen: !!args.keepOpen,
+      executablePath: args.executablePath,
       onBrowserCreated: args.onBrowserCreated,
       pauseGate: args.pauseGate,
       onProgress: (p: any) => {

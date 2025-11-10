@@ -15,10 +15,17 @@ export class BrowserManager {
     options: FlowRunnerOptions
   ): Promise<void> {
     // Launch browser
-    context.browser = await chromium.launch({
+    const launchOptions: any = {
       headless: options.headless ?? true,
       slowMo: options.slowMo,
-    });
+    };
+
+    // Add executablePath if provided
+    if (options.executablePath) {
+      launchOptions.executablePath = options.executablePath;
+    }
+
+    context.browser = await chromium.launch(launchOptions);
 
     // Create context
     context.context = await context.browser.newContext({

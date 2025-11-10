@@ -1,4 +1,4 @@
-import log from 'electron-log'
+import log from 'electron-log/main.js'
 import path from 'path'
 import { app } from 'electron'
 
@@ -29,6 +29,9 @@ log.transports.file.resolvePathFn = () => {
 const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged
 log.transports.console.level = isDev ? 'debug' : 'info'
 log.transports.console.format = '[{level}] {text}'
+
+// Initialize IPC bridge for renderer process communication
+log.initialize()
 
 // Create scoped loggers for different modules
 export const createLogger = (scope: string) => {

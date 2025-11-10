@@ -1,4 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron'
+import 'electron-log/preload.js'
 
 contextBridge.exposeInMainWorld('api', {
   getVersion: () => ipcRenderer.invoke('app:getVersion'),

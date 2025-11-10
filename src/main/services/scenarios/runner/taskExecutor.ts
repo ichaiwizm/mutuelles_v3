@@ -14,7 +14,7 @@ export function makeTaskExecutor(runContext: RunContext, deps: {
   onUntrackBrowser: (itemId:string)=>void
   checkCompletion: ()=>void
 }) {
-  const { runId, retryFailed, maxRetries, mode, keepOpen } = runContext
+  const { runId, retryFailed, maxRetries, mode, keepOpen, executablePath } = runContext
 
   const executeWithRetry = async (def: TaskDef, attempt: number = 0): Promise<void> => {
     if (runContext.isStopped || runContext.cancelledItems.has(def.itemId)) {
@@ -79,7 +79,7 @@ export function makeTaskExecutor(runContext: RunContext, deps: {
 
       const browserCallback = (browser: any, context: any) => deps.onTrackBrowser(def.itemId, browser, context)
 
-      const result = await execTS({ ...def, mode, leadData: lead.data, keepOpen, onProgress: progressCallback, sessionRunId: runId, onBrowserCreated: browserCallback, pauseGate })
+      const result = await execTS({ ...def, mode, leadData: lead.data, keepOpen, executablePath, onProgress: progressCallback, sessionRunId: runId, onBrowserCreated: browserCallback, pauseGate })
       runDir = result.runDir
 
       if (!keepOpen) deps.onUntrackBrowser(def.itemId)

@@ -65,6 +65,7 @@ export type RunContext = {
   keepOpen: boolean
   retryFailed: boolean
   maxRetries: number
+  executablePath?: string
   leadsSvc: any
   runId: string
   executeWithRetry: (def: TaskDef, attempt?: number) => Promise<void>

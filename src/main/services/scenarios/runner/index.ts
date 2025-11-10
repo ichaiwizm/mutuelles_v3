@@ -11,6 +11,7 @@ import { makeFinalizer } from './finalizer'
 import { makeTaskExecutor } from './taskExecutor'
 import type { Mode, RunContext, RunProgressEvent, RunRequest } from './types'
 import { createLogger } from '../../logger'
+import { getChromePath } from '../../chrome'
 
 const logger = createLogger('ScenariosRunner')
 
@@ -31,6 +32,7 @@ export class ScenariosRunner {
     const keepOpen = payload.options?.keepBrowserOpen ?? false
     const retryFailed = payload.options?.retryFailed ?? false
     const maxRetries = Math.max(0, Math.min(5, payload.options?.maxRetries ?? 1))
+    const executablePath = getChromePath() || undefined
 
     const db = Db.conn()
     const platformsSelected = db.prepare(`SELECT slug, id FROM platforms_catalog WHERE selected = 1 ORDER BY name`).all() as Array<{slug:string; id:number}>
@@ -41,15 +43,16 @@ export class ScenariosRunner {
           : platformsSelected.map(p => p.slug))
 
     setTimeout(async () => {
-      const { taskDefs, earlyErrors } = buildTasks(this.projectRoot, payload.leadIds, allSlugs, payload.flowOverrides)
-
-      send({ type:'run-start', runId, message: `Démarrage (${taskDefs.length} items)` })
-
       try {
-        Db.createRun({ id: runId, status: 'running', mode, concurrency, total_items: taskDefs.length + earlyErrors.length, started_at: new Date().toISOString(), settings_snapshot: JSON.stringify(payload.options || {}) })
-      } catch (err) {
-        logger.error('[Runner] Failed to create run in DB:', err)
-      }
+        const { taskDefs, earlyErrors } = buildTasks(this.projectRoot, payload.leadIds, allSlugs, payload.flowOverrides)
+
+        send({ type:'run-start', runId, message: `Démarrage (${taskDefs.length} items)` })
+
+        try {
+          Db.createRun({ id: runId, status: 'running', mode, concurrency, total_items: taskDefs.length + earlyErrors.length, started_at: new Date().toISOString(), settings_snapshot: JSON.stringify(payload.options || {}) })
+        } catch (err) {
+          logger.error('[Runner] Failed to create run in DB:', err)
+        }
 
       send({ type:'items-queued', runId, items: taskDefs.map(def => ({ itemId: def.itemId, leadId: def.leadId, platform: def.platform, flowSlug: def.flowSlug })) })
 
@@ -87,6 +90,7 @@ export class ScenariosRunner {
         keepOpen,
         retryFailed,
         maxRetries,
+        executablePath,
         leadsSvc,
         runId,
         executeWithRetry: null as any,
@@ -113,6 +117,22 @@ export class ScenariosRunner {
 
       for (const def of taskDefs) {
         queue.add(() => executeWithRetry(def)).catch(err => logger.error('[Runner] Task execution failed:', err))
+      }
+
+        // Check completion immediately if no tasks were queued
+        if (taskDefs.length === 0) {
+          checkCompletion()
+        }
+      } catch (error) {
+        logger.error('[Runner] Fatal error in run execution:', error)
+        const errorMessage = error instanceof Error ? error.message : String(error)
+        send({ type: 'run-done', runId, message: `Erreur fatale: ${errorMessage}` })
+        try {
+          Db.updateRun(runId, { status: 'failed', completed_at: new Date().toISOString() })
+        } catch (dbErr) {
+          logger.error('[Runner] Failed to update run status after fatal error:', dbErr)
+        }
+        this.activeRuns.delete(runId)
       }
     }, 0)
 

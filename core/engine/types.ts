@@ -13,6 +13,7 @@ export interface FlowRunnerOptions {
   timeout?: number;
   screenshots?: boolean;
   outputDir?: string;
+  executablePath?: string; // Path to Chrome/Chromium executable
   // When true, leave browser/context/page open after flow completes
   keepOpen?: boolean;
   onProgress?: (payload: { stepIndex: number; totalSteps: number; step: any; ok?: boolean; ms?: number; screenshot?: string }) => void;
