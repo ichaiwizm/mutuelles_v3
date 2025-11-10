@@ -5,6 +5,8 @@ import { execTS } from './execTS'
 import { getTSFlow } from '../ts_catalog'
 import type { RunContext, TaskDef } from './types'
 import { createLogger } from '../../logger'
+import { computeDerivedFields } from '../../../../shared/businessRules/computedValues'
+import { setLeadPath } from '../../../../../core/resolve/path'
 
 const logger = createLogger('TaskExecutor')
 
@@ -71,6 +73,12 @@ export function makeTaskExecutor(runContext: RunContext, deps: {
     try {
       const lead = await runContext.leadsSvc.getLead(def.leadId)
       if (!lead) throw new Error('Lead introuvable')
+
+      // Apply computed/derived fields to lead data (same as CLI)
+      const computedFields = computeDerivedFields(lead.data)
+      for (const [fieldPath, value] of Object.entries(computedFields)) {
+        setLeadPath(lead.data, fieldPath, value)
+      }
 
       const progressCallback = (p: any) => {
         deps.send({ type: 'item-progress', runId, itemId: def.itemId, leadId: def.leadId, platform: def.platform, flowSlug: def.flowSlug, currentStep: p.stepIndex + 1, totalSteps: p.totalSteps, stepMessage: p.stepMessage })
