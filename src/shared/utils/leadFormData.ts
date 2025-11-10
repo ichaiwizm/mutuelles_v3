@@ -69,7 +69,9 @@ export function transformToCleanLead(formData: FlatFormData): CreateLeadData {
   if (formData['subscriber.birthDate']) subscriber.birthDate = parseDateToDDMMYYYY(formData['subscriber.birthDate'])
 
   // Contact
-  if (formData['subscriber.telephone']) subscriber.telephone = formData['subscriber.telephone']
+  // Prefer phoneE164 from UI; fall back to legacy 'telephone' if present
+  if (formData['subscriber.phoneE164']) (subscriber as any).phoneE164 = formData['subscriber.phoneE164']
+  else if (formData['subscriber.telephone']) (subscriber as any).telephone = formData['subscriber.telephone']
   if (formData['subscriber.email']) subscriber.email = formData['subscriber.email']
   if (formData['subscriber.address']) subscriber.address = formData['subscriber.address']
   if (formData['subscriber.postalCode']) subscriber.postalCode = String(formData['subscriber.postalCode'])
@@ -163,9 +165,11 @@ export function transformFromCleanLead(lead: any): Record<string, any> {
     if (subscriber.civility) formData['subscriber.civility'] = subscriber.civility
     if (subscriber.lastName) formData['subscriber.lastName'] = subscriber.lastName
     if (subscriber.firstName) formData['subscriber.firstName'] = subscriber.firstName
-    if (subscriber.birthDate) formData['subscriber.birthDate'] = subscriber.birthDate
+    if (subscriber.birthDate) formData['subscriber.birthDate'] = parseDateToDDMMYYYY(subscriber.birthDate)
 
-    if (subscriber.telephone) formData['subscriber.telephone'] = subscriber.telephone
+    // Populate phone field expected by UI
+    if (subscriber.phoneE164) formData['subscriber.phoneE164'] = subscriber.phoneE164
+    else if ((subscriber as any).telephone) formData['subscriber.phoneE164'] = (subscriber as any).telephone
     if (subscriber.email) formData['subscriber.email'] = subscriber.email
     if (subscriber.address) formData['subscriber.address'] = subscriber.address
     if (subscriber.postalCode) formData['subscriber.postalCode'] = subscriber.postalCode
@@ -188,7 +192,7 @@ export function transformFromCleanLead(lead: any): Record<string, any> {
     if (spouse.civility) formData['spouse.civility'] = spouse.civility
     if (spouse.firstName) formData['spouse.firstName'] = spouse.firstName
     if (spouse.lastName) formData['spouse.lastName'] = spouse.lastName
-    if (spouse.birthDate) formData['spouse.birthDate'] = spouse.birthDate
+    if (spouse.birthDate) formData['spouse.birthDate'] = parseDateToDDMMYYYY(spouse.birthDate)
     if (spouse.regime) formData['spouse.regime'] = spouse.regime
     if (spouse.category) formData['spouse.category'] = spouse.category
     if (spouse.status) formData['spouse.status'] = spouse.status
@@ -200,11 +204,26 @@ export function transformFromCleanLead(lead: any): Record<string, any> {
     formData['enfants'] = true
     formData['children.count'] = lead.data.children.length
 
+    const subRegime = lead.data?.subscriber?.regime
+    const spouseRegime = lead.data?.spouse?.regime
+    const spousePresent = !!(lead.data?.spouse?.birthDate || lead.data?.spouse?.firstName)
+
     lead.data.children.forEach((child: any, i: number) => {
-      if (child.birthDate) formData[`children[${i}].birthDate`] = child.birthDate
+      if (child.birthDate) formData[`children[${i}].birthDate`] = parseDateToDDMMYYYY(child.birthDate)
       if (child.gender) formData[`children[${i}].gender`] = child.gender
-      if (child.regime) formData[`children[${i}].regime`] = child.regime
-      if (child.ayantDroit) formData[`children[${i}].ayantDroit`] = child.ayantDroit
+
+      // Fallbacks for legacy/missing derived fields
+      const childRegime = child.regime || subRegime
+      if (childRegime) formData[`children[${i}].regime`] = childRegime
+
+      let childAyant = child.ayantDroit
+      if (!childAyant) {
+        childAyant = 'CLIENT'
+        if (spousePresent && spouseRegime && childRegime && spouseRegime === childRegime) {
+          childAyant = 'CONJOINT'
+        }
+      }
+      formData[`children[${i}].ayantDroit`] = childAyant
     })
   }
 
@@ -212,7 +231,7 @@ export function transformFromCleanLead(lead: any): Record<string, any> {
     const project = lead.data.project
 
     if (project.name) formData['project.name'] = project.name
-    if (project.dateEffet) formData['project.dateEffet'] = project.dateEffet
+    if (project.dateEffet) formData['project.dateEffet'] = parseDateToDDMMYYYY(project.dateEffet)
     if (project.ranges) formData['project.ranges'] = project.ranges
 
     if (project.levels) {

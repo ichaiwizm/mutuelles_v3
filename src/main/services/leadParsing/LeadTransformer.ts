@@ -129,7 +129,8 @@ export class LeadTransformer {
       firstName: 'subscriber.firstName',
       birthDate: 'subscriber.birthDate',
       email: 'subscriber.email',
-      telephone: 'subscriber.telephone',
+      // Map parsed telephone to the UI key (phoneE164)
+      telephone: 'subscriber.phoneE164',
       address: 'subscriber.address',
       postalCode: 'subscriber.postalCode',
       city: 'subscriber.city',
@@ -141,11 +142,28 @@ export class LeadTransformer {
       workFramework: 'subscriber.workFramework'
     }
 
+    // Normalize FR phone to E.164 for UI consistency when possible
+    const toE164 = (phone: any): string | null => {
+      if (!phone) return null
+      const digits = String(phone).replace(/\D/g, '')
+      if (!digits) return null
+      if (digits.startsWith('33')) return `+${digits}`
+      if (digits.length === 10 && digits.startsWith('0')) return `+33${digits.slice(1)}`
+      if (digits.length === 9) return `+33${digits}`
+      return `+${digits}`
+    }
+
     for (const [parsedKey, formKey] of Object.entries(fieldMappings)) {
-      const value = this.extractValue((subscriber as any)[parsedKey])
-      if (value !== null && value !== undefined) {
-        formData[formKey] = value
+      let value = this.extractValue((subscriber as any)[parsedKey]) as any
+      if (value === null || value === undefined) continue
+
+      if (parsedKey === 'telephone') {
+        // Prefer already normalized phoneE164 if present
+        const parsedE164 = this.extractValue((subscriber as any)['phoneE164']) as any
+        value = parsedE164 || toE164(value)
       }
+
+      formData[formKey] = value
     }
 
     // Add children count to subscriber
@@ -171,7 +189,9 @@ export class LeadTransformer {
       regime: 'spouse.regime',
       category: 'spouse.category',
       status: 'spouse.status',
-      profession: 'spouse.profession'
+      profession: 'spouse.profession',
+      // Include derived work framework for spouse when available
+      workFramework: 'spouse.workFramework'
     }
 
     for (const [parsedKey, formKey] of Object.entries(fieldMappings)) {

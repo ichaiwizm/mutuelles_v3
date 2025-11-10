@@ -319,18 +319,46 @@ export function enrich(
     overwriteExisting: true,
   })
 
-  // Apply computed values to current values
+  // Apply computed values to current values (supports bracket notation like children[0].regime)
   const computedFieldsList: string[] = []
-  for (const [fieldPath, value] of Object.entries(computedValues)) {
-    const parts = fieldPath.split('.')
-    let current = currentValues
-    for (let i = 0; i < parts.length - 1; i++) {
-      const part = parts[i]
-      if (!current[part]) current[part] = {}
-      current = current[part]
+
+  const setNested = (root: Record<string, any>, path: string, val: any) => {
+    const segments = path.split('.')
+    let cursor: any = root
+
+    for (let i = 0; i < segments.length; i++) {
+      const seg = segments[i]
+      const arrayMatch = seg.match(/^(.+)\[(\d+)\]$/)
+
+      const isLast = i === segments.length - 1
+
+      if (arrayMatch) {
+        const key = arrayMatch[1]
+        const idx = parseInt(arrayMatch[2], 10)
+
+        if (!cursor[key]) cursor[key] = []
+        if (!Array.isArray(cursor[key])) cursor[key] = []
+        while (cursor[key].length <= idx) cursor[key].push({})
+
+        if (isLast) {
+          // Setting an array element directly (rare): treat as value assignment
+          cursor[key][idx] = val
+        } else {
+          cursor = cursor[key][idx]
+        }
+      } else {
+        if (isLast) {
+          cursor[seg] = val
+        } else {
+          if (!cursor[seg] || typeof cursor[seg] !== 'object') cursor[seg] = {}
+          cursor = cursor[seg]
+        }
+      }
     }
-    const lastPart = parts[parts.length - 1]
-    current[lastPart] = value
+  }
+
+  for (const [fieldPath, value] of Object.entries(computedValues)) {
+    setNested(currentValues, fieldPath, value)
     computedFieldsList.push(fieldPath)
   }
 

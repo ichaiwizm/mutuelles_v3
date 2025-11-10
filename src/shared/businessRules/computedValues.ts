@@ -143,17 +143,17 @@ function inferCategoryFromProfession(profession: string | undefined): string | n
     lower.includes('dirigeant') ||
     lower.includes('gérant')
   ) {
-    return 'CHEFS_ENTREPRISE'
+    return 'CHEFS_D_ENTREPRISE'
   }
 
   // Commerçants
   if (lower.includes('commerçant') || lower.includes('commercant')) {
-    return 'COMMERCANTS'
+    return 'COMMERCANTS_ET_ASSIMILES'
   }
 
   // Exploitants agricoles
   if (lower.includes('agricole') || lower.includes('agriculteur') || lower.includes('exploitant')) {
-    return 'EXPLOITANTS_AGRICOLES'
+    return 'AGRICULTEURS_EXPLOITANTS'
   }
 
   // Salariés or unemployed → EXPLICITLY null (not undefined) to prevent incorrect defaults
@@ -341,6 +341,14 @@ export function computeDerivedFields(
       const inferredSpouseCategory = inferCategoryFromProfession(spouseProfession)
       if (inferredSpouseCategory) {
         setComputedWithPrefix(prefix, 'spouse.category', inferredSpouseCategory)
+      }
+    }
+
+    // Fallback: if spouse.category still empty, inherit subscriber.category
+    if (isEmpty(getWithPrefix(prefix, 'spouse.category'))) {
+      const subCategory = getWithPrefix(prefix, 'subscriber.category')
+      if (!isEmpty(subCategory)) {
+        setComputedWithPrefix(prefix, 'spouse.category', subCategory)
       }
     }
 
