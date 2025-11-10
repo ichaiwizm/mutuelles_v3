@@ -117,7 +117,14 @@ export class ParsingDebugger {
     }
     lines.push('')
 
-    // Contenu
+    // Contenu original complet
+    lines.push('## 📧 Contenu Original de l\'Email')
+    lines.push('```')
+    lines.push(report.content.original)
+    lines.push('```')
+    lines.push('')
+
+    // Contenu nettoyé
     lines.push('## 📋 Contenu Nettoyé')
     lines.push('```')
     lines.push(report.content.cleaned.substring(0, 2000)) // Limite 2000 chars
