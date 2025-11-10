@@ -7,10 +7,10 @@ import type { SelectorMap } from '../../types';
 
 export const childrenSelectors: SelectorMap = {
 'children.present': {
-  selector: '.totem-section__header:has(.totem-section__header-title:has-text("Enfants")) .totem-toggle',
+  selector: '.totem-section__header:has(.totem-section__header-title:has-text("Enfants")) .totem-toggle .totem-toggle__input',
   meta: {
     label: 'Enfants – Oui/Non (toggle)',
-    notes: 'Toggle control',
+    notes: 'Toggle checkbox input - targets the actual checkbox inside the toggle control',
   },
 },
 

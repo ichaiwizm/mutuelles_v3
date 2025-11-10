@@ -42,9 +42,7 @@ export const formSpouseChildrenSteps: FlowStep[] = [
     value: true,
     when: { field: 'children', isEmpty: false },
   }, 'toggle-enfants-oui'),
-  step.waitField('children.add_button', {
-    when: { field: 'children', isEmpty: false },
-  }, 'wait-add-enfant-visible'),
+  step.sleep(300, 'wait-after-toggle-enfants'),
 
   // Child 0
   step.comment('=== Enfant 0 ==='),
@@ -56,8 +54,7 @@ export const formSpouseChildrenSteps: FlowStep[] = [
   // Use fill instead of select for Totem custom dropdown component
   step.fill('children[].regime', {
     leadKey: 'children[0].regime',
-    when: { field: 'children[0].regime', isEmpty: false },
-    optional: true,
+    when: { field: 'children[0].birthDate', isEmpty: false },
   }, 'fill-regime-enfant-1'),
   step.sleep(300, 'wait-after-regime-enfant-1'),
 
@@ -75,8 +72,7 @@ export const formSpouseChildrenSteps: FlowStep[] = [
   // Use fill instead of select for Totem custom dropdown component
   step.fill('children[].regime', {
     leadKey: 'children[1].regime',
-    when: { field: 'children[1].regime', isEmpty: false },
-    optional: true,
+    when: { field: 'children[1].birthDate', isEmpty: false },
   }, 'fill-regime-enfant-2'),
   step.sleep(300, 'wait-after-regime-enfant-2'),
 
@@ -94,8 +90,7 @@ export const formSpouseChildrenSteps: FlowStep[] = [
   // Use fill instead of select for Totem custom dropdown component
   step.fill('children[].regime', {
     leadKey: 'children[2].regime',
-    when: { field: 'children[2].regime', isEmpty: false },
-    optional: true,
+    when: { field: 'children[2].birthDate', isEmpty: false },
   }, 'fill-regime-enfant-3'),
   step.sleep(300, 'wait-after-regime-enfant-3'),
 

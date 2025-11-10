@@ -225,6 +225,16 @@ export function computeDerivedFields(
             computed[key] = department
           }
         }
+
+        // Inherit regime from subscriber if child doesn't have one
+        const childRegime = child?.regime
+        if (isEmpty(childRegime)) {
+          const inheritedRegime = subscriberRegime || inferRegimeFromStatus(subscriberStatus)
+          if (inheritedRegime) {
+            const key = prefix ? `${prefix}.children[${index}].regime` : `children[${index}].regime`
+            computed[key] = inheritedRegime
+          }
+        }
       })
     }
   }

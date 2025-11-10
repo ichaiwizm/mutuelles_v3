@@ -107,14 +107,14 @@ export class FieldExecutors {
     const isChecked = await page.isChecked(selector);
 
     if ((targetState && !isChecked) || (!targetState && isChecked)) {
-      // For checkboxes, use JavaScript click to avoid viewport positioning issues in iframes
-      await page.evaluate((sel) => {
-        const element = document.querySelector(sel) as HTMLElement;
-        if (element) {
-          element.scrollIntoView({ behavior: 'instant', block: 'center' });
-          element.click();
-        }
-      }, selector);
+      // Use Playwright locator API for click to support advanced selectors like :has-text()
+      const locator = page.locator(selector);
+      await locator.scrollIntoViewIfNeeded();
+
+      // For checkbox toggles, use JavaScript click to avoid overlay issues
+      await locator.evaluate((el: HTMLInputElement) => {
+        el.click();
+      });
     }
   }
 

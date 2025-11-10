@@ -7,10 +7,10 @@ import type { SelectorMap } from '../../types';
 
 export const spouseSelectors: SelectorMap = {
 'spouse.present': {
-  selector: '.totem-section__header:has(.totem-section__header-title:has-text("Conjoint(e)")) .totem-toggle',
+  selector: '.totem-section__header:has(.totem-section__header-title:has-text("Conjoint(e)")) .totem-toggle .totem-toggle__input',
   meta: {
     label: 'Conjoint – Oui/Non (toggle)',
-    notes: 'Toggle control - check state with .totem-toggle--on class',
+    notes: 'Toggle checkbox input - targets the actual checkbox inside the toggle control',
   },
 },
 

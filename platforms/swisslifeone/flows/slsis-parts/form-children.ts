@@ -71,14 +71,19 @@ export const formChildrenSteps: FlowStep[] = [
   step.waitField('project.dateEffet', 'wait-date-effet'),
   step.fill('project.dateEffet', { leadKey: 'project.dateEffet' }, 'fill-date-effet'),
   step.pressKey('Escape', 'close-datepicker'),
-  step.sleep(2000, 'wait-page-reposition'),
-  step.sleep(1000, 'network-after-date-effet'),
+  step.sleep(3000, 'wait-page-reposition'),
 
   // ============================================================
   // OPTIONS (MADELIN, RÉSILIATION, REPRISE)
   // ============================================================
 
   step.comment('=== ÉTAPE 9: OPTIONS (MADELIN, RÉSILIATION, REPRISE) ==='),
+  step.sleep(1000, 'wait-before-madelin'),
+  step.waitField('project.madelin', {
+    when: { field: 'subscriber.status', equals: 'TNS' },
+    optional: true,
+  }, 'wait-madelin'),
+  step.sleep(500, 'wait-after-madelin-visible'),
   step.toggle('project.madelin', {
     value: true,
     when: { field: 'subscriber.status', equals: 'TNS' },

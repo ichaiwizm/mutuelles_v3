@@ -14,6 +14,8 @@ import { FlowRunner } from '../../core/engine';
 import { getFlowBySlug, getPlatformSelectors } from '../utils/flow-loader';
 import { getDatabaseConnection } from '../utils/db-connection';
 import { getCredentialsForPlatform } from '../utils/credentials';
+import { computeDerivedFields } from '../../src/shared/businessRules/computedValues';
+import { setLeadPath } from '../../core/resolve/path';
 
 interface RunOptions {
   headless?: boolean;
@@ -32,6 +34,12 @@ export async function runFlow(
   const lead = getLeadById(db, leadId);
   if (!lead) {
     throw new Error(`Lead not found: ${leadId}`);
+  }
+
+  // Apply computed/derived fields to lead data
+  const computedFields = computeDerivedFields(lead.data);
+  for (const [fieldPath, value] of Object.entries(computedFields)) {
+    setLeadPath(lead.data, fieldPath, value);
   }
 
   // Load flow
