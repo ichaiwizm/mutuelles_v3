@@ -7,6 +7,8 @@
  */
 
 import { openDb } from '../../src/shared/db/connection.mjs';
+import { writeFileSync } from 'fs';
+import { resolve } from 'path';
 
 function parseArgs() {
   const args = process.argv.slice(2);
@@ -15,7 +17,9 @@ function parseArgs() {
     limit: 1000,
     offset: 0,
     help: false,
-    timeout: 3000
+    timeout: 3000,
+    compact: false,
+    output: null
   };
 
   for (let i = 0; i < args.length; i++) {
@@ -33,6 +37,13 @@ function parseArgs() {
         break;
       case '--timeout':
         opts.timeout = parseInt(args[++i], 10) || 3000;
+        break;
+      case '--compact':
+        opts.compact = true;
+        break;
+      case '--output':
+      case '-o':
+        opts.output = args[++i];
         break;
       case '--help':
       case '-h':
@@ -56,6 +67,9 @@ Options:
   --limit <number>    Maximum number of leads to display [default: 1000]
   --offset <number>   Number of leads to skip [default: 0]
   --timeout <ms>      Auto-exit after <ms> milliseconds (default: 3000)
+  --compact           Use compact JSON format (no indentation) [json format only]
+  --output <file>     Write output to file instead of stdout [json format only]
+  -o <file>           Alias for --output
   --help, -h          Show this help
 
 Examples:
@@ -64,6 +78,12 @@ Examples:
 
   # List leads in JSON format
   npm run leads:list -- --format json
+
+  # List leads in compact JSON format
+  npm run leads:list -- --format json --compact
+
+  # Save JSON output to file
+  npm run leads:list -- --format json --output leads.json
 
   # List first 10 leads
   npm run leads:list -- --limit 10
@@ -236,7 +256,7 @@ function displayAsTable(leads, total) {
   });
 }
 
-function displayAsJson(leads) {
+function displayAsJson(leads, options = {}) {
   const formatted = leads.map(lead => ({
     id: lead.id,
     data: JSON.parse(lead.data),
@@ -248,7 +268,20 @@ function displayAsJson(leads) {
     updatedAt: lead.updated_at,
   }));
 
-  console.log(JSON.stringify(formatted, null, 2));
+  const jsonString = options.compact 
+    ? JSON.stringify(formatted) 
+    : JSON.stringify(formatted, null, 2);
+
+  if (options.output) {
+    const filePath = resolve(options.output);
+    writeFileSync(filePath, jsonString, 'utf8');
+    console.error(`JSON écrit dans: ${filePath}`);
+  } else {
+    // Forcer l'encodage UTF-8 et écrire directement sur stdout
+    // Utiliser Buffer pour éviter les problèmes d'encodage du terminal
+    const buffer = Buffer.from(jsonString + '\n', 'utf8');
+    process.stdout.write(buffer);
+  }
 }
 
 function displayDetailed(leads, total) {
@@ -305,7 +338,7 @@ async function main() {
 
     switch (options.format) {
       case 'json':
-        displayAsJson(leads);
+        displayAsJson(leads, { compact: options.compact, output: options.output });
         break;
       case 'detailed':
         displayDetailed(leads, total);
